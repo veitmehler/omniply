@@ -279,7 +279,28 @@ export async function commitCta(ctx: StepContext, answer: unknown): Promise<stri
 /** writing_sample: transcripts (+ optional article) → writingStyle. */
 export async function commitWritingSample(ctx: StepContext, answer: unknown): Promise<string | null> {
   const a = (answer ?? {}) as { text?: string }
-  const article = a.text?.trim().toLowerCase() === 'skip' ? null : (a.text?.trim() ?? null)
+  const raw = a.text?.trim() ?? ''
+  const blogSample = ctx.stepData.blogSample as { text?: string; url?: string } | null | undefined
+
+  let article: string | null
+  if (/^i wrote (this|it)\.?$/i.test(raw) && blogSample?.text) {
+    // Explicit authorship confirmation of the scraped candidate — the ONLY
+    // path that ingests it (clinic blogs are often vendor-ghostwritten).
+    article = blogSample.text
+    ctx.stepData.writingSampleSource = 'scraped_confirmed'
+  } else if (raw.toLowerCase() === 'skip') {
+    article = null
+    ctx.stepData.writingSampleSource = 'skipped'
+  } else if (raw.length >= 200) {
+    article = raw
+    ctx.stepData.writingSampleSource = 'pasted'
+  } else if (raw.length > 0) {
+    return blogSample?.text
+      ? 'Three options here: type exactly "I wrote this" to use the article I found on your site, paste a full article you wrote (200+ characters), or type "skip"'
+      : 'That looks too short to learn a voice from — paste a full article (200+ characters), or type "skip"'
+  } else {
+    article = null
+  }
 
   const transcripts = ['q_declaration', 'q_enemy', 'q_tribe', 'q_line', 'q_proof']
     .map((k) => (ctx.stepData[k] as { text?: string })?.text)

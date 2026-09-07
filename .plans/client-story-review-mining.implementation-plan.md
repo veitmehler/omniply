@@ -511,3 +511,25 @@ Findings, all verified against the official `GoHighLevel/highlevel-api-docs` rep
 
 Test rig state as of 2026-07-10: a Review Received → webhook workflow may already exist (inert) in
 the dev GHL location; the webhook.site URL from that day is expired — regenerate.
+
+## P3 backlog (added 2026-09-07): manual review entry on the Settings page
+
+User-approved idea (discussion 2026-09-07); build post-launch. Healthgrades/Yelp/etc.
+scraping explicitly REJECTED (ToS/evasion posture contradicts the compliance brand;
+Oxylabs proxy capability exists but is not to be used for review scraping).
+
+- Settings-page section where the client pastes reviews from ANY source
+  (Google / Healthgrades / Yelp / Facebook / other) → `source: 'manual'` into the
+  existing ingest funnel (lib/google/review-ingest.ts: normalize → fingerprint →
+  RawReview upsert → story triage). Everything downstream unchanged; dedup vs
+  scraped/webhook arrivals is free.
+- v1 scope: one-review-at-a-time form — source dropdown, review text, optional
+  reviewer first name + star rating. NO bulk-paste LLM splitting in v1.
+- REQUIRED: authenticity attestation checkbox per submission ("This is a genuine
+  review my practice actually received") — FTC fake-reviews rule; store the
+  attestation + source label on the RawReview (same pattern as onboarding's
+  "I wrote this" authorship gate).
+- Also render the reviews ALREADY in the funnel (scraped + webhook + manual) in the
+  same section — turns the paste box into a small reputation dashboard so clients
+  see what story mining has to work with. Exact scope worth a discussion at build
+  time (user: "worth a discussion when we get to it").

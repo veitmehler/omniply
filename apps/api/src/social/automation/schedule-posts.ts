@@ -47,13 +47,17 @@ export async function buildPostsForSpec(opts: {
 
   for (const platform of platforms) {
     const platformCtx = withPlatform(logCtx, platform)
-    const caption =
+    const rawCaption =
       pregeneratedCaptions?.[platform] ??
       (await generatePlatformCaption({
         postType: assets.postType,
         articleCtx,
         logCtx: platformCtx,
       }))
+    // Dash-free copy everywhere: em-dashes are the banned AI tell, and some
+    // caption sources (verbatim section/promo text) bypass the LLM sanitizers
+    // (Sep-5 S2 carried one — sweep 2026-09-07). En-dash ranges stay.
+    const caption = rawCaption.replace(/\s*—\s*/g, ', ')
     const videoUrl = assets.videoUrl
     // Video posts carry ONLY the video. Some specs (hook_video) keep their
     // source carousel slides in assets.mediaUrls for cross-spec reuse —

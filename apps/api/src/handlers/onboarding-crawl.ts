@@ -44,6 +44,9 @@ export async function onboardingCrawlHandler(jobs: PgBoss.Job<OnboardingCrawlJob
         fontHints: crawl.fontHints,
       }
       stepData.logoCandidates = crawl.logoCandidates
+      // Scraped writing-sample candidate: offered at the writing_sample step
+      // behind a mandatory "I wrote this" authorship confirmation.
+      stepData.blogSample = crawl.blogArticle ?? null
       // Corpus persisted for the Phase 4 synthesis (capped — stepData is not a data lake).
       stepData.corpus = crawl.pages.map((p) => `## ${p.title}\n${p.text}`).join('\n\n').slice(0, 30_000)
 
