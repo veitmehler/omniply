@@ -646,11 +646,12 @@ export async function generateStoryCarouselVideo(opts: {
   if (!pitchBgUrl) throw new Error('generateStoryCarouselVideo: no backgroundImageUrls provided')
 
   // Fetch both backgrounds in parallel, and generate the pitch text + voice settings
-  const [titleBgResp, pitchBgResp, pitchCopy, voice] = await Promise.all([
+  const [titleBgResp, pitchBgResp, pitchCopy, voice, brand] = await Promise.all([
     fetch(titleBgUrl),
     fetch(pitchBgUrl),
     generatePitchSlideText({ topic: opts.topic, content: opts.content, pitchType: 'carousel', userId: opts.userId }),
     getVoiceSettings(opts.userId),
+    loadSocialBrandTheme(opts.userId),
   ])
 
   const [titleBgBuffer, pitchBgBuffer] = await Promise.all([
@@ -721,7 +722,7 @@ export async function generateStoryCarouselVideo(opts: {
       '-pix_fmt', 'yuv420p', '-r', '30',
       titleVideoRaw,
     ])
-    await overlayTitleOnVideoStripFadeIn(titleVideoRaw, titleVideoOut, opts.title, defaultFontPath())
+    await overlayTitleOnVideoStripFadeIn(titleVideoRaw, titleVideoOut, opts.title, defaultFontPath(), 1.0, 0.5, darkBrandVeilHex(brand.primaryColor))
 
     // --- Slide 2: pitch slide ---
     const pitchVideoPath = path.join(tmpDir, 'pitch-slide.mp4')
@@ -792,7 +793,7 @@ export async function generateStoryHookVideo(opts: {
   const jobId = opts.jobId ?? genId
 
   // Generate pitch text while we prepare the video assets
-  const [pitchCopy, voice] = await Promise.all([
+  const [pitchCopy, voice, hookBrand] = await Promise.all([
     generatePitchSlideText({
       userId: opts.userId,
       topic: opts.topic,
@@ -800,6 +801,7 @@ export async function generateStoryHookVideo(opts: {
       pitchType: 'hook',
     }),
     getVoiceSettings(opts.userId),
+    loadSocialBrandTheme(opts.userId),
   ])
 
   // Download raw background and composite the 9:16 pitch slide PNG
@@ -836,7 +838,7 @@ export async function generateStoryHookVideo(opts: {
     await rescaleVideo(hookCropped, hookScaled, 1080, 1920)
 
     // Step 3 — Overlay title as a full-width strip with fade-in (9:16 strip design)
-    await overlayTitleOnVideoStripFadeIn(hookScaled, hookTitled, opts.title, defaultFontPath())
+    await overlayTitleOnVideoStripFadeIn(hookScaled, hookTitled, opts.title, defaultFontPath(), 1.0, 0.5, darkBrandVeilHex(hookBrand.primaryColor))
 
     // The intro clip length is where the pitch slide (and its narration) begins.
     const introDur = (await probeVideo(hookTitled)).duration
