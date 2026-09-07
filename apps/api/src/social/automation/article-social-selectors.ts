@@ -125,15 +125,19 @@ export async function resolveArticleSlot(
   const sectionIdx = sectionIndexOfSource(source)
   if (sectionIdx !== null) {
     // Hard-bound section (art_section_N): deterministic, no free selection.
-    // Wraps modulo when the article has fewer sections than the matrix
-    // expects (logged — a wrap means two slots share a section).
+    // Fewer sections than the matrix expects → CLAMP to the last section
+    // (was modulo wrap, which sent a too-high index back to the OPENING —
+    // exactly the day-1 beat-0 duplicate the section-5 slot avoids; user
+    // rule 2026-09-07: no 5th section → use the 4th).
+    let boundIdx = sectionIdx
     if (secs.length > 0 && sectionIdx >= secs.length) {
+      boundIdx = secs.length - 1
       logger.warn(
-        { jobId, source, sectionCount: secs.length },
-        '[article-social] hard-bound section index beyond section count — wrapping',
+        { jobId, source, sectionCount: secs.length, boundIdx },
+        '[article-social] hard-bound section index beyond section count — clamping to last',
       )
     }
-    const slot = sectionAtIndex(ctx, sectionIdx)
+    const slot = sectionAtIndex(ctx, boundIdx)
     // Carousel background = THIS section's stylized diagram (matched by
     // heading; the pipeline emits one diagram per section).
     const ref = diagrams.find((d) => d.sectionTitle.trim() === slot.title?.trim())
