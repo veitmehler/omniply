@@ -26,6 +26,13 @@ export interface CrawlResult {
   socialLinks: Record<string, string>
   cssColorHints: string[]
   fontHints: string[]
+  /**
+   * Newest substantial blog post found on the site (WP REST fast path, HTML
+   * fallback) — offered as a writing-voice sample in onboarding, gated behind
+   * an explicit "I wrote this" authorship confirmation (many clinic blogs are
+   * vendor-ghostwritten; a scraped article is never silently ingested).
+   */
+  blogArticle?: { url: string; title: string; text: string; wordCount: number }
 }
 
 function absolutize(href: string, base: string): string | null {
@@ -34,6 +41,32 @@ function absolutize(href: string, base: string): string | null {
   } catch {
     return null
   }
+}
+
+/**
+ * Paragraph-preserving strip for article bodies (same pattern as the
+ * module-private stripHtmlTags in article-pipeline/syndication/generate.ts):
+ * keeps \n\n between blocks so the sample reads as real prose.
+ */
+function stripHtmlKeepParagraphs(html: string): string {
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n\n')
+    .replace(/<\/h[1-6]>/gi, '\n\n')
+    .replace(/<\/li>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#0?39;/g, "'")
+    .replace(/&#8217;/g, '’')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
 }
 
 function stripHtml(html: string): string {
@@ -166,7 +199,109 @@ export async function crawlSite(websiteUrl: string): Promise<CrawlResult> {
   }
   result.fontHints = [...fonts].slice(0, 4)
 
+  try {
+    result.blogArticle = await discoverBlogArticle(websiteUrl, homeHtml)
+  } catch (err) {
+    logger.warn({ websiteUrl, err }, '[site-analysis] blog discovery failed — sample offer skipped')
+  }
+
   return result
+}
+
+const BLOG_MIN_WORDS = 400
+const BLOG_TEXT_CAP = 12_000 // generateWritingStyle's own article cap
+
+async function fetchJson(url: string): Promise<unknown | null> {
+  try {
+    const res = await withTimeout(
+      (signal) =>
+        fetch(url, {
+          headers: { 'User-Agent': CRAWL_USER_AGENT, Accept: 'application/json' },
+          redirect: 'follow',
+          signal,
+        }),
+      PAGE_FETCH_TIMEOUT_MS,
+      `fetch ${url}`,
+    )
+    if (!res.ok || !(res.headers.get('content-type') ?? '').includes('json')) return null
+    return await res.json()
+  } catch {
+    return null
+  }
+}
+
+function articleFromHtml(url: string, html: string): CrawlResult['blogArticle'] | undefined {
+  const title = /<title[^>]*>([\s\S]*?)<\/title>/i.exec(html)?.[1]?.trim().split(/\s*[|–—-]\s*/)[0] ?? ''
+  const articleRegion = /<article[^>]*>([\s\S]*?)<\/article>/i.exec(html)?.[1] ?? html
+  const text = stripHtmlKeepParagraphs(articleRegion).slice(0, BLOG_TEXT_CAP)
+  const wordCount = text.split(/\s+/).filter(Boolean).length
+  if (wordCount < BLOG_MIN_WORDS) return undefined
+  return { url, title, text, wordCount }
+}
+
+/**
+ * Find the newest substantial blog post: WordPress REST fast path first
+ * (most clinic sites are WP), generic listing-page fallback second.
+ * Budget: at most 3 extra fetches, all failures soft.
+ */
+async function discoverBlogArticle(
+  websiteUrl: string,
+  homeHtml: string,
+): Promise<CrawlResult['blogArticle'] | undefined> {
+  const origin = new URL(websiteUrl).origin
+
+  // 1. WordPress REST fast path.
+  const wp = await fetchJson(
+    `${origin}/wp-json/wp/v2/posts?per_page=3&orderby=date&_fields=title,content,link`,
+  )
+  if (Array.isArray(wp)) {
+    for (const raw of wp) {
+      const post = raw as { title?: { rendered?: string }; content?: { rendered?: string }; link?: string }
+      const body = post.content?.rendered ?? ''
+      const text = stripHtmlKeepParagraphs(body).slice(0, BLOG_TEXT_CAP)
+      const wordCount = text.split(/\s+/).filter(Boolean).length
+      if (wordCount >= BLOG_MIN_WORDS) {
+        return {
+          url: post.link ?? origin,
+          title: stripHtmlKeepParagraphs(post.title?.rendered ?? '').trim(),
+          text,
+          wordCount,
+        }
+      }
+    }
+    return undefined // WP confirmed but no substantial post — don't double-fetch via HTML
+  }
+
+  // 2. Generic fallback: a blog/news listing linked from the homepage.
+  const blogLinkRx = /blog|news|articles?|resources|posts/i
+  let listingUrl: string | null = null
+  for (const m of homeHtml.matchAll(/<a[^>]+href=["']([^"'#?]+)["']/gi)) {
+    const abs = absolutize(m[1], websiteUrl)
+    if (abs && abs.startsWith(origin) && blogLinkRx.test(new URL(abs).pathname)) {
+      listingUrl = abs
+      break
+    }
+  }
+  if (!listingUrl) return undefined
+
+  const listingHtml = await fetchHtml(listingUrl)
+  if (!listingHtml) return undefined
+
+  // The nav link may itself BE a post (single-post sites).
+  const direct = articleFromHtml(listingUrl, listingHtml)
+
+  const listingPath = new URL(listingUrl).pathname.replace(/\/$/, '')
+  for (const m of listingHtml.matchAll(/<a[^>]+href=["']([^"'#?]+)["']/gi)) {
+    const abs = absolutize(m[1], listingUrl)
+    if (!abs || !abs.startsWith(origin)) continue
+    const path = new URL(abs).pathname.replace(/\/$/, '')
+    if (path === listingPath || !path.startsWith(listingPath + '/')) continue
+    if (/\/(category|tag|page|author)\//i.test(path)) continue
+    const postHtml = await fetchHtml(abs)
+    const post = postHtml ? articleFromHtml(abs, postHtml) : undefined
+    return post ?? direct
+  }
+  return direct
 }
 
 /**

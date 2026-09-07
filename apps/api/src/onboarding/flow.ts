@@ -201,11 +201,25 @@ const STEPS: StepDef[] = [
   {
     id: 'writing_sample',
     kind: 'text',
-    prepare: async () => ({
-      messages: [
-        'To write in your voice, I need a sample of your real writing — a blog post, a patient email, anything 500+ words. Paste it here (or type "skip" and I\'ll work from your spoken answers alone).',
-      ],
-    }),
+    prepare: async (ctx) => {
+      const sample = ctx.stepData.blogSample as
+        | { url: string; title: string; text: string; wordCount: number }
+        | null
+        | undefined
+      if (sample?.text) {
+        const excerpt = sample.text.slice(0, 300).trim()
+        return {
+          messages: [
+            `While exploring your website I found this article${sample.title ? `: "${sample.title}"` : ''} (${sample.wordCount} words).\n\n"${excerpt}…"\n\nIf YOU wrote this (not a website vendor or content service), type exactly: I wrote this — and I'll learn your written voice from it.\n\nIf it was ghostwritten, paste an article you DID write instead, or type "skip" and I'll work from your spoken answers alone.`,
+          ],
+        }
+      }
+      return {
+        messages: [
+          'To write in your voice, I need a sample of your real writing — a blog post, a patient email, anything 500+ words. Paste it here (or type "skip" and I\'ll work from your spoken answers alone).',
+        ],
+      }
+    },
     commit: async (ctx, answer) => {
       const err = await commitWritingSample(ctx, answer)
       if (!err) ctx.stepData.writing_sample = answer
