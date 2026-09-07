@@ -554,7 +554,11 @@ export async function buildTitleFadeFilters(
   )
 
   const overlayChain = [
-    `drawbox=x=${boxX}:y=${boxY}:w=${boxW}:h=${boxH}:color=black@0.65:t=fill`,
+    // replace=1: this chain renders onto titleFadeGraph's TRANSPARENT layer,
+    // where plain drawbox blends color channels but never writes alpha — the
+    // box has been invisible since the ffmpeg-8 fade+overlay rework (found
+    // 2026-09-07). replace=1 writes the alpha so the box actually composites.
+    `drawbox=x=${boxX}:y=${boxY}:w=${boxW}:h=${boxH}:color=black@0.65:t=fill:replace=1`,
     ...textFilters,
   ].join(',')
 
@@ -644,11 +648,13 @@ export async function overlayTitleOnVideoStripFadeIn(
   )
 
   const overlayChain = [
+    // replace=1 on both: see buildTitleFadeFilters — drawbox without it is
+    // invisible on the transparent fade layer (alpha never written).
     veilHex
-      ? `drawbox=x=0:y=0:w=iw:h=ih:color=${veilHex}@0.85:t=fill`
+      ? `drawbox=x=0:y=0:w=iw:h=ih:color=${veilHex}@0.85:t=fill:replace=1`
       : // 0.8 (was 0.65, 2026-09-03): near-white motif canvases left the strip
         // mid-grey and the white title marginal.
-        `drawbox=x=0:y=${stripY}:w=iw:h=${stripH}:color=black@0.8:t=fill`,
+        `drawbox=x=0:y=${stripY}:w=iw:h=${stripH}:color=black@0.8:t=fill:replace=1`,
     ...textFilters,
   ].join(',')
 
