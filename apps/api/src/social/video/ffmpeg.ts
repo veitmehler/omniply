@@ -613,6 +613,11 @@ export async function overlayTitleOnVideoStripFadeIn(
   fontPath: string = defaultFontPath(),
   fadeStart = 1.0,
   fadeDuration = 0.5,
+  // Full-frame dark brand veil (e.g. "0x052234") replacing the title strip:
+  // the strip alone left ~80% of a bright title screen untreated (user
+  // 2026-09-07); with the veil the title sits directly on the darkened frame,
+  // matching the KT music video treatment.
+  veilHex?: string,
 ): Promise<void> {
   const { width, height } = await probeVideo(inputPath)
   // Anchor to width so 9:16 and 1:1 clips get the same font size
@@ -639,9 +644,11 @@ export async function overlayTitleOnVideoStripFadeIn(
   )
 
   const overlayChain = [
-    // 0.8 (was 0.65, 2026-09-03): near-white motif canvases left the strip
-    // mid-grey and the white title marginal.
-    `drawbox=x=0:y=${stripY}:w=iw:h=${stripH}:color=black@0.8:t=fill`,
+    veilHex
+      ? `drawbox=x=0:y=0:w=iw:h=ih:color=${veilHex}@0.85:t=fill`
+      : // 0.8 (was 0.65, 2026-09-03): near-white motif canvases left the strip
+        // mid-grey and the white title marginal.
+        `drawbox=x=0:y=${stripY}:w=iw:h=${stripH}:color=black@0.8:t=fill`,
     ...textFilters,
   ].join(',')
 
