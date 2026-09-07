@@ -44,7 +44,7 @@ const SYSTEM_PROMPT =
   'OBSERVATION about the industry or practices ("I keep seeing...", "Picture a practice owner who...", ' +
   '"you open the guidance and realize..."), never as something the narrator personally did or found. ' +
   'A post with zero personal scenes is fine; a post with a fabricated one is a failure. ' +
-  'The narrator is a software builder, not a clinician: patients, patient files, clinics, or board letters may never appear as the narrator\'s own. Default voice is first-person OBSERVER: "I" as a commentary lens on the industry, never invented events. ' +
+  'The narrator is a software builder, not a clinician: patients, patient files, clinics, or board letters may never appear as the narrator\'s own — and neither may invented business interactions: discovery calls, client consultations, or access to any practice\'s dashboards, phone logs, or data. Default voice is first-person OBSERVER: "I" as a commentary lens on the industry, never invented events. ' +
   'COMPLIANCE (hard rules): never mention or invent identifiable patients or specific patient events; ' +
   'composite scenes must be explicitly generic ("every practice has a Tuesday like this"); ' +
   'never promise business or health outcomes; numbers come only from the article material provided. ' +
@@ -89,10 +89,10 @@ ARC RULES:
 - Beat 1 opens on a concrete scene or surprising observation, never a summary.
 - VOICE: first-person observer throughout. The narrator comments as "I" even on article material ("I keep seeing...", "I read the FTC notices so you do not have to", "Here is what jumped out at me").
 - The article's own scenes, metaphors, and story boxes are your PRIMARY narrative material: RETELL them as scenes the narrator PRESENTS about a practice owner ("Picture the owner who...", "The scene from the article stuck with me: ..."). Prefer retelling an article scene over abstract observation.
-- HARD RULE: an article scene may NEVER become the narrator's own experience. The narrator is a software builder: no patients, no patient files, no clinic, no board letters or investigations addressed to them. First person is a commentary lens, never invented events.
+- HARD RULE: an article scene may NEVER become the narrator's own experience. The narrator is a software builder: no patients, no patient files, no clinic, no board letters or investigations addressed to them. ALSO BANNED as invented events: discovery calls, client consultations, conversations with practice owners, or looking at any practice's dashboards, phone logs, calendars, or data ("a practice owner books a call with me" is a FABRICATION unless it appears in a narrator moment). First person is a commentary lens, never invented events.
 - Beats 2 and onward OPEN with one short re-anchoring line that orients a first-time reader (half a sentence referencing where the story stands) before continuing.
 - Every beat except the last ends mid-tension with an open loop to the next.
-- SCHEDULE: beats alternate morning (7:00) and evening (19:00), starting with a morning beat. A MORNING beat's open loop points at TONIGHT ("Tonight: ..."); an EVENING beat's open loop (except the last beat, which resolves) points at TOMORROW ("Tomorrow: ..."). Never use the wrong label.
+- SCHEDULE: beats alternate morning and evening, starting with a morning beat. A MORNING beat's open loop points at TONIGHT ("Tonight: ..."); an EVENING beat's open loop (except the last beat, which resolves) points at TOMORROW ("Tomorrow morning: ..."). Never use the wrong label, and NEVER write clock times in the copy (no "at 19:00", no "at 7 PM"): "Tonight" and "Tomorrow morning" are the only schedule words.
 - The LAST beat resolves the arc and its POST TEXT (never a slide) may include exactly one soft mention of the article${opts.articleUrl ? ` (link: ${opts.articleUrl})` : ''}.
 - EVENING beats (beat 2${opts.beatCount >= 4 ? ' and beat 4' : ''}): the POST TEXT ends with exactly this call-to-action line as its final line: "${opts.ctaLine}"${opts.ctaLine ? '' : ' (no CTA line provided: end naturally)'}
 - Beats never reuse a scene, opening, or anecdote from each other or from the prior posts above.
@@ -206,13 +206,18 @@ export async function generateStoryArc(opts: {
   let parsed = extractJsonArray(run.content)
   if (!parsed || parsed.length < beatCount) {
     // One retry — truncated/malformed JSON is the dominant failure mode.
-    logger.warn({ ...logCtx }, '[story-arc] unparseable output — retrying once')
+    // Log head+tail of the raw output: the Lead Magnets article failed 4x
+    // with zero diagnostics (sweep 2026-09-07). Retry gets more headroom.
+    logger.warn(
+      { ...logCtx, rawLen: run.content.length, rawHead: run.content.slice(0, 300), rawTail: run.content.slice(-300) },
+      '[story-arc] unparseable output — retrying once',
+    )
     const retry = await adapter.call({
       systemPrompt: t?.systemPrompt ?? SYSTEM_PROMPT,
       userPrompt,
       model,
       temperature: 0.6,
-      maxTokens: 2000 * beatCount,
+      maxTokens: 2500 * beatCount,
     })
     await recordLLMUsage(userId, 'story_arc', retry)
     parsed = extractJsonArray(retry.content)

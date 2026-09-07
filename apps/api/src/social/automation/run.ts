@@ -202,11 +202,13 @@ async function pregenerateBatchedCaptions(opts: {
           if (storyHook && platform === 'facebook' && /omniply\.io|http/i.test(t.split('\n').pop() ?? '')) {
             t = `${t}\n\nOr just comment "XRAY" and I will send it straight to you.`
           } else if (storyHook && platform === 'instagram') {
-            const lines = t.split('\n')
-            if (/omniply\.io|http/i.test(lines[lines.length - 1] ?? '')) {
-              lines[lines.length - 1] = storyHook
-              t = lines.join('\n')
-            }
+            // IG captions are not clickable: drop EVERY URL-bearing line (a
+            // mid-caption article link slipped the last-line-only replace —
+            // sweep 2026-09-07), then make sure the comment hook closes it.
+            const lines = t.split('\n').filter((l) => !/omniply\.io|https?:\/\//i.test(l))
+            while (lines.length && !lines[lines.length - 1].trim()) lines.pop()
+            if (!lines.some((l) => l.includes(storyHook))) lines.push('', storyHook)
+            t = lines.join('\n')
           }
           ;(bySlot[e.slotKey] ??= {})[platform] = t.length <= limit ? t : t.slice(0, limit - 1).trim() + '…'
         }
