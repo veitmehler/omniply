@@ -8,8 +8,8 @@ mandatory "I wrote this" authorship confirmation (deployed to staging, branch co
 ## Pre-test checklist
 
 USER (site + accounts):
-- [ ] Publish the planted article below to /blog on the WordPress site (title as given).
-- [ ] WordPress → Settings → Reading → "Discourage search engines" ON — BEFORE the test.
+- [√] Publish the planted article below to /blog on the WordPress site (title as given).
+- [√] WordPress → Settings → Reading → "Discourage search engines" ON — BEFORE the test.
 - [ ] Create FB + IG (optional LinkedIn) profiles under unrelated names; add their links
       to the site header/footer (tests the crawl's socialLinks prefill).
 - [ ] Staging test sub-account GHL Business Profile: name, user-controlled email, phone,
