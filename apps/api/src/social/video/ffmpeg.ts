@@ -627,7 +627,9 @@ export async function overlayTitleOnVideoStripFadeIn(
   // Anchor to width so 9:16 and 1:1 clips get the same font size
   const scale = width / 1080
 
-  const lines    = wrapTitle(title, 30, 3)
+  // 4 lines (was 3, user 2026-09-07): story hooks used as titles run ~12-20
+  // words; 3×30 chars cut them mid-sentence ("...airbags into a").
+  const lines    = wrapTitle(title, 30, 4)
   const fontSize = Math.round(52 * scale)
   const lineH    = Math.round(68 * scale)
   const padV     = Math.round(40 * scale)
