@@ -114,7 +114,8 @@ For EACH beat also produce its Instagram slide breakdown:
 
 EVENING beats additionally output "ctaBridge": ONE short PIVOT line (max 12 words) written in your own words, a question or turn toward getting help that picks up THAT beat's specific subject (its scene, task, or pain) and offers relief from it. Each evening bridge must be DIFFERENT from the others. It must contain NO digits, NO durations, NO statistics, NO URL, and must not name or describe the offer itself (the call-to-action is appended automatically after it and carries its own number). Morning beats omit the field.
 
-Return ONLY a JSON array of ${opts.beatCount} objects: [{"postText": "...", "slides": ["...", ...], "ctaBridge": "..."}, ...]`
+Return ONLY a JSON array of ${opts.beatCount} objects: [{"postText": "...", "slides": ["...", ...], "ctaBridge": "..."}, ...]
+CRITICAL JSON RULE: inside string values, NEVER use straight double quotes. Quote words with typographic quotes (“like this”) or single quotes instead — a straight " inside a value breaks the JSON.`
 }
 
 function extractJsonArray(raw: string): unknown[] | null {
@@ -122,11 +123,32 @@ function extractJsonArray(raw: string): unknown[] | null {
   const start = cleaned.indexOf('[')
   const end = cleaned.lastIndexOf(']')
   if (start === -1 || end <= start) return null
+  const body = cleaned.slice(start, end + 1)
   try {
-    const parsed = JSON.parse(cleaned.slice(start, end + 1))
+    const parsed = JSON.parse(body)
     return Array.isArray(parsed) ? parsed : null
   } catch {
-    return null
+    // Dominant real-world failure (found 2026-09-07 via the raw-output log):
+    // the model quotes phrases with raw double quotes INSIDE string values
+    // ('a PDF titled "Ultimate Guide"...') — invalid JSON. Repair pass:
+    // walk the text; a quote inside a string is STRUCTURAL only when
+    // followed (after whitespace) by , } ] or :, otherwise escape it.
+    try {
+      let out = ''
+      let inString = false
+      for (let i = 0; i < body.length; i++) {
+        const ch = body[i]
+        if (ch === '\\' && inString) { out += ch + (body[i + 1] ?? ''); i++; continue }
+        if (ch !== '"') { out += ch; continue }
+        if (!inString) { inString = true; out += ch; continue }
+        const rest = body.slice(i + 1).match(/^\s*([,}\]:])/)
+        if (rest) { inString = false; out += ch } else { out += '\\"' }
+      }
+      const parsed = JSON.parse(out)
+      return Array.isArray(parsed) ? parsed : null
+    } catch {
+      return null
+    }
   }
 }
 
@@ -354,6 +376,16 @@ export async function generateStoryArc(opts: {
   // the lead (user decision 2026-09-03). Clinics get a parameterized
   // keyword in P3; azavea uses XRAY.
   const ctaLine = theme.socialCallToAction?.trim() || ''
+  // Evening post text must end with the CTA line — the prompt asks for it,
+  // but the model occasionally closes on the open loop instead (Aug-31 beat
+  // shipped with no lead-gen CTA at all — sweep 2026-09-07). Enforce it.
+  if (ctaLine) {
+    for (let i = 1; i < beats.length; i += 2) {
+      if (!beats[i].postText.includes(ctaLine)) {
+        beats[i].postText = beats[i].postText.trimEnd() + '\n\n' + ctaLine
+      }
+    }
+  }
   const vertical = await verticalForUser(userId).catch(() => null)
   const commentHook =
     vertical === 'azavea'
