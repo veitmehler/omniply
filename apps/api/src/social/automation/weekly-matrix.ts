@@ -150,8 +150,11 @@ export const ARTICLE_DAY2_SLOTS: DaySlot[] = [
 export const AZAVEA_ARTICLE_DAY1_SLOTS: DaySlot[] = [
   // Story beats am/pm; ONE section carousel kept at midday for variety
   // (user decision 2026-09-03) — per-slide motif backgrounds.
+  // Section 5 (index 4), NOT the opening: beat 0 retells the article's
+  // opening scene, so a section-0 carousel duplicated it on the same day
+  // (user 2026-09-07). Fewer sections → selector clamps to the last one.
   { hour: 7, postType: 'story_text', source: 'art_story', beatIndex: 0 },
-  { hour: 12, postType: 'carousel', source: 'art_section_0', perSlideBg: true },
+  { hour: 12, postType: 'carousel', source: 'art_section_4', perSlideBg: true },
   { hour: 19, postType: 'story_text', source: 'art_story', beatIndex: 1 },
 ]
 
