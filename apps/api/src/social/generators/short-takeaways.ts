@@ -66,7 +66,7 @@ const SYSTEM_PROMPT =
   'RULES per bullet: ONE declarative statement, at most 15 words after the label. ' +
   'Compress by DROPPING secondary clauses and qualifiers-of-context, NEVER by shortening the main claim: ' +
   'the subject, verb, object, and any qualifier that scopes the claim must survive intact. ' +
-  'Keep AT MOST one number, copied EXACTLY as printed in the source (same digits, same $ and % signs). ' +
+  'Keep AT MOST one number, copied EXACTLY as printed in the source (same digits, same $ and % signs); write every number as numerals, never as words. ' +
   'Never introduce a number, name, or entity that is not in the source bullet. ' +
   'Return the label byte-identical to the input label. ' +
   'No em-dashes. Output ONLY a JSON array: [{"label": "...", "short": "..."}, ...] in input order.'
