@@ -22,7 +22,7 @@ import { recordLLMUsage } from '../../lib/llm-usage'
 // The frame budget is measured in CHARACTERS/lines, not words (the model
 // cannot count words reliably — gating there rejected half its natural
 // output, 2026-09-08). Cap = rendered line "Label: short" length.
-const MAX_LINE_CHARS = 120
+const MAX_LINE_CHARS = 110 // back-solved from the base-26 fit budget: 5 bullets x 3 wrapped lines
 
 // ── Fit estimator ─────────────────────────────────────────────────────────
 // Mirrors overlayBulletsOnVideo's layout math on the canonical 704×1248
@@ -34,7 +34,7 @@ const FRAME_H = 1248
 const SCALE = FRAME_H / 1080
 const USABLE_W = FRAME_W * 0.84
 const MAX_BLOCK_H = FRAME_H * 0.88
-const TARGET_BASE = 30
+const TARGET_BASE = 26 // ~30px rendered; the base-30 target demanded <90-char lines while the gate allowed 120 (2026-09-08)
 const BULLET_FS = TARGET_BASE * SCALE
 const BULLET_LH = TARGET_BASE * 1.44 * SCALE
 const BULLET_CHARS = Math.floor(USABLE_W / (BULLET_FS * 0.52))
@@ -206,7 +206,7 @@ export async function ensureShortTakeaways(opts: {
         if (estimateFits(headlineNow, assembled)) break
         // Fit repair: shrink the longest gated line further.
         const longest = bullets.map((_, i) => i).sort((a, b) => lineOf(b).length - lineOf(a).length)[0]
-        failReasons[longest] = `still too long for the frame at ${lineOf(longest).length} chars — compress to at most 80 characters after the label`
+        failReasons[longest] = `still too long for the frame at ${lineOf(longest).length} chars — compress to at most 85 characters after the label`
         shorts[longest] = null
         targets = [longest]
       }
