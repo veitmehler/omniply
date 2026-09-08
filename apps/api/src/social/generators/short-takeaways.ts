@@ -83,7 +83,14 @@ export function gateShortTakeaway(
   full: KtBullet,
   candidate: { label?: string; short?: string },
 ): { short: string } | { reason: string } {
-  const short = candidate.short?.replace(/\s+/g, ' ').trim() ?? ''
+  // Normalize dashes BEFORE gating so length caps apply to the final text:
+  // digit ranges become "X to Y" (a comma-fied "30, 40 hours" shipped once,
+  // 2026-09-08); other em/en dashes become commas.
+  const short = (candidate.short ?? '')
+    .replace(/(\d)\s*[—–-]\s*(\d)/g, '$1 to $2')
+    .replace(/\s*[—–]\s*/g, ', ')
+    .replace(/\s+/g, ' ')
+    .trim()
   if (!short) return { reason: 'empty' }
   if ((candidate.label ?? '').replace(/\s+/g, ' ').trim() !== full.label) {
     return { reason: `label must be exactly "${full.label}"` }
@@ -235,7 +242,7 @@ export async function ensureShortTakeaways(opts: {
 
     const headline = gateHeadline(parsed.headline) ?? fallbackHeadline
     const missing = shorts.filter((s) => s === null).length
-    const lines = bullets.map((_, i) => lineOf(i).replace(/\s*[—–]\s*/g, ', '))
+    const lines = bullets.map((_, i) => lineOf(i))
     if (missing > 0 || !estimateFits(headline, lines)) {
       // Clean degrade: NO hybrid frames (one full-text monster among shorts
       // wrecked the layout repeatedly). Whole set falls back to the known
