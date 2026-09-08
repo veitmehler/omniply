@@ -23,6 +23,7 @@ import { listAutomationPlatforms } from './platforms'
 import { PLATFORM_CHAR_LIMITS } from './captions'
 import { generateBatchedCaptionsForPlatform, type CaptionSlotInput } from '../generators/batched-captions'
 import { generateStoryArc, articleMaterialFromCtx } from '../generators/story-arc'
+import { ensureShortTakeaways } from '../generators/short-takeaways'
 import { processStorySlot } from './story-processor'
 import { finalizeGenerationCounts, updateGenerationProgress, loadPriorAssets } from './spec-processor'
 import { mapWithConcurrency } from '../../lib/concurrency'
@@ -216,7 +217,21 @@ async function pregenerateBatchedCaptions(opts: {
       continue // story slots NEVER go to the caption LLM (fallback carousel reuses section content caption-free)
     }
     if (e.daySlot.source === 'art_keytakeaways' && ctx.articleCtx?.keyTakeawaysText) {
-      const kt = ctx.articleCtx.keyTakeawaysText.trim()
+      let kt = ctx.articleCtx.keyTakeawaysText.trim()
+      // Lead with the derived curiosity headline instead of the literal
+      // "Key Takeaways" heading (weak first line — user 2026-09-08). The
+      // bullets below stay FULL VERBATIM; cache hit in the normal case.
+      if (opts.jobId) {
+        const shorts = await ensureShortTakeaways({
+          jobId: opts.jobId,
+          userId: logCtx.userId,
+          logCtx: { userId: logCtx.userId, jobId: opts.jobId },
+        }).catch(() => null)
+        if (shorts?.headline) {
+          kt = kt.replace(/^key takeaways?\s*:?\s*\n+/i, '')
+          kt = `${shorts.headline}\n\n${kt}`
+        }
+      }
       for (const platform of platforms) {
         const limit = PLATFORM_CHAR_LIMITS[platform] ?? 2000
         ;(bySlot[e.slotKey] ??= {})[platform] =

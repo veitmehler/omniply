@@ -206,6 +206,8 @@ export async function generateKtMusicVideoAsset(opts: {
   userId: string
   /** VERBATIM Key Takeaways text — parsed into bullets, never rewritten. */
   keyTakeawaysText: string
+  /** Curiosity headline rendered above the bullets (gated upstream). */
+  headline?: string
   topic: string
   jobId?: string
 }): Promise<{ postType: 'kt_music_video'; videoUrl: string; mediaId: string; width: number; height: number }> {
@@ -256,7 +258,7 @@ export async function generateKtMusicVideoAsset(opts: {
     await downloadSeedanceClip(seedanceUrl, rawPath)
 
     const overlaidPath = path.join(tmpDir, 'kt-overlaid.mp4')
-    await overlayBulletsOnVideo(rawPath, overlaidPath, bullets, undefined, veilColor, 0.85)
+    await overlayBulletsOnVideo(rawPath, overlaidPath, bullets, undefined, veilColor, 0.85, opts.headline)
 
     const probe = await probeVideo(overlaidPath)
     const musicPath = await addBackgroundMusic(overlaidPath, tmpDir, {

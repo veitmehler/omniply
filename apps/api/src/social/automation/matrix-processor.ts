@@ -224,7 +224,8 @@ export async function generateMatrixAsset(opts: {
         })
         const kt = await generateKtMusicVideoAsset({
           userId,
-          keyTakeawaysText: shortLines?.length ? shortLines.join('\n') : slot.text,
+          keyTakeawaysText: shortLines?.lines.length ? shortLines.lines.join('\n') : slot.text,
+          headline: shortLines?.headline,
           topic: contextTitle,
           jobId: assetJobId,
         })
