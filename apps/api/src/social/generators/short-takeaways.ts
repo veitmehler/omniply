@@ -19,7 +19,7 @@ import { logger } from '../../lib/logger'
 import { getLLMAdapter } from '../../article-pipeline/llm/factory'
 import { recordLLMUsage } from '../../lib/llm-usage'
 
-const MAX_SHORT_WORDS = 20
+const MAX_SHORT_WORDS = 16 // prompt asks ≤15; 17-19-word "shorts" re-overflowed the frame (2026-09-08)
 
 export interface KtBullet {
   label: string
@@ -127,41 +127,52 @@ export async function ensureShortTakeaways(opts: {
 
   try {
     const adapter = getLLMAdapter('anthropic')
-    const run = await adapter.call({
-      systemPrompt: SYSTEM_PROMPT,
-      userPrompt: JSON.stringify(bullets),
-      model: 'claude-sonnet-4-5-20250929',
-      temperature: 0.3,
-      maxTokens: 1500,
-    })
-    await recordLLMUsage(opts.userId, 'kt_short_takeaways', run)
-    const cleaned = run.content.replace(/```(?:json)?/g, '').trim()
-    const start = cleaned.indexOf('{')
-    const end = cleaned.lastIndexOf('}')
-    const parsed = (start !== -1 && end > start ? JSON.parse(cleaned.slice(start, end + 1)) : {}) as {
-      headline?: string
-      bullets?: unknown[]
-    }
-    const candidates = Array.isArray(parsed.bullets) ? parsed.bullets : []
-
-    let fallbacks = 0
-    const lines = bullets.map((full, i) => {
-      const gated = gateShortTakeaway(full, (candidates[i] ?? {}) as { label?: string; short?: string })
-      if (!gated) {
-        fallbacks++
-        return full.label ? `${full.label}: ${full.text.replace(new RegExp(`^${full.label}\\s*:\\s*`), '')}` : full.text
+    const attempt = async (temperature: number) => {
+      const run = await adapter.call({
+        systemPrompt: SYSTEM_PROMPT,
+        userPrompt: JSON.stringify(bullets),
+        model: 'claude-sonnet-4-5-20250929',
+        temperature,
+        maxTokens: 1500,
+      })
+      await recordLLMUsage(opts.userId, 'kt_short_takeaways', run)
+      const cleaned = run.content.replace(/```(?:json)?/g, '').trim()
+      const start = cleaned.indexOf('{')
+      const end = cleaned.lastIndexOf('}')
+      const parsed = (start !== -1 && end > start ? JSON.parse(cleaned.slice(start, end + 1)) : {}) as {
+        headline?: string
+        bullets?: unknown[]
       }
-      const clean = gated.replace(/\s*[—–]\s*/g, ', ')
-      return full.label ? `${full.label}: ${clean}` : clean
-    })
-    const headline = gateHeadline(parsed.headline) ?? fallbackHeadline
-    if (fallbacks > 0 || headline === fallbackHeadline) {
+      const candidates = Array.isArray(parsed.bullets) ? parsed.bullets : []
+      let fallbacks = 0
+      const lines = bullets.map((full, i) => {
+        const gated = gateShortTakeaway(full, (candidates[i] ?? {}) as { label?: string; short?: string })
+        if (!gated) {
+          fallbacks++
+          return full.label ? `${full.label}: ${full.text.replace(new RegExp(`^${full.label}\\s*:\\s*`), '')}` : full.text
+        }
+        const clean = gated.replace(/\s*[—–]\s*/g, ', ')
+        return full.label ? `${full.label}: ${clean}` : clean
+      })
+      return { lines, fallbacks, headline: gateHeadline(parsed.headline) }
+    }
+
+    // A clean roll fits the frame; a fallback-carrying one can re-overflow it.
+    // One retry, keep the attempt with fewer fallbacks (2026-09-08: roll
+    // variance produced 5/5 clean then 4/5 on identical input).
+    let best = await attempt(0.3)
+    if (best.fallbacks > 0) {
+      const second = await attempt(0.5).catch(() => null)
+      if (second && second.fallbacks < best.fallbacks) best = second
+    }
+    const headline = best.headline ?? fallbackHeadline
+    if (best.fallbacks > 0 || headline === fallbackHeadline) {
       logger.warn(
-        { ...opts.logCtx, fallbacks, headlineFallback: headline === fallbackHeadline, bullets: bullets.length },
+        { ...opts.logCtx, fallbacks: best.fallbacks, headlineFallback: headline === fallbackHeadline, bullets: bullets.length },
         '[kt-short] gate rejected candidates — fallbacks used',
       )
     }
-    const result: ShortTakeaways = { headline, lines }
+    const result: ShortTakeaways = { headline, lines: best.lines }
     await prisma.sitePage.update({ where: { id: page.id }, data: { keyTakeawaysShortJson: result as unknown as object } })
     logger.info({ ...opts.logCtx, bullets: bullets.length, fallbacks, headline }, '[kt-short] short takeaways derived + cached')
     return result
