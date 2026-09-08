@@ -885,6 +885,10 @@ model SitePage {
   enrichmentError      String?
   enrichedAt           DateTime?
   keyTakeawaysHtml     String?               @db.Text
+  // Frame-length renditions of the takeaways for the KT music video (page +
+  // caption keep the full verbatim HTML above). Derived lazily with the full
+  // bullets in context and a deterministic label/number gate; cached here.
+  keyTakeawaysShortJson Json?
   tocHtml              String?               @db.Text
   // Collaborative review (Phase 7): null | edits_requested | re_review_requested
   reviewState          String?

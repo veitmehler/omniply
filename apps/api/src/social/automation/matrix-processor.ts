@@ -25,6 +25,7 @@ async function socialImageModel(): Promise<string | undefined> {
 import type { AutomationLogContext } from './log-context'
 import { withSlotKey } from './log-context'
 import { withTimeout } from '../../lib/net/with-timeout'
+import { ensureShortTakeaways } from '../generators/short-takeaways'
 
 /**
  * Hard deadline for one feed slot's full pipeline (resolve → generate →
@@ -204,9 +205,17 @@ export async function generateMatrixAsset(opts: {
     }
     case 'kt_music_video': {
       try {
+        // Frame-length renditions (label/number-gated, cached on the page);
+        // the CAPTION keeps the full verbatim takeaways via the normal
+        // art_keytakeaways caption path — this only changes the video frame.
+        const shortLines = await ensureShortTakeaways({
+          jobId: assetJobId,
+          userId,
+          logCtx: { userId, jobId: assetJobId },
+        }).catch(() => null)
         const kt = await generateKtMusicVideoAsset({
           userId,
-          keyTakeawaysText: slot.text,
+          keyTakeawaysText: shortLines?.length ? shortLines.join('\n') : slot.text,
           topic: contextTitle,
           jobId: assetJobId,
         })
