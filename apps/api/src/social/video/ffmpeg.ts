@@ -741,6 +741,8 @@ export async function overlayBulletsOnVideo(
   /** Veil color as 0xRRGGBB (ffmpeg drawbox syntax). Default black. */
   veilColor: string = 'black',
   veilOpacity = 0.75,
+  /** Curiosity headline rendered above the list (KT loop-bait, 2026-09-08). */
+  headline?: string,
 ): Promise<void> {
   const { width, height } = await probeVideo(inputPath)
   const scale = height / 1080
@@ -758,21 +760,36 @@ export async function overlayBulletsOnVideo(
   let bulletLineHeight = Math.round(52 * scale)
   let interBulletGap = bulletLineHeight
   let wrappedBullets: string[][] = []
+  let headlineFontSize = 0
+  let headlineLineHeight = 0
+  let headlineGap = 0
+  let headlineLines: string[] = []
   for (let base = 36; base >= 24; base -= 2) {
     bulletFontSize = Math.round(base * scale)
     bulletLineHeight = Math.round(base * 1.44 * scale)
     interBulletGap = bulletLineHeight
     const chars = Math.max(20, Math.floor(usableW / (bulletFontSize * 0.52)))
     wrappedBullets = list.map((b) => wrapBulletLines(b, chars))
+    let headlineBlockH = 0
+    if (headline) {
+      headlineFontSize = Math.round(base * 1.35 * scale)
+      headlineLineHeight = Math.round(base * 1.35 * 1.3 * scale)
+      headlineGap = Math.round(interBulletGap * 1.2)
+      const hChars = Math.max(14, Math.floor(usableW / (headlineFontSize * 0.55)))
+      headlineLines = wrapTitle(headline, hChars, 3)
+      headlineBlockH = headlineLines.length * headlineLineHeight + headlineGap
+    }
     const lines = wrappedBullets.reduce((n, g) => n + g.length, 0)
-    const h = lines * bulletLineHeight + (wrappedBullets.length - 1) * interBulletGap
+    const h = headlineBlockH + lines * bulletLineHeight + (wrappedBullets.length - 1) * interBulletGap
     if (h <= maxBlockH) break
   }
+  const headlineBlockHeight = headline ? headlineLines.length * headlineLineHeight + headlineGap : 0
 
   // Still too tall at the floor → drop trailing bullets, mark with ellipsis.
   {
     const fits = (groups: string[][]) =>
-      groups.reduce((n, g) => n + g.length, 0) * bulletLineHeight +
+      headlineBlockHeight +
+        groups.reduce((n, g) => n + g.length, 0) * bulletLineHeight +
         Math.max(0, groups.length - 1) * interBulletGap <=
       maxBlockH
     while (wrappedBullets.length > 1 && !fits(wrappedBullets)) {
@@ -787,12 +804,23 @@ export async function overlayBulletsOnVideo(
   // Total block height: all wrapped lines + one gap between each bullet pair.
   const totalLines = wrappedBullets.reduce((n, lines) => n + lines.length, 0)
   const totalGaps  = wrappedBullets.length - 1
-  const bulletBlockHeight = totalLines * bulletLineHeight + totalGaps * interBulletGap
+  const bulletBlockHeight = headlineBlockHeight + totalLines * bulletLineHeight + totalGaps * interBulletGap
   const startY = Math.max(Math.round(height * 0.06), Math.round((height - bulletBlockHeight) / 2))
 
   const dir = path.dirname(outputPath)
   const bulletFilters: string[] = []
   let currentY = startY
+  if (headline && headlineLines.length) {
+    const headFont = helveticaNeueMediumFontPath()
+    for (const line of headlineLines) {
+      const tf = await writeDrawtextFile(dir, line)
+      bulletFilters.push(
+        `drawtext=fontfile=${headFont}:textfile=${tf}:expansion=none:fontcolor=white:fontsize=${headlineFontSize}:x=w*0.08:y=${currentY}`,
+      )
+      currentY += headlineLineHeight
+    }
+    currentY += headlineGap
+  }
   for (let bi = 0; bi < wrappedBullets.length; bi++) {
     for (const line of wrappedBullets[bi]) {
       const tf = await writeDrawtextFile(dir, line)

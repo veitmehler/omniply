@@ -53,3 +53,24 @@ describe('parseKtBullets', () => {
     expect(bullets[1].label).toBe('Beta')
   })
 })
+
+import { gateHeadline } from '../short-takeaways'
+
+describe('gateHeadline', () => {
+  it('accepts a clean 5-7 word headline', () => {
+    expect(gateHeadline('What your free guide quietly costs')).toBe('What your free guide quietly costs')
+  })
+  it('rejects digits', () => {
+    expect(gateHeadline('5 numbers your practice ignores daily')).toBeNull()
+  })
+  it('rejects clickbait cliches', () => {
+    expect(gateHeadline("You won't believe these takeaway facts")).toBeNull()
+  })
+  it('rejects too short and too long', () => {
+    expect(gateHeadline('Too short here')).toBeNull()
+    expect(gateHeadline('This headline is far too long to pass the gate check')).toBeNull()
+  })
+  it('strips em-dashes', () => {
+    expect(gateHeadline('Your content — quietly failing you')).toBe('Your content, quietly failing you')
+  })
+})
