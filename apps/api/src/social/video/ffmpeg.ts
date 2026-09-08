@@ -733,6 +733,8 @@ function wrapTextLines(text: string, maxChars: number): string[] {
  * Bullet text word-wraps at 50 characters per line; continuation lines are indented
  * to align with the text after the "- " prefix. An empty-line gap separates bullets.
  */
+import { KT_BULLET_LEADING, KT_INTER_BULLET_EM, KT_HEADLINE_SCALE, KT_HEADLINE_LEADING, KT_HEADLINE_GAP_FACTOR, KT_BULLET_GLYPH_W, KT_HEADLINE_GLYPH_W } from '../kt-frame-metrics'
+
 export async function overlayBulletsOnVideo(
   inputPath: string,
   outputPath: string,
@@ -766,16 +768,16 @@ export async function overlayBulletsOnVideo(
   let headlineLines: string[] = []
   for (let base = 36; base >= 24; base -= 2) {
     bulletFontSize = Math.round(base * scale)
-    bulletLineHeight = Math.round(base * 1.44 * scale)
-    interBulletGap = bulletLineHeight
-    const chars = Math.max(20, Math.floor(usableW / (bulletFontSize * 0.52)))
+    bulletLineHeight = Math.round(base * KT_BULLET_LEADING * scale)
+    interBulletGap = Math.round(base * KT_INTER_BULLET_EM * scale)
+    const chars = Math.max(20, Math.floor(usableW / (bulletFontSize * KT_BULLET_GLYPH_W)))
     wrappedBullets = list.map((b) => wrapBulletLines(b, chars))
     let headlineBlockH = 0
     if (headline) {
-      headlineFontSize = Math.round(base * 1.35 * scale)
-      headlineLineHeight = Math.round(base * 1.35 * 1.3 * scale)
-      headlineGap = Math.round(interBulletGap * 1.2)
-      const hChars = Math.max(14, Math.floor(usableW / (headlineFontSize * 0.55)))
+      headlineFontSize = Math.round(base * KT_HEADLINE_SCALE * scale)
+      headlineLineHeight = Math.round(base * KT_HEADLINE_SCALE * KT_HEADLINE_LEADING * scale)
+      headlineGap = Math.round(interBulletGap * KT_HEADLINE_GAP_FACTOR)
+      const hChars = Math.max(14, Math.floor(usableW / (headlineFontSize * KT_HEADLINE_GLYPH_W)))
       headlineLines = wrapTitle(headline, hChars, 3)
       headlineBlockH = headlineLines.length * headlineLineHeight + headlineGap
     }
