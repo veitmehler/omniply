@@ -19,7 +19,37 @@ import { logger } from '../../lib/logger'
 import { getLLMAdapter } from '../../article-pipeline/llm/factory'
 import { recordLLMUsage } from '../../lib/llm-usage'
 
-const MAX_SHORT_WORDS = 16 // prompt asks ≤15; 17-19-word "shorts" re-overflowed the frame (2026-09-08)
+// The frame budget is measured in CHARACTERS/lines, not words (the model
+// cannot count words reliably — gating there rejected half its natural
+// output, 2026-09-08). Cap = rendered line "Label: short" length.
+const MAX_LINE_CHARS = 120
+
+// ── Fit estimator ─────────────────────────────────────────────────────────
+// Mirrors overlayBulletsOnVideo's layout math on the canonical 704×1248
+// Seedance frame, evaluated at the MID font (base 30) so the real overlay
+// always lands above its 24 floor. Approximate by design; the overlay's own
+// auto-fit remains the authority at render time.
+const FRAME_W = 704
+const FRAME_H = 1248
+const SCALE = FRAME_H / 1080
+const USABLE_W = FRAME_W * 0.84
+const MAX_BLOCK_H = FRAME_H * 0.88
+const TARGET_BASE = 30
+const BULLET_FS = TARGET_BASE * SCALE
+const BULLET_LH = TARGET_BASE * 1.44 * SCALE
+const BULLET_CHARS = Math.floor(USABLE_W / (BULLET_FS * 0.52))
+const HEAD_FS = TARGET_BASE * 1.35 * SCALE
+const HEAD_LH = TARGET_BASE * 1.35 * 1.3 * SCALE
+const HEAD_CHARS = Math.floor(USABLE_W / (HEAD_FS * 0.55))
+
+/** True when headline + lines fit the frame at the mid font. Exported for tests. */
+export function estimateFits(headline: string, lines: string[]): boolean {
+  const headLines = Math.min(3, Math.ceil(headline.length / HEAD_CHARS))
+  const textLines = lines.reduce((n, l) => n + Math.ceil(l.length / BULLET_CHARS), 0)
+  const gaps = Math.max(0, lines.length - 1)
+  const totalH = headLines * HEAD_LH + BULLET_LH * 1.2 + textLines * BULLET_LH + gaps * BULLET_LH
+  return totalH <= MAX_BLOCK_H
+}
 
 export interface KtBullet {
   label: string
@@ -49,16 +79,26 @@ const DIGIT_TOKEN_RX = /\$?\d[\d,]*(?:\.\d+)?%?/g
  * full bullet's, word cap respected. Returns null when the short form is
  * unsafe (caller falls back to the full text).
  */
-export function gateShortTakeaway(full: KtBullet, candidate: { label?: string; short?: string }): string | null {
+export function gateShortTakeaway(
+  full: KtBullet,
+  candidate: { label?: string; short?: string },
+): { short: string } | { reason: string } {
   const short = candidate.short?.replace(/\s+/g, ' ').trim() ?? ''
-  if (!short) return null
-  if ((candidate.label ?? '').replace(/\s+/g, ' ').trim() !== full.label) return null
-  if (short.split(/\s+/).length > MAX_SHORT_WORDS) return null
+  if (!short) return { reason: 'empty' }
+  if ((candidate.label ?? '').replace(/\s+/g, ' ').trim() !== full.label) {
+    return { reason: `label must be exactly "${full.label}"` }
+  }
+  const lineLen = full.label.length + 2 + short.length
+  if (lineLen > MAX_LINE_CHARS) {
+    return { reason: `too long: ${lineLen} chars incl. label, max ${MAX_LINE_CHARS} — cut a clause` }
+  }
   const fullNorm = full.text.replace(/,/g, '')
   for (const tok of short.match(DIGIT_TOKEN_RX) ?? []) {
-    if (!fullNorm.includes(tok.replace(/,/g, ''))) return null
+    if (!fullNorm.includes(tok.replace(/,/g, ''))) {
+      return { reason: `number ${tok} does not appear in the source bullet — copy numbers exactly or omit them` }
+    }
   }
-  return short
+  return { short }
 }
 
 const BANNED_HEADLINE_RX = /you won'?t believe|shocking|this one trick|doctors hate/i
@@ -80,7 +120,7 @@ export function gateHeadline(candidate: string | undefined): string | null {
 
 const SYSTEM_PROMPT =
   'You compress Key Takeaways bullets into single short statements for a video frame. ' +
-  'RULES per bullet: ONE declarative statement, at most 15 words after the label. ' +
+  'RULES per bullet: ONE declarative statement, at most 90 CHARACTERS after the label. ' +
   'Compress by DROPPING secondary clauses and qualifiers-of-context, NEVER by shortening the main claim: ' +
   'the subject, verb, object, and any qualifier that scopes the claim must survive intact. ' +
   'Keep AT MOST one number, copied EXACTLY as printed in the source (same digits, same $ and % signs); write every number as numerals, never as words. ' +
@@ -127,54 +167,88 @@ export async function ensureShortTakeaways(opts: {
 
   try {
     const adapter = getLLMAdapter('anthropic')
-    const attempt = async (temperature: number) => {
+    const callJson = async (userPrompt: string): Promise<{ headline?: string; bullets?: unknown[] }> => {
       const run = await adapter.call({
         systemPrompt: SYSTEM_PROMPT,
-        userPrompt: JSON.stringify(bullets),
+        userPrompt,
         model: 'claude-sonnet-4-5-20250929',
-        temperature,
+        temperature: 0.3,
         maxTokens: 1500,
       })
       await recordLLMUsage(opts.userId, 'kt_short_takeaways', run)
       const cleaned = run.content.replace(/```(?:json)?/g, '').trim()
       const start = cleaned.indexOf('{')
       const end = cleaned.lastIndexOf('}')
-      const parsed = (start !== -1 && end > start ? JSON.parse(cleaned.slice(start, end + 1)) : {}) as {
-        headline?: string
-        bullets?: unknown[]
-      }
-      const candidates = Array.isArray(parsed.bullets) ? parsed.bullets : []
-      let fallbacks = 0
-      const lines = bullets.map((full, i) => {
-        const gated = gateShortTakeaway(full, (candidates[i] ?? {}) as { label?: string; short?: string })
-        if (!gated) {
-          fallbacks++
-          return full.label ? `${full.label}: ${full.text.replace(new RegExp(`^${full.label}\\s*:\\s*`), '')}` : full.text
-        }
-        const clean = gated.replace(/\s*[—–]\s*/g, ', ')
-        return full.label ? `${full.label}: ${clean}` : clean
-      })
-      return { lines, fallbacks, headline: gateHeadline(parsed.headline) }
+      return start !== -1 && end > start ? JSON.parse(cleaned.slice(start, end + 1)) : {}
     }
 
-    // A clean roll fits the frame; a fallback-carrying one can re-overflow it.
-    // One retry, keep the attempt with fewer fallbacks (2026-09-08: roll
-    // variance produced 5/5 clean then 4/5 on identical input).
-    let best = await attempt(0.3)
-    if (best.fallbacks > 0) {
-      const second = await attempt(0.5).catch(() => null)
-      if (second && second.fallbacks < best.fallbacks) best = second
+    // Initial attempt over the full set.
+    const parsed = await callJson(JSON.stringify(bullets))
+    const candidates = Array.isArray(parsed.bullets) ? parsed.bullets : []
+    const shorts: (string | null)[] = bullets.map((_, i) => null)
+    const failReasons: (string | null)[] = bullets.map(() => null)
+    bullets.forEach((full, i) => {
+      const gated = gateShortTakeaway(full, (candidates[i] ?? {}) as { label?: string; short?: string })
+      if ('short' in gated) shorts[i] = gated.short
+      else failReasons[i] = gated.reason
+    })
+
+    // Per-bullet REPAIR rounds with explicit feedback (blind whole-set
+    // rerolls sampled the same failures — 2026-09-08). Also used to shorten
+    // the longest bullets when the set fails the FIT estimate.
+    const lineOf = (i: number) =>
+      bullets[i].label ? `${bullets[i].label}: ${shorts[i] ?? ''}` : (shorts[i] ?? '')
+    for (let round = 0; round < 3; round++) {
+      let targets = bullets.map((_, i) => i).filter((i) => shorts[i] === null)
+      if (targets.length === 0) {
+        const assembled = bullets.map((_, i) => lineOf(i))
+        const headlineNow = gateHeadline(parsed.headline) ?? fallbackHeadline
+        if (estimateFits(headlineNow, assembled)) break
+        // Fit repair: shrink the longest gated line further.
+        const longest = bullets.map((_, i) => i).sort((a, b) => lineOf(b).length - lineOf(a).length)[0]
+        failReasons[longest] = `still too long for the frame at ${lineOf(longest).length} chars — compress to at most 80 characters after the label`
+        shorts[longest] = null
+        targets = [longest]
+      }
+      const repairPayload = targets.map((i) => ({
+        label: bullets[i].label,
+        source_bullet: bullets[i].text,
+        your_failed_attempt: (candidates[i] as { short?: string } | undefined)?.short ?? null,
+        failure_reason: failReasons[i],
+      }))
+      const repair = await callJson(
+        'REPAIR these failed compressions. Fix EXACTLY what failure_reason says, change nothing else about your approach. ' +
+          'Output ONLY JSON: {"bullets": [{"label": "...", "short": "..."}, ...]} in input order.\n' +
+          JSON.stringify(repairPayload),
+      ).catch(() => ({}) as { bullets?: unknown[] })
+      const repaired = Array.isArray(repair.bullets) ? repair.bullets : []
+      targets.forEach((bulletIdx, j) => {
+        const gated = gateShortTakeaway(bullets[bulletIdx], (repaired[j] ?? {}) as { label?: string; short?: string })
+        if ('short' in gated) {
+          shorts[bulletIdx] = gated.short
+          failReasons[bulletIdx] = null
+        } else {
+          failReasons[bulletIdx] = gated.reason
+        }
+      })
     }
-    const headline = best.headline ?? fallbackHeadline
-    if (best.fallbacks > 0 || headline === fallbackHeadline) {
+
+    const headline = gateHeadline(parsed.headline) ?? fallbackHeadline
+    const missing = shorts.filter((s) => s === null).length
+    const lines = bullets.map((_, i) => lineOf(i).replace(/\s*[—–]\s*/g, ', '))
+    if (missing > 0 || !estimateFits(headline, lines)) {
+      // Clean degrade: NO hybrid frames (one full-text monster among shorts
+      // wrecked the layout repeatedly). Whole set falls back to the known
+      // full-verbatim video; not cached, so the next regen retries.
       logger.warn(
-        { ...opts.logCtx, fallbacks: best.fallbacks, headlineFallback: headline === fallbackHeadline, bullets: bullets.length },
-        '[kt-short] gate rejected candidates — fallbacks used',
+        { ...opts.logCtx, missing, fits: estimateFits(headline, lines), reasons: failReasons.filter(Boolean) },
+        '[kt-short] could not converge — full verbatim fallback, not cached',
       )
+      return null
     }
-    const result: ShortTakeaways = { headline, lines: best.lines }
+    const result: ShortTakeaways = { headline, lines }
     await prisma.sitePage.update({ where: { id: page.id }, data: { keyTakeawaysShortJson: result as unknown as object } })
-    logger.info({ ...opts.logCtx, bullets: bullets.length, fallbacks: best.fallbacks, headline }, '[kt-short] short takeaways derived + cached')
+    logger.info({ ...opts.logCtx, bullets: bullets.length, headline }, '[kt-short] short takeaways derived + cached')
     return result
   } catch (err) {
     logger.warn({ ...opts.logCtx, err }, '[kt-short] derivation failed — video falls back to full verbatim takeaways')

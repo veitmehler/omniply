@@ -16,30 +16,30 @@ describe('gateShortTakeaway', () => {
   it('accepts a faithful compression', () => {
     expect(
       gateShortTakeaway(FULL, { label: 'Revenue Leak Quantified', short: 'Generic lead magnets leave $151,200 annually on the table.' }),
-    ).toBe('Generic lead magnets leave $151,200 annually on the table.')
+    ).toEqual({ short: 'Generic lead magnets leave $151,200 annually on the table.' })
   })
 
   it('rejects a number not present in the full bullet', () => {
     expect(
       gateShortTakeaway(FULL, { label: 'Revenue Leak Quantified', short: 'Generic lead magnets leave $151,300 annually on the table.' }),
-    ).toBeNull()
+    ).toHaveProperty('reason')
   })
 
   it('rejects an altered label', () => {
     expect(
       gateShortTakeaway(FULL, { label: 'Revenue Leak', short: 'Generic lead magnets leave $151,200 annually.' }),
-    ).toBeNull()
+    ).toHaveProperty('reason')
   })
 
-  it('rejects over-long output', () => {
-    const long = Array.from({ length: 25 }, (_, i) => `w${i}`).join(' ')
-    expect(gateShortTakeaway(FULL, { label: 'Revenue Leak Quantified', short: long })).toBeNull()
+  it('rejects output over the line-char cap', () => {
+    const long = 'x'.repeat(130)
+    expect(gateShortTakeaway(FULL, { label: 'Revenue Leak Quantified', short: long })).toHaveProperty('reason')
   })
 
   it('accepts percent and comma-formatted tokens present in source', () => {
     expect(
       gateShortTakeaway(FULL, { label: 'Revenue Leak Quantified', short: 'Magnets converting at 0.1% waste money.' }),
-    ).toBe('Magnets converting at 0.1% waste money.')
+    ).toEqual({ short: 'Magnets converting at 0.1% waste money.' })
   })
 })
 
@@ -72,5 +72,18 @@ describe('gateHeadline', () => {
   })
   it('strips em-dashes', () => {
     expect(gateHeadline('Your content — quietly failing you')).toBe('Your content, quietly failing you')
+  })
+})
+
+import { estimateFits } from '../short-takeaways'
+
+describe('estimateFits', () => {
+  it('accepts five short lines with a headline', () => {
+    const lines = Array.from({ length: 5 }, () => 'Label Words: a compact statement with one number in it.')
+    expect(estimateFits('What your free guide quietly costs', lines)).toBe(true)
+  })
+  it('rejects five full-length bullets', () => {
+    const lines = Array.from({ length: 5 }, () => 'L'.repeat(250))
+    expect(estimateFits('What your free guide quietly costs', lines)).toBe(false)
   })
 })
