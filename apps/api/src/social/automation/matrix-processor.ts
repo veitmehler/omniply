@@ -208,10 +208,14 @@ export async function generateMatrixAsset(opts: {
         // Frame-length renditions (label/number-gated, cached on the page);
         // the CAPTION keeps the full verbatim takeaways via the normal
         // art_keytakeaways caption path — this only changes the video frame.
+        // assetJobId is "<jobId>-<slotKey>" (asset namespacing) — the page
+        // lookup needs the BARE article jobId (this suffix silently broke the
+        // first rollout: findFirst matched nothing and fell back, unlogged).
+        const articleJobId = assetJobId.replace(/-[A-Z]\d+$/, '')
         const shortLines = await ensureShortTakeaways({
-          jobId: assetJobId,
+          jobId: articleJobId,
           userId,
-          logCtx: { userId, jobId: assetJobId },
+          logCtx: { userId, jobId: articleJobId },
         }).catch((err) => {
           // Never silent (a swallowed migration-window error cost a debug
           // session 2026-09-08): log, then fall back to the full takeaways.
