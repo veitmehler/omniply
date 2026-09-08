@@ -174,7 +174,7 @@ export async function ensureShortTakeaways(opts: {
     }
     const result: ShortTakeaways = { headline, lines: best.lines }
     await prisma.sitePage.update({ where: { id: page.id }, data: { keyTakeawaysShortJson: result as unknown as object } })
-    logger.info({ ...opts.logCtx, bullets: bullets.length, fallbacks, headline }, '[kt-short] short takeaways derived + cached')
+    logger.info({ ...opts.logCtx, bullets: bullets.length, fallbacks: best.fallbacks, headline }, '[kt-short] short takeaways derived + cached')
     return result
   } catch (err) {
     logger.warn({ ...opts.logCtx, err }, '[kt-short] derivation failed — video falls back to full verbatim takeaways')
