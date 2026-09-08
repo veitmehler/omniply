@@ -212,7 +212,12 @@ export async function generateMatrixAsset(opts: {
           jobId: assetJobId,
           userId,
           logCtx: { userId, jobId: assetJobId },
-        }).catch(() => null)
+        }).catch((err) => {
+          // Never silent (a swallowed migration-window error cost a debug
+          // session 2026-09-08): log, then fall back to the full takeaways.
+          logger.warn({ assetJobId, err }, '[matrix-processor] short-takeaways derivation threw — full verbatim fallback')
+          return null
+        })
         const kt = await generateKtMusicVideoAsset({
           userId,
           keyTakeawaysText: shortLines?.length ? shortLines.join('\n') : slot.text,
