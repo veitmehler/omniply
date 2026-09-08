@@ -84,7 +84,10 @@ export async function ensureShortTakeaways(opts: {
     where: { jobId: opts.jobId },
     select: { id: true, keyTakeawaysHtml: true, keyTakeawaysShortJson: true },
   })
-  if (!page?.keyTakeawaysHtml) return null
+  if (!page?.keyTakeawaysHtml) {
+    logger.warn({ ...opts.logCtx }, '[kt-short] no page or takeaways HTML for jobId — full verbatim fallback')
+    return null
+  }
   if (Array.isArray(page.keyTakeawaysShortJson) && page.keyTakeawaysShortJson.length > 0) {
     return page.keyTakeawaysShortJson as string[]
   }
