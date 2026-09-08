@@ -18,6 +18,7 @@ import { prisma } from '@omniply/shared'
 import { logger } from '../../lib/logger'
 import { getLLMAdapter } from '../../article-pipeline/llm/factory'
 import { recordLLMUsage } from '../../lib/llm-usage'
+import { KT_BULLET_LEADING, KT_INTER_BULLET_EM, KT_HEADLINE_SCALE, KT_HEADLINE_LEADING, KT_HEADLINE_GAP_FACTOR, KT_BULLET_GLYPH_W, KT_HEADLINE_GLYPH_W } from '../kt-frame-metrics'
 
 // The frame budget is measured in CHARACTERS/lines, not words (the model
 // cannot count words reliably — gating there rejected half its natural
@@ -36,18 +37,19 @@ const USABLE_W = FRAME_W * 0.84
 const MAX_BLOCK_H = FRAME_H * 0.88
 const TARGET_BASE = 26 // ~30px rendered; the base-30 target demanded <90-char lines while the gate allowed 120 (2026-09-08)
 const BULLET_FS = TARGET_BASE * SCALE
-const BULLET_LH = TARGET_BASE * 1.44 * SCALE
-const BULLET_CHARS = Math.floor(USABLE_W / (BULLET_FS * 0.52))
-const HEAD_FS = TARGET_BASE * 1.35 * SCALE
-const HEAD_LH = TARGET_BASE * 1.35 * 1.3 * SCALE
-const HEAD_CHARS = Math.floor(USABLE_W / (HEAD_FS * 0.55))
+const BULLET_LH = TARGET_BASE * KT_BULLET_LEADING * SCALE
+const GAP_PX = TARGET_BASE * KT_INTER_BULLET_EM * SCALE
+const BULLET_CHARS = Math.floor(USABLE_W / (BULLET_FS * KT_BULLET_GLYPH_W))
+const HEAD_FS = TARGET_BASE * KT_HEADLINE_SCALE * SCALE
+const HEAD_LH = TARGET_BASE * KT_HEADLINE_SCALE * KT_HEADLINE_LEADING * SCALE
+const HEAD_CHARS = Math.floor(USABLE_W / (HEAD_FS * KT_HEADLINE_GLYPH_W))
 
 /** True when headline + lines fit the frame at the mid font. Exported for tests. */
 export function estimateFits(headline: string, lines: string[]): boolean {
   const headLines = Math.min(3, Math.ceil(headline.length / HEAD_CHARS))
   const textLines = lines.reduce((n, l) => n + Math.ceil(l.length / BULLET_CHARS), 0)
   const gaps = Math.max(0, lines.length - 1)
-  const totalH = headLines * HEAD_LH + BULLET_LH * 1.2 + textLines * BULLET_LH + gaps * BULLET_LH
+  const totalH = headLines * HEAD_LH + GAP_PX * KT_HEADLINE_GAP_FACTOR + textLines * BULLET_LH + gaps * GAP_PX
   return totalH <= MAX_BLOCK_H
 }
 
@@ -122,7 +124,21 @@ export function gateHeadline(candidate: string | undefined): string | null {
   if (words < 4 || words > 8) return null
   if (/\d/.test(h)) return null
   if (BANNED_HEADLINE_RX.test(h)) return null
-  return h
+  return titleCaseHeadline(h)
+}
+
+const TITLE_LOWER = new Set(['a', 'an', 'the', 'and', 'but', 'or', 'nor', 'for', 'at', 'by', 'in', 'of', 'on', 'to', 'up', 'via', 'with', 'from'])
+
+/** Headline Title Case (user 2026-09-08): capitalize principal words. */
+export function titleCaseHeadline(h: string): string {
+  const words = h.split(' ')
+  return words
+    .map((w, i) => {
+      const lower = w.toLowerCase()
+      if (i !== 0 && i !== words.length - 1 && TITLE_LOWER.has(lower)) return lower
+      return lower.charAt(0).toUpperCase() + lower.slice(1)
+    })
+    .join(' ')
 }
 
 const SYSTEM_PROMPT =
@@ -170,7 +186,7 @@ export async function ensureShortTakeaways(opts: {
 
   const bullets = parseKtBullets(page.keyTakeawaysHtml)
   if (bullets.length === 0) return null
-  const fallbackHeadline = `The ${NUMBER_WORDS[bullets.length] ?? bullets.length} takeaways most clinics miss`
+  const fallbackHeadline = titleCaseHeadline(`The ${NUMBER_WORDS[bullets.length] ?? bullets.length} takeaways most clinics miss`)
 
   try {
     const adapter = getLLMAdapter('anthropic')
