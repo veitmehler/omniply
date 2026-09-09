@@ -100,7 +100,11 @@ async function handleVoiceCompletion(
         message,
         channel: 'voice',
       })
-      const transferToolName = result.action?.type === 'request_human' ? findTransferTool(body) : null
+      // A transfer needs BOTH the offered tool and a stored destination —
+      // an empty transfer_number would fail validation platform-side and
+      // resurrect the re-prompt repeat loop.
+      const transferToolName =
+        result.action?.type === 'request_human' && transferNumber ? findTransferTool(body) : null
       let reply = result.reply
       if (result.action?.type === 'request_human' && !transferToolName) {
         // No transfer configured/offered: never speak an empty "connecting

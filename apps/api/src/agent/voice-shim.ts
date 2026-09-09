@@ -156,12 +156,13 @@ function completionId(): string {
 }
 
 /**
- * ElevenLabs' transfer_to_number REQUIRES transfer_number + client_message +
- * agent_message; omitting them (we previously sent only {reason}) makes the
- * platform reject the call and re-prompt the LLM — the root cause of the
- * "connecting you now" spoken 3× (live call 2026-09-09). client_message is
- * what the platform SPEAKS while dialing, so the spoken line lives there, not
- * in streamed content (which would double it).
+ * ElevenLabs' transfer_to_number requires (live offered schema, logged
+ * 2026-09-09) `transfer_number` + `agent_message`; omitting them (we
+ * previously sent only {reason}) makes the platform reject the call and
+ * re-prompt the LLM — the root cause of the "connecting you now" spoken 3×.
+ * The spoken-while-dialing line goes in `system__message_to_speak` (the LIVE
+ * schema's field — the docs' `client_message` does not exist there), never in
+ * streamed content (which would double it).
  */
 function toolCallPayload(name: string, plan: VoiceReplyPlan) {
   return [
@@ -173,7 +174,7 @@ function toolCallPayload(name: string, plan: VoiceReplyPlan) {
         name,
         arguments: JSON.stringify({
           transfer_number: plan.transferNumber ?? '',
-          client_message: plan.reply || 'Connecting you to the team now.',
+          system__message_to_speak: plan.reply || 'Connecting you to the team now.',
           agent_message: 'Caller asked to speak with a person — transferring from the AI assistant.',
           reason: 'Caller asked for a human',
         }),

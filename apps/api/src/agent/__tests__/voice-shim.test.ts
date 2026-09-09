@@ -201,9 +201,14 @@ describe('response encoding', () => {
     expect(c.choices[0].finish_reason).toBe('tool_calls')
     const fn = c.choices[0].message.tool_calls[0].function
     expect(fn.name).toBe('transfer_to_number')
-    const args = JSON.parse(fn.arguments) as { transfer_number: string; client_message: string; agent_message: string }
+    const args = JSON.parse(fn.arguments) as {
+      transfer_number: string
+      system__message_to_speak: string
+      agent_message: string
+    }
     expect(args.transfer_number).toBe('+18297312601')
-    expect(args.client_message).toBe('Connecting you now.')
+    // The live offered schema's spoken-while-dialing field (NOT client_message).
+    expect(args.system__message_to_speak).toBe('Connecting you now.')
     expect(args.agent_message).toBeTruthy()
     // Spoken line rides in client_message, so content must be empty (no double).
     expect(c.choices[0].message.content).toBe('')
