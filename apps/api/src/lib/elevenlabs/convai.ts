@@ -44,7 +44,7 @@ export interface ConvAiAgentSpec {
   transferNumber: string | null
 }
 
-function agentConfigBody(spec: ConvAiAgentSpec): Record<string, unknown> {
+function agentConfigBody(spec: ConvAiAgentSpec, screening: boolean): Record<string, unknown> {
   return {
     name: spec.name,
     conversation_config: {
@@ -84,12 +84,13 @@ function agentConfigBody(spec: ConvAiAgentSpec): Record<string, unknown> {
                           transfer_destination: { type: 'phone', phone_number: spec.transferNumber },
                           condition: 'The caller asks to speak to a human, a real person, the front desk, or any staff member.',
                           transfer_type: 'conference',
-                          // The human must press a key to accept — so voicemail
-                          // and unanswered rings do NOT count as connected, and
-                          // the call returns to the agent for the callback
-                          // fallback (live test 2026-09-09: voicemail was
-                          // swallowing the transfer before the fallback fired).
-                          require_acceptance: true,
+                          // Call screening: the human must press a key to accept,
+                          // so voicemail/unanswered rings do NOT count as
+                          // connected and the call returns to the agent for the
+                          // callback fallback. Requires the ElevenLabs "call
+                          // screening on transfers" feature — provisioning
+                          // retries WITHOUT this flag when the account lacks it.
+                          ...(screening ? { require_acceptance: true } : {}),
                         },
                       ],
                     },
@@ -104,18 +105,39 @@ function agentConfigBody(spec: ConvAiAgentSpec): Record<string, unknown> {
   }
 }
 
+/** True when the failure is specifically the transfer-screening feature gate. */
+function isScreeningFeatureError(err: unknown): boolean {
+  return err instanceof Error && /transfer_screening_not_enabled|require_acceptance/.test(err.message)
+}
+
 export async function createConvAiAgent(apiKey: string, spec: ConvAiAgentSpec): Promise<{ agent_id: string }> {
-  return convaiFetch<{ agent_id: string }>(apiKey, '/convai/agents/create', {
-    method: 'POST',
-    body: JSON.stringify(agentConfigBody(spec)),
-  })
+  try {
+    return await convaiFetch<{ agent_id: string }>(apiKey, '/convai/agents/create', {
+      method: 'POST',
+      body: JSON.stringify(agentConfigBody(spec, true)),
+    })
+  } catch (err) {
+    if (!isScreeningFeatureError(err)) throw err
+    return convaiFetch<{ agent_id: string }>(apiKey, '/convai/agents/create', {
+      method: 'POST',
+      body: JSON.stringify(agentConfigBody(spec, false)),
+    })
+  }
 }
 
 export async function updateConvAiAgent(apiKey: string, agentId: string, spec: ConvAiAgentSpec): Promise<void> {
-  await convaiFetch<unknown>(apiKey, `/convai/agents/${agentId}`, {
-    method: 'PATCH',
-    body: JSON.stringify(agentConfigBody(spec)),
-  })
+  try {
+    await convaiFetch<unknown>(apiKey, `/convai/agents/${agentId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(agentConfigBody(spec, true)),
+    })
+  } catch (err) {
+    if (!isScreeningFeatureError(err)) throw err
+    await convaiFetch<unknown>(apiKey, `/convai/agents/${agentId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(agentConfigBody(spec, false)),
+    })
+  }
 }
 
 /** Import a Twilio number into the clinic's workspace, bound to the agent. */
