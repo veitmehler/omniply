@@ -765,6 +765,29 @@ export async function getGhlContactTags(apiKey: string, contactId: string): Prom
   }
 }
 
+/**
+ * Resolve a contact's most recent conversation channel (FB/IG/SMS type
+ * string) — used by the DM agent when the workflow payload carries no
+ * message_type (the Customer Replied builder exposes no such field,
+ * 2026-09-09). Returns the raw type/lastMessageType string or null.
+ */
+export async function findGhlConversationChannel(
+  apiKey: string,
+  locationId: string,
+  contactId: string,
+): Promise<string | null> {
+  try {
+    const data = await ghlRequest<{ conversations?: { type?: string; lastMessageType?: string }[] }>(
+      apiKey,
+      `/conversations/search?locationId=${encodeURIComponent(locationId)}&contactId=${encodeURIComponent(contactId)}`,
+    )
+    const conv = (data.conversations ?? [])[0]
+    return conv?.lastMessageType ?? conv?.type ?? null
+  } catch {
+    return null
+  }
+}
+
 /** Send an outbound conversation message on a native channel (IG/FB/SMS…). */
 export async function sendGhlConversationMessage(
   apiKey: string,

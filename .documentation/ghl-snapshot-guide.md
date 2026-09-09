@@ -118,16 +118,18 @@ Transport verified end-to-end on the Azavea location (FB + IG inbound to
 Conversations, outbound API replies 201 on both). Requires the marketplace
 app's four conversations scopes (bumped + re-granted 2026-08-07).
 
-### Workflow 1 — "AI DM Responder"
+### Workflow 1 — "AI DM Responder" (spec updated 2026-09-09 to builder reality)
 - Trigger: **Customer Replied** (the builder offers NO per-channel filter —
   fire on everything; the server filters to FB/IG and ignores the rest).
-- Condition: contact does NOT have tag `ai-off`.
+- Condition: contact does NOT have tag `ai-off` (the builder allows only ONE
+  tag exclusion; the server also enforces `in comment reply workflow`
+  suppression, so one condition here is sufficient).
 - Action: **Webhook POST** to `{{custom_values.omniply_dm_webhook}}` with
-  customData fields:
+  customData fields (the builder offers no message type/direction fields —
+  the server derives the channel via the Conversations API):
   - `contact_id` = `{{contact.id}}`
   - `message_body` = `{{message.body}}`
-  - `message_type` = `{{message.type}}`
-  - `direction` = `{{message.direction}}` (if available)
+- No headers needed — auth is the token in the URL.
 - The endpoint (`/api/agent/ghl-dm/<token>`) enqueues and returns instantly;
   the agent replies on the same channel. Payload parsing is tolerant — after
   snapshot import, send one test DM and check api logs for `[agent-dm]
