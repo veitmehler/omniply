@@ -333,7 +333,7 @@ async function resolveSlot(
 ): Promise<ResolvedSlot> {
   if (sourceKind(source) === 'newsletter') {
     if (!ctx.newsletterCtx) throw new Error('Newsletter context missing for newsletter slot')
-    return { slot: resolveNewsletterSlotContent(source, ctx.newsletterCtx), diagramBackground: null }
+    return { slot: resolveNewsletterSlotContent(source, ctx.newsletterCtx, beatIndex), diagramBackground: null }
   }
   if (!ctx.articleCtx || !jobId) throw new Error('Article context missing for article slot')
   return resolveArticleSlot(source, jobId, ctx.articleCtx, beatIndex)

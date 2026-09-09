@@ -37,9 +37,11 @@ describe('resolveArticleSlot hard-bound sections (art_section_N)', () => {
     expect(r1.slot).toMatchObject({ title: 'Daily stretches', text: 'section B body' })
   })
 
-  it('wraps modulo when the index exceeds the section count', async () => {
-    const r = await resolveArticleSlot('art_section_4', 'job1', ctx) // 2 content sections → 4 % 2 = 0
-    expect(r.slot).toMatchObject({ title: 'Why posture matters', text: 'section A body' })
+  it('clamps to the LAST section when the index exceeds the section count', async () => {
+    // Was modulo wrap — a too-high index circled back to the OPENING, the
+    // exact same-day duplicate the section-5 midday slot avoids (2026-09-07).
+    const r = await resolveArticleSlot('art_section_4', 'job1', ctx) // 2 content sections → clamp to index 1
+    expect(r.slot.text).toBe('section B body')
   })
 
   it('attaches the SECTION-MATCHED stylized diagram when one exists', async () => {

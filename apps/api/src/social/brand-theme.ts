@@ -39,6 +39,26 @@ export interface SocialBrandTheme {
   businessDescription: string
   who: string
   industry: string
+  /**
+   * Comment-keyword funnel (dm_keyword preset, P3 main-app rollout): parsed
+   * keyword + asset when socialPrimaryGoal === 'dm_keyword', else null. Drives
+   * the story CTA slide + the IG/FB caption split (snapshot comment workflows
+   * DM the trigger link). LinkedIn stays link-only (no comment automation).
+   */
+  commentKeyword: string | null
+  commentAsset: string | null
+}
+
+/** Story CTA-slide hook line for keyword accounts; null when no dm_keyword preset. */
+export function commentHookFromTheme(theme: Pick<SocialBrandTheme, 'commentKeyword' | 'commentAsset'>): string | null {
+  if (!theme.commentKeyword) return null
+  return `Comment "${theme.commentKeyword}" and we will send you ${theme.commentAsset || 'our free guide'}.`
+}
+
+/** Facebook caption append for keyword accounts (link stays; comment path added). */
+export function commentFbAppendFromTheme(theme: Pick<SocialBrandTheme, 'commentKeyword'>): string | null {
+  if (!theme.commentKeyword) return null
+  return `Or just comment "${theme.commentKeyword}" and we will send it straight to you.`
 }
 
 /**
@@ -85,6 +105,13 @@ export async function loadSocialBrandTheme(userId: string): Promise<SocialBrandT
   const fontFamily = 'HelveticaNeue, Helvetica, Arial, sans-serif'
 
   const organizationName = brand?.organizationName?.trim() || 'Your Brand'
+  let commentKeyword: string | null = null
+  let commentAsset: string | null = null
+  if (brand?.socialPrimaryGoal === 'dm_keyword') {
+    const [k, a] = (brand.socialCallToAction ?? '').split('|').map((s) => s.trim())
+    commentKeyword = k ? k.toUpperCase() : null
+    commentAsset = a || null
+  }
   return {
     primaryColor: theme.primaryColor,
     secondaryColor: theme.secondaryColor,
@@ -104,6 +131,8 @@ export async function loadSocialBrandTheme(userId: string): Promise<SocialBrandT
     businessDescription: brand?.businessDescription?.trim() ?? '',
     who: brand?.who?.trim() ?? '',
     industry: brand?.industry?.trim() ?? '',
+    commentKeyword,
+    commentAsset,
   }
 }
 

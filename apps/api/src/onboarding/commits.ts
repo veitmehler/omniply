@@ -270,13 +270,34 @@ export async function commitOffers(ctx: StepContext, answer: unknown): Promise<s
 /** cta: socialCallToAction (+ goal mapping). */
 export async function commitCta(ctx: StepContext, answer: unknown): Promise<string | null> {
   const a = (answer ?? {}) as { value?: string; label?: string; customText?: string }
+  if (a.value === 'dm_keyword') {
+    // 'KEYWORD|asset description' — parsed by resolveSocialCta + the story
+    // CTA hook; the snapshot comment workflows DM the trigger link.
+    const [k, asset] = (a.customText ?? '').split('|').map((s) => s.trim())
+    if (!k) return 'Give me the comment keyword (one word) and what we send them'
+    await brandUpsert(ctx.userId, {
+      socialCallToAction: `${k.toUpperCase()}|${asset || 'our free guide'}`,
+      socialPrimaryGoal: 'dm_keyword',
+    })
+    return null
+  }
   const text = a.value === 'custom' ? a.customText?.trim() : (a.label ?? a.value)?.trim()
   if (!text) return 'Tell me where posts should send people'
-  await brandUpsert(ctx.userId, { socialCallToAction: text, socialPrimaryGoal: null })
+  const preset = a.value === 'booking' || a.value === 'newsletter' || a.value === 'custom' ? a.value : null
+  await brandUpsert(ctx.userId, { socialCallToAction: text, socialPrimaryGoal: preset })
   return null
 }
 
 /** writing_sample: transcripts (+ optional article) → writingStyle. */
+/** q_moments: real practice-owner stories → narrator moments for story-arc posts. */
+export async function commitStoryMoments(ctx: StepContext, answer: unknown): Promise<string | null> {
+  const a = (answer ?? {}) as { text?: string }
+  const text = a.text?.trim() ?? ''
+  if (!text) return 'Give me at least one real moment — a sentence or two is enough'
+  await brandUpsert(ctx.userId, { storyBeats: text })
+  return null
+}
+
 export async function commitWritingSample(ctx: StepContext, answer: unknown): Promise<string | null> {
   const a = (answer ?? {}) as { text?: string }
   const raw = a.text?.trim() ?? ''
@@ -302,7 +323,7 @@ export async function commitWritingSample(ctx: StepContext, answer: unknown): Pr
     article = null
   }
 
-  const transcripts = ['q_declaration', 'q_enemy', 'q_tribe', 'q_line', 'q_proof']
+  const transcripts = ['q_declaration', 'q_enemy', 'q_tribe', 'q_line', 'q_moments', 'q_proof']
     .map((k) => (ctx.stepData[k] as { text?: string })?.text)
     .filter(Boolean)
     .join('\n\n')

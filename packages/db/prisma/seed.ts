@@ -196,7 +196,7 @@ Return as JSON array with fact, context, and suggested source.`,
     defaultProvider: 'anthropic',
     defaultModel: 'claude-sonnet-4-5-20250929',
     systemPrompt:
-      'You are a professional content writer with expertise in creating engaging, SEO-optimized long-form articles. You write in a clear, authoritative voice while maintaining reader engagement.',
+      'You are a professional content writer with expertise in creating engaging, SEO-optimized long-form articles. You write in a clear, authoritative voice while maintaining reader engagement. LEGAL-CITATION RULE: When mentioning court cases or legal decisions: describe them ONLY as examples of what actually happened in that specific case; NEVER assert a case as "precedent" or claim it establishes a legal rule for a different context unless the source material explicitly states that holding applies.',
     userPrompt: `Write a comprehensive, SEO-optimized article based on the following:
 
 Topic: {{topic}}

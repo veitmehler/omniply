@@ -10,11 +10,11 @@ const ARTICLE_DAYS: Weekday[] = [2, 4]
 const NEWSLETTER_DAYS: Weekday[] = [1, 3, 5, 6]
 
 describe('DEFAULT_WEEKLY_SOCIAL_MATRIX', () => {
-  it('has exactly 3 slots per day at 9/12/15', () => {
+  it('has exactly 3 slots per day at 9/12/17 (P3 story rhythm)', () => {
     for (const day of [1, 2, 3, 4, 5, 6] as Weekday[]) {
       const slots = DEFAULT_WEEKLY_SOCIAL_MATRIX[day]
       expect(slots).toHaveLength(3)
-      expect(slots.map((s) => s.hour)).toEqual([9, 12, 15])
+      expect(slots.map((s) => s.hour)).toEqual([9, 12, 17])
     }
   })
 
@@ -27,13 +27,26 @@ describe('DEFAULT_WEEKLY_SOCIAL_MATRIX', () => {
     }
   })
 
-  it('Tue/Thu match the spec (hard-bound sections 1+3 with KT anchoring noon)', () => {
+  it('Tue/Thu = story beats around the KT music-video anchor (P3)', () => {
     for (const day of [2, 4] as const) {
       expect(DEFAULT_WEEKLY_SOCIAL_MATRIX[day].map((s) => [s.postType, s.source])).toEqual([
-        ['hook_video', 'art_section_0'],
-        ['video_reel', 'art_keytakeaways'],
-        ['carousel', 'art_section_2'],
+        ['story_text', 'art_story'],
+        ['kt_music_video', 'art_keytakeaways'],
+        ['story_text', 'art_story'],
       ])
+      expect(DEFAULT_WEEKLY_SOCIAL_MATRIX[day].map((s) => s.beatIndex)).toEqual([0, undefined, 1])
+    }
+  })
+
+  it('newsletter days = nl story beats around the brand-tint feature carousel (P3)', () => {
+    for (const day of [1, 3, 5, 6] as const) {
+      expect(DEFAULT_WEEKLY_SOCIAL_MATRIX[day].map((s) => [s.postType, s.source])).toEqual([
+        ['story_text', 'nl_story'],
+        ['carousel', 'nl_feature'],
+        ['story_text', 'nl_story'],
+      ])
+      expect(DEFAULT_WEEKLY_SOCIAL_MATRIX[day][1].designVariant).toBe('brand_tint')
+      expect(DEFAULT_WEEKLY_SOCIAL_MATRIX[day].map((s) => s.beatIndex)).toEqual([0, undefined, 1])
     }
   })
 })
@@ -75,7 +88,7 @@ describe('ARTICLE_DAY2_SLOTS (azavea 6-day cadence)', () => {
     const { AZAVEA_ARTICLE_DAY1_SLOTS, sourceKind } = await import('../weekly-matrix')
     expect(AZAVEA_ARTICLE_DAY1_SLOTS.map((s) => [s.hour, s.postType, s.source])).toEqual([
       [7, 'story_text', 'art_story'],
-      [12, 'carousel', 'art_section_0'],
+      [12, 'carousel', 'art_section_4'],
       [19, 'story_text', 'art_story'],
     ])
     expect(AZAVEA_ARTICLE_DAY1_SLOTS.map((s) => s.beatIndex)).toEqual([0, undefined, 1])

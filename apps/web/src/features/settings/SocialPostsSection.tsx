@@ -167,10 +167,11 @@ export function SocialPostsSection({ settings }: { settings: SettingsData }) {
           </p>
 
           {/* Primary goal selector */}
-          <div className="grid grid-cols-3 gap-2 mb-3">
+          <div className="grid grid-cols-2 gap-2 mb-3">
             {([
               { value: 'newsletter', label: 'Newsletter signup', hint: 'Grow your email list' },
               { value: 'booking',    label: 'Book appointment',  hint: 'Drive bookings' },
+              { value: 'dm_keyword', label: 'Comment keyword',   hint: 'DM a free guide on comment' },
               { value: 'custom',     label: 'Custom',            hint: 'Write your own' },
             ] as const).map((opt) => {
               const active = socialPrimaryGoal === opt.value
@@ -192,7 +193,21 @@ export function SocialPostsSection({ settings }: { settings: SettingsData }) {
             })}
           </div>
 
-          {socialPrimaryGoal === 'custom' || socialPrimaryGoal === '' ? (
+          {socialPrimaryGoal === 'dm_keyword' ? (
+            <>
+              <p className="text-xs text-muted-foreground mb-2">
+                Followers comment the keyword, our automation DMs them your free guide
+                (works on Facebook and Instagram; LinkedIn posts keep a normal link).
+                Format: <span className="italic">KEYWORD|what we send</span>.
+              </p>
+              <input
+                value={socialCallToAction}
+                onChange={(e) => setSocialCallToAction(e.target.value)}
+                placeholder='e.g. SPINE|our 2-Minute Spine Check'
+                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+              />
+            </>
+          ) : socialPrimaryGoal === 'custom' || socialPrimaryGoal === '' ? (
             <>
               <p className="text-xs text-muted-foreground mb-2">
                 Describe what you want your posts to promote. It will be phrased as a

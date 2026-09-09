@@ -29,6 +29,7 @@ import {
   commitGbp,
   commitGoogleReviews,
   commitWritingSample,
+  commitStoryMoments,
   commitWordpress,
   commitSocials,
   commitElevenLabs,
@@ -106,7 +107,7 @@ const STEPS: StepDef[] = [
     kind: 'voice',
     prepare: async () => ({
       messages: [
-        "Now the good part — five questions about your practice. Answer them out loud if you can (tap the mic); speaking works better than typing, and I'll use your voice later too.",
+        "Now the good part — six questions about your practice. Answer them out loud if you can (tap the mic); speaking works better than typing, and I'll use your voice later too.",
         "Be detailed and elaborate — ramble, tell stories, go on tangents. The more you say, the better I capture how YOU naturally talk, and that's what makes your content sound like you instead of a robot.",
         'Imagine a patient describing your clinic to a friend three years from now. What do you want them to say you did for them?',
       ],
@@ -136,6 +137,20 @@ const STEPS: StepDef[] = [
       messages: ['What do you refuse to compromise on, even when it costs you?'],
     }),
     commit: storeAnswer('q_line'),
+  },
+  {
+    id: 'q_moments',
+    kind: 'voice',
+    prepare: async () => ({
+      messages: [
+        "Tell me two or three short TRUE stories from running your practice — a mistake you fixed, a lesson that cost you something, a moment you're proud of. These become the personal moments in your social posts, so real moments only, and no patient details.",
+      ],
+    }),
+    commit: async (ctx, answer) => {
+      const err = await commitStoryMoments(ctx, answer)
+      if (!err) ctx.stepData.q_moments = answer
+      return err
+    },
   },
   {
     id: 'q_proof',
@@ -262,6 +277,7 @@ const STEPS: StepDef[] = [
       options: (ctx.stepData.ctaOptions as { value: string; label: string }[]) ?? [
         { value: 'booking', label: 'Book an appointment' },
         { value: 'newsletter', label: 'Join my newsletter' },
+        { value: 'dm_keyword', label: 'Send a free guide when they comment a keyword' },
         { value: 'custom', label: 'Something else…' },
       ],
     }),
@@ -416,24 +432,6 @@ const STEPS: StepDef[] = [
       }
     },
     commit: async (ctx, answer) => commitKbReview(ctx, answer),
-  },
-  {
-    id: 'elevenlabs',
-    kind: 'choice',
-    prepare: async () => ({
-      messages: [
-        'One optional superpower: your posts can include videos narrated in YOUR OWN voice (I already have the recordings from our chat). It needs an ElevenLabs account (~$22/mo, billed to you).',
-      ],
-      options: [
-        { value: 'yes', label: 'Yes — set up my voice' },
-        { value: 'later', label: 'Maybe later' },
-      ],
-    }),
-    commit: async (ctx, answer) => {
-      const err = await commitElevenLabs(ctx, answer)
-      if (!err) ctx.stepData.elevenlabs = answer
-      return err
-    },
   },
   {
     id: 'toggles',

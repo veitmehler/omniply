@@ -6,25 +6,16 @@ function feedEntries(kind: 'article' | 'newsletter', isoWeekday: number): FeedEn
   return matrixForDay(kind, isoWeekday).map((daySlot, i) => ({ slotKey: `P${i + 1}`, daySlot }))
 }
 
-describe('storySlotsForDay — article days', () => {
-  it('Tuesday: pitch_carousel (promotes the carousel), pitch_hook, and a quote', () => {
-    const stories = storySlotsForDay('article', feedEntries('article', 2))
-    const byType = Object.fromEntries(stories.map((s) => [s.storyType, s]))
-    expect(new Set(stories.map((s) => s.storyType))).toEqual(
-      new Set(['pitch_carousel', 'pitch_hook', 'quote']),
-    )
-    // Tue feed: P1 hook_video, P2 video_reel, P3 carousel.
-    expect(byType.pitch_hook.promotesFeedKey).toBe('P1')
-    expect(byType.pitch_carousel.promotesFeedKey).toBe('P3')
-    expect(byType.quote.promotesFeedKey).toBeUndefined()
-  })
-
-  it('Thursday: carousel/hook are swapped, story companions follow', () => {
-    const stories = storySlotsForDay('article', feedEntries('article', 4))
-    const byType = Object.fromEntries(stories.map((s) => [s.storyType, s]))
-    // Thu feed: P1 hook_video, P2 video_reel, P3 carousel.
-    expect(byType.pitch_hook.promotesFeedKey).toBe('P1')
-    expect(byType.pitch_carousel.promotesFeedKey).toBe('P3')
+describe('storySlotsForDay — article days (P3 story shape)', () => {
+  it('Tue/Thu: pitch_carousels promote the story beats, KT anchor gets a quote story', () => {
+    for (const day of [2, 4]) {
+      const stories = storySlotsForDay('article', feedEntries('article', day))
+      // Feed: P1 story_text(b0), P2 kt_music_video(KT), P3 story_text(b1).
+      expect(stories.map((s) => s.storyType)).toEqual(['pitch_carousel', 'quote', 'pitch_carousel'])
+      expect(stories[0].promotesFeedKey).toBe('P1')
+      expect(stories[2].promotesFeedKey).toBe('P3')
+      expect(stories[1].source).toBe('art_keytakeaways')
+    }
   })
 
   it('every story keeps 3 slots keyed S1/S2/S3 in feed order', () => {
@@ -33,24 +24,14 @@ describe('storySlotsForDay — article days', () => {
   })
 })
 
-describe('storySlotsForDay — newsletter days', () => {
-  it('Monday: pitch_carousel, tips_bullets, and a distinct quote', () => {
-    const stories = storySlotsForDay('newsletter', feedEntries('newsletter', 1))
-    expect(new Set(stories.map((s) => s.storyType))).toEqual(
-      new Set(['pitch_carousel', 'tips_bullets', 'quote']),
-    )
-    const byType = Object.fromEntries(stories.map((s) => [s.storyType, s]))
-    // Mon feed: P1 video_reel(overview), P2 quote(tips), P3 carousel(feature).
-    expect(byType.pitch_carousel.promotesFeedKey).toBe('P3')
-    // Newsletter quote story is sourced from the feature, not the tips.
-    expect(byType.quote.source).toBe('nl_feature')
-  })
-
-  it('Saturday still yields the three newsletter story types', () => {
-    const stories = storySlotsForDay('newsletter', feedEntries('newsletter', 6))
-    expect(new Set(stories.map((s) => s.storyType))).toEqual(
-      new Set(['pitch_carousel', 'tips_bullets', 'quote']),
-    )
+describe('storySlotsForDay — newsletter days (P3 story shape)', () => {
+  it('all four days: pitch_carousels promote beats + the feature carousel', () => {
+    for (const day of [1, 3, 5, 6]) {
+      const stories = storySlotsForDay('newsletter', feedEntries('newsletter', day))
+      // Feed: P1 story_text(nl b0), P2 carousel(nl_feature), P3 story_text(nl b1).
+      expect(stories.map((s) => s.storyType)).toEqual(['pitch_carousel', 'pitch_carousel', 'pitch_carousel'])
+      expect(stories.map((s) => s.promotesFeedKey)).toEqual(['P1', 'P2', 'P3'])
+    }
   })
 })
 

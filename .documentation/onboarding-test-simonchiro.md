@@ -10,7 +10,7 @@ mandatory "I wrote this" authorship confirmation (deployed to staging, branch co
 USER (site + accounts):
 - [√] Publish the planted article below to /blog on the WordPress site (title as given).
 - [√] WordPress → Settings → Reading → "Discourage search engines" ON — BEFORE the test.
-- [ ] Create FB + IG (optional LinkedIn) profiles under unrelated names; add their links
+- [√] Create FB + IG (optional LinkedIn) profiles under unrelated names; add their links
       to the site header/footer (tests the crawl's socialLinks prefill).
 - [ ] Staging test sub-account GHL Business Profile: name, user-controlled email, phone,
       US address (Mesa AZ), timezone America/Phoenix, website URL = the test site.
@@ -23,10 +23,18 @@ ME (before you click "start"):
 
 ## Extra verifications (on top of guide Part D table)
 
+P3 client-rollout additions (2026-09-09):
+- Voice questions are SIX now — q_moments answer lands in BrandSettings.storyBeats.
+- CTA step offers "Send a free guide when they comment a keyword" — pick it,
+  verify socialPrimaryGoal='dm_keyword' + 'KEYWORD|asset' stored.
+- NO ElevenLabs step appears (removed for clients).
+- Finale burst: article days = story beats + KT music video (headline+shorts);
+  newsletter days = nl story beats + brand-tint feature carousel; captions use
+  the CLIENT keyword (not XRAY); hours 9/12/17.
+
 - Step 2 (crawl): log shows blogSample stored — url + wordCount ≥ 400, WP REST path.
 - Step 7 (writing sample): chat offers the planted article with excerpt; answer exactly
   `I wrote this`; verify Settings.writingStyle afterward ECHOES the fingerprint below.
-- Step 12: socialLinks prefilled from the new header links.
 - No GBP connected → reviews features degrade gracefully, no errors.
 - Finale burst publishes to the live WP → verify → USER blocks site from public access.
 

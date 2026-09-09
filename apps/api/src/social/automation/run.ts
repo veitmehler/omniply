@@ -24,6 +24,7 @@ import { PLATFORM_CHAR_LIMITS } from './captions'
 import { generateBatchedCaptionsForPlatform, type CaptionSlotInput } from '../generators/batched-captions'
 import { generateStoryArc, articleMaterialFromCtx } from '../generators/story-arc'
 import { ensureShortTakeaways } from '../generators/short-takeaways'
+import { loadSocialBrandTheme, commentHookFromTheme, commentFbAppendFromTheme } from '../brand-theme'
 import { processStorySlot } from './story-processor'
 import { finalizeGenerationCounts, updateGenerationProgress, loadPriorAssets } from './spec-processor'
 import { mapWithConcurrency } from '../../lib/concurrency'
@@ -72,9 +73,9 @@ function slotEntriesForRun(
  * (legacy selector sources); those runs skip batching and use the per-slot
  * caption path.
  */
-function tryResolveSlotTextOnly(source: DaySlot['source'], ctx: MatrixRunContext): SlotContent | null {
+function tryResolveSlotTextOnly(source: DaySlot['source'], ctx: MatrixRunContext, beatIndex?: number): SlotContent | null {
   if (sourceKind(source) === 'newsletter') {
-    return ctx.newsletterCtx ? resolveNewsletterSlotContent(source, ctx.newsletterCtx) : null
+    return ctx.newsletterCtx ? resolveNewsletterSlotContent(source, ctx.newsletterCtx, beatIndex) : null
   }
   if (!ctx.articleCtx) return null
   if (source === 'art_keytakeaways') {
@@ -92,14 +93,76 @@ function tryResolveSlotTextOnly(source: DaySlot['source'], ctx: MatrixRunContext
  * 2-day window always generates 4 beats so day 2 finds its half. Failure
  * logs and returns — story slots then degrade to section carousels.
  */
+/**
+ * Newsletter story arc (P3 main-app rollout): one edition posts on exactly one
+ * day (enqueue.ts singleton per newsletter), so each edition gets its own
+ * 2-beat arc from its freshly written feature article. Stored on
+ * Newsletter.storyArcJson (first-write-wins claim as cheap insurance) and
+ * mutated into the in-memory ctx, because the newsletter slot resolver is
+ * pure-ctx. Failure logs and returns — nl_story slots degrade to the feature.
+ */
+async function ensureNewsletterStoryArc(
+  newsletterId: string,
+  userId: string,
+  ctx: MatrixRunContext,
+  logCtx: AutomationLogContext,
+): Promise<void> {
+  const nlCtx = ctx.newsletterCtx
+  if (!nlCtx) return
+  if (Array.isArray(nlCtx.storyArc) && nlCtx.storyArc.length > 0) return
+  try {
+    const material = [
+      `# ${nlCtx.feature.title}`,
+      nlCtx.feature.body.slice(0, 12_000),
+      nlCtx.overviewTopics.length
+        ? 'Also in this edition:\n' + nlCtx.overviewTopics.map((t) => `- ${t}`).join('\n')
+        : '',
+      nlCtx.tips.length ? 'Tips of the day:\n' + nlCtx.tips.join('\n') : '',
+    ]
+      .filter(Boolean)
+      .join('\n\n')
+      .slice(0, 24_000)
+    const beats = await generateStoryArc({
+      userId,
+      articleTitle: nlCtx.feature.title,
+      articleMaterial: material,
+      articleUrl: '',
+      beatCount: 2,
+      logCtx,
+    })
+    const claimed = await prisma.newsletter.updateMany({
+      where: { id: newsletterId, storyArcJson: { equals: Prisma.AnyNull } },
+      data: { storyArcJson: beats as unknown as object },
+    })
+    if (claimed.count === 0) {
+      const again = await prisma.newsletter.findUnique({ where: { id: newsletterId }, select: { storyArcJson: true } })
+      nlCtx.storyArc = Array.isArray(again?.storyArcJson)
+        ? (again.storyArcJson as unknown as { postText: string; slides: string[] }[])
+        : (beats as unknown as { postText: string; slides: string[] }[])
+    } else {
+      nlCtx.storyArc = beats as unknown as { postText: string; slides: string[] }[]
+    }
+    logger.info({ ...logCtx, newsletterId, beats: nlCtx.storyArc?.length ?? 0 }, '[social-automation] newsletter story arc generated + stored')
+  } catch (err) {
+    logger.warn({ ...logCtx, newsletterId, err }, '[social-automation] newsletter story arc failed — feature fallback')
+  }
+}
+
 async function ensureStoryArc(opts: {
-  run: { jobId: string | null; userId: string }
+  run: { jobId: string | null; newsletterId?: string | null; userId: string }
   feedEntries: SlotEntry[]
   ctx: MatrixRunContext
   vertical: string | null
   logCtx: AutomationLogContext
 }): Promise<void> {
   const { run, feedEntries, ctx, vertical, logCtx } = opts
+  // Newsletter runs (P3 main-app rollout): one edition = one posting day =
+  // one 2-beat arc, stored on Newsletter.storyArcJson and mutated into the
+  // in-memory ctx (the newsletter resolver is pure-ctx).
+  if (run.newsletterId && ctx.newsletterCtx && feedEntries.some((e) => e.daySlot.source === 'nl_story')) {
+    await ensureNewsletterStoryArc(run.newsletterId, run.userId, ctx, logCtx)
+    return
+  }
   if (!run.jobId || !ctx.articleCtx) return
   if (!feedEntries.some((e) => e.daySlot.source === 'art_story')) return
 
@@ -181,32 +244,41 @@ async function pregenerateBatchedCaptions(opts: {
   const llmEntries: SlotEntry[] = []
   // Story beats publish their postText VERBATIM as content/caption on every
   // platform — no caption LLM (same rule as Key Takeaways).
+  const hasStorySlots = feedEntries.some((e) => e.daySlot.source === 'art_story' || e.daySlot.source === 'nl_story')
   let storyArc: { postText?: string }[] | null = null
   const jobIdForArc = opts.jobId ?? null
   if (jobIdForArc && feedEntries.some((e) => e.daySlot.source === 'art_story')) {
     const page = await prisma.sitePage.findFirst({ where: { jobId: jobIdForArc }, select: { storyArcJson: true } })
     storyArc = (page?.storyArcJson as { postText?: string }[] | null) ?? null
+  } else if (ctx.newsletterCtx?.storyArc) {
+    storyArc = ctx.newsletterCtx.storyArc
   }
-  // Comment-keyword hook (platform CTA split, 2026-09-03): IG replaces the
-  // URL CTA line (dead text there), FB gets it IN ADDITION to the link.
+  // Comment-keyword hook (platform CTA split, 2026-09-03; generalized to the
+  // dm_keyword preset for clients, P3 2026-09-08): IG drops URL lines + gets
+  // the comment hook, FB gets the comment path IN ADDITION to the link.
+  const hookTheme = hasStorySlots ? await loadSocialBrandTheme(logCtx.userId) : null
   const storyHook =
     opts.vertical === 'azavea'
       ? 'Comment "XRAY" and I will send you the free 2-minute Practice X-Ray.'
-      : ''
+      : (hookTheme ? commentHookFromTheme(hookTheme) : null) ?? ''
+  const fbAppend =
+    opts.vertical === 'azavea'
+      ? 'Or just comment "XRAY" and I will send it straight to you.'
+      : (hookTheme ? commentFbAppendFromTheme(hookTheme) : null) ?? ''
   for (const e of feedEntries) {
-    if (e.daySlot.source === 'art_story') {
+    if (e.daySlot.source === 'art_story' || e.daySlot.source === 'nl_story') {
       const beat = storyArc?.[e.daySlot.beatIndex ?? 0]
       if (beat?.postText) {
         for (const platform of platforms) {
           const limit = PLATFORM_CHAR_LIMITS[platform] ?? 2000
           let t = beat.postText
-          if (storyHook && platform === 'facebook' && /omniply\.io|http/i.test(t.split('\n').pop() ?? '')) {
-            t = `${t}\n\nOr just comment "XRAY" and I will send it straight to you.`
+          if (storyHook && fbAppend && platform === 'facebook' && /\.[a-z]{2,4}\/|https?:/i.test(t.split('\n').pop() ?? '')) {
+            t = `${t}\n\n${fbAppend}`
           } else if (storyHook && platform === 'instagram') {
             // IG captions are not clickable: drop EVERY URL-bearing line (a
             // mid-caption article link slipped the last-line-only replace —
             // sweep 2026-09-07), then make sure the comment hook closes it.
-            const lines = t.split('\n').filter((l) => !/omniply\.io|https?:\/\//i.test(l))
+            const lines = t.split('\n').filter((l) => !/https?:\/\/|\b[\w-]+(?:\.[\w-]+)*\.(?:com|io|net|org|ai|co|app|dev|us)\b(?:\/\S*)?/i.test(l))
             while (lines.length && !lines[lines.length - 1].trim()) lines.pop()
             if (!lines.some((l) => l.includes(storyHook))) lines.push('', storyHook)
             t = lines.join('\n')
@@ -244,7 +316,7 @@ async function pregenerateBatchedCaptions(opts: {
 
   const slots: CaptionSlotInput[] = []
   for (const e of llmEntries) {
-    const sc = tryResolveSlotTextOnly(e.daySlot.source, ctx)
+    const sc = tryResolveSlotTextOnly(e.daySlot.source, ctx, e.daySlot.beatIndex)
     if (!sc?.text) return bySlot // legacy source in the mix — those slots use per-slot captions
     slots.push({
       slotKey: e.slotKey,

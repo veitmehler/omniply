@@ -1219,7 +1219,7 @@ model BrandSettings {
   // Google Place ID (resolved once from googleBusinessProfileUrl or name+address).
   // Drives the review deep link (QR card) + the weekly Places review probe.
   googlePlaceId            String?
-  socialPrimaryGoal        String? // link-in-bio CTA goal: 'newsletter' | 'booking' | 'custom' (null → use socialCallToAction verbatim)
+  socialPrimaryGoal        String? // link-in-bio CTA goal: 'newsletter' | 'booking' | 'custom' | 'dm_keyword' (null → use socialCallToAction verbatim)
   socialBioUrl             String? @db.Text // the business's link-in-bio page URL (reference; posts say "link in bio")
   googleBusinessProfileUrl String? // GBP / g.page / Maps share URL → sameAs + hasMap in JSON-LD
   socialMediaLinks         Json? // [{ platform: string, url: string }]
