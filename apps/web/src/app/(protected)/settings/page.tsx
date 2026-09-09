@@ -12,6 +12,7 @@ import { ArticleTypographySection } from '@/features/settings/ArticleTypographyS
 import { WordPressSection } from '@/features/settings/WordPressSection'
 import { ChatAssistantSection } from '@/features/settings/ChatAssistantSection'
 import { ChatKnowledgeSection } from '@/features/settings/ChatKnowledgeSection'
+import { VoiceAssistantSection } from '@/features/settings/VoiceAssistantSection'
 import { ConnectedAccountsSection } from '@/features/settings/ConnectedAccountsSection'
 import { TeamSection } from '@/features/settings/TeamSection'
 import { useSettingsData } from '@/features/settings/useSettingsData'
@@ -54,6 +55,8 @@ export default function SettingsPage() {
         <ChatAssistantSection />
 
         <ChatKnowledgeSection />
+
+        <VoiceAssistantSection />
 
         <GhlSettingsPanel />
 

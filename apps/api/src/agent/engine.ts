@@ -40,8 +40,8 @@ export interface TurnInput {
   conversationId?: string | null
   visitorKey: string
   message: string
-  /** 'web' (widget, default) or 'ghl-dm' (social DM transport). */
-  channel?: 'web' | 'ghl-dm'
+  /** 'web' (widget, default), 'ghl-dm' (social DM), or 'voice' (phone via ElevenLabs custom-LLM). */
+  channel?: 'web' | 'ghl-dm' | 'voice'
   /** DM transport: the GHL contact behind the thread (contact exists from birth). */
   ghlContactId?: string | null
 }
@@ -149,9 +149,10 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
   }
   const channel = input.channel ?? 'web'
 
-  // DM threads are long-lived: find the latest conversation for this visitor
-  // instead of requiring the caller to track ids across webhook calls.
-  if (!conversation && channel === 'ghl-dm') {
+  // DM threads and phone calls are id-less on the caller side: find the
+  // latest conversation for this visitor instead of requiring the transport
+  // to track ids across webhook calls.
+  if (!conversation && (channel === 'ghl-dm' || channel === 'voice')) {
     conversation = await prisma.agentConversation.findFirst({
       where: { accountId: input.accountId, visitorKey: input.visitorKey, channel },
       orderBy: { createdAt: 'desc' },
@@ -172,7 +173,7 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
   const base = { conversationId: conversation.id, bookingUrl: ctx.bookingUrl, guideTitle: null as string | null, guideLink: null as string | null }
 
   // ── Pre-filters (no LLM) ─────────────────────────────────────────────────
-  if (channel !== 'ghl-dm' && conversation.turnCount >= MAX_VISITOR_TURNS) {
+  if (channel === 'web' && conversation.turnCount >= MAX_VISITOR_TURNS) {
     const reply = `We've covered a lot! For anything more, the ${ctx.practiceName} front desk is the best next step${ctx.phone ? `: ${ctx.phone}` : ''}.`
     await persistTurn({ conversationId: conversation.id, visitorText: message, reply, action: null, filtered: false, endedReason: 'turn-cap' })
     return { ...base, reply, action: null, ended: 'turn-cap' }
@@ -242,7 +243,18 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
             'Guides: when the visitor wants a guide, attach send_guide_link IMMEDIATELY. Never ask for an email address; the link arrives right here in the chat.',
             'Human handoff: if the visitor asks for a human, a real person, or to stop talking to a bot, attach request_human and say a team member will take over this conversation shortly.',
           ].join('\n')
-        : '',
+        : channel === 'voice'
+          ? [
+              '=== CHANNEL: PHONE CALL (live voice) ===',
+              'You are SPEAKING to a caller. Everything you write is read aloud by text-to-speech.',
+              'Replies MUST be 1 to 2 short conversational sentences. No markdown, no lists, no URLs, no emoji, no symbols. Spell nothing out in formatting — speak it.',
+              'NEVER read a web address aloud. When a guide or booking link would help, say you will text it to their phone and attach the matching action.',
+              'On your FIRST reply of a call, greet the caller, name the practice, and say you are its AI assistant. Never claim to be a person, even in a familiar voice.',
+              'Human handoff: if the caller asks for a human, a real person, the front desk, or a staff member, attach request_human and say "Of course — connecting you to the team now." Do not argue or ask why.',
+              'If the caller mentions the team did not pick up or the transfer failed, apologize briefly and offer to take a callback message (request_callback).',
+              'Callbacks: confirm the phone number by reading it back digit by digit before attaching request_callback.',
+            ].join('\n')
+          : '',
     guides: ctx.guides.map((g) => `${g.slug} — ${g.title}`).join('\n') || '(none)',
     history: history || '(first message)',
     message,

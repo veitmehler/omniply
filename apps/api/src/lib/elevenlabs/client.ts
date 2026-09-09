@@ -60,6 +60,34 @@ export async function listElevenLabsVoices(apiKey: string): Promise<ElevenLabsVo
   return data.voices ?? []
 }
 
+/** IVC from several samples (voice-agent path: all onboarding recordings). */
+export async function cloneElevenLabsVoiceFromSamples(opts: {
+  apiKey: string
+  name: string
+  samples: { buffer: Buffer; filename: string }[]
+}): Promise<CloneVoiceResult> {
+  const form = new FormData()
+  form.append('name', opts.name)
+  for (const s of opts.samples) form.append('files', new Blob([s.buffer]), s.filename)
+
+  return instrumentCall({ provider: 'elevenlabs', op: 'voices/add-multi' }, async () => {
+    const res = await fetch(`${ELEVENLABS_BASE}/voices/add`, {
+      method: 'POST',
+      headers: { 'xi-api-key': opts.apiKey },
+      body: form,
+      signal: AbortSignal.timeout(UPLOAD_TIMEOUT_MS),
+    })
+    if (!res.ok) {
+      const body = await res.text().catch(() => '')
+      if (res.status === 403) {
+        throw new Error('Voice cloning requires a paid ElevenLabs plan (IVC).')
+      }
+      throw new Error(`ElevenLabs clone failed (${res.status}): ${body.slice(0, 200)}`)
+    }
+    return res.json() as Promise<CloneVoiceResult>
+  })
+}
+
 export async function cloneElevenLabsVoice(opts: {
   apiKey: string
   name: string

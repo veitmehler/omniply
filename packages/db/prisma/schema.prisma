@@ -52,6 +52,11 @@ model Account {
   ghlReviewToken  String?   @unique
   // Social DM agent webhook token (custom value omniply_dm_webhook).
   ghlDmToken     String?   @unique
+  // Voice agent (.plans/voice-agent-elevenlabs.implementation-plan.md):
+  // per-account secret in the custom-LLM URL ElevenLabs calls (auth + account
+  // resolver, same posture as ghlDmToken); dismissal hides the dashboard card.
+  voiceAgentSecret      String?   @unique
+  voiceAgentDismissedAt DateTime?
   // Onboarding gate (.plans/ghl-onboarding.implementation-plan.md): first
   // generation is blocked until the chat onboarding completes (validator green).
   onboardingCompletedAt DateTime?
@@ -468,6 +473,27 @@ model GhlSettings {
   updatedAt           DateTime  @updatedAt
 
   @@map("ghl_settings")
+}
+
+// Voice-agent provisioning state (.plans/voice-agent-elevenlabs
+// .implementation-plan.md V2). One row per account; the ElevenLabs API key
+// itself stays in ApiKey (provider 'elevenlabs', owner user).
+model VoiceAgentConfig {
+  id                  String   @id @default(cuid())
+  accountId           String   @unique
+  status              String   @default("pending") // pending | ready | error
+  voiceId             String? // cloned ElevenLabs voice (IVC from onboarding audio)
+  agentId             String? // ElevenLabs ConvAI agent id (in the CLINIC's workspace)
+  phoneNumberId       String? // ElevenLabs phone-number id (imported Twilio number)
+  phoneNumber         String? // E.164 the clinic forwards to / publishes
+  twilioSubaccountSid String? // per-clinic Twilio subaccount under OUR master account
+  mode                String   @default("overflow") // overflow (conditional forwarding) | direct (published number)
+  transferNumber      String? // clinic's real line for human hand-off
+  lastError           String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@map("voice_agent_configs")
 }
 
 model ApiKey {

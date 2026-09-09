@@ -1,7 +1,20 @@
 # Voice Agent — ElevenLabs Conversational AI (post-launch)
 
-Status: PLANNED (approved direction 2026-09-09). Build AFTER launch — nothing
-here blocks Sep 18/22, and no schema/code prep is required in advance.
+Status: V1 + V2 CODE COMPLETE on staging 2026-09-09 (user pulled the build
+forward). Shipped: voice channel in the engine (spoken-register overlay,
+filter-then-stream), OpenAI-compatible custom-LLM endpoint
+/api/agent/voice/:secret/(v1/)chat/completions (SSE, request_human →
+transfer_to_number tool call, safe-fallback on engine failure), migration
+(Account.voiceAgentSecret/voiceAgentDismissedAt + voice_agent_configs),
+provisioning orchestrator (clinic key → IVC clone from onboarding S3 audio →
+ConvAI agent create/update → Twilio subaccount + number buy + ElevenLabs
+import), authed /voice-assistant/* routes, Settings stepper section
+(#voice-assistant anchor) + dashboard nudge card with "not yet" dismissal.
+NOT YET DONE: Twilio master env (TWILIO_ACCOUNT_SID/TWILIO_AUTH_TOKEN — user
+must create the Twilio account), V3 safety gate (voice C3 battery + live
+phone E2E + ConvAI field-shape verification: custom_llm_extra_body,
+built_in_tools nesting, transfer no-answer semantics), consent/recording
+line per state. NOT enabled for any clinic until V3 passes.
 
 ## Decisions locked with the user (2026-09-09)
 

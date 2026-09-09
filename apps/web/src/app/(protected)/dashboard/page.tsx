@@ -6,6 +6,7 @@ import { ModeToggle } from '@/features/dashboard/sections/ModeToggle'
 import { DashboardInput } from '@/features/dashboard/sections/DashboardInput'
 import { GeneratedPosts } from '@/features/dashboard/sections/GeneratedPosts'
 import { ContentPlan } from '@/features/dashboard/ContentPlan'
+import { VoiceAgentCard } from '@/features/dashboard/VoiceAgentCard'
 
 export default function DashboardPage() {
   const dashboard = useDashboard()
@@ -18,6 +19,9 @@ export default function DashboardPage() {
           Capture article ideas, plan your month, and review what&apos;s ready to publish.
         </p>
       </div>
+
+      {/* Voice-assistant nudge (hidden once set up or dismissed) */}
+      <VoiceAgentCard />
 
       {/* Capture an Article Idea | Social posts (tabbed) */}
       <ModeToggle dashboard={dashboard} />

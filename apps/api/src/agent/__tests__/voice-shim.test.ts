@@ -1,0 +1,156 @@
+import { describe, expect, it } from 'vitest'
+import {
+  buildCompletion,
+  buildStreamFrames,
+  findTransferTool,
+  lastUserMessage,
+  messageText,
+  sentenceChunks,
+  voiceVisitorKey,
+  type VoiceCompletionBody,
+} from '../voice-shim'
+
+const body = (over: Partial<VoiceCompletionBody> = {}): VoiceCompletionBody => ({
+  messages: [
+    { role: 'system', content: 'you are an agent' },
+    { role: 'assistant', content: 'Hi, this is the AI assistant.' },
+    { role: 'user', content: 'Do you have parking?' },
+  ],
+  stream: true,
+  model: 'omniply-agent',
+  ...over,
+})
+
+describe('messageText / lastUserMessage', () => {
+  it('reads string content', () => {
+    expect(lastUserMessage(body())).toBe('Do you have parking?')
+  })
+
+  it('reads parts-array content', () => {
+    const b = body({
+      messages: [{ role: 'user', content: [{ type: 'text', text: 'hello' }, { type: 'text', text: 'there' }] }],
+    })
+    expect(lastUserMessage(b)).toBe('hello there')
+  })
+
+  it('returns null with no user message', () => {
+    expect(lastUserMessage(body({ messages: [{ role: 'assistant', content: 'hi' }] }))).toBeNull()
+    expect(lastUserMessage({})).toBeNull()
+  })
+
+  it('picks the LAST user message', () => {
+    const b = body({
+      messages: [
+        { role: 'user', content: 'first' },
+        { role: 'assistant', content: 'ok' },
+        { role: 'user', content: 'second' },
+      ],
+    })
+    expect(lastUserMessage(b)).toBe('second')
+  })
+
+  it('handles null content', () => {
+    expect(messageText({ role: 'user', content: null })).toBe('')
+  })
+})
+
+describe('voiceVisitorKey', () => {
+  it('prefers elevenlabs conversation_id and sanitizes it', () => {
+    const r = voiceVisitorKey(body({ elevenlabs_extra_body: { conversation_id: 'conv 123/abc' } }))
+    expect(r.source).toBe('conversation_id')
+    expect(r.key).toBe('el-conv123abc')
+  })
+
+  it('hashes caller_id (no raw phone number in the key)', () => {
+    const r = voiceVisitorKey(body({ elevenlabs_extra_body: { caller_id: '+61400111222' } }))
+    expect(r.source).toBe('caller_id')
+    expect(r.key).toMatch(/^elc-[0-9a-f]{24}$/)
+    expect(r.key).not.toContain('61400111222')
+  })
+
+  it('falls back to the OpenAI user field, then opener hash', () => {
+    expect(voiceVisitorKey(body({ user: 'visitor_9' })).source).toBe('user')
+    const r = voiceVisitorKey(body())
+    expect(r.source).toBe('opener-hash')
+    expect(r.key).toMatch(/^elh-[0-9a-f]{24}$/)
+    // Deterministic for the same opener (stable within one call).
+    expect(voiceVisitorKey(body()).key).toBe(r.key)
+  })
+})
+
+describe('findTransferTool', () => {
+  it('finds the transfer tool by name', () => {
+    const b = body({
+      tools: [
+        { type: 'function', function: { name: 'end_call' } },
+        { type: 'function', function: { name: 'transfer_to_number' } },
+      ],
+    })
+    expect(findTransferTool(b)).toBe('transfer_to_number')
+  })
+
+  it('returns null when absent', () => {
+    expect(findTransferTool(body())).toBeNull()
+    expect(findTransferTool(body({ tools: [{ type: 'function', function: { name: 'end_call' } }] }))).toBeNull()
+  })
+})
+
+describe('sentenceChunks', () => {
+  it('splits on sentence boundaries and preserves all text', () => {
+    const chunks = sentenceChunks('First one. Second one! Third?')
+    expect(chunks).toHaveLength(3)
+    expect(chunks.join('')).toBe('First one. Second one! Third?')
+  })
+
+  it('keeps a single sentence whole', () => {
+    expect(sentenceChunks('Just one sentence with no end')).toEqual(['Just one sentence with no end'])
+  })
+})
+
+describe('response encoding', () => {
+  it('non-streaming completion carries the reply', () => {
+    const c = buildCompletion({ reply: 'We have free parking behind the building.', transferToolName: null, model: 'm' }) as {
+      object: string
+      choices: { message: { content: string; tool_calls?: unknown }; finish_reason: string }[]
+    }
+    expect(c.object).toBe('chat.completion')
+    expect(c.choices[0].message.content).toBe('We have free parking behind the building.')
+    expect(c.choices[0].finish_reason).toBe('stop')
+    expect(c.choices[0].message.tool_calls).toBeUndefined()
+  })
+
+  it('transfer plan emits a tool call with finish_reason tool_calls', () => {
+    const c = buildCompletion({ reply: 'Connecting you now.', transferToolName: 'transfer_to_number', model: 'm' }) as {
+      choices: { message: { tool_calls: { function: { name: string } }[] }; finish_reason: string }[]
+    }
+    expect(c.choices[0].finish_reason).toBe('tool_calls')
+    expect(c.choices[0].message.tool_calls[0].function.name).toBe('transfer_to_number')
+  })
+
+  it('stream frames: role first, full reply across deltas, [DONE] last', () => {
+    const frames = buildStreamFrames({ reply: 'One. Two.', transferToolName: null, model: 'm' })
+    expect(frames[0]).toContain('"role":"assistant"')
+    expect(frames[frames.length - 1]).toBe('data: [DONE]\n\n')
+    const text = frames
+      .filter((f) => f.startsWith('data: {'))
+      .map((f) => JSON.parse(f.slice(6)) as { choices: { delta: { content?: string } }[] })
+      .map((c) => c.choices[0].delta.content ?? '')
+      .join('')
+    expect(text).toBe('One. Two.')
+    expect(frames.some((f) => f.includes('"finish_reason":"stop"'))).toBe(true)
+  })
+
+  it('stream frames with transfer end in tool_calls finish', () => {
+    const frames = buildStreamFrames({ reply: 'Connecting you.', transferToolName: 'transfer_to_number', model: 'm' })
+    expect(frames.some((f) => f.includes('transfer_to_number'))).toBe(true)
+    expect(frames.some((f) => f.includes('"finish_reason":"tool_calls"'))).toBe(true)
+    expect(frames.some((f) => f.includes('"finish_reason":"stop"'))).toBe(false)
+  })
+
+  it('every stream frame is valid SSE', () => {
+    for (const f of buildStreamFrames({ reply: 'Hi there.', transferToolName: null, model: 'm' })) {
+      expect(f.startsWith('data: ')).toBe(true)
+      expect(f.endsWith('\n\n')).toBe(true)
+    }
+  })
+})
