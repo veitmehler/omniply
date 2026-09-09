@@ -23,6 +23,7 @@ import { publishLinktreePage } from '../lib/linktree'
 import { publishSpineCheckPage } from '../spine-check/generate'
 import { repointSpineCheckTriggerLink } from '../leadgen/compile'
 import { publishClinicSchema } from '../lib/clinic-schema'
+import { installOmniplyConnect } from '../lib/omniply-connect'
 import { getBoss, QUEUES } from '../queues/index'
 
 export async function onboardingRoutes(app: FastifyInstance) {
@@ -145,6 +146,10 @@ export async function onboardingRoutes(app: FastifyInstance) {
     })
       .catch(() => null)
       .then(() => publishLinktreePage(r.account.ownerUserId))
+      .catch(() => {})
+      // Omniply Connect plugin: install/activate + widget token + head
+      // JSON-LD (all best-effort, logs its own failures).
+      .then(() => installOmniplyConnect(r.account.ownerUserId))
       .catch(() => {})
     // Clinic entity schema onto their editable WP pages (agent plan 3.1) —
     // env-flagged rollout: verify on the test account before enabling broadly.

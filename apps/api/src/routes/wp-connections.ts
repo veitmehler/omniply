@@ -3,6 +3,7 @@ import { prisma } from '@omniply/shared'
 import { requireAuth } from '../middleware/auth'
 import { encrypt, decrypt } from '@omniply/shared'
 import { assertSafeWpUrl } from '../lib/ssrf'
+import { installOmniplyConnect } from '../lib/omniply-connect'
 
 // ── WP REST helpers ────────────────────────────────────────────────────────
 
@@ -197,6 +198,10 @@ export async function wpConnectionRoutes(app: FastifyInstance) {
         createdAt: true, updatedAt: true,
       },
     })
+
+    // Omniply Connect plugin install + widget/head config — best-effort in
+    // the background, logs its own failures, never delays the response.
+    void installOmniplyConnect(user.id).catch(() => {})
 
     return reply.status(201).send({
       connection: conn,
