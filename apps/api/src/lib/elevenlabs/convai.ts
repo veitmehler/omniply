@@ -53,18 +53,19 @@ function agentConfigBody(spec: ConvAiAgentSpec): Record<string, unknown> {
         language: 'en',
         prompt: {
           // The REAL system prompt lives on our server (the custom LLM builds
-          // it per turn); this stub only exists because the field is required.
-          prompt: 'You are the practice assistant. Follow the responses from the configured model.',
+          // it per turn). This stub does double duty: ElevenLabs interpolates
+          // the system dynamic variables at call time and sends the result as
+          // messages[0] — the voice shim parses CALL_ID out of it for stable
+          // per-call conversation keys (live-verified route; the
+          // elevenlabs_extra_body mechanism only exists for SDK-initiated
+          // sessions, not inbound phone calls).
+          prompt:
+            'You are the practice assistant. CALL_ID={{system__conversation_id}} CALLER={{system__caller_id}}',
           llm: 'custom-llm',
           custom_llm: {
             url: spec.customLlmUrl,
             model_id: 'omniply-agent',
           },
-          // Ask ElevenLabs to include conversation/agent ids in request bodies
-          // (elevenlabs_extra_body) — the voice shim's primary visitor key.
-          // If the API rejects the field name, provisioning logs the 4xx and
-          // the shim's fallbacks still hold (V3 verification item).
-          custom_llm_extra_body: true,
           built_in_tools: {
             end_call: {
               name: 'end_call',

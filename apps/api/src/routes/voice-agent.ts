@@ -77,13 +77,19 @@ async function handleVoiceCompletion(
         channel: 'voice',
       })
       const transferToolName = result.action?.type === 'request_human' ? findTransferTool(body) : null
+      let reply = result.reply
       if (result.action?.type === 'request_human' && !transferToolName) {
+        // No transfer configured/offered: never speak an empty "connecting
+        // you" promise — pivot to a callback offer instead (live call
+        // 2026-09-09 surfaced this).
+        reply =
+          'I am not able to connect you directly right now. Can I take your name and number instead? The team will call you back as soon as they can.'
         logger.warn(
           { accountId: account.id, conversationId: result.conversationId },
-          '[voice-agent] request_human but no transfer tool offered — reply spoken without transfer',
+          '[voice-agent] request_human but no transfer tool offered — pivoted to callback offer',
         )
       }
-      plan = { reply: result.reply, transferToolName, model }
+      plan = { reply, transferToolName, model }
       logger.info(
         {
           accountId: account.id,

@@ -55,6 +55,29 @@ describe('messageText / lastUserMessage', () => {
 })
 
 describe('voiceVisitorKey', () => {
+  it('prefers CALL_ID interpolated into the system message (phone calls)', () => {
+    const b = body({
+      messages: [
+        { role: 'system', content: 'You are the practice assistant. CALL_ID=conv_9701m23w CALLER=+61400111222' },
+        { role: 'user', content: 'hello' },
+      ],
+      elevenlabs_extra_body: { conversation_id: 'sdk-session-id' },
+    })
+    const r = voiceVisitorKey(b)
+    expect(r.source).toBe('call_id')
+    expect(r.key).toBe('el-conv_9701m23w')
+  })
+
+  it('ignores an un-interpolated CALL_ID template', () => {
+    const b = body({
+      messages: [
+        { role: 'system', content: 'CALL_ID={{system__conversation_id}}' },
+        { role: 'user', content: 'hello' },
+      ],
+    })
+    expect(voiceVisitorKey(b).source).toBe('opener-hash')
+  })
+
   it('prefers elevenlabs conversation_id and sanitizes it', () => {
     const r = voiceVisitorKey(body({ elevenlabs_extra_body: { conversation_id: 'conv 123/abc' } }))
     expect(r.source).toBe('conversation_id')

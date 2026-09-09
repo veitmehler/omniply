@@ -70,15 +70,24 @@ const KEY_SAFE = /[^A-Za-z0-9_-]/g
 
 /**
  * Stable per-call visitor key. Priority:
- *  1. conversation_id from elevenlabs_extra_body (V2 provisioning configures
- *     `{"conversation_id": "{{system__conversation_id}}"}` on the agent)
- *  2. caller_id from elevenlabs_extra_body (hashed — phone numbers are PII)
- *  3. the OpenAI `user` field
- *  4. hash of the transcript's opening exchange (stable within one call
+ *  1. CALL_ID parsed from the system message — provisioning writes
+ *     `CALL_ID={{system__conversation_id}}` into the agent's stub prompt and
+ *     ElevenLabs interpolates it per call (the reliable phone-call channel;
+ *     elevenlabs_extra_body only exists for SDK-initiated sessions)
+ *  2. conversation_id from elevenlabs_extra_body (SDK sessions)
+ *  3. caller_id from elevenlabs_extra_body (hashed — phone numbers are PII)
+ *  4. the OpenAI `user` field
+ *  5. hash of the transcript's opening exchange (stable within one call
  *     because history is append-only; collides across identical openers,
  *     which the engine's turn-capped rollover tolerates)
  */
 export function voiceVisitorKey(body: VoiceCompletionBody): { key: string; source: string } {
+  const messages = Array.isArray(body.messages) ? body.messages : []
+  const system = messages.find((m) => m.role === 'system')
+  const callId = system ? /CALL_ID=([A-Za-z0-9_-]{6,64})/.exec(messageText(system)) : null
+  if (callId) {
+    return { key: `el-${callId[1]}`.slice(0, 64), source: 'call_id' }
+  }
   const extra = body.elevenlabs_extra_body ?? {}
   const conv = extra.conversation_id ?? extra.conversationId
   if (typeof conv === 'string' && conv.trim()) {
@@ -92,7 +101,6 @@ export function voiceVisitorKey(body: VoiceCompletionBody): { key: string; sourc
   if (typeof body.user === 'string' && body.user.trim()) {
     return { key: `elu-${body.user.trim().replace(KEY_SAFE, '')}`.slice(0, 64), source: 'user' }
   }
-  const messages = Array.isArray(body.messages) ? body.messages : []
   const opener = messages
     .slice(0, 2)
     .map((m) => `${m.role}:${messageText(m)}`)
