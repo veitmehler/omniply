@@ -21,6 +21,7 @@ import { resolveArticleCalendar, resolveNewsletterCalendar } from '../newsletter
 import { burstCurrentWindow } from '../lib/account-lifecycle'
 import { publishLinktreePage } from '../lib/linktree'
 import { publishSpineCheckPage } from '../spine-check/generate'
+import { repointSpineCheckTriggerLink } from '../leadgen/compile'
 import { publishClinicSchema } from '../lib/clinic-schema'
 import { getBoss, QUEUES } from '../queues/index'
 
@@ -137,7 +138,11 @@ export async function onboardingRoutes(app: FastifyInstance) {
 
     // Link-in-bio page on the clinic's own WordPress at /linktree (their
     // branded domain); best-effort — never blocks the finale.
-    void publishSpineCheckPage(r.account.ownerUserId)
+    void publishSpineCheckPage(r.account.ownerUserId).finally(() => {
+      // After publish the quiz URL is final (WP page or hosted) — point the
+      // snapshot's omniply-spine-check trigger link at it.
+      void repointSpineCheckTriggerLink(r.account.ownerUserId)
+    })
       .catch(() => null)
       .then(() => publishLinktreePage(r.account.ownerUserId))
       .catch(() => {})

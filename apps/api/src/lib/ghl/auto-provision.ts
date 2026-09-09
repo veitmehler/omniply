@@ -39,6 +39,7 @@ async function fetchLocation(locationId: string, token: string): Promise<Locatio
 
 /** Best-effort: pre-set the webhook-token custom values the snapshot workflows reference. */
 async function setCustomValues(locationId: string, token: string, values: Record<string, string>): Promise<void> {
+  const failed: string[] = []
   for (const [name, value] of Object.entries(values)) {
     try {
       const res = await fetch(`${GHL_BASE}/locations/${locationId}/customValues`, {
@@ -46,10 +47,20 @@ async function setCustomValues(locationId: string, token: string, values: Record
         headers: { Authorization: `Bearer ${token}`, Version: VERSION, 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, value }),
       })
-      if (!res.ok) logger.warn({ locationId, name, status: res.status }, '[auto-provision] custom value set failed')
+      if (!res.ok) {
+        failed.push(name)
+        logger.error({ locationId, name, status: res.status }, '[auto-provision] custom value set FAILED')
+      }
     } catch (err) {
-      logger.warn({ err, locationId, name }, '[auto-provision] custom value error')
+      failed.push(name)
+      logger.error({ err, locationId, name }, '[auto-provision] custom value set FAILED')
     }
+  }
+  if (failed.length > 0) {
+    // Loud on purpose (2026-09-09): the snapshot ships placeholder values —
+    // a location left un-backfilled means dead webhooks (DM agent, reviews,
+    // billing events) that fail silently downstream.
+    logger.error({ locationId, failed }, '[auto-provision] CUSTOM VALUES INCOMPLETE — snapshot placeholders still live')
   }
 }
 

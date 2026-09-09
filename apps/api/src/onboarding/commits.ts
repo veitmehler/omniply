@@ -271,12 +271,11 @@ export async function commitOffers(ctx: StepContext, answer: unknown): Promise<s
 export async function commitCta(ctx: StepContext, answer: unknown): Promise<string | null> {
   const a = (answer ?? {}) as { value?: string; label?: string; customText?: string }
   if (a.value === 'dm_keyword') {
-    // 'KEYWORD|asset description' — parsed by resolveSocialCta + the story
-    // CTA hook; the snapshot comment workflows DM the trigger link.
-    const [k, asset] = (a.customText ?? '').split('|').map((s) => s.trim())
-    if (!k) return 'Give me the comment keyword (one word) and what we send them'
+    // FIXED keyword (user decision 2026-09-09: no free input — the snapshot
+    // comment workflows hard-filter on SPINE, and the DM delivers the
+    // clinic's 2-Minute Spine Check quiz trigger link).
     await brandUpsert(ctx.userId, {
-      socialCallToAction: `${k.toUpperCase()}|${asset || 'our free guide'}`,
+      socialCallToAction: 'SPINE|our 2-Minute Spine Check',
       socialPrimaryGoal: 'dm_keyword',
     })
     return null

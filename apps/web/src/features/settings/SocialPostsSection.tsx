@@ -179,7 +179,10 @@ export function SocialPostsSection({ settings }: { settings: SettingsData }) {
                 <button
                   key={opt.value}
                   type="button"
-                  onClick={() => setSocialPrimaryGoal(opt.value)}
+                  onClick={() => {
+                    setSocialPrimaryGoal(opt.value)
+                    if (opt.value === 'dm_keyword') setSocialCallToAction('SPINE|our 2-Minute Spine Check')
+                  }}
                   className={`rounded-lg border px-3 py-2 text-left transition-colors ${
                     active
                       ? 'border-primary bg-primary/10 ring-2 ring-primary/20'
@@ -194,19 +197,13 @@ export function SocialPostsSection({ settings }: { settings: SettingsData }) {
           </div>
 
           {socialPrimaryGoal === 'dm_keyword' ? (
-            <>
-              <p className="text-xs text-muted-foreground mb-2">
-                Followers comment the keyword, our automation DMs them your free guide
-                (works on Facebook and Instagram; LinkedIn posts keep a normal link).
-                Format: <span className="italic">KEYWORD|what we send</span>.
-              </p>
-              <input
-                value={socialCallToAction}
-                onChange={(e) => setSocialCallToAction(e.target.value)}
-                placeholder='e.g. SPINE|our 2-Minute Spine Check'
-                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-              />
-            </>
+            <p className="text-xs text-muted-foreground bg-muted/50 rounded-md px-3 py-2">
+              Posts invite followers to comment{' '}
+              <span className="font-medium text-card-foreground">&ldquo;SPINE&rdquo;</span> — our
+              automation DMs them your 2-Minute Spine Check (Facebook and Instagram;
+              LinkedIn posts keep a normal link). The keyword is fixed so it always
+              matches the comment automation in your account.
+            </p>
           ) : socialPrimaryGoal === 'custom' || socialPrimaryGoal === '' ? (
             <>
               <p className="text-xs text-muted-foreground mb-2">

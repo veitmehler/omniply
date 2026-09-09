@@ -368,7 +368,6 @@ function ChoiceInput({
 }) {
   const [revealed, setRevealed] = useState<string | null>(null)
   const [text, setText] = useState('')
-  const [text2, setText2] = useState('')
 
   if (revealed === 'pms_other') {
     return (
@@ -389,37 +388,6 @@ function ChoiceInput({
         />
         <button type="submit" disabled={busy || !text.trim()} className="rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground disabled:opacity-50">
           Send
-        </button>
-      </form>
-    )
-  }
-
-  if (revealed === 'cta_keyword') {
-    return (
-      <form
-        onSubmit={(e) => {
-          e.preventDefault()
-          if (text.trim()) onSubmit({ value: 'dm_keyword', customText: `${text.trim()}|${text2.trim()}` }, `Comment "${text.trim().toUpperCase()}" → free guide`)
-        }}
-        className="space-y-2"
-      >
-        <input
-          value={text}
-          onChange={(e) => setText(e.target.value.replace(/\s+/g, ''))}
-          placeholder='Comment keyword (one word, e.g. "SPINE")'
-          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
-          disabled={busy}
-          autoFocus
-        />
-        <input
-          value={text2}
-          onChange={(e) => setText2(e.target.value)}
-          placeholder='What we send them (e.g. "our 2-Minute Spine Check")'
-          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
-          disabled={busy}
-        />
-        <button type="submit" disabled={busy || !text.trim()} className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground disabled:opacity-50">
-          Set keyword CTA
         </button>
       </form>
     )
@@ -456,7 +424,6 @@ function ChoiceInput({
           key={o.value}
           onClick={() => {
             if (step.id === 'cta' && o.value === 'custom') return setRevealed('custom')
-            if (step.id === 'cta' && o.value === 'dm_keyword') return setRevealed('cta_keyword')
             if (step.id === 'pms' && o.value === 'other') return setRevealed('pms_other')
             if (step.id === 'google_reviews' && o.value === 'connect') {
               const startPath = (step.card as { startPath?: string } | undefined)?.startPath

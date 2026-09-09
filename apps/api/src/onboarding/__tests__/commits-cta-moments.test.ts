@@ -35,16 +35,12 @@ beforeEach(() => {
 })
 
 describe('commitCta', () => {
-  it('dm_keyword stores KEYWORD|asset + the preset', async () => {
-    expect(await commitCta(ctx(), { value: 'dm_keyword', customText: 'spine|our 2-Minute Spine Check' })).toBeNull()
+  it('dm_keyword stores the FIXED SPINE preset (no free input — 2026-09-09)', async () => {
+    expect(await commitCta(ctx(), { value: 'dm_keyword' })).toBeNull()
     expect(lastUpdate()).toMatchObject({
       socialCallToAction: 'SPINE|our 2-Minute Spine Check',
       socialPrimaryGoal: 'dm_keyword',
     })
-  })
-
-  it('dm_keyword without a keyword is a validation error', async () => {
-    expect(await commitCta(ctx(), { value: 'dm_keyword', customText: '' })).toMatch(/keyword/i)
   })
 
   it('booking/newsletter now store their preset', async () => {

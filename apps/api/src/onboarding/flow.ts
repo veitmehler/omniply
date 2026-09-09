@@ -277,7 +277,7 @@ const STEPS: StepDef[] = [
       options: (ctx.stepData.ctaOptions as { value: string; label: string }[]) ?? [
         { value: 'booking', label: 'Book an appointment' },
         { value: 'newsletter', label: 'Join my newsletter' },
-        { value: 'dm_keyword', label: 'Send a free guide when they comment a keyword' },
+        { value: 'dm_keyword', label: 'Comment "SPINE" → we DM the free Spine Check' },
         { value: 'custom', label: 'Something else…' },
       ],
     }),
