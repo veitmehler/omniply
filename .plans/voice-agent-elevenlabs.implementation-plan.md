@@ -29,9 +29,25 @@ here blocks Sep 18/22, and no schema/code prep is required in advance.
   of clean audio plus a speaker identity-verification step the clinic owner
   must perform personally in their ElevenLabs account — offer as a
   concierge/guide step later, never a launch blocker.
-- **Positioning**: after-hours + missed-call AI receptionist (conditional
-  call forwarding), NOT a front-desk replacement. Safer failure mode, easier
-  sell, no number porting.
+- **NOT an onboarding step** (user 2026-09-09): setup requires the clinic to
+  sign up at ElevenLabs themselves, so it can never sit inside the purchase
+  walkthrough. Instead: a persistent DASHBOARD NOTIFICATION card ("Add your
+  AI voice receptionist") that opens a guided integration wizard. The card
+  has a "I don't want an AI voice agent yet" dismissal — dismissing hides
+  the card (persisted per account), but the full setup remains available on
+  the Settings → Voice Assistant page at any time.
+- **Two usage modes, the clinic's explicit choice, BOTH offered** (user
+  2026-09-09), selected in the wizard and changeable in Settings:
+  - **Overflow mode**: keep publishing their existing number; conditional
+    forwarding sends calls to the AI number after too many rings / after
+    hours (we show carrier/phone-system forwarding instructions).
+  - **Direct mode**: publish the AI number itself on their website, GBP, and
+    social profiles — callers reach the AI receptionist first, every time.
+- **Human hand-off** (user 2026-09-09): when a caller asks for a human, the
+  AI transfers the live call to the clinic's real number. If the clinic
+  doesn't answer within ~10 rings (~50s ring timeout), the caller comes back
+  to the AI, which says the team can't pick up right now and offers to take
+  a callback message (the existing request_callback action → GHL).
 - **Disclosure is non-negotiable**: the cloned voice must introduce itself as
   the practice's AI assistant up front (impersonating the practitioner with
   their cloned voice = deceptive + legally risky in two-party-consent
@@ -78,6 +94,17 @@ actions (request_callback, add_contact_email, send_guide_link→SMS) → GHL
 5. Actions over voice: request_callback and add_contact_* work verbatim.
    send_guide_link becomes "I'll text it to you" → SMS via GHL (new small
    action mapping; the guide trigger links already exist).
+6. **Human transfer**: wire ElevenLabs' call-transfer system tool
+   (transfer-to-number) with the clinic's real number and a ~50s (≈10 rings)
+   answer timeout. Prompt rule: transfer on ANY request for a human — never
+   argue, announce the transfer first. On transfer failure/no-answer the
+   caller returns to the agent, which must acknowledge ("the team can't pick
+   up right now") and offer request_callback. ⚠️ Build-time verification:
+   confirm ElevenLabs' transfer tool supports a ring/answer timeout AND
+   return-to-agent on no-answer; if return-on-failure isn't supported,
+   fallback design = announce before transferring ("if they don't pick up,
+   call us back and I'll take a message") and treat the timeout question as
+   a vendor ticket before V3 sign-off.
 
 ## Phase V2 — provisioning (their key)
 
@@ -95,10 +122,27 @@ actions (request_callback, add_contact_email, send_guide_link→SMS) → GHL
      country),
    - store agent id / voice id / number on the account.
    Idempotent, loud logging, same ethos as installOmniplyConnect.
-3. Settings → "Voice Assistant" section: key entry, voice preview/re-clone
-   button, the assigned number + forwarding instructions ("in your phone
-   system, forward after N rings / after hours to this number"), usage meter.
-4. Usage monitoring: read their subscription/usage via their key; dashboard
+3. **Dashboard notification card + integration wizard** (the ONLY entry
+   point besides Settings; never an onboarding step):
+   - Card on the dashboard for voice-eligible accounts without a configured
+     voice agent: "Add your AI voice receptionist" → opens the wizard.
+   - Dismissal option "I don't want an AI voice agent yet" → persists a flag
+     (e.g. Account.voiceAgentDismissedAt) and hides the card; Settings →
+     Voice Assistant still offers full setup (and un-dismisses on
+     completion).
+   - Wizard steps: (1) create your ElevenLabs account (recommend Creator
+     $22/mo, link + what to click), (2) paste your API key (validated live),
+     (3) we clone your voice from your onboarding recordings + preview
+     player, (4) we buy your AI number in your account, (5) MODE CHOICE —
+     "forward missed calls to it" (carrier forwarding instructions for their
+     phone setup) OR "use it as your published number" (checklist: website,
+     GBP, social profiles; direct-mode copy), (6) enter the clinic's real
+     number for human transfer + confirm, (7) test call.
+4. Settings → "Voice Assistant" section: everything the wizard sets, editable
+   — key entry, voice preview/re-clone button, the assigned number, mode
+   switch (overflow ⇄ direct, re-showing the matching instructions), human
+   transfer number, usage meter.
+5. Usage monitoring: read their subscription/usage via their key; dashboard
    warning at 80% of included minutes (prevents overage surprises).
 
 ## Phase V3 — safety + verification (gate for enabling on any real clinic)
@@ -111,17 +155,22 @@ actions (request_callback, add_contact_email, send_guide_link→SMS) → GHL
    caller reads back a wrong phone number (the C3 correction rule).
 2. Live phone E2E on Azavea or the test clinic: real call, clone voice,
    barge-in, callback executed in GHL, transcript lands flagged-first.
+   Must include the transfer matrix: human-transfer answered; human-transfer
+   unanswered (~10 rings) → return to AI → callback offer → request_callback
+   lands in GHL; and both usage modes (a forwarded call and a direct call).
 3. Two-party-consent handling: recording disclosure line gated on
    `organizationCountryCode`/state; confirm ElevenLabs' own call-recording
    settings per agent.
 
 ## Effort + sequence
 
-V1 ≈ 3–4 days, V2 ≈ 3–4 days, V3 ≈ 2–3 days → ~2 weeks elapsed. Sequence
-AFTER: launch, first pilots stable. Prerequisite check at build start:
-ElevenLabs current pricing/quotas, custom-LLM streaming contract, native
-number countries (AU!), and whether agents can be created via API on
-Starter/Creator keys.
+V1 ≈ 3–4 days, V2 ≈ 4–5 days (wizard + dashboard card added), V3 ≈ 2–3 days
+→ ~2–2.5 weeks elapsed. Sequence AFTER: launch, first pilots stable.
+Prerequisite check at build start: ElevenLabs current pricing/quotas,
+custom-LLM streaming contract, native number countries (US + AU — target
+market is US + international), transfer-tool timeout/return-on-no-answer
+semantics, and whether agents can be created via API on Starter/Creator
+keys.
 
 ## Out of scope (explicitly)
 
