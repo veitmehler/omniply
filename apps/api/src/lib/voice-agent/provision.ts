@@ -23,7 +23,7 @@ import { prisma, decrypt, brandSettingsForUser, listS3Keys, readS3Object } from 
 import { logger } from '../logger'
 import { cloneElevenLabsVoiceFromSamples } from '../elevenlabs/client'
 import { createConvAiAgent, updateConvAiAgent, importTwilioNumber, type ConvAiAgentSpec } from '../elevenlabs/convai'
-import { buyVoiceNumber, createTwilioSubaccount, getTwilioSubaccountToken, twilioConfigured } from '../twilio'
+import { buyVoiceNumber, createTwilioSubaccount, getTwilioSubaccountToken, twilioConfigured, type TwilioAddress } from '../twilio'
 
 const MAX_CLONE_SAMPLES = 6
 
@@ -94,6 +94,12 @@ export async function provisionVoiceAgent(
     const practiceName = brand?.organizationName?.trim() || 'the practice'
     const secret = await ensureVoiceAgentSecret(accountId)
 
+    // Persist partial progress IMMEDIATELY after each vendor-side create —
+    // otherwise an error later in the run would orphan the created resource
+    // and a retry would duplicate it (bug found in the first live run).
+    const persist = (data: Record<string, unknown>) =>
+      prisma.voiceAgentConfig.update({ where: { accountId }, data })
+
     // ── Voice clone (reused when already cloned) ─────────────────────────────
     let voiceId = config.voiceId
     if (!voiceId) {
@@ -108,6 +114,7 @@ export async function provisionVoiceAgent(
         }
         const clone = await cloneElevenLabsVoiceFromSamples({ apiKey, name: `${practiceName} — Omniply voice`, samples })
         voiceId = clone.voice_id
+        await persist({ voiceId })
         notes.push(`Voice cloned from ${samples.length} onboarding recording(s).`)
         logger.info({ accountId, voiceId, samples: samples.length }, '[voice-agent] instant voice clone created')
       }
@@ -128,6 +135,7 @@ export async function provisionVoiceAgent(
     } else {
       const created = await createConvAiAgent(apiKey, spec)
       agentId = created.agent_id
+      await persist({ agentId })
       notes.push('Agent created.')
       logger.info({ accountId, agentId }, '[voice-agent] ConvAI agent created')
     }
@@ -147,11 +155,25 @@ export async function provisionVoiceAgent(
           const sub = await createTwilioSubaccount(`omniply-voice-${accountId}`)
           twilioSubaccountSid = sub.sid
           subToken = sub.authToken
+          await persist({ twilioSubaccountSid })
           logger.info({ accountId, subSid: sub.sid }, '[voice-agent] Twilio subaccount created')
         }
+        // Clinic address for countries with a number-address requirement (AU).
+        const address: TwilioAddress | null =
+          brand?.addressLine1 && brand.addressLocality && brand.postalCode
+            ? {
+                customerName: practiceName,
+                street: [brand.addressLine1, brand.addressLine2].filter(Boolean).join(', '),
+                city: brand.addressLocality,
+                region: brand.addressRegion ?? brand.addressLocality,
+                postalCode: brand.postalCode,
+                isoCountry: brand.organizationCountryCode ?? 'US',
+              }
+            : null
         const bought = await buyVoiceNumber(
           { sid: twilioSubaccountSid, token: subToken },
           brand?.organizationCountryCode ?? 'US',
+          address,
         )
         phoneNumber = bought.phoneNumber
         const imported = await importTwilioNumber(apiKey, {

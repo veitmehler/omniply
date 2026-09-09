@@ -65,13 +65,43 @@ export async function getTwilioSubaccountToken(subSid: string): Promise<string> 
   return data.auth_token
 }
 
+export interface TwilioAddress {
+  customerName: string
+  street: string
+  city: string
+  region: string
+  postalCode: string
+  isoCountry: string
+}
+
+/** Create an Address resource in the subaccount (regulatory requirement for
+ *  many countries incl. AU — verified live 2026-09-09: purchase 400s without it). */
+export async function createTwilioAddress(sub: { sid: string; token: string }, addr: TwilioAddress): Promise<string> {
+  const data = await twilioFetch<{ sid: string }>(sub, `/Accounts/${sub.sid}/Addresses.json`, {
+    method: 'POST',
+    form: {
+      CustomerName: addr.customerName.slice(0, 100),
+      Street: addr.street.slice(0, 100),
+      City: addr.city.slice(0, 100),
+      Region: addr.region.slice(0, 100),
+      PostalCode: addr.postalCode.slice(0, 20),
+      IsoCountry: addr.isoCountry,
+    },
+  })
+  return data.sid
+}
+
 /**
  * Buy one voice-capable local number inside the subaccount. Country from the
  * clinic's brand country code (US default; AU supported — target market).
+ * Countries with an address requirement (AU among them) get the clinic's own
+ * address registered first; without address data the purchase error surfaces
+ * as the stored lastError.
  */
 export async function buyVoiceNumber(
   sub: { sid: string; token: string },
   countryCode: string,
+  address?: TwilioAddress | null,
 ): Promise<{ phoneNumber: string; numberSid: string }> {
   const country = /^[A-Z]{2}$/.test(countryCode) ? countryCode : 'US'
   const avail = await twilioFetch<{ available_phone_numbers?: { phone_number: string }[] }>(
@@ -80,10 +110,21 @@ export async function buyVoiceNumber(
   )
   const candidate = avail.available_phone_numbers?.[0]?.phone_number
   if (!candidate) throw new Error(`Twilio has no available local voice numbers for ${country}`)
-  const bought = await twilioFetch<{ sid: string; phone_number: string }>(
-    sub,
-    `/Accounts/${sub.sid}/IncomingPhoneNumbers.json`,
-    { method: 'POST', form: { PhoneNumber: candidate } },
-  )
-  return { phoneNumber: bought.phone_number, numberSid: bought.sid }
+
+  const buy = (form: Record<string, string>) =>
+    twilioFetch<{ sid: string; phone_number: string }>(sub, `/Accounts/${sub.sid}/IncomingPhoneNumbers.json`, {
+      method: 'POST',
+      form,
+    })
+
+  try {
+    const bought = await buy({ PhoneNumber: candidate })
+    return { phoneNumber: bought.phone_number, numberSid: bought.sid }
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    if (!/address/i.test(msg) || !address) throw err
+    const addressSid = await createTwilioAddress(sub, { ...address, isoCountry: country })
+    const bought = await buy({ PhoneNumber: candidate, AddressSid: addressSid })
+    return { phoneNumber: bought.phone_number, numberSid: bought.sid }
+  }
 }

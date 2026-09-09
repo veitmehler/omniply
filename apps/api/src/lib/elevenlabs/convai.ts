@@ -66,10 +66,16 @@ function agentConfigBody(spec: ConvAiAgentSpec): Record<string, unknown> {
           // the shim's fallbacks still hold (V3 verification item).
           custom_llm_extra_body: true,
           built_in_tools: {
-            end_call: { params: { system_tool_type: 'end_call' } },
+            end_call: {
+              name: 'end_call',
+              description: 'End the call when the conversation is complete or the caller says goodbye.',
+              params: { system_tool_type: 'end_call' },
+            },
             ...(spec.transferNumber
               ? {
                   transfer_to_number: {
+                    name: 'transfer_to_number',
+                    description: 'Transfer the caller to the practice team when they ask for a human.',
                     params: {
                       system_tool_type: 'transfer_to_number',
                       transfers: [
