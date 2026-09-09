@@ -18,8 +18,10 @@ import { runAgentTurn } from './engine'
 /** GHL message-type → outbound send type. Extend to enable more channels. */
 const CHANNEL_TYPES: Record<string, string> = {
   TYPE_FACEBOOK: 'FB',
+  TYPE_FB: 'FB',
   FB: 'FB',
   TYPE_INSTAGRAM: 'IG',
+  TYPE_IG: 'IG',
   IG: 'IG',
 }
 
@@ -28,7 +30,9 @@ export interface DmJobData {
   ownerUserId: string
   contactId: string
   message: string
-  sendType: string
+  /** Absent when the workflow payload had no message_type — the worker
+   *  resolves the channel via the Conversations API (2026-09-09). */
+  sendType?: string
 }
 
 export interface ParsedDmPayload {
@@ -80,8 +84,11 @@ export async function acceptDmWebhook(
   // Outbound echoes must never trigger a turn (loop safety layer 2).
   if (parsed.direction && parsed.direction.toLowerCase() !== 'inbound') return 'not-inbound'
 
+  // Explicit non-messenger types are rejected here; a MISSING type is fine —
+  // the Customer Replied builder exposes no message_type field (2026-09-09),
+  // so the worker resolves the channel via the Conversations API instead.
   const sendType = parsed.messageType ? CHANNEL_TYPES[parsed.messageType.toUpperCase()] : undefined
-  if (!sendType) return `channel-unsupported:${parsed.messageType ?? 'unknown'}`
+  if (parsed.messageType && !sendType) return `channel-unsupported:${parsed.messageType}`
 
   await enqueue({
     accountId: account.id,
@@ -90,7 +97,7 @@ export async function acceptDmWebhook(
     message: parsed.message,
     sendType,
   })
-  return 'enqueued'
+  return sendType ? 'enqueued' : 'enqueued-channel-lookup'
 }
 
 /** Worker: run the agent turn and reply on the same channel. */
@@ -99,6 +106,20 @@ export async function processDmTurn(data: DmJobData): Promise<void> {
   if (!creds) {
     logger.error({ accountId: data.accountId }, '[agent-dm] no GHL credentials — turn dropped')
     return
+  }
+
+  // Channel resolution when the webhook payload had no message_type: look at
+  // the contact's latest conversation. Non-messenger channels (SMS, email,
+  // webchat) are skipped silently — this transport only serves FB/IG DMs.
+  let sendType = data.sendType
+  if (!sendType) {
+    const { findGhlConversationChannel } = await import('../lib/ghl/client')
+    const channel = await findGhlConversationChannel(creds.apiKey, creds.locationId, data.contactId)
+    sendType = channel ? CHANNEL_TYPES[channel.toUpperCase()] : undefined
+    if (!sendType) {
+      logger.info({ accountId: data.accountId, contactId: data.contactId, channel }, '[agent-dm] non-messenger channel — skipping')
+      return
+    }
   }
 
   // Suppression check (layer 2 — the workflow also filters on these tags):
@@ -128,13 +149,13 @@ export async function processDmTurn(data: DmJobData): Promise<void> {
   const text = parts.join('\n\n').slice(0, 1900)
 
   const sent = await sendGhlConversationMessage(creds.apiKey, {
-    type: data.sendType,
+    type: sendType,
     contactId: data.contactId,
     message: text,
   })
   if (!sent) {
     logger.error(
-      { accountId: data.accountId, contactId: data.contactId, sendType: data.sendType },
+      { accountId: data.accountId, contactId: data.contactId, sendType: sendType },
       '[agent-dm] reply send FAILED — visitor saw nothing',
     )
     await prisma.agentConversation

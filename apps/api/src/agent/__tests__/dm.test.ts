@@ -20,3 +20,13 @@ describe('parseDmPayload (tolerant GHL workflow webhook shapes)', () => {
     expect(p.message).toBeNull()
   })
 })
+
+describe('parseDmPayload — reduced Customer Replied payload (2026-09-09)', () => {
+  it('parses contact_id + message_body with NO message_type (builder offers none)', () => {
+    const p = parseDmPayload({ customData: { contact_id: 'c9', message_body: 'hi there' } })
+    expect(p.contactId).toBe('c9')
+    expect(p.message).toBe('hi there')
+    expect(p.messageType).toBeNull()
+    expect(p.direction).toBeNull()
+  })
+})
