@@ -25,6 +25,8 @@ import {
   buildStreamFrames,
   findTransferTool,
   lastUserMessage,
+  toolContinuation,
+  transferLooksFailed,
   voiceVisitorKey,
   type VoiceCompletionBody,
   type VoiceReplyPlan,
@@ -63,7 +65,24 @@ async function handleVoiceCompletion(
   }
 
   let plan: VoiceReplyPlan
-  if (!message) {
+  const continuation = toolContinuation(body)
+  if (continuation !== null) {
+    // Post-tool-call continuation: never re-run the turn. Transfer failed →
+    // the plan's no-answer fallback (offer a callback message); otherwise
+    // stay silent — on success the platform removes the agent from the call.
+    const failed = transferLooksFailed(continuation)
+    logger.info(
+      { accountId: account.id, failed, toolResult: continuation.slice(0, 200) },
+      '[voice-agent] tool continuation',
+    )
+    plan = {
+      reply: failed
+        ? 'It looks like the team could not pick up just now. Can I take your name and number instead? They will call you back as soon as possible.'
+        : '',
+      transferToolName: null,
+      model,
+    }
+  } else if (!message) {
     // Empty/agent-only transcript (e.g. a first_message-only warmup ping):
     // respond with silence-safe filler rather than erroring the call.
     plan = { reply: 'How can I help you today?', transferToolName: null, model }

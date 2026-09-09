@@ -6,6 +6,8 @@ import {
   lastUserMessage,
   messageText,
   sentenceChunks,
+  toolContinuation,
+  transferLooksFailed,
   voiceVisitorKey,
   type VoiceCompletionBody,
 } from '../voice-shim'
@@ -127,6 +129,51 @@ describe('sentenceChunks', () => {
 
   it('keeps a single sentence whole', () => {
     expect(sentenceChunks('Just one sentence with no end')).toEqual(['Just one sentence with no end'])
+  })
+})
+
+describe('toolContinuation', () => {
+  it('normal visitor turn is not a continuation', () => {
+    expect(toolContinuation(body())).toBeNull()
+  })
+
+  it('tool-result message after the last user turn is a continuation', () => {
+    const b = body({
+      messages: [
+        { role: 'user', content: 'get me a human' },
+        { role: 'assistant', content: 'Connecting you now.' },
+        { role: 'tool', content: 'transfer initiated' },
+      ],
+    })
+    expect(toolContinuation(b)).toBe('transfer initiated')
+  })
+
+  it('assistant tool_calls with no later user turn is a continuation', () => {
+    const b = body({
+      messages: [
+        { role: 'user', content: 'get me a human' },
+        { role: 'assistant', content: 'Connecting you now.', tool_calls: [{}] } as never,
+      ],
+    })
+    expect(toolContinuation(b)).toBe('')
+  })
+
+  it('a NEW user message after the tool result is a normal turn again', () => {
+    const b = body({
+      messages: [
+        { role: 'user', content: 'get me a human' },
+        { role: 'tool', content: 'transfer failed' },
+        { role: 'user', content: 'hello? anyone?' },
+      ],
+    })
+    expect(toolContinuation(b)).toBeNull()
+  })
+
+  it('transferLooksFailed classifies results', () => {
+    expect(transferLooksFailed('transfer failed: no-answer')).toBe(true)
+    expect(transferLooksFailed('busy')).toBe(true)
+    expect(transferLooksFailed('transfer initiated')).toBe(false)
+    expect(transferLooksFailed('')).toBe(false)
   })
 })
 

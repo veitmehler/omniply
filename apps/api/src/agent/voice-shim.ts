@@ -109,6 +109,30 @@ export function voiceVisitorKey(body: VoiceCompletionBody): { key: string; sourc
   return { key: `elh-${h}`, source: 'opener-hash' }
 }
 
+/**
+ * Tool-continuation detection. After we emit a tool call (transfer), the
+ * platform calls back with the tool result appended, expecting a SHORT
+ * continuation — not a re-run of the turn (live call 2026-09-09: the same
+ * "connecting you now" was spoken three times while the transfer dialed).
+ * Returns the tool-result text when the request is a continuation, null when
+ * it is a normal visitor turn.
+ */
+export function toolContinuation(body: VoiceCompletionBody): string | null {
+  const messages = Array.isArray(body.messages) ? body.messages : []
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const role = messages[i]?.role
+    if (role === 'user') return null
+    if (role === 'tool') return messageText(messages[i]) || ''
+    if (role === 'assistant' && (messages[i] as { tool_calls?: unknown }).tool_calls) return ''
+  }
+  return null
+}
+
+/** Does a tool result read like a failed/unanswered transfer? */
+export function transferLooksFailed(toolResult: string): boolean {
+  return /fail|no.?answer|busy|unavailable|not available|error|declin|timeout|cancel/i.test(toolResult)
+}
+
 /** Find the ElevenLabs transfer system tool among the offered tool defs. */
 export function findTransferTool(body: VoiceCompletionBody): string | null {
   const tools = Array.isArray(body.tools) ? body.tools : []
