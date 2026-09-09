@@ -144,8 +144,10 @@ export function findTransferTool(body: VoiceCompletionBody): string | null {
 
 export interface VoiceReplyPlan {
   reply: string
-  /** Non-null → emit this tool call (human transfer) after the spoken text. */
+  /** Non-null → emit this transfer tool call. */
   transferToolName: string | null
+  /** Destination for the transfer (required arg); null skips the call. */
+  transferNumber?: string | null
   model: string
 }
 
@@ -153,13 +155,29 @@ function completionId(): string {
   return `chatcmpl-${randomBytes(12).toString('hex')}`
 }
 
-function toolCallPayload(name: string) {
+/**
+ * ElevenLabs' transfer_to_number REQUIRES transfer_number + client_message +
+ * agent_message; omitting them (we previously sent only {reason}) makes the
+ * platform reject the call and re-prompt the LLM — the root cause of the
+ * "connecting you now" spoken 3× (live call 2026-09-09). client_message is
+ * what the platform SPEAKS while dialing, so the spoken line lives there, not
+ * in streamed content (which would double it).
+ */
+function toolCallPayload(name: string, plan: VoiceReplyPlan) {
   return [
     {
       index: 0,
       id: `call_${randomBytes(8).toString('hex')}`,
       type: 'function',
-      function: { name, arguments: JSON.stringify({ reason: 'Caller asked for a human' }) },
+      function: {
+        name,
+        arguments: JSON.stringify({
+          transfer_number: plan.transferNumber ?? '',
+          client_message: plan.reply || 'Connecting you to the team now.',
+          agent_message: 'Caller asked to speak with a person — transferring from the AI assistant.',
+          reason: 'Caller asked for a human',
+        }),
+      },
     },
   ]
 }
@@ -172,7 +190,7 @@ export function sentenceChunks(text: string): string[] {
 
 /** Non-streaming completion JSON (stream:false fallback). */
 export function buildCompletion(plan: VoiceReplyPlan): Record<string, unknown> {
-  const toolCalls = plan.transferToolName ? toolCallPayload(plan.transferToolName) : undefined
+  const toolCalls = plan.transferToolName ? toolCallPayload(plan.transferToolName, plan) : undefined
   return {
     id: completionId(),
     object: 'chat.completion',
@@ -183,7 +201,9 @@ export function buildCompletion(plan: VoiceReplyPlan): Record<string, unknown> {
         index: 0,
         message: {
           role: 'assistant',
-          content: plan.reply,
+          // On a transfer the spoken line rides in the tool's client_message,
+          // so content is empty to avoid the platform speaking it twice.
+          content: toolCalls ? '' : plan.reply,
           ...(toolCalls ? { tool_calls: toolCalls } : {}),
         },
         finish_reason: toolCalls ? 'tool_calls' : 'stop',
@@ -206,13 +226,15 @@ export function buildStreamFrames(plan: VoiceReplyPlan): string[] {
     })}\n\n`
 
   const frames: string[] = [chunk({ role: 'assistant' }, null)]
-  for (const sentence of sentenceChunks(plan.reply)) {
-    frames.push(chunk({ content: sentence }, null))
-  }
   if (plan.transferToolName) {
-    frames.push(chunk({ tool_calls: toolCallPayload(plan.transferToolName) }, null))
+    // Transfer: NO spoken content (client_message inside the tool carries the
+    // single spoken line); just the tool call so the platform executes once.
+    frames.push(chunk({ tool_calls: toolCallPayload(plan.transferToolName, plan) }, null))
     frames.push(chunk({}, 'tool_calls'))
   } else {
+    for (const sentence of sentenceChunks(plan.reply)) {
+      frames.push(chunk({ content: sentence }, null))
+    }
     frames.push(chunk({}, 'stop'))
   }
   frames.push('data: [DONE]\n\n')

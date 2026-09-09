@@ -84,6 +84,12 @@ function agentConfigBody(spec: ConvAiAgentSpec): Record<string, unknown> {
                           transfer_destination: { type: 'phone', phone_number: spec.transferNumber },
                           condition: 'The caller asks to speak to a human, a real person, the front desk, or any staff member.',
                           transfer_type: 'conference',
+                          // The human must press a key to accept — so voicemail
+                          // and unanswered rings do NOT count as connected, and
+                          // the call returns to the agent for the callback
+                          // fallback (live test 2026-09-09: voicemail was
+                          // swallowing the transfer before the fallback fired).
+                          require_acceptance: true,
                         },
                       ],
                     },

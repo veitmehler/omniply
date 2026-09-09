@@ -189,12 +189,24 @@ describe('response encoding', () => {
     expect(c.choices[0].message.tool_calls).toBeUndefined()
   })
 
-  it('transfer plan emits a tool call with finish_reason tool_calls', () => {
-    const c = buildCompletion({ reply: 'Connecting you now.', transferToolName: 'transfer_to_number', model: 'm' }) as {
-      choices: { message: { tool_calls: { function: { name: string } }[] }; finish_reason: string }[]
+  it('transfer plan emits a tool call with the required args, empty content', () => {
+    const c = buildCompletion({
+      reply: 'Connecting you now.',
+      transferToolName: 'transfer_to_number',
+      transferNumber: '+18297312601',
+      model: 'm',
+    }) as {
+      choices: { message: { content: string; tool_calls: { function: { name: string; arguments: string } }[] }; finish_reason: string }[]
     }
     expect(c.choices[0].finish_reason).toBe('tool_calls')
-    expect(c.choices[0].message.tool_calls[0].function.name).toBe('transfer_to_number')
+    const fn = c.choices[0].message.tool_calls[0].function
+    expect(fn.name).toBe('transfer_to_number')
+    const args = JSON.parse(fn.arguments) as { transfer_number: string; client_message: string; agent_message: string }
+    expect(args.transfer_number).toBe('+18297312601')
+    expect(args.client_message).toBe('Connecting you now.')
+    expect(args.agent_message).toBeTruthy()
+    // Spoken line rides in client_message, so content must be empty (no double).
+    expect(c.choices[0].message.content).toBe('')
   })
 
   it('stream frames: role first, full reply across deltas, [DONE] last', () => {
@@ -210,11 +222,24 @@ describe('response encoding', () => {
     expect(frames.some((f) => f.includes('"finish_reason":"stop"'))).toBe(true)
   })
 
-  it('stream frames with transfer end in tool_calls finish', () => {
-    const frames = buildStreamFrames({ reply: 'Connecting you.', transferToolName: 'transfer_to_number', model: 'm' })
+  it('stream frames with transfer: tool call, NO spoken content, tool_calls finish', () => {
+    const frames = buildStreamFrames({
+      reply: 'Connecting you.',
+      transferToolName: 'transfer_to_number',
+      transferNumber: '+18297312601',
+      model: 'm',
+    })
     expect(frames.some((f) => f.includes('transfer_to_number'))).toBe(true)
     expect(frames.some((f) => f.includes('"finish_reason":"tool_calls"'))).toBe(true)
     expect(frames.some((f) => f.includes('"finish_reason":"stop"'))).toBe(false)
+    // The spoken line must NOT appear as streamed content (only in the tool's
+    // client_message arg) — this is the 3×-repeat regression guard.
+    const content = frames
+      .filter((f) => f.startsWith('data: {'))
+      .map((f) => JSON.parse(f.slice(6)) as { choices: { delta: { content?: string } }[] })
+      .map((c) => c.choices[0].delta.content ?? '')
+      .join('')
+    expect(content).toBe('')
   })
 
   it('every stream frame is valid SSE', () => {

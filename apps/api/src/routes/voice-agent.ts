@@ -50,6 +50,11 @@ async function handleVoiceCompletion(
     select: { id: true },
   })
   if (!account) return reply.status(401).send({ error: 'unauthorized' })
+  const vconfig = await prisma.voiceAgentConfig.findUnique({
+    where: { accountId: account.id },
+    select: { transferNumber: true },
+  })
+  const transferNumber = vconfig?.transferNumber ?? null
 
   const body = request.body ?? {}
   const message = lastUserMessage(body)
@@ -108,7 +113,7 @@ async function handleVoiceCompletion(
           '[voice-agent] request_human but no transfer tool offered — pivoted to callback offer',
         )
       }
-      plan = { reply, transferToolName, model }
+      plan = { reply, transferToolName, transferNumber, model }
       logger.info(
         {
           accountId: account.id,
