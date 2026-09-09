@@ -31,6 +31,7 @@ import { runNewsletterPrompt } from '../newsletter/llm'
 import type { AgentContext } from './context'
 import type { AgentAction } from './tools'
 import { knownDetailsFor, primaryEmailOf } from './known'
+import { normalizePhoneE164 } from './phone'
 
 /** The conversation's converged contact id, if one exists yet. */
 async function contactIdFor(conversationId: string): Promise<string | null> {
@@ -132,18 +133,21 @@ async function executeCallback(
 
   const known = await knownDetailsFor(conversationId)
   const existingId = await contactIdFor(conversationId)
+  // Normalize to E.164 with the CLINIC's country — GHL otherwise guesses
+  // from the location default and can misfile foreign formats (+1074… bug).
+  const phone = normalizePhoneE164(action.phone, ctx.countryCode)
   let contactId: string | null = existingId
   if (existingId) {
     // Converge: same contact the guide capture created — fields by id, tag-add.
     await updateGhlContact(creds.apiKey, existingId, {
-      phone: action.phone,
+      phone,
       ...(action.name ? { firstName: action.name } : {}),
       ...(customFields ? { customFields } : {}),
     })
     await addGhlContactTags(creds.apiKey, existingId, tags)
   } else {
     const result = await upsertGhlContact(creds.apiKey, creds.locationId, {
-      phone: action.phone,
+      phone,
       firstName: action.name ?? known.name ?? undefined,
       // Carry the known email into creation so the contact starts complete.
       ...(primaryEmailOf(known) ? { email: primaryEmailOf(known)! } : {}),
@@ -224,14 +228,16 @@ async function executeCapture(
     await updateGhlContact(creds.apiKey, existingId, {
       ...(known.preferredEmail ? {} : { email: action.email }),
       ...(action.name ? { firstName: action.name } : {}),
-      ...(action.phone ? { phone: action.phone } : {}),
+      ...(action.phone ? { phone: normalizePhoneE164(action.phone, ctx.countryCode) } : {}),
     })
     await addGhlContactTags(creds.apiKey, existingId, tags)
   } else {
     const result = await upsertGhlContact(creds.apiKey, creds.locationId, {
       email: action.email,
       ...((action.name ?? known.name) ? { firstName: (action.name ?? known.name)! } : {}),
-      ...(action.phone ?? known.phone ? { phone: (action.phone ?? known.phone)! } : {}),
+      ...(action.phone ?? known.phone
+        ? { phone: normalizePhoneE164((action.phone ?? known.phone)!, ctx.countryCode) }
+        : {}),
       tags,
       source: 'chat-agent',
     })
