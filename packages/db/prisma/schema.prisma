@@ -1216,6 +1216,7 @@ model BrandSettings {
   // Optional everywhere: consumers DROP the hours line when null.
   openingHours             String? @db.Text
   clinicFaqs               Json? // logistics-only Q&A [{q,a}] for FAQPage schema (agent plan 3.1; never clinical)
+  agentExtraKnowledge      String? @db.Text // freeform "anything else the assistant should know" (Settings KB editor; 5000-char cap; injected as reference data, never instructions)
   // Google Place ID (resolved once from googleBusinessProfileUrl or name+address).
   // Drives the review deep link (QR card) + the weekly Places review probe.
   googlePlaceId            String?

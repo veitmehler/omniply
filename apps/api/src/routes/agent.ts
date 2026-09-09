@@ -149,10 +149,11 @@ export async function agentRoutes(app: FastifyInstance) {
       openingHours: brand.openingHours ?? '',
       organizationPhone: brand.organizationPhone ?? '',
       bookingUrl: brand.bookingUrl ?? '',
+      extraKnowledge: brand.agentExtraKnowledge ?? '',
     }
   })
 
-  app.put<{ Body: { faqs?: { q?: string; a?: string }[]; openingHours?: string; organizationPhone?: string; bookingUrl?: string } }>(
+  app.put<{ Body: { faqs?: { q?: string; a?: string }[]; openingHours?: string; organizationPhone?: string; bookingUrl?: string; extraKnowledge?: string } }>(
     '/agent/kb',
     async (request, reply) => {
       const clerkId = await requireAuth(request, reply)
@@ -175,6 +176,9 @@ export async function agentRoutes(app: FastifyInstance) {
           ...(body.openingHours !== undefined ? { openingHours: body.openingHours.trim() || null } : {}),
           ...(body.organizationPhone !== undefined ? { organizationPhone: body.organizationPhone.trim() || null } : {}),
           ...(body.bookingUrl !== undefined ? { bookingUrl: body.bookingUrl.trim() || null } : {}),
+          ...(body.extraKnowledge !== undefined
+            ? { agentExtraKnowledge: body.extraKnowledge.trim().slice(0, 5000) || null }
+            : {}),
         },
       })
       if (user.accountId) clearAgentContextFor(user.accountId)
