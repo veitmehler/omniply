@@ -9,12 +9,12 @@
  */
 
 export type AgentAction =
-  | { type: 'send_booking_link' }
+  | { type: 'send_booking_link'; phone: string | null }
   | { type: 'offer_guide'; slug: string }
   | { type: 'capture_contact'; name: string | null; email: string; phone: string | null; guideSlug: string | null }
-  | { type: 'request_callback'; name: string; phone: string; reason: string }
+  | { type: 'request_callback'; name: string; phone: string; reason: string; preferredTime: string | null }
   | { type: 'add_contact_email'; email: string }
-  | { type: 'send_guide_link'; slug: string }
+  | { type: 'send_guide_link'; slug: string; phone: string | null }
   | { type: 'request_human' }
 
 export interface ActionContext {
@@ -42,8 +42,13 @@ export function validateAction(raw: unknown, ctx: ActionContext): AgentAction | 
   const a = raw as Record<string, unknown>
 
   switch (a.type) {
-    case 'send_booking_link':
-      return ctx.bookingAvailable ? { type: 'send_booking_link' } : null
+    case 'send_booking_link': {
+      if (!ctx.bookingAvailable) return null
+      // phone (voice SMS delivery): optional, whitelist-validated like all
+      // phone fields; web/DM never set it and nothing downstream requires it.
+      const phone = str(a.phone, 30)
+      return { type: 'send_booking_link', phone: phone && validPhone(phone) ? phone : null }
+    }
 
     case 'offer_guide': {
       const slug = str(a.slug, 80)
@@ -73,8 +78,11 @@ export function validateAction(raw: unknown, ctx: ActionContext): AgentAction | 
       const name = str(a.name, 60)
       const phone = str(a.phone, 30)
       const reason = str(a.reason, 200)
+      // Caller's words verbatim ("around 10:30 AM") — no date parsing (voice-
+      // sms plan §5): it feeds humans and merge fields, not schedulers.
+      const preferredTime = str(a.preferredTime, 80)
       if (!name || !validPhone(phone)) return null
-      return { type: 'request_callback', name, phone, reason }
+      return { type: 'request_callback', name, phone, reason, preferredTime: preferredTime || null }
     }
 
     case 'request_human':
@@ -82,7 +90,9 @@ export function validateAction(raw: unknown, ctx: ActionContext): AgentAction | 
 
     case 'send_guide_link': {
       const slug = str(a.slug, 80)
-      return ctx.guideSlugs.includes(slug) ? { type: 'send_guide_link', slug } : null
+      if (!ctx.guideSlugs.includes(slug)) return null
+      const phone = str(a.phone, 30)
+      return { type: 'send_guide_link', slug, phone: phone && validPhone(phone) ? phone : null }
     }
 
     case 'add_contact_email': {

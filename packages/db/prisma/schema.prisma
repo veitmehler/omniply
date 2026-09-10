@@ -496,6 +496,10 @@ model VoiceAgentConfig {
   rescueNumberId      String? // ElevenLabs phone-number import id
   mode                String   @default("overflow") // overflow (conditional forwarding) | direct (published number)
   transferNumber      String? // clinic's real line for human hand-off
+  // SMS delivery (voice-sms plan): true until a send FAILS (location without
+  // LeadConnector SMS) — then latched false and the voice overlay falls back
+  // to email delivery (attempt-and-latch probe; no clean pre-probe exists).
+  voiceSmsAvailable   Boolean  @default(true)
   lastError           String?
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt

@@ -1,7 +1,19 @@
 # Voice SMS Delivery — "I'll text you the link" made real (via GHL)
 
-Status: PLANNED 2026-09-10 (user approved planning; build AFTER the voice
-rescue E2E passes). Companion to .plans/voice-agent-elevenlabs and
+Status: BUILT on staging 2026-09-10. Implementation notes vs plan:
+- sendGhlConversationMessage (existing, type SMS) reused — no new client fn.
+- Capability probe = ATTEMPT-AND-LATCH: voiceSmsAvailable defaults true and
+  latches false on the first failed send (flag sms-failed:*, loud log);
+  overlays branch on it per call. No clean GHL pre-probe exists.
+- Guide link = the guide's driveLink (same link the DM/web transports
+  deliver) — consistent across channels; trigger links stay with the
+  comment funnel.
+- preferredTime shipped for ALL transports (agent_system CALLBACK FLOW
+  step 5 + voice overlays); "Callback Preferred Time" custom field
+  find-or-create; note line; snapshot guide documents the merge field.
+LIVE VERIFICATION (plan §7) still pending — needs an SMS-capable location
+(dev/snapshot location may lack LeadConnector phone; Azavea or the
+simonchiro location are the candidates). Companion to .plans/voice-agent-elevenlabs and
 voice-rescue-agent plans.
 
 ## Problem (live call 2026-09-10)

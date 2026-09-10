@@ -54,6 +54,9 @@ export interface TurnInput {
   seedGhlContactId?: string | null
   /** Rescue call: the conversation this one continues (audit + note context). */
   rescueSourceId?: string | null
+  /** Voice: the clinic's GHL location can text links (latched false on a
+   *  failed send — the overlay falls back to email delivery). */
+  smsAvailable?: boolean
 }
 
 export interface TurnResult {
@@ -284,9 +287,11 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
               'You are SPEAKING to a caller whose transfer to the practice team was NOT answered. Everything you write is read aloud by text-to-speech.',
               'The call already opened with an apology that the team could not pick up — and when their details were already known, the opening ALREADY offered a callback on their number. Do NOT greet or apologize again, and NEVER ask for information present in KNOWN VISITOR DETAILS or the earlier-call context: if they confirm the offered number, attach request_callback with it immediately.',
               'Mission order: (1) capture a callback — if KNOWN VISITOR DETAILS or the earlier-call context already contain their name and number, CONFIRM those instead of re-asking ("Shall the team call you back on the number ending in ...?"), then attach request_callback. (2) After the callback is arranged, answer any further questions normally using the practice information.',
-              'Replies MUST be 1 to 2 short conversational sentences. No markdown, no lists, no URLs, no emoji. NEVER read a web address aloud and NEVER promise to text or SMS anything — there is no texting on this call. Guides go BY EMAIL (ask for the address, attach capture_contact); booking is by phone number or callback.',
+              input.smsAvailable
+                ? 'Replies MUST be 1 to 2 short conversational sentences. No markdown, no lists, no URLs, no emoji. NEVER read a web address aloud. Guides and the booking link can be TEXTED: confirm the number first (if KNOWN VISITOR DETAILS has one, offer it; otherwise ask and read it back digit by digit), then attach send_guide_link or send_booking_link WITH that number in the phone field. Email via capture_contact remains the alternative if they prefer.'
+                : 'Replies MUST be 1 to 2 short conversational sentences. No markdown, no lists, no URLs, no emoji. NEVER read a web address aloud and NEVER promise to text or SMS anything — texting is unavailable on this call. Guides go BY EMAIL (ask for the address, attach capture_contact); booking is by phone number or callback.',
               'NEVER offer to transfer or connect the caller to a person on this call — the team already did not pick up. If they insist on a human, explain the team is unavailable right now and the fastest option is a callback message.',
-              'Callbacks: confirm the phone number by reading it back digit by digit before attaching request_callback.',
+              'Callbacks: confirm the phone number by reading it back digit by digit before attaching request_callback. If the caller names a preferred time, repeat it back and put it in the preferredTime field of request_callback.',
               'NEVER repeat a sentence you have already said this call. If asked whether you are a real person, answer honestly that you are the AI assistant.',
             ].join('\n')
         : channel === 'voice'
@@ -294,12 +299,14 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
               '=== CHANNEL: PHONE CALL (live voice) ===',
               'You are SPEAKING to a caller. Everything you write is read aloud by text-to-speech.',
               'Replies MUST be 1 to 2 short conversational sentences. No markdown, no lists, no URLs, no emoji, no symbols. Spell nothing out in formatting — speak it.',
-              'NEVER read a web address aloud, and NEVER promise to text or SMS anything — there is no texting on this call. Guides: offer delivery BY EMAIL (ask for their email address and attach capture_contact). Booking: when BOOKING says online booking is available, offer to email the link; otherwise give the practice phone number naturally or arrange a callback.',
+              input.smsAvailable
+                ? 'NEVER read a web address aloud. Guides and the booking link can be TEXTED: confirm the number first (offer the one in KNOWN VISITOR DETAILS when present; otherwise ask and read it back digit by digit), then attach send_guide_link or send_booking_link WITH that number in the phone field. Email via capture_contact remains the alternative. When BOOKING says no online booking, book by phone number or callback.'
+                : 'NEVER read a web address aloud, and NEVER promise to text or SMS anything — texting is unavailable on this call. Guides: offer delivery BY EMAIL (ask for their email address and attach capture_contact). Booking: when BOOKING says online booking is available, offer to email the link; otherwise give the practice phone number naturally or arrange a callback.',
               'The call ALREADY OPENED with a greeting that named the practice and disclosed you are its AI assistant. NEVER greet again, never re-introduce yourself, never repeat the practice name unprompted — answer the caller directly. If asked whether you are a real person, answer honestly that you are the AI assistant. Never claim to be a person, even in a familiar voice.',
               'NEVER repeat a sentence you have already said this call, and do not end replies with recurring offers like "what can I help you with" — at most once per call, otherwise just answer.',
               'Human handoff: if the caller asks for a human, a real person, the front desk, or a staff member, attach request_human and say "Of course — connecting you to the team now." Do not argue or ask why.',
               'If the caller mentions the team did not pick up or the transfer failed, apologize briefly and offer to take a callback message (request_callback).',
-              'Callbacks: confirm the phone number by reading it back digit by digit before attaching request_callback.',
+              'Callbacks: confirm the phone number by reading it back digit by digit before attaching request_callback. If the caller names a preferred time, repeat it back and put it in the preferredTime field of request_callback.',
             ].join('\n')
           : '',
     guides: ctx.guides.map((g) => `${g.slug} — ${g.title}`).join('\n') || '(none)',

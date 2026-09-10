@@ -24,7 +24,16 @@ import { prisma } from '@omniply/shared'
 import { logger } from '../lib/logger'
 import { sendFailureAlert } from '../lib/alerts'
 import { getGhlCredentials } from '../lib/ghl/settings'
-import { addGhlContactTags, createGhlContactNote, getChatSummaryFieldId, updateGhlContact, upsertGhlContact } from '../lib/ghl/client'
+import {
+  addGhlContactTags,
+  createGhlContactNote,
+  getCallbackTimeFieldId,
+  getChatSummaryFieldId,
+  sendGhlConversationMessage,
+  updateGhlContact,
+  upsertGhlContact,
+} from '../lib/ghl/client'
+import { buildBookingSms, buildGuideSms, SMS_PER_CONVERSATION_CAP } from './sms'
 import { driveConfigured, grantReader } from '../lib/gdrive/client'
 import { recordLLMUsage } from '../lib/llm-usage'
 import { runNewsletterPrompt } from '../newsletter/llm'
@@ -42,12 +51,18 @@ async function contactIdFor(conversationId: string): Promise<string | null> {
   return row?.ghlContactId ?? null
 }
 
-async function conversationMeta(conversationId: string): Promise<{ channel: string; ghlContactId: string | null }> {
+async function conversationMeta(
+  conversationId: string,
+): Promise<{ channel: string; ghlContactId: string | null; callerPhone: string | null }> {
   const row = await prisma.agentConversation.findUnique({
     where: { id: conversationId },
-    select: { channel: true, ghlContactId: true },
+    select: { channel: true, ghlContactId: true, callerPhone: true },
   })
-  return { channel: row?.channel ?? 'web', ghlContactId: row?.ghlContactId ?? null }
+  return {
+    channel: row?.channel ?? 'web',
+    ghlContactId: row?.ghlContactId ?? null,
+    callerPhone: row?.callerPhone ?? null,
+  }
 }
 
 /** DM channel: a guide link sent in-chat still applies the drip tags. */
@@ -128,7 +143,16 @@ async function executeCallback(
   const fieldId = summaryText
     ? await getChatSummaryFieldId(creds.apiKey, creds.locationId).catch(() => null)
     : null
-  const customFields = fieldId && summaryText ? [{ id: fieldId, value: summaryText.slice(0, 2000) }] : undefined
+  // Structured preferred time (voice-sms plan §5) — its own custom field so
+  // the notification workflow can merge {{contact.callback_preferred_time}}.
+  const timeFieldId = action.preferredTime
+    ? await getCallbackTimeFieldId(creds.apiKey, creds.locationId).catch(() => null)
+    : null
+  const customFields = [
+    ...(fieldId && summaryText ? [{ id: fieldId, value: summaryText.slice(0, 2000) }] : []),
+    ...(timeFieldId && action.preferredTime ? [{ id: timeFieldId, value: action.preferredTime }] : []),
+  ]
+  const customFieldsOrUndef = customFields.length > 0 ? customFields : undefined
   const tags = ['callback-requested', 'chat-agent-lead']
 
   const known = await knownDetailsFor(conversationId)
@@ -142,7 +166,7 @@ async function executeCallback(
     await updateGhlContact(creds.apiKey, existingId, {
       phone,
       ...(action.name ? { firstName: action.name } : {}),
-      ...(customFields ? { customFields } : {}),
+      ...(customFieldsOrUndef ? { customFields: customFieldsOrUndef } : {}),
     })
     await addGhlContactTags(creds.apiKey, existingId, tags)
   } else {
@@ -153,7 +177,7 @@ async function executeCallback(
       ...(primaryEmailOf(known) ? { email: primaryEmailOf(known)! } : {}),
       tags,
       source: 'chat-agent',
-      ...(customFields ? { customFields } : {}),
+      ...(customFieldsOrUndef ? { customFields: customFieldsOrUndef } : {}),
     })
     contactId = result.contactId ?? null
     if (contactId) {
@@ -173,6 +197,7 @@ async function executeCallback(
     const note = [
       '📞 Chat assistant callback request',
       rescueRow?.rescueSourceId ? '⚠️ Live transfer to the team went unanswered before this callback was taken.' : null,
+      action.preferredTime ? `Preferred time: ${action.preferredTime}` : null,
       action.reason ? `Reason: ${action.reason}` : null,
       summary ? `Chat summary: ${summary}` : null,
     ]
@@ -282,6 +307,102 @@ async function executeAddEmail(
 }
 
 /**
+ * Voice SMS delivery (voice-sms plan): text the guide/booking link through
+ * the clinic's GHL location. Deterministic templates; converges on the
+ * conversation's contact; capped per conversation; a FAILED send latches
+ * voiceSmsAvailable=false so future calls fall back to email delivery
+ * (attempt-and-latch — GHL has no clean SMS-capability pre-probe).
+ */
+async function executeVoiceSms(
+  ctx: AgentContext,
+  conversationId: string,
+  action: Extract<AgentAction, { type: 'send_guide_link' } | { type: 'send_booking_link' }>,
+): Promise<void> {
+  const meta = await conversationMeta(conversationId)
+  if (meta.channel !== 'voice') return
+
+  const rawPhone = action.phone ?? meta.callerPhone
+  if (!rawPhone) {
+    logger.warn({ conversationId, action: action.type }, '[agent] voice SMS without a phone — skipped')
+    await prisma.agentConversation
+      .update({ where: { id: conversationId }, data: { flagged: true, flagReason: `sms-no-phone:${action.type}` } })
+      .catch(() => {})
+    return
+  }
+
+  // Per-conversation cap (abuse guard).
+  const sent = await prisma.agentMessage.count({
+    where: {
+      conversationId,
+      role: 'assistant',
+      OR: [
+        { action: { path: ['type'], equals: 'send_guide_link' } },
+        { action: { path: ['type'], equals: 'send_booking_link' } },
+      ],
+    },
+  })
+  if (sent > SMS_PER_CONVERSATION_CAP) {
+    logger.warn({ conversationId, sent }, '[agent] voice SMS cap reached — skipped')
+    return
+  }
+
+  // Body: deterministic template, never model text.
+  let body: string | null = null
+  if (action.type === 'send_guide_link') {
+    const guide = ctx.guides.find((g) => g.slug === action.slug)
+    if (guide?.driveLink) body = buildGuideSms(ctx.practiceName, guide.title, guide.driveLink)
+  } else if (ctx.bookingUrl) {
+    body = buildBookingSms(ctx.practiceName, ctx.bookingUrl)
+  }
+  if (!body) {
+    logger.warn({ conversationId, action: action.type }, '[agent] voice SMS has no link to send — skipped')
+    await prisma.agentConversation
+      .update({ where: { id: conversationId }, data: { flagged: true, flagReason: `sms-no-link:${action.type}` } })
+      .catch(() => {})
+    return
+  }
+
+  const creds = await getGhlCredentials(ctx.ownerUserId)
+  if (!creds) throw new Error('No GHL credentials for account owner')
+  const phone = normalizePhoneE164(rawPhone, ctx.countryCode)
+
+  // Converge on the conversation's contact (or create it phone-first).
+  let contactId = meta.ghlContactId
+  if (!contactId) {
+    const known = await knownDetailsFor(conversationId)
+    const result = await upsertGhlContact(creds.apiKey, creds.locationId, {
+      phone,
+      ...(known.name ? { firstName: known.name } : {}),
+      tags: ['chat-agent-lead'],
+      source: 'chat-agent',
+    })
+    contactId = result.contactId ?? null
+    if (contactId) {
+      await prisma.agentConversation.update({ where: { id: conversationId }, data: { ghlContactId: contactId } })
+    }
+  }
+  if (!contactId) throw new Error('voice SMS: no GHL contact')
+
+  const ok = await sendGhlConversationMessage(creds.apiKey, { type: 'SMS', contactId, message: body })
+  if (!ok) {
+    // Latch: this location can't SMS — stop promising texts on future calls.
+    await prisma.voiceAgentConfig
+      .updateMany({ where: { accountId: ctx.accountId }, data: { voiceSmsAvailable: false } })
+      .catch(() => {})
+    await prisma.agentConversation
+      .update({ where: { id: conversationId }, data: { flagged: true, flagReason: `sms-failed:${action.type}` } })
+      .catch(() => {})
+    logger.error(
+      { conversationId, accountId: ctx.accountId, action: action.type },
+      '[agent] voice SMS send FAILED — voiceSmsAvailable latched false (email fallback from next call)',
+    )
+    return
+  }
+  await addGhlContactTags(creds.apiKey, contactId, ['sms-sent']).catch(() => {})
+  logger.info({ conversationId, accountId: ctx.accountId, action: action.type }, '[agent] voice SMS sent')
+}
+
+/**
  * Execute a validated action. Never throws — failures alert + flag but the
  * visitor's reply has already shipped.
  */
@@ -303,12 +424,17 @@ export async function executeAgentAction(
         break
       case 'send_guide_link':
         await executeDmGuideTags(ctx, conversationId, action.slug)
+        await executeVoiceSms(ctx, conversationId, action)
+        break
+      case 'send_booking_link':
+        // Web renders the booking card client-side; voice texts the link.
+        await executeVoiceSms(ctx, conversationId, action)
         break
       case 'request_human':
         await executeRequestHuman(ctx, conversationId)
         break
       default:
-        // send_booking_link / offer_guide render client-side; nothing to do.
+        // offer_guide renders client-side; nothing to do.
         break
     }
   } catch (err) {

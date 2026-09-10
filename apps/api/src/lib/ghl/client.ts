@@ -646,6 +646,41 @@ export async function getChatSummaryFieldId(apiKey: string, locationId: string):
   }
 }
 
+const callbackTimeFieldCache = new Map<string, { id: string | null; at: number }>()
+
+/** Find-or-create the "Callback Preferred Time" custom field (voice-sms plan
+ *  §5) — the snapshot notification workflow merges
+ *  {{contact.callback_preferred_time}} into the front-desk SMS. */
+export async function getCallbackTimeFieldId(apiKey: string, locationId: string): Promise<string | null> {
+  const hit = callbackTimeFieldCache.get(locationId)
+  if (hit && Date.now() - hit.at < GUIDE_LINK_CACHE_MS) return hit.id
+  try {
+    const data = await ghlRequest<{ customFields?: { id: string; name?: string; fieldKey?: string }[] }>(
+      apiKey,
+      `/locations/${locationId}/customFields`,
+      { method: 'GET' },
+    )
+    let match = (data.customFields ?? []).find((f) => {
+      const key = (f.fieldKey ?? '').toLowerCase()
+      const name = (f.name ?? '').toLowerCase()
+      return key.includes('callback_preferred_time') || name.replace(/\s+/g, '_') === 'callback_preferred_time'
+    })
+    if (!match) {
+      const created = await ghlRequest<{ customField?: { id: string } }>(
+        apiKey,
+        `/locations/${locationId}/customFields`,
+        { method: 'POST', body: { name: 'Callback Preferred Time', dataType: 'TEXT' } },
+      )
+      match = created.customField ? { id: created.customField.id } : undefined
+    }
+    const id = match?.id ?? null
+    callbackTimeFieldCache.set(locationId, { id, at: Date.now() })
+    return id
+  } catch {
+    return hit?.id ?? null
+  }
+}
+
 /**
  * Upsert a LOCATION custom value by name (list → update-or-create) — unlike a
  * blind POST this never duplicates on re-runs. Write requires the

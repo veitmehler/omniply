@@ -84,9 +84,10 @@ async function handleVoiceCompletion(
   if (!account) return reply.status(401).send({ error: 'unauthorized' })
   const vconfig = await prisma.voiceAgentConfig.findUnique({
     where: { accountId: account.id },
-    select: { transferNumber: true },
+    select: { transferNumber: true, voiceSmsAvailable: true },
   })
   const transferNumber = vconfig?.transferNumber ?? null
+  const smsAvailable = vconfig?.voiceSmsAvailable ?? false
 
   const body = request.body ?? {}
   const message = lastUserMessage(body)
@@ -137,6 +138,7 @@ async function handleVoiceCompletion(
         message,
         channel: 'voice',
         callerPhone,
+        smsAvailable,
       })
       // A transfer needs the offered tool, a stored destination (an empty
       // transfer_number fails platform validation and resurrects the repeat
