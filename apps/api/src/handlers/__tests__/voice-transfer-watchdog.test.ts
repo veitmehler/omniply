@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { findCallerLeg, pickStuckTransferLeg } from '../voice-transfer-watchdog'
+import { findCallerLeg, findInboundCallerLeg, pickStuckTransferLeg } from '../voice-transfer-watchdog'
 import type { TwilioCallInfo } from '../../lib/twilio'
 
 const ARMED = '2026-09-09T21:00:00.000Z'
@@ -42,6 +42,51 @@ describe('pickStuckTransferLeg', () => {
   it('accepts queued/initiated as still-unanswered', () => {
     expect(pickStuckTransferLeg([call({ status: 'queued' })], '+18297312601', ARMED)).not.toBeNull()
     expect(pickStuckTransferLeg([call({ status: 'initiated' })], '+18297312601', ARMED)).not.toBeNull()
+  })
+})
+
+describe('findInboundCallerLeg', () => {
+  const CLINIC = '+61870087991'
+  const inbound = (over: Partial<TwilioCallInfo>): TwilioCallInfo => ({
+    sid: 'CAin',
+    status: 'in-progress',
+    to: CLINIC,
+    from: '+61400111222',
+    direction: 'inbound',
+    date_created: '2026-09-10T21:00:00.000Z',
+    ...over,
+  })
+
+  it('finds the single in-progress inbound call to the clinic number', () => {
+    const calls = [
+      inbound({ sid: 'CAcaller' }),
+      inbound({ sid: 'CAdial', direction: 'outbound-api', to: '+18297312601' }),
+      inbound({ sid: 'CAdone', status: 'completed' }),
+    ]
+    expect(findInboundCallerLeg(calls, CLINIC, null)).toBe('CAcaller')
+  })
+
+  it('with two concurrent callers, the source callerPhone disambiguates', () => {
+    const calls = [
+      inbound({ sid: 'CAother', from: '+61400999888' }),
+      inbound({ sid: 'CAours', from: '+61400111222' }),
+    ]
+    expect(findInboundCallerLeg(calls, CLINIC, '+61400111222')).toBe('CAours')
+    // trunk-zero form of the same number still matches
+    expect(findInboundCallerLeg(calls, CLINIC, '0400 111 222')).toBe('CAours')
+  })
+
+  it('two concurrent callers and no phone match → null (no-ambiguity rule)', () => {
+    const calls = [
+      inbound({ sid: 'CAa', from: 'anonymous' }),
+      inbound({ sid: 'CAb', from: 'anonymous' }),
+    ]
+    expect(findInboundCallerLeg(calls, CLINIC, null)).toBeNull()
+  })
+
+  it('ignores calls to other numbers and non-inbound directions', () => {
+    expect(findInboundCallerLeg([inbound({ to: '+15550001111' })], CLINIC, null)).toBeNull()
+    expect(findInboundCallerLeg([inbound({ direction: 'outbound-dial' })], CLINIC, null)).toBeNull()
   })
 })
 

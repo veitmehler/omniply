@@ -13,6 +13,7 @@
  */
 import { prisma } from '@omniply/shared'
 import { logger } from '../lib/logger'
+import { samePhone } from '../agent/voice-rescue'
 import {
   endTwilioCall,
   getTwilioSubaccountToken,
@@ -31,6 +32,32 @@ export interface VoiceTransferWatchdogJobData {
   armedAtIso: string
   /** The engine conversation that requested the transfer (rescue linking). */
   conversationId?: string
+}
+
+/**
+ * Fallback caller-leg discovery (live finding 2026-09-10): ElevenLabs mixes
+ * its "conference" transfer at ITS media layer — there is often NO Twilio
+ * Conference resource at all (which is also why hold music survives the dial
+ * leg's death: it streams from ElevenLabs). The caller's leg is then just
+ * the in-progress INBOUND call to the clinic's AI number. No-ambiguity rule:
+ * exact from-number match against the source conversation's callerPhone,
+ * else the single in-progress inbound call, else null (caller self-recovers
+ * by calling back — the rescue stamp keeps working).
+ */
+export function findInboundCallerLeg(
+  calls: TwilioCallInfo[],
+  clinicNumber: string,
+  sourceCallerPhone: string | null,
+): string | null {
+  const candidates = calls.filter(
+    (c) => c.direction === 'inbound' && c.status === 'in-progress' && samePhone(c.to, clinicNumber),
+  )
+  if (candidates.length === 0) return null
+  if (sourceCallerPhone) {
+    const byPhone = candidates.filter((c) => samePhone(c.from, sourceCallerPhone))
+    if (byPhone.length === 1) return byPhone[0].sid
+  }
+  return candidates.length === 1 ? candidates[0].sid : null
 }
 
 /**
@@ -92,12 +119,15 @@ export async function voiceTransferWatchdogHandler(jobs: { data: VoiceTransferWa
         logger.warn({ accountId }, '[voice-watchdog] Twilio env missing — cannot inspect transfer leg')
         continue
       }
-      const [config, account] = await Promise.all([
+      const [config, account, sourceConversation] = await Promise.all([
         prisma.voiceAgentConfig.findUnique({
           where: { accountId },
-          select: { twilioSubaccountSid: true },
+          select: { twilioSubaccountSid: true, phoneNumber: true },
         }),
         prisma.account.findUnique({ where: { id: accountId }, select: { voiceAgentSecret: true } }),
+        conversationId
+          ? prisma.agentConversation.findUnique({ where: { id: conversationId }, select: { callerPhone: true } })
+          : Promise.resolve(null),
       ])
       if (!config?.twilioSubaccountSid) {
         logger.warn({ accountId }, '[voice-watchdog] no Twilio subaccount on file')
@@ -116,7 +146,12 @@ export async function voiceTransferWatchdogHandler(jobs: { data: VoiceTransferWa
 
       // Locate the caller's leg BEFORE killing the dial leg (once killed, the
       // dial participant vanishes from the conference and the link is lost).
+      // Attempt 1: real Twilio conference (some configurations). Attempt 2 —
+      // the one that fires in practice: ElevenLabs mixes at ITS media layer
+      // with no Conference resource, so the caller is simply the in-progress
+      // inbound call to the clinic number.
       let callerLegSid: string | null = null
+      let discovery = 'none'
       try {
         const conferences = await listConferences(sub)
         const withParticipants = await Promise.all(
@@ -126,13 +161,18 @@ export async function voiceTransferWatchdogHandler(jobs: { data: VoiceTransferWa
           })),
         )
         callerLegSid = findCallerLeg(withParticipants, stuck.sid)
+        if (callerLegSid) discovery = 'conference'
       } catch (err) {
-        logger.warn({ err, accountId }, '[voice-watchdog] conference discovery failed — will kill leg without rescue')
+        logger.warn({ err, accountId }, '[voice-watchdog] conference discovery failed — trying inbound-leg fallback')
+      }
+      if (!callerLegSid && config.phoneNumber) {
+        callerLegSid = findInboundCallerLeg(calls, config.phoneNumber, sourceConversation?.callerPhone ?? null)
+        if (callerLegSid) discovery = 'inbound-leg'
       }
 
       await endTwilioCall(sub, stuck.sid)
       logger.warn(
-        { accountId, callSid: stuck.sid, status: stuck.status, callerLegSid },
+        { accountId, callSid: stuck.sid, status: stuck.status, callerLegSid, discovery },
         '[voice-watchdog] terminated unanswered transfer leg after timeout',
       )
 

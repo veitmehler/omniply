@@ -69,6 +69,7 @@ export interface TwilioCallInfo {
   sid: string
   status: string
   to: string
+  from?: string
   direction: string
   date_created: string
 }
