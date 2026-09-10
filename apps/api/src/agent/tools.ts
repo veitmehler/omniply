@@ -16,6 +16,9 @@ export type AgentAction =
   | { type: 'add_contact_email'; email: string }
   | { type: 'send_guide_link'; slug: string; phone: string | null }
   | { type: 'request_human' }
+  // Voice intake (start-of-call): name + disconnect callback number. INSERT
+  // into GHL only (converge/create by phone) — never used to read data back.
+  | { type: 'intake_details'; name: string | null; phone: string | null }
 
 export interface ActionContext {
   /** Slugs of guides that are live AND deliverable for this account. */
@@ -99,6 +102,15 @@ export function validateAction(raw: unknown, ctx: ActionContext): AgentAction | 
       const email = str(a.email, 254).toLowerCase()
       if (!ctx.hasContact || !EMAIL_RE.test(email)) return null
       return { type: 'add_contact_email', email }
+    }
+
+    case 'intake_details': {
+      const name = str(a.name, 60)
+      const phone = str(a.phone, 30)
+      const validP = phone && validPhone(phone) ? phone : null
+      // At least one real detail — an empty intake is noise.
+      if (!name && !validP) return null
+      return { type: 'intake_details', name: name || null, phone: validP }
     }
 
     default:

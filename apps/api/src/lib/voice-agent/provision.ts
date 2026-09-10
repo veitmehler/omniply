@@ -123,10 +123,10 @@ export async function provisionVoiceAgent(
     // ── Agent create/update ──────────────────────────────────────────────────
     const spec: ConvAiAgentSpec = {
       name: `${practiceName} — Omniply voice agent`,
-      // Recording disclosure (user-approved wording 2026-09-10): ElevenLabs
-      // stores call audio + we keep transcripts — all-party-consent states
-      // require the up-front line.
-      firstMessage: `Thanks for calling ${practiceName}! I'm the practice's AI assistant, and calls are recorded for quality assurance. How can I help you today?`,
+      // Recording disclosure + intake opener (user wording 2026-09-10):
+      // all-party-consent states need the recorded line; the name ask starts
+      // the disconnect-insurance intake (engine overlay handles the number).
+      firstMessage: `Thanks for calling ${practiceName} — I'm the practice's AI assistant, and calls are recorded for quality assurance. Who am I speaking with?`,
       customLlmUrl: `${apiBase()}/api/agent/voice/${secret}`,
       voiceId,
       transferNumber: opts.transferNumber !== undefined ? opts.transferNumber : config.transferNumber,

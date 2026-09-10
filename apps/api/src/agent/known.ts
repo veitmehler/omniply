@@ -48,6 +48,10 @@ export async function knownDetailsFor(conversationId: string): Promise<KnownDeta
         known.phone = str(a.phone) ?? known.phone
         known.name = str(a.name) ?? known.name
         break
+      case 'intake_details':
+        known.phone = str(a.phone) ?? known.phone
+        known.name = str(a.name) ?? known.name
+        break
       case 'add_contact_email':
         known.preferredEmail = str(a.email) ?? known.preferredEmail
         break

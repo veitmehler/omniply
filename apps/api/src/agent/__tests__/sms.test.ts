@@ -46,6 +46,27 @@ describe('SMS phone fields on actions (voice delivery)', () => {
     expect(validateAction({ type: 'send_booking_link', phone: '0400111222' }, { ...CTX, bookingAvailable: false })).toBeNull()
   })
 
+  it('intake_details: name and/or valid phone; empty intake rejected', () => {
+    expect(validateAction({ type: 'intake_details', name: 'Tom', phone: '0788953217' }, CTX)).toEqual({
+      type: 'intake_details',
+      name: 'Tom',
+      phone: '0788953217',
+    })
+    expect(validateAction({ type: 'intake_details', name: 'Tom' }, CTX)).toEqual({
+      type: 'intake_details',
+      name: 'Tom',
+      phone: null,
+    })
+    expect(validateAction({ type: 'intake_details', phone: '0788953217' }, CTX)).toEqual({
+      type: 'intake_details',
+      name: null,
+      phone: '0788953217',
+    })
+    // junk phone degrades; with no name left the intake is rejected
+    expect(validateAction({ type: 'intake_details', phone: '12' }, CTX)).toBeNull()
+    expect(validateAction({ type: 'intake_details' }, CTX)).toBeNull()
+  })
+
   it('request_callback preferredTime: verbatim words, capped, optional', () => {
     const a = validateAction(
       { type: 'request_callback', name: 'Sam', phone: '0400111222', reason: 'x', preferredTime: ' around 10:30 AM ' },

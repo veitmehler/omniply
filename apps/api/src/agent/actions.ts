@@ -307,6 +307,51 @@ async function executeAddEmail(
 }
 
 /**
+ * Voice intake (start-of-call name + disconnect number): INSERT-ONLY GHL
+ * convergence — upsert-by-phone silently merges onto an existing contact or
+ * creates a lead, and the conversation stores the CONFIRMED callback number
+ * (network caller-id is often anonymous and always spoofable — it is never
+ * treated as identity, and nothing stored in GHL is ever read back to the
+ * caller from here).
+ */
+async function executeIntake(
+  ctx: AgentContext,
+  conversationId: string,
+  action: Extract<AgentAction, { type: 'intake_details' }>,
+): Promise<void> {
+  // The confirmed number becomes the conversation's callback/rescue key.
+  if (action.phone) {
+    const phone = normalizePhoneE164(action.phone, ctx.countryCode)
+    await prisma.agentConversation
+      .update({ where: { id: conversationId }, data: { callerPhone: phone } })
+      .catch(() => {})
+  }
+  // GHL: converge/create only when we have a phone (the dedupe key). A
+  // name-only intake stays conversation-local until an action needs GHL.
+  if (!action.phone) return
+  const meta = await conversationMeta(conversationId)
+  if (meta.ghlContactId) {
+    if (action.name) {
+      const creds = await getGhlCredentials(ctx.ownerUserId)
+      if (creds) await updateGhlContact(creds.apiKey, meta.ghlContactId, { firstName: action.name }).catch(() => {})
+    }
+    return
+  }
+  const creds = await getGhlCredentials(ctx.ownerUserId)
+  if (!creds) return
+  const result = await upsertGhlContact(creds.apiKey, creds.locationId, {
+    phone: normalizePhoneE164(action.phone, ctx.countryCode),
+    ...(action.name ? { firstName: action.name } : {}),
+    tags: ['chat-agent-lead'],
+    source: 'chat-agent',
+  })
+  if (result.contactId) {
+    await prisma.agentConversation.update({ where: { id: conversationId }, data: { ghlContactId: result.contactId } })
+    logger.info({ conversationId, accountId: ctx.accountId }, '[agent] intake → GHL contact converged')
+  }
+}
+
+/**
  * Voice SMS delivery (voice-sms plan): text the guide/booking link through
  * the clinic's GHL location. Deterministic templates; converges on the
  * conversation's contact; capped per conversation; a FAILED send latches
@@ -432,6 +477,9 @@ export async function executeAgentAction(
         break
       case 'request_human':
         await executeRequestHuman(ctx, conversationId)
+        break
+      case 'intake_details':
+        await executeIntake(ctx, conversationId, action)
         break
       default:
         // offer_guide renders client-side; nothing to do.
