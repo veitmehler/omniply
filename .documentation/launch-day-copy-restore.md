@@ -73,15 +73,20 @@ q: 'What is included in the $397?',
 
 ## 5. Story-post personal-profile window (set 2026-09-03)
 
-Automated story beats route to Veit's PERSONAL LinkedIn until Sep 9
-(algorithm warm-up), then the profile belongs to the hand-crafted launch
-arc. Two flips, one SQL each (ask Claude):
-- **Sep 9 morning**: UNSET accountIds.linkedinPersonal on the azavea
-  ghlSettings row (story beats fall back to the company page).
-- **Sep 16**: RESTORE linkedinPersonal AND re-add the 3 parked narrator
-  beats (Dec-2022 plugin / postponed-launch / engine-kept-producing) to
-  brand_settings.storyBeats — parked so automated arcs can't repeat the
-  launch posts' stories on the same profile.
+Automated story beats route to Veit's PERSONAL LinkedIn except during the
+hand-crafted launch-arc window. Flip history + remaining flips (one JSON
+update each — ask Claude; personal profile account id =
+`6a74aeb42a6422d37b0b2eac_HsevyaesOdFid7b8KC9q_E5XnjQ2Xax_profile`,
+azavea owner `cmsgxchc40000pa2igbkg8efy` on prod):
+- Sep 9 morning: UNSET (done) — original launch window.
+- Sep 10: RESTORED (done — launch moved to Sept 22; normal content resumes).
+- **Sep 16 morning (Wed): UNSET again** — launch-arc posts take over the
+  profile through the Sept 22 launch. (Session cron armed 2026-09-10; if
+  the session died, run the unset by hand.)
+- **After Sept 22 launch: RESTORE linkedinPersonal AND re-add the 3 parked
+  narrator beats** (Dec-2022 plugin / postponed-launch /
+  engine-kept-producing) to brand_settings.storyBeats — parked so
+  automated arcs can't repeat the launch posts' stories on the profile.
 
 ## 5b. GHL launch-morning actions (not code)
 
