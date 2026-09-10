@@ -19,7 +19,9 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import { prisma } from '@omniply/shared'
 import { logger } from '../lib/logger'
+import { getBoss, QUEUES } from '../queues/index'
 import { AgentTurnError, runAgentTurn } from '../agent/engine'
+import { agentContextForAccount, openStatusFor } from '../agent/context'
 import {
   buildCompletion,
   buildStreamFrames,
@@ -100,22 +102,55 @@ async function handleVoiceCompletion(
         message,
         channel: 'voice',
       })
-      // A transfer needs BOTH the offered tool and a stored destination —
-      // an empty transfer_number would fail validation platform-side and
-      // resurrect the re-prompt repeat loop.
+      // A transfer needs the offered tool, a stored destination (an empty
+      // transfer_number fails platform validation and resurrects the repeat
+      // loop), AND an OPEN practice — the transfer target is the clinic's own
+      // line, which after hours is by definition unattended: an unanswered
+      // conference transfer maroons the caller in hold music forever
+      // (live-verified 2026-09-09; ElevenLabs never returns to the agent
+      // without the feature-gated call screening).
+      let practiceOpen = false
+      if (result.action?.type === 'request_human' && transferNumber) {
+        const ctx = await agentContextForAccount(account.id).catch(() => null)
+        const open = ctx ? openStatusFor(ctx) : null
+        practiceOpen = Boolean(open?.known && open.openNow)
+      }
       const transferToolName =
-        result.action?.type === 'request_human' && transferNumber ? findTransferTool(body) : null
+        result.action?.type === 'request_human' && transferNumber && practiceOpen
+          ? findTransferTool(body)
+          : null
       let reply = result.reply
       if (result.action?.type === 'request_human' && !transferToolName) {
-        // No transfer configured/offered: never speak an empty "connecting
-        // you" promise — pivot to a callback offer instead (live call
-        // 2026-09-09 surfaced this).
+        // Never speak an empty "connecting you" promise — pivot to a callback
+        // offer, worded for WHY the transfer is off the table.
         reply =
-          'I am not able to connect you directly right now. Can I take your name and number instead? The team will call you back as soon as they can.'
+          transferNumber && !practiceOpen
+            ? 'The team is not in the practice right now, so I cannot put you through. Can I take your name and number instead? They will call you back as soon as they are in.'
+            : 'I am not able to connect you directly right now. Can I take your name and number instead? The team will call you back as soon as they can.'
         logger.warn(
-          { accountId: account.id, conversationId: result.conversationId },
-          '[voice-agent] request_human but no transfer tool offered — pivoted to callback offer',
+          { accountId: account.id, conversationId: result.conversationId, practiceOpen, hasNumber: Boolean(transferNumber) },
+          '[voice-agent] request_human without transfer — pivoted to callback offer',
         )
+      }
+      if (transferToolName) {
+        // Caveat rides in the spoken line: even the worst watchdog outcome
+        // leaves the caller instructed.
+        reply = `${reply} If the team cannot pick up, just call back and I will take a message.`
+        // Arm the 25s watchdog: kills the still-ringing Twilio dial leg so an
+        // unanswered transfer cannot hold the caller in music forever. Works
+        // on OUR subaccount credentials — independent of the clinic's
+        // ElevenLabs plan. Fire-and-forget: queue trouble must not break the
+        // live call.
+        try {
+          const boss = await getBoss()
+          await boss.send(
+            QUEUES.VOICE_TRANSFER_WATCHDOG,
+            { accountId: account.id, transferNumber, armedAtIso: new Date().toISOString() },
+            { startAfter: 25 },
+          )
+        } catch (err) {
+          logger.error({ err, accountId: account.id }, '[voice-agent] failed to arm transfer watchdog')
+        }
       }
       plan = { reply, transferToolName, transferNumber, model }
       logger.info(

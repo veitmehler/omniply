@@ -65,6 +65,29 @@ export async function getTwilioSubaccountToken(subSid: string): Promise<string> 
   return data.auth_token
 }
 
+export interface TwilioCallInfo {
+  sid: string
+  status: string
+  to: string
+  direction: string
+  date_created: string
+}
+
+/** Recent calls in a subaccount (both directions; filter in code — the API's
+ *  Status filter takes only one value). */
+export async function listSubaccountCalls(sub: { sid: string; token: string }): Promise<TwilioCallInfo[]> {
+  const data = await twilioFetch<{ calls?: TwilioCallInfo[] }>(sub, `/Accounts/${sub.sid}/Calls.json?PageSize=20`)
+  return data.calls ?? []
+}
+
+/** Terminate one call leg (voice-transfer watchdog: kill a still-ringing dial). */
+export async function endTwilioCall(sub: { sid: string; token: string }, callSid: string): Promise<void> {
+  await twilioFetch<unknown>(sub, `/Accounts/${sub.sid}/Calls/${callSid}.json`, {
+    method: 'POST',
+    form: { Status: 'completed' },
+  })
+}
+
 export interface TwilioAddress {
   customerName: string
   street: string

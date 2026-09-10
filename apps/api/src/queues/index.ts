@@ -84,6 +84,7 @@ export const QUEUES = {
   AGENT_RETENTION_CLEANUP: 'agent-retention-cleanup',
   AGENT_FINALIZE: 'agent-finalize',
   AGENT_DM_TURN: 'agent-dm-turn',
+  VOICE_TRANSFER_WATCHDOG: 'voice-transfer-watchdog',
   AZAVEA_CADENCE: 'azavea-cadence',
   DB_BACKUP: 'db-backup',
   PG_CONN_MONITOR: 'pg-conn-monitor',
