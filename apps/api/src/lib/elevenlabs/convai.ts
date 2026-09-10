@@ -42,6 +42,13 @@ export interface ConvAiAgentSpec {
   voiceId: string | null
   /** Clinic's real line for the human hand-off; omits the transfer tool when null. */
   transferNumber: string | null
+  /**
+   * Conversation-initiation webhook (voice-rescue one-number design): called
+   * by ElevenLabs on every inbound call BEFORE the agent speaks; our server
+   * returns a first-message override for rescue calls. API field shapes
+   * live-verified 2026-09-10 (the docs wrongly claim UI-only config).
+   */
+  initWebhookUrl?: string | null
 }
 
 function agentConfigBody(spec: ConvAiAgentSpec, screening: boolean): Record<string, unknown> {
@@ -102,6 +109,19 @@ function agentConfigBody(spec: ConvAiAgentSpec, screening: boolean): Record<stri
       },
       ...(spec.voiceId ? { tts: { voice_id: spec.voiceId } } : {}),
     },
+    ...(spec.initWebhookUrl
+      ? {
+          platform_settings: {
+            workspace_overrides: {
+              conversation_initiation_client_data_webhook: { url: spec.initWebhookUrl, request_headers: {} },
+            },
+            overrides: {
+              enable_conversation_initiation_client_data_from_webhook: true,
+              conversation_config_override: { agent: { first_message: true } },
+            },
+          },
+        }
+      : {}),
   }
 }
 

@@ -68,6 +68,13 @@ export function lastUserMessage(body: VoiceCompletionBody): string | null {
 
 const KEY_SAFE = /[^A-Za-z0-9_-]/g
 
+/** Canonical visitor key for an ElevenLabs conversation id — MUST stay in
+ *  sync between the shim (turn requests) and the initiation webhook (which
+ *  pre-creates rescue conversations under the same key). */
+export function visitorKeyForElConversation(conversationId: string): string {
+  return `el-${conversationId.trim().replace(KEY_SAFE, '')}`.slice(0, 64)
+}
+
 /**
  * Stable per-call visitor key. Priority:
  *  1. CALL_ID parsed from the system message — provisioning writes
@@ -103,12 +110,12 @@ export function voiceVisitorKey(body: VoiceCompletionBody): { key: string; sourc
   const system = messages.find((m) => m.role === 'system')
   const callId = system ? /CALL_ID=([A-Za-z0-9_-]{6,64})/.exec(messageText(system)) : null
   if (callId) {
-    return { key: `el-${callId[1]}`.slice(0, 64), source: 'call_id' }
+    return { key: visitorKeyForElConversation(callId[1]), source: 'call_id' }
   }
   const extra = body.elevenlabs_extra_body ?? {}
   const conv = extra.conversation_id ?? extra.conversationId
   if (typeof conv === 'string' && conv.trim()) {
-    return { key: `el-${conv.trim().replace(KEY_SAFE, '')}`.slice(0, 64), source: 'conversation_id' }
+    return { key: visitorKeyForElConversation(conv), source: 'conversation_id' }
   }
   const caller = extra.caller_id ?? extra.callerId
   if (typeof caller === 'string' && caller.trim()) {

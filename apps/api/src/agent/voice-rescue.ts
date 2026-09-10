@@ -13,6 +13,7 @@
  */
 import { prisma } from '@omniply/shared'
 import { logger } from '../lib/logger'
+import { visitorKeyForElConversation } from './voice-shim'
 
 export const RESCUE_TTL_MS = 3 * 60_000
 const TRANSCRIPT_MESSAGES = 10
@@ -104,4 +105,40 @@ export async function resolveRescueContext(
       transcript || '(no transcript available)',
     ].join('\n'),
   }
+}
+
+export const RESCUE_FIRST_MESSAGE =
+  "Sorry about that — the team couldn't pick up just now. I can take a message so they call you back. What's your name and the best number to reach you?"
+
+/**
+ * Initiation-webhook entry (one-number design): when the incoming call is a
+ * rescue (stamp/phone matched), PRE-CREATE the conversation row under the
+ * canonical visitor key so the very first turn already runs in message mode
+ * with the prior-call context — and return the apology greeting to speak.
+ * Non-rescue calls return null (no override, standard greeting).
+ */
+export async function prepareRescueConversation(
+  accountId: string,
+  callerPhone: string | null,
+  elConversationId: string,
+): Promise<string | null> {
+  const rescue = await resolveRescueContext(accountId, callerPhone)
+  if (!rescue) return null
+  const visitorKey = visitorKeyForElConversation(elConversationId)
+  await prisma.agentConversation.create({
+    data: {
+      accountId,
+      visitorKey,
+      channel: 'voice',
+      ...(callerPhone ? { callerPhone } : {}),
+      rescueSourceId: rescue.sourceId,
+      rescueContext: rescue.transcriptBlock,
+      ...(rescue.ghlContactId ? { ghlContactId: rescue.ghlContactId } : {}),
+    },
+  })
+  logger.info(
+    { accountId, visitorKey, sourceId: rescue.sourceId, converged: Boolean(rescue.ghlContactId) },
+    '[voice-rescue] rescue conversation pre-created — greeting override returned',
+  )
+  return RESCUE_FIRST_MESSAGE
 }

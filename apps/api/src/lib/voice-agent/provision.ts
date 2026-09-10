@@ -127,6 +127,9 @@ export async function provisionVoiceAgent(
       customLlmUrl: `${apiBase()}/api/agent/voice/${secret}`,
       voiceId,
       transferNumber: opts.transferNumber !== undefined ? opts.transferNumber : config.transferNumber,
+      // One-number rescue design: the initiation webhook swaps the greeting
+      // for an apology on rescue calls (stamp-matched); no second agent/number.
+      initWebhookUrl: `${apiBase()}/api/agent/voice-init/${secret}`,
     }
     let agentId = config.agentId
     if (agentId) {
@@ -187,62 +190,6 @@ export async function provisionVoiceAgent(
         notes.push(`Number ${phoneNumber} bought and connected to the agent.`)
         logger.info({ accountId, phoneNumber }, '[voice-agent] number bought + imported')
       }
-    }
-
-    // ── Rescue agent + internal number (voice-rescue plan; best-effort —
-    // the TwiML <Say> floor covers a clinic without it) ──────────────────────
-    let rescueAgentId = config.rescueAgentId
-    let rescueNumber = config.rescueNumber
-    try {
-      if (!rescueAgentId) {
-        const rescueSpec: ConvAiAgentSpec = {
-          name: `${practiceName} — Omniply message agent`,
-          firstMessage: `Sorry about that — the team couldn't pick up just now. I can take a message so they call you back. What's your name and the best number to reach you?`,
-          customLlmUrl: `${apiBase()}/api/agent/voice/${secret}/message`,
-          voiceId,
-          transferNumber: null,
-        }
-        const created = await createConvAiAgent(apiKey, rescueSpec)
-        rescueAgentId = created.agent_id
-        await persist({ rescueAgentId })
-        notes.push('Rescue (message) agent created.')
-        logger.info({ accountId, rescueAgentId }, '[voice-agent] rescue agent created')
-      }
-      if (!rescueNumber && rescueAgentId && twilioConfigured() && twilioSubaccountSid) {
-        const subToken = await getTwilioSubaccountToken(twilioSubaccountSid)
-        const address: TwilioAddress | null =
-          brand?.addressLine1 && brand.addressLocality && brand.postalCode
-            ? {
-                customerName: practiceName,
-                street: [brand.addressLine1, brand.addressLine2].filter(Boolean).join(', '),
-                city: brand.addressLocality,
-                region: brand.addressRegion ?? brand.addressLocality,
-                postalCode: brand.postalCode,
-                isoCountry: brand.organizationCountryCode ?? 'US',
-              }
-            : null
-        const bought = await buyVoiceNumber(
-          { sid: twilioSubaccountSid, token: subToken },
-          brand?.organizationCountryCode ?? 'US',
-          address,
-        )
-        rescueNumber = bought.phoneNumber
-        await persist({ rescueNumber, rescueNumberSid: bought.numberSid })
-        const imported = await importTwilioNumber(apiKey, {
-          phoneNumber: rescueNumber,
-          label: `${practiceName} — Omniply message line (internal)`,
-          twilioSid: twilioSubaccountSid,
-          twilioToken: subToken,
-          agentId: rescueAgentId,
-        })
-        await persist({ rescueNumberId: imported.phone_number_id })
-        notes.push(`Rescue number ${rescueNumber} bought and connected to the message agent.`)
-        logger.info({ accountId, rescueNumber }, '[voice-agent] rescue number bought + imported')
-      }
-    } catch (err) {
-      // Non-fatal: the main agent stays ready; TwiML floor covers rescues.
-      logger.warn({ err, accountId }, '[voice-agent] rescue provisioning failed (floor active)')
-      notes.push(`Rescue agent setup incomplete: ${err instanceof Error ? err.message.slice(0, 200) : 'error'}`)
     }
 
     const status: 'ready' | 'pending' = phoneNumber ? 'ready' : 'pending'

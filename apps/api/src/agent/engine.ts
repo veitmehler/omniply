@@ -66,6 +66,9 @@ export interface TurnResult {
   /** Drive link for the guide card (capture_contact / send_guide_link). */
   guideLink: string | null
   ended: string | null
+  /** Voice: this conversation is a rescue call (message-taking posture) —
+   *  the transport must never offer a transfer. */
+  messageMode: boolean
 }
 
 interface ModelTurn {
@@ -186,7 +189,17 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
     },
   })
 
-  const base = { conversationId: conversation.id, bookingUrl: ctx.bookingUrl, guideTitle: null as string | null, guideLink: null as string | null }
+  // Message mode: set by the initiation webhook pre-creating the rescue
+  // conversation (one-number design), or explicitly by the transport.
+  const messageMode = (channel === 'voice' && Boolean(conversation.rescueSourceId)) || input.voiceMode === 'message'
+
+  const base = {
+    conversationId: conversation.id,
+    bookingUrl: ctx.bookingUrl,
+    guideTitle: null as string | null,
+    guideLink: null as string | null,
+    messageMode,
+  }
 
   // ── Pre-filters (no LLM) ─────────────────────────────────────────────────
   if (channel === 'web' && conversation.turnCount >= MAX_VISITOR_TURNS) {
@@ -265,7 +278,7 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
             'Guides: when the visitor wants a guide, attach send_guide_link IMMEDIATELY. Never ask for an email address; the link arrives right here in the chat.',
             'Human handoff: if the visitor asks for a human, a real person, or to stop talking to a bot, attach request_human and say a team member will take over this conversation shortly.',
           ].join('\n')
-        : channel === 'voice' && input.voiceMode === 'message'
+        : channel === 'voice' && messageMode
           ? [
               '=== CHANNEL: PHONE CALL (live voice) — MESSAGE-TAKING MODE ===',
               'You are SPEAKING to a caller whose transfer to the practice team was NOT answered. Everything you write is read aloud by text-to-speech.',

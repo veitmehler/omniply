@@ -1,8 +1,45 @@
 # Voice Rescue Agent — failed-transfer recovery via a second message-taking agent
 
-Status: PLANNED (design agreed with user 2026-09-10). Companion to
-.plans/voice-agent-elevenlabs.implementation-plan.md. Do not build until the
-user green-lights implementation.
+Status: BUILT (one-number redesign) 2026-09-10. Companion to
+.plans/voice-agent-elevenlabs.implementation-plan.md.
+
+## ⚠️ REDESIGN 2026-09-10 — ONE-NUMBER ARCHITECTURE (supersedes the
+## second-agent/second-number sections below)
+
+User raised: a second DID costs $6–12/mo outside the US. Research proved a
+better mechanism — the ElevenLabs CONVERSATION-INITIATION WEBHOOK fires on
+every inbound Twilio call BEFORE the agent speaks (payload: caller_id,
+called_number, call_sid, agent_id, conversation_id) and the response can
+override first_message. The docs claim UI-only config; EMPIRICALLY FALSE —
+all three settings PATCH via API (live-verified):
+  platform_settings.workspace_overrides.conversation_initiation_client_data_webhook {url, request_headers}
+  platform_settings.overrides.enable_conversation_initiation_client_data_from_webhook
+  platform_settings.overrides.conversation_config_override.agent.first_message
+(Bonus found: platform_settings.overrides.custom_llm_extra_body — the
+extra-body flag hunted earlier lives HERE, not in the LLM config.)
+
+Shipped shape:
+- NO second agent, NO second number (schema columns rescueAgentId/
+  rescueNumber/… remain, unused).
+- Rescue TwiML dials the clinic's OWN number back (fresh CallSid; default
+  <Dial> caller-id presents the original caller — the link key).
+- POST /api/agent/voice-init/:secret = the initiation webhook: rescue
+  stamp/phone matched → prepareRescueConversation PRE-CREATES the
+  conversation row (visitorKeyForElConversation(conversation_id), shared
+  helper keeps webhook+shim keys in sync) with rescueSourceId/rescueContext/
+  seeded ghlContactId + returns the apology first_message override; normal
+  calls → empty override, standard greeting, ~sub-second round-trip inside
+  the connection window.
+- Engine derives message mode from conversation.rescueSourceId (TurnResult
+  .messageMode; route gates transfers on it). Everything else from the
+  original design carries over unchanged: watchdog kill+stamp+redirect,
+  no-ambiguity linking, consume-once stamps, context persisted on the row,
+  GHL convergence + deterministic unanswered-transfer note.
+- Floor: no phoneNumber on file → TwiML <Say> apology + hangup.
+
+Live-verify remaining (V3.2): webhook actually fires on the redialed leg with
+the original caller-id; failure behavior when our endpoint is slow (keep it
+trivial); full rescue call E2E.
 
 ## Problem (live-verified 2026-09-09/10)
 

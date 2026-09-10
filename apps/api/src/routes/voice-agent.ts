@@ -34,7 +34,7 @@ import {
   type VoiceCompletionBody,
   type VoiceReplyPlan,
 } from '../agent/voice-shim'
-import { resolveRescueContext } from '../agent/voice-rescue'
+import { prepareRescueConversation } from '../agent/voice-rescue'
 
 const SECRET_RE = /^[A-Za-z0-9_-]{16,64}$/
 
@@ -45,7 +45,6 @@ const toolsLogged = new Set<string>()
 async function handleVoiceCompletion(
   request: FastifyRequest<{ Params: { secret: string }; Body: VoiceCompletionBody }>,
   reply: FastifyReply,
-  mode: 'standard' | 'message' = 'standard',
 ) {
   const { secret } = request.params
   if (!SECRET_RE.test(secret)) return reply.status(401).send({ error: 'unauthorized' })
@@ -99,25 +98,16 @@ async function handleVoiceCompletion(
   } else {
     const { key, source } = voiceVisitorKey(body)
     const callerPhone = voiceCallerPhone(body)
-    // Rescue call: link back to the failed-transfer conversation (no-
-    // ambiguity rule inside; consumed stamp on turn 1, persisted context on
-    // the new conversation row keeps turns 2+ covered).
-    const rescue = mode === 'message' ? await resolveRescueContext(account.id, callerPhone).catch(() => null) : null
     try {
+      // Rescue calls: the initiation webhook already pre-created the
+      // conversation row (rescueSourceId + context) under this visitor key;
+      // the engine derives message mode from it.
       const result = await runAgentTurn({
         accountId: account.id,
         visitorKey: key,
         message,
         channel: 'voice',
-        voiceMode: mode,
         callerPhone,
-        ...(rescue
-          ? {
-              seedKnownBlock: rescue.transcriptBlock,
-              seedGhlContactId: rescue.ghlContactId,
-              rescueSourceId: rescue.sourceId,
-            }
-          : {}),
       })
       // A transfer needs the offered tool, a stored destination (an empty
       // transfer_number fails platform validation and resurrects the repeat
@@ -127,14 +117,14 @@ async function handleVoiceCompletion(
       // (live-verified 2026-09-09; ElevenLabs never returns to the agent
       // without the feature-gated call screening).
       let practiceOpen = false
-      if (mode === 'standard' && result.action?.type === 'request_human' && transferNumber) {
+      if (!result.messageMode && result.action?.type === 'request_human' && transferNumber) {
         const ctx = await agentContextForAccount(account.id).catch(() => null)
         const open = ctx ? openStatusFor(ctx) : null
         practiceOpen = Boolean(open?.known && open.openNow)
       }
       // Message mode NEVER transfers — the team already failed to pick up.
       const transferToolName =
-        mode === 'standard' && result.action?.type === 'request_human' && transferNumber && practiceOpen
+        !result.messageMode && result.action?.type === 'request_human' && transferNumber && practiceOpen
           ? findTransferTool(body)
           : null
       let reply = result.reply
@@ -230,32 +220,62 @@ async function handleRescueTwiml(
   if (!account) return reply.status(401).send({ error: 'unauthorized' })
   const config = await prisma.voiceAgentConfig.findUnique({
     where: { accountId: account.id },
-    select: { rescueNumber: true },
+    select: { phoneNumber: true },
   })
+  // One-number design: dial the clinic's OWN AI number back — fresh CallSid,
+  // and the initiation webhook swaps the greeting for the rescue apology.
   // No callerId attribute on <Dial>: Twilio's default presents the ORIGINAL
   // caller's number, which is the rescue-link primary key.
-  const twiml = config?.rescueNumber
-    ? `<?xml version="1.0" encoding="UTF-8"?><Response><Dial>${xmlEscape(config.rescueNumber)}</Dial></Response>`
+  const twiml = config?.phoneNumber
+    ? `<?xml version="1.0" encoding="UTF-8"?><Response><Dial>${xmlEscape(config.phoneNumber)}</Dial></Response>`
     : `<?xml version="1.0" encoding="UTF-8"?><Response><Say>Sorry, the team could not pick up just now. Please call back and I will take a message, or the team will see your missed call and get back to you.</Say><Hangup/></Response>`
-  logger.info({ accountId: account.id, rescue: Boolean(config?.rescueNumber) }, '[voice-agent] rescue TwiML served')
+  logger.info({ accountId: account.id, redial: Boolean(config?.phoneNumber) }, '[voice-agent] rescue TwiML served')
   return reply.header('Content-Type', 'text/xml').send(twiml)
 }
 
+/**
+ * ElevenLabs conversation-initiation webhook (one-number rescue design):
+ * called on EVERY inbound call before the agent speaks. Rescue calls (stamp/
+ * phone matched) get the apology greeting override + a pre-created message-
+ * mode conversation; normal calls get an empty override (standard greeting).
+ * MUST answer fast — it runs inside the call-connection window.
+ */
+async function handleVoiceInit(
+  request: FastifyRequest<{ Params: { secret: string }; Body: { caller_id?: string; conversation_id?: string; call_sid?: string } }>,
+  reply: FastifyReply,
+) {
+  const { secret } = request.params
+  if (!SECRET_RE.test(secret)) return reply.status(401).send({ error: 'unauthorized' })
+  const account = await prisma.account.findUnique({ where: { voiceAgentSecret: secret }, select: { id: true } })
+  if (!account) return reply.status(401).send({ error: 'unauthorized' })
+
+  const body = request.body ?? {}
+  const conversationId = typeof body.conversation_id === 'string' ? body.conversation_id : null
+  const callerRaw = typeof body.caller_id === 'string' ? body.caller_id : null
+  const callerPhone = callerRaw && /[0-9]{6,}/.test(callerRaw.replace(/[^0-9]/g, '')) ? callerRaw : null
+
+  let firstMessage: string | null = null
+  if (conversationId) {
+    firstMessage = await prepareRescueConversation(account.id, callerPhone, conversationId).catch((err) => {
+      logger.error({ err, accountId: account.id }, '[voice-init] rescue preparation failed — standard greeting')
+      return null
+    })
+  }
+  logger.info(
+    { accountId: account.id, rescue: Boolean(firstMessage), hasCaller: Boolean(callerPhone) },
+    '[voice-init] initiation webhook served',
+  )
+  return reply.send({
+    type: 'conversation_initiation_client_data',
+    ...(firstMessage ? { conversation_config_override: { agent: { first_message: firstMessage } } } : {}),
+  })
+}
+
 export async function voiceAgentRoutes(app: FastifyInstance) {
-  app.post('/agent/voice/:secret/chat/completions', (req, rep) =>
-    handleVoiceCompletion(req as FastifyRequest<{ Params: { secret: string }; Body: VoiceCompletionBody }>, rep),
-  )
-  app.post('/agent/voice/:secret/v1/chat/completions', (req, rep) =>
-    handleVoiceCompletion(req as FastifyRequest<{ Params: { secret: string }; Body: VoiceCompletionBody }>, rep),
-  )
-  // Message-taking (rescue) agent — mode as a PATH segment because ElevenLabs
-  // appends /chat/completions to the configured base URL.
-  app.post('/agent/voice/:secret/message/chat/completions', (req, rep) =>
-    handleVoiceCompletion(req as FastifyRequest<{ Params: { secret: string }; Body: VoiceCompletionBody }>, rep, 'message'),
-  )
-  app.post('/agent/voice/:secret/message/v1/chat/completions', (req, rep) =>
-    handleVoiceCompletion(req as FastifyRequest<{ Params: { secret: string }; Body: VoiceCompletionBody }>, rep, 'message'),
-  )
+  app.post('/agent/voice/:secret/chat/completions', handleVoiceCompletion)
+  app.post('/agent/voice/:secret/v1/chat/completions', handleVoiceCompletion)
+  // ElevenLabs conversation-initiation webhook (rescue greeting override).
+  app.post('/agent/voice-init/:secret', handleVoiceInit)
   // Twilio webhooks may use GET or POST depending on config.
   app.post('/agent/voice-rescue-twiml/:secret', handleRescueTwiml)
   app.get('/agent/voice-rescue-twiml/:secret', handleRescueTwiml)
