@@ -62,9 +62,15 @@ line per state. NOT enabled for any clinic until V3 passes.
     social profiles — callers reach the AI receptionist first, every time.
 - **Human hand-off** (user 2026-09-09): when a caller asks for a human, the
   AI transfers the live call to the clinic's real number. If the clinic
-  doesn't answer within ~10 rings (~50s ring timeout), the caller comes back
-  to the AI, which says the team can't pick up right now and offers to take
-  a callback message (the existing request_callback action → GHL).
+  doesn't answer within 25 seconds (~5 rings — PRODUCTION value, user
+  decision 2026-09-10; supersedes the earlier ~10-ring idea), the watchdog
+  pulls the caller back and the rescue flow offers a callback message.
+- **Recording disclosure** (user wording 2026-09-10, live): the greeting is
+  "Thanks for calling {practice}! I'm the practice's AI assistant, and
+  calls are recorded for quality assurance. How can I help you today?" —
+  ElevenLabs stores call audio + we keep transcripts; all-party-consent
+  states require the up-front line. (Engineering-conservative default; a
+  counsel sanity-check before launch is still recommended.)
 - **Disclosure is non-negotiable**: the cloned voice must introduce itself as
   the practice's AI assistant up front (impersonating the practitioner with
   their cloned voice = deceptive + legally risky in two-party-consent

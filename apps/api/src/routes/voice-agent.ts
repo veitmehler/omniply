@@ -208,6 +208,8 @@ async function handleVoiceCompletion(
               armedAtIso: new Date().toISOString(),
               conversationId: result.conversationId,
             },
+            // 25s ≈ 5 rings — PRODUCTION value (user decision 2026-09-10:
+            // long enough to pick up, short enough not to strand the caller).
             { startAfter: 25 },
           )
         } catch (err) {
