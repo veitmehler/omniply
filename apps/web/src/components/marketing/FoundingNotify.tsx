@@ -10,7 +10,7 @@
 import { useEffect, useState } from 'react'
 import { TOKENS } from './Marketing'
 
-const LAUNCH_TS = Date.parse('2026-09-15T14:00:00Z')
+const LAUNCH_TS = Date.parse('2026-09-22T14:00:00Z')
 const JOINED_KEY = 'omniply-founding-joined'
 const LEAD_KEY = 'omniply-xray-v1'
 
@@ -72,7 +72,7 @@ export function FoundingNotify() {
       style={{ background: `linear-gradient(180deg, ${TOKENS.ink}, ${TOKENS.inkDeep})`, color: '#fff' }}
     >
       <div className="text-center text-3xl font-bold md:text-4xl" style={{ color: TOKENS.lime }}>
-        Omniply opens September&nbsp;15
+        Omniply opens September&nbsp;22
       </div>
       <p className="text-center text-[18px] leading-relaxed md:text-[20px]" style={{ padding: '30px 0', color: '#fff' }}>
         {PITCH}
