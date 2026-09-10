@@ -1,5 +1,7 @@
 # Omniply Brand Consolidation — implementation plan
 
+> DATE NOTE 2026-09-10: launch moved Sept 8→15→**22 (final)**. Sept 8 refs below are historical.
+
 **Status: PLAN — 2026-08-08. All decisions user-locked:** static HTML for
 azavea.ai · essays auto-publish to omniply.io/articles (azavea vertical
 ONLY — clinics keep WordPress) · Azavea subaccount link domain →

@@ -1,5 +1,7 @@
 # Story-arc posts — full build plan (engagement v2)
 
+> DATE NOTE 2026-09-10: launch moved to **Sept 22** (final). Sept 15 refs below are historical; P3 shipped before the original date.
+
 All decisions locked with user 2026-09-03. Replaces the earlier notes-only
 version of this doc. Goal: serialized, human-feeling story posts derived
 from every article (and newsletter), replacing the low-engagement section
