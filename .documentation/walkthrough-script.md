@@ -9,7 +9,7 @@ Production notes
 - Account on screen: simonchiro (post-E2E) or the demo account. Browser
   100% zoom, notifications off, clean tabs.
 - The ONLY date in the whole video is in Scene 10 (easy re-render).
-- GHL native onboarding wizard is OFF by design; Scene 4 replaces it.
+- The CRM's native onboarding wizard is OFF by design (never name the underlying vendor anywhere on screen or in narration: the white-label name is Omniply); Scene 4 replaces it.
 - Numbers spoken in narration are written out the way they should be said.
 - Per-scene clips are saved individually; scenes 3, 4, 7, 8, 9 double as
   tutorial embeds for /help articles.
@@ -19,7 +19,7 @@ Production notes
 ## Scene 1 — Cold open: the problem (~25s)
 
 ON SCREEN: Quick montage, 3–4s each: a finished article on a clinic site,
-a Key-Takeaways video post looping on an IG feed, a story post, a GHL
+a Key-Takeaways video post looping on an IG feed, a story post, a CRM
 contact record with a callback note. No UI chrome yet, just the outputs.
 
 NARRATION:
@@ -32,7 +32,7 @@ Watch what your first month looks like."
 ## Scene 2 — What you get + purchase (~20s)
 
 ON SCREEN: The pricing section on the website, cursor over the plan, click
-through to the GHL checkout, order form filled, purchase confirmation.
+through to the checkout, order form filled, purchase confirmation.
 (One-shot clip: capture during the E2E, or a mocked order form.)
 
 NARRATION:
@@ -61,7 +61,7 @@ writing your first month."
 
 ## Scene 4 — Your CRM setup, three steps (~50s)
 
-ON SCREEN: Inside the GHL sub-account. Step captions on screen ("1 of 3"
+ON SCREEN: Inside the Omniply CRM (the white-labeled sub-account). Step captions on screen ("1 of 3"
 style). (a) Marketing → Social Planner → connect Facebook page, Instagram
 account, LinkedIn. (b) Automation → Workflows → open the FB comment
 workflow, pick the connected Facebook page, Publish; same for the IG
@@ -106,7 +106,7 @@ workload."
 
 ON SCREEN: An IG post with the SPINE call-to-action; a comment "SPINE"
 being posted; the automatic DM arriving with the Spine Check link; the
-quiz on a phone frame; the new contact appearing in GHL with tags.
+quiz on a phone frame; the new contact appearing in the Omniply CRM with tags.
 
 NARRATION:
 "Now the part that pays for everything. Every post invites one small
@@ -119,7 +119,7 @@ product. Patients are."
 
 ON SCREEN: The clinic website with the chat bubble; a short visitor
 conversation asking about hours and booking; the visitor leaving a
-callback number; cut to GHL: the contact + note + front-desk notification.
+callback number; cut to the Omniply CRM: the contact + note + front-desk notification.
 
 NARRATION:
 "Your website gets a receptionist too. The chat assistant knows your
@@ -133,7 +133,7 @@ installs itself on WordPress. You don't touch a line of code."
 ON SCREEN: A phone dials the clinic's AI number. Real call audio (record
 an actual call): the greeting with the recording line and "Who am I
 speaking with?", the caller giving a name, asking a question, requesting
-a callback for a time; cut to GHL: contact, note with preferred time,
+a callback for a time; cut to the Omniply CRM: contact, note with preferred time,
 notification SMS.
 
 NARRATION:
@@ -163,7 +163,7 @@ Total narration ≈ 640 words ≈ 4:35 at speaking pace.
 - [ ] Claude: generate per-scene VO MP3s via ElevenLabs (Veit's clone)
 - [ ] Veit: record scenes (Screen Studio; one take per scene; grab stills
       for /help while on each screen)
-- [ ] Scene 2 one-shot: capture checkout during the simonchiro E2E
+- [ ] Scene 2 one-shot: capture the (white-labeled) checkout during the simonchiro E2E
 - [ ] Scene 9: record a real phone call (needs open-hours or the gate
       bypass re-enabled for the take)
 - [ ] Assembly + captions (script text = caption source)
