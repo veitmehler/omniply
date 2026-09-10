@@ -80,7 +80,25 @@ Replace the shipped "never promise texts" rules with capability-aware ones:
   at provisioning (send capability check), store voiceSmsAvailable on
   VoiceAgentConfig; overlay falls back to the email rules when false.
 
-### 5. Tests
+### 5. Structured callback time (folded in 2026-09-10, user request)
+
+Live V3 call proved the model already captures a requested time — but only
+inside the free-text reason ("Parking question; prefers callback around
+10:30 AM"). Make it structured so GHL automation can act on it:
+- tools.ts: `request_callback` gains optional `preferredTime` (string, the
+  caller's words verbatim — "around 10:30 AM", "tomorrow morning"; NO
+  server-side date parsing in v1, it's for humans and merge fields).
+- Engine prompts (voice overlays + agent_system callback flow): when the
+  caller names a time, put it in preferredTime AND read it back with the
+  number confirmation.
+- executeCallback: write it to a "Callback Preferred Time" custom field
+  (find-or-create, same pattern as Chat Summary) + its own note line
+  ("Preferred time: …") — so the snapshot's Chat Callback Request workflow
+  can merge {{contact.callback_preferred_time}} into the front-desk SMS.
+- Snapshot guide update: mention the new merge field for the notification
+  template (user maintains the snapshot workflows).
+
+### 6. Tests
 
 - tools.ts: phone arg validation on both actions (voice-only, normalized).
 - actions: voice branch → sendGhlSms called with template + trigger link;
@@ -88,7 +106,7 @@ Replace the shipped "never promise texts" rules with capability-aware ones:
 - engine overlay: capability-aware text (string assertions).
 - Template purity: no model text in SMS bodies.
 
-### 6. Live verification
+### 7. Live verification
 
 1. Widget/DM regression: actions unchanged off-voice.
 2. Voice call: ask for the guide → confirm calling number → SMS arrives with
@@ -96,6 +114,8 @@ Replace the shipped "never promise texts" rules with capability-aware ones:
 3. Anonymous call: agent asks for mobile, read-back, SMS arrives.
 4. Decline the text → email path still offered (capture_contact).
 5. Booking link variant on an account WITH bookingUrl.
+6. Callback with a named time → preferredTime in the action, custom field
+   set, note line present, merge field renders in the notification.
 
 ## Effort
 
