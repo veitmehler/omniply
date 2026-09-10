@@ -1,5 +1,9 @@
 # Voice Agent — ElevenLabs Conversational AI (post-launch)
 
+> Companion plan: .plans/voice-rescue-agent.implementation-plan.md —
+> failed-transfer recovery via a second message-taking agent (caller-leg
+> redirect out of the dead conference; designed 2026-09-10, not yet built).
+
 Status: V1 + V2 CODE COMPLETE on staging 2026-09-09 (user pulled the build
 forward). Shipped: voice channel in the engine (spoken-register overlay,
 filter-then-stream), OpenAI-compatible custom-LLM endpoint
