@@ -29,10 +29,12 @@ import {
   lastUserMessage,
   toolContinuation,
   transferLooksFailed,
+  voiceCallerPhone,
   voiceVisitorKey,
   type VoiceCompletionBody,
   type VoiceReplyPlan,
 } from '../agent/voice-shim'
+import { resolveRescueContext } from '../agent/voice-rescue'
 
 const SECRET_RE = /^[A-Za-z0-9_-]{16,64}$/
 
@@ -43,6 +45,7 @@ const toolsLogged = new Set<string>()
 async function handleVoiceCompletion(
   request: FastifyRequest<{ Params: { secret: string }; Body: VoiceCompletionBody }>,
   reply: FastifyReply,
+  mode: 'standard' | 'message' = 'standard',
 ) {
   const { secret } = request.params
   if (!SECRET_RE.test(secret)) return reply.status(401).send({ error: 'unauthorized' })
@@ -95,12 +98,26 @@ async function handleVoiceCompletion(
     plan = { reply: 'How can I help you today?', transferToolName: null, model }
   } else {
     const { key, source } = voiceVisitorKey(body)
+    const callerPhone = voiceCallerPhone(body)
+    // Rescue call: link back to the failed-transfer conversation (no-
+    // ambiguity rule inside; consumed stamp on turn 1, persisted context on
+    // the new conversation row keeps turns 2+ covered).
+    const rescue = mode === 'message' ? await resolveRescueContext(account.id, callerPhone).catch(() => null) : null
     try {
       const result = await runAgentTurn({
         accountId: account.id,
         visitorKey: key,
         message,
         channel: 'voice',
+        voiceMode: mode,
+        callerPhone,
+        ...(rescue
+          ? {
+              seedKnownBlock: rescue.transcriptBlock,
+              seedGhlContactId: rescue.ghlContactId,
+              rescueSourceId: rescue.sourceId,
+            }
+          : {}),
       })
       // A transfer needs the offered tool, a stored destination (an empty
       // transfer_number fails platform validation and resurrects the repeat
@@ -110,13 +127,14 @@ async function handleVoiceCompletion(
       // (live-verified 2026-09-09; ElevenLabs never returns to the agent
       // without the feature-gated call screening).
       let practiceOpen = false
-      if (result.action?.type === 'request_human' && transferNumber) {
+      if (mode === 'standard' && result.action?.type === 'request_human' && transferNumber) {
         const ctx = await agentContextForAccount(account.id).catch(() => null)
         const open = ctx ? openStatusFor(ctx) : null
         practiceOpen = Boolean(open?.known && open.openNow)
       }
+      // Message mode NEVER transfers — the team already failed to pick up.
       const transferToolName =
-        result.action?.type === 'request_human' && transferNumber && practiceOpen
+        mode === 'standard' && result.action?.type === 'request_human' && transferNumber && practiceOpen
           ? findTransferTool(body)
           : null
       let reply = result.reply
@@ -145,7 +163,12 @@ async function handleVoiceCompletion(
           const boss = await getBoss()
           await boss.send(
             QUEUES.VOICE_TRANSFER_WATCHDOG,
-            { accountId: account.id, transferNumber, armedAtIso: new Date().toISOString() },
+            {
+              accountId: account.id,
+              transferNumber,
+              armedAtIso: new Date().toISOString(),
+              conversationId: result.conversationId,
+            },
             { startAfter: 25 },
           )
         } catch (err) {
@@ -188,7 +211,52 @@ async function handleVoiceCompletion(
   return reply
 }
 
+function xmlEscape(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+}
+
+/**
+ * Rescue TwiML: the watchdog redirects the caller's leg here after killing an
+ * unanswered transfer. Dials the internal message-agent number; when the
+ * rescue agent isn't provisioned, the floor is a spoken apology + hangup.
+ */
+async function handleRescueTwiml(
+  request: FastifyRequest<{ Params: { secret: string } }>,
+  reply: FastifyReply,
+) {
+  const { secret } = request.params
+  if (!SECRET_RE.test(secret)) return reply.status(401).send({ error: 'unauthorized' })
+  const account = await prisma.account.findUnique({ where: { voiceAgentSecret: secret }, select: { id: true } })
+  if (!account) return reply.status(401).send({ error: 'unauthorized' })
+  const config = await prisma.voiceAgentConfig.findUnique({
+    where: { accountId: account.id },
+    select: { rescueNumber: true },
+  })
+  // No callerId attribute on <Dial>: Twilio's default presents the ORIGINAL
+  // caller's number, which is the rescue-link primary key.
+  const twiml = config?.rescueNumber
+    ? `<?xml version="1.0" encoding="UTF-8"?><Response><Dial>${xmlEscape(config.rescueNumber)}</Dial></Response>`
+    : `<?xml version="1.0" encoding="UTF-8"?><Response><Say>Sorry, the team could not pick up just now. Please call back and I will take a message, or the team will see your missed call and get back to you.</Say><Hangup/></Response>`
+  logger.info({ accountId: account.id, rescue: Boolean(config?.rescueNumber) }, '[voice-agent] rescue TwiML served')
+  return reply.header('Content-Type', 'text/xml').send(twiml)
+}
+
 export async function voiceAgentRoutes(app: FastifyInstance) {
-  app.post('/agent/voice/:secret/chat/completions', handleVoiceCompletion)
-  app.post('/agent/voice/:secret/v1/chat/completions', handleVoiceCompletion)
+  app.post('/agent/voice/:secret/chat/completions', (req, rep) =>
+    handleVoiceCompletion(req as FastifyRequest<{ Params: { secret: string }; Body: VoiceCompletionBody }>, rep),
+  )
+  app.post('/agent/voice/:secret/v1/chat/completions', (req, rep) =>
+    handleVoiceCompletion(req as FastifyRequest<{ Params: { secret: string }; Body: VoiceCompletionBody }>, rep),
+  )
+  // Message-taking (rescue) agent — mode as a PATH segment because ElevenLabs
+  // appends /chat/completions to the configured base URL.
+  app.post('/agent/voice/:secret/message/chat/completions', (req, rep) =>
+    handleVoiceCompletion(req as FastifyRequest<{ Params: { secret: string }; Body: VoiceCompletionBody }>, rep, 'message'),
+  )
+  app.post('/agent/voice/:secret/message/v1/chat/completions', (req, rep) =>
+    handleVoiceCompletion(req as FastifyRequest<{ Params: { secret: string }; Body: VoiceCompletionBody }>, rep, 'message'),
+  )
+  // Twilio webhooks may use GET or POST depending on config.
+  app.post('/agent/voice-rescue-twiml/:secret', handleRescueTwiml)
+  app.get('/agent/voice-rescue-twiml/:secret', handleRescueTwiml)
 }

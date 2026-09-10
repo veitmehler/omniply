@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { pickStuckTransferLeg } from '../voice-transfer-watchdog'
+import { findCallerLeg, pickStuckTransferLeg } from '../voice-transfer-watchdog'
 import type { TwilioCallInfo } from '../../lib/twilio'
 
 const ARMED = '2026-09-09T21:00:00.000Z'
@@ -42,5 +42,30 @@ describe('pickStuckTransferLeg', () => {
   it('accepts queued/initiated as still-unanswered', () => {
     expect(pickStuckTransferLeg([call({ status: 'queued' })], '+18297312601', ARMED)).not.toBeNull()
     expect(pickStuckTransferLeg([call({ status: 'initiated' })], '+18297312601', ARMED)).not.toBeNull()
+  })
+})
+
+describe('findCallerLeg', () => {
+  it('returns the OTHER participant of the conference containing the stuck leg', () => {
+    const confs = [
+      { conferenceSid: 'CFother', participants: [{ call_sid: 'CAx' }, { call_sid: 'CAy' }] },
+      { conferenceSid: 'CFours', participants: [{ call_sid: 'CAcaller' }, { call_sid: 'CAstuck' }] },
+    ]
+    expect(findCallerLeg(confs, 'CAstuck')).toBe('CAcaller')
+  })
+
+  it('deterministic under concurrent conferences (never picks the wrong room)', () => {
+    const confs = [
+      { conferenceSid: 'CF1', participants: [{ call_sid: 'CAcallerA' }, { call_sid: 'CAdialA' }] },
+      { conferenceSid: 'CF2', participants: [{ call_sid: 'CAcallerB' }, { call_sid: 'CAdialB' }] },
+    ]
+    expect(findCallerLeg(confs, 'CAdialB')).toBe('CAcallerB')
+    expect(findCallerLeg(confs, 'CAdialA')).toBe('CAcallerA')
+  })
+
+  it('null when the stuck leg is in no conference or alone', () => {
+    expect(findCallerLeg([], 'CAstuck')).toBeNull()
+    expect(findCallerLeg([{ conferenceSid: 'CF', participants: [{ call_sid: 'CAstuck' }] }], 'CAstuck')).toBeNull()
+    expect(findCallerLeg([{ conferenceSid: 'CF', participants: [{ call_sid: 'CAx' }] }], 'CAstuck')).toBeNull()
   })
 })

@@ -8,6 +8,7 @@ import {
   sentenceChunks,
   toolContinuation,
   transferLooksFailed,
+  voiceCallerPhone,
   voiceVisitorKey,
   type VoiceCompletionBody,
 } from '../voice-shim'
@@ -100,6 +101,29 @@ describe('voiceVisitorKey', () => {
     expect(r.key).toMatch(/^elh-[0-9a-f]{24}$/)
     // Deterministic for the same opener (stable within one call).
     expect(voiceVisitorKey(body()).key).toBe(r.key)
+  })
+})
+
+describe('voiceCallerPhone', () => {
+  const withSystem = (content: string): VoiceCompletionBody => ({
+    messages: [
+      { role: 'system', content },
+      { role: 'user', content: 'hi' },
+    ],
+  })
+
+  it('parses an E.164 caller', () => {
+    expect(voiceCallerPhone(withSystem('CALL_ID=conv_1 CALLER=+61400111222'))).toBe('+61400111222')
+  })
+
+  it('parses formatted numbers', () => {
+    expect(voiceCallerPhone(withSystem('CALLER=+1 (829) 731-2601'))).toBe('+18297312601')
+  })
+
+  it('null on anonymous or un-interpolated template', () => {
+    expect(voiceCallerPhone(withSystem('CALLER=anonymous'))).toBeNull()
+    expect(voiceCallerPhone(withSystem('CALLER={{system__caller_id}}'))).toBeNull()
+    expect(voiceCallerPhone({ messages: [{ role: 'user', content: 'hi' }] })).toBeNull()
   })
 })
 

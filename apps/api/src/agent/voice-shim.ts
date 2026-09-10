@@ -81,6 +81,23 @@ const KEY_SAFE = /[^A-Za-z0-9_-]/g
  *     because history is append-only; collides across identical openers,
  *     which the engine's turn-capped rollover tolerates)
  */
+/**
+ * The caller's phone number, interpolated into the stub prompt as
+ * CALLER={{system__caller_id}}. Null when withheld/anonymous or when the
+ * template arrived un-interpolated. Primary key for rescue-context linking
+ * (.plans/voice-rescue-agent.implementation-plan.md).
+ */
+export function voiceCallerPhone(body: VoiceCompletionBody): string | null {
+  const messages = Array.isArray(body.messages) ? body.messages : []
+  const system = messages.find((m) => m.role === 'system')
+  if (!system) return null
+  const m = /CALLER=(\+?[0-9][0-9 ()-]{5,24})/.exec(messageText(system))
+  if (!m) return null
+  const digits = m[1].replace(/[^0-9]/g, '')
+  if (digits.length < 6) return null
+  return m[1].startsWith('+') ? `+${digits}` : digits
+}
+
 export function voiceVisitorKey(body: VoiceCompletionBody): { key: string; source: string } {
   const messages = Array.isArray(body.messages) ? body.messages : []
   const system = messages.find((m) => m.role === 'system')

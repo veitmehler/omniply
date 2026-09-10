@@ -16,15 +16,38 @@ import { logger } from '../lib/logger'
 import {
   endTwilioCall,
   getTwilioSubaccountToken,
+  listConferenceParticipants,
+  listConferences,
   listSubaccountCalls,
+  redirectTwilioCall,
   twilioConfigured,
   type TwilioCallInfo,
+  type TwilioParticipant,
 } from '../lib/twilio'
 
 export interface VoiceTransferWatchdogJobData {
   accountId: string
   transferNumber: string
   armedAtIso: string
+  /** The engine conversation that requested the transfer (rescue linking). */
+  conversationId?: string
+}
+
+/**
+ * Pure decision: the caller's leg — the OTHER participant in the conference
+ * that contains the stuck dial leg. Deterministic under concurrent calls
+ * (no time-window guessing).
+ */
+export function findCallerLeg(
+  participantsByConference: { conferenceSid: string; participants: TwilioParticipant[] }[],
+  stuckDialSid: string,
+): string | null {
+  for (const conf of participantsByConference) {
+    if (!conf.participants.some((p) => p.call_sid === stuckDialSid)) continue
+    const other = conf.participants.find((p) => p.call_sid !== stuckDialSid)
+    return other?.call_sid ?? null
+  }
+  return null
 }
 
 const STUCK_STATUSES = new Set(['queued', 'initiated', 'ringing'])
@@ -57,18 +80,25 @@ export function pickStuckTransferLeg(
   )
 }
 
+function apiBase(): string {
+  return (process.env.API_PUBLIC_URL ?? 'https://svc.omniply.io').replace(/\/$/, '')
+}
+
 export async function voiceTransferWatchdogHandler(jobs: { data: VoiceTransferWatchdogJobData }[]): Promise<void> {
   for (const job of jobs) {
-    const { accountId, transferNumber, armedAtIso } = job.data
+    const { accountId, transferNumber, armedAtIso, conversationId } = job.data
     try {
       if (!twilioConfigured()) {
         logger.warn({ accountId }, '[voice-watchdog] Twilio env missing — cannot inspect transfer leg')
         continue
       }
-      const config = await prisma.voiceAgentConfig.findUnique({
-        where: { accountId },
-        select: { twilioSubaccountSid: true },
-      })
+      const [config, account] = await Promise.all([
+        prisma.voiceAgentConfig.findUnique({
+          where: { accountId },
+          select: { twilioSubaccountSid: true },
+        }),
+        prisma.account.findUnique({ where: { id: accountId }, select: { voiceAgentSecret: true } }),
+      ])
       if (!config?.twilioSubaccountSid) {
         logger.warn({ accountId }, '[voice-watchdog] no Twilio subaccount on file')
         continue
@@ -83,11 +113,52 @@ export async function voiceTransferWatchdogHandler(jobs: { data: VoiceTransferWa
         logger.info({ accountId }, '[voice-watchdog] transfer leg answered or already ended — nothing to do')
         continue
       }
+
+      // Locate the caller's leg BEFORE killing the dial leg (once killed, the
+      // dial participant vanishes from the conference and the link is lost).
+      let callerLegSid: string | null = null
+      try {
+        const conferences = await listConferences(sub)
+        const withParticipants = await Promise.all(
+          conferences.map(async (c) => ({
+            conferenceSid: c.sid,
+            participants: await listConferenceParticipants(sub, c.sid).catch(() => []),
+          })),
+        )
+        callerLegSid = findCallerLeg(withParticipants, stuck.sid)
+      } catch (err) {
+        logger.warn({ err, accountId }, '[voice-watchdog] conference discovery failed — will kill leg without rescue')
+      }
+
       await endTwilioCall(sub, stuck.sid)
       logger.warn(
-        { accountId, callSid: stuck.sid, status: stuck.status },
+        { accountId, callSid: stuck.sid, status: stuck.status, callerLegSid },
         '[voice-watchdog] terminated unanswered transfer leg after timeout',
       )
+
+      // Rescue: stamp the source conversation, then redirect the caller out
+      // of the dead conference to the message agent (or the apology floor).
+      if (conversationId) {
+        await prisma.agentConversation
+          .updateMany({
+            where: { id: conversationId, rescuePendingAt: null },
+            data: { rescuePendingAt: new Date() },
+          })
+          .catch((err) => logger.warn({ err, accountId, conversationId }, '[voice-watchdog] rescue stamp failed'))
+      }
+      if (callerLegSid && account?.voiceAgentSecret) {
+        try {
+          await redirectTwilioCall(sub, callerLegSid, `${apiBase()}/api/agent/voice-rescue-twiml/${account.voiceAgentSecret}`)
+          logger.info({ accountId, callerLegSid }, '[voice-watchdog] caller redirected to rescue TwiML')
+        } catch (err) {
+          logger.error({ err, accountId, callerLegSid }, '[voice-watchdog] caller redirect failed — caller remains in conference')
+        }
+      } else {
+        logger.warn(
+          { accountId, hasCallerLeg: Boolean(callerLegSid), hasSecret: Boolean(account?.voiceAgentSecret) },
+          '[voice-watchdog] no rescue redirect possible',
+        )
+      }
     } catch (err) {
       logger.error({ err, accountId }, '[voice-watchdog] failed (transfer leg may still be ringing)')
     }

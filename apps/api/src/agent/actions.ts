@@ -164,8 +164,15 @@ async function executeCallback(
     }
   }
   if (contactId) {
+    // Rescue call: the front desk should know a LIVE transfer went unanswered
+    // before this callback was taken (deterministic, not model-authored).
+    const rescueRow = await prisma.agentConversation.findUnique({
+      where: { id: conversationId },
+      select: { rescueSourceId: true },
+    })
     const note = [
       '📞 Chat assistant callback request',
+      rescueRow?.rescueSourceId ? '⚠️ Live transfer to the team went unanswered before this callback was taken.' : null,
       action.reason ? `Reason: ${action.reason}` : null,
       summary ? `Chat summary: ${summary}` : null,
     ]

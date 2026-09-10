@@ -487,6 +487,13 @@ model VoiceAgentConfig {
   phoneNumberId       String? // ElevenLabs phone-number id (imported Twilio number)
   phoneNumber         String? // E.164 the clinic forwards to / publishes
   twilioSubaccountSid String? // per-clinic Twilio subaccount under OUR master account
+  // Rescue agent (.plans/voice-rescue-agent.implementation-plan.md): second
+  // message-taking agent on an internal, never-published number — answers
+  // callers redirected out of a failed transfer's dead conference.
+  rescueAgentId       String? // ElevenLabs ConvAI agent id (message agent)
+  rescueNumber        String? // E.164 internal number the rescue TwiML dials
+  rescueNumberSid     String? // Twilio IncomingPhoneNumber sid
+  rescueNumberId      String? // ElevenLabs phone-number import id
   mode                String   @default("overflow") // overflow (conditional forwarding) | direct (published number)
   transferNumber      String? // clinic's real line for human hand-off
   lastError           String?
@@ -1098,6 +1105,18 @@ model AgentConversation {
   ghlContactId String?
   // Inactivity finalizer: reconciliation + summary pass completed.
   finalizedAt  DateTime?
+  // Voice rescue (.plans/voice-rescue-agent.implementation-plan.md):
+  // callerPhone (E.164, parsed from the agent stub prompt's CALLER=) is the
+  // PRIMARY rescue-link key; rescuePendingAt is stamped by the transfer
+  // watchdog (TTL ~3min) and consumed exactly once (rescueConsumedAt);
+  // rescueSourceId on a RESCUE conversation points at the call it continues.
+  callerPhone      String?
+  rescuePendingAt  DateTime?
+  rescueConsumedAt DateTime?
+  rescueSourceId   String?
+  // The injected prior-call transcript block, persisted at conversation
+  // creation so turns 2+ keep the context (the pending stamp is consume-once).
+  rescueContext    String? @db.Text
   turnCount   Int      @default(0)
   costUsd     Float    @default(0)
   createdAt   DateTime @default(now())

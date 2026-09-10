@@ -44,6 +44,16 @@ export interface TurnInput {
   channel?: 'web' | 'ghl-dm' | 'voice'
   /** DM transport: the GHL contact behind the thread (contact exists from birth). */
   ghlContactId?: string | null
+  /** Voice: 'message' = rescue/message-taking agent posture (no transfers). */
+  voiceMode?: 'standard' | 'message'
+  /** Voice: caller's phone (parsed from CALLER=); stored for rescue linking. */
+  callerPhone?: string | null
+  /** Rescue call: prior-conversation transcript block appended to knownDetails. */
+  seedKnownBlock?: string | null
+  /** Rescue call: converge onto the source conversation's GHL contact. */
+  seedGhlContactId?: string | null
+  /** Rescue call: the conversation this one continues (audit + note context). */
+  rescueSourceId?: string | null
 }
 
 export interface TurnResult {
@@ -167,6 +177,12 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
       visitorKey: input.visitorKey,
       channel,
       ...(input.ghlContactId ? { ghlContactId: input.ghlContactId } : {}),
+      // Rescue seeding: contact convergence + audit link + caller phone
+      // (only set on CREATE — an ongoing conversation keeps its identity).
+      ...(input.seedGhlContactId && !input.ghlContactId ? { ghlContactId: input.seedGhlContactId } : {}),
+      ...(input.rescueSourceId ? { rescueSourceId: input.rescueSourceId } : {}),
+      ...(input.callerPhone ? { callerPhone: input.callerPhone } : {}),
+      ...(input.seedKnownBlock ? { rescueContext: input.seedKnownBlock } : {}),
     },
   })
 
@@ -234,7 +250,13 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
     practiceName: ctx.practiceName,
     knowledge: ctx.knowledge,
     openStatus,
-    knownDetails: knownDetailsPromptBlock(known),
+    // Rescue calls carry the failed-transfer conversation's transcript as an
+    // extra known-details block (per-conversation layer, never the cached
+    // KB). Read from the ROW (persisted at create) so turns 2+ keep it —
+    // the pending stamp behind seedKnownBlock is consume-once.
+    knownDetails: [knownDetailsPromptBlock(known), conversation.rescueContext?.trim() || input.seedKnownBlock?.trim() || null]
+      .filter(Boolean)
+      .join('\n\n'),
     channelStyle:
       channel === 'ghl-dm'
         ? [
@@ -243,6 +265,17 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
             'Guides: when the visitor wants a guide, attach send_guide_link IMMEDIATELY. Never ask for an email address; the link arrives right here in the chat.',
             'Human handoff: if the visitor asks for a human, a real person, or to stop talking to a bot, attach request_human and say a team member will take over this conversation shortly.',
           ].join('\n')
+        : channel === 'voice' && input.voiceMode === 'message'
+          ? [
+              '=== CHANNEL: PHONE CALL (live voice) — MESSAGE-TAKING MODE ===',
+              'You are SPEAKING to a caller whose transfer to the practice team was NOT answered. Everything you write is read aloud by text-to-speech.',
+              'The call already opened with an apology that the team could not pick up. Do NOT greet or apologize again — get straight to taking their message.',
+              'Mission order: (1) capture a callback — if KNOWN VISITOR DETAILS or the earlier-call context already contain their name and number, CONFIRM those instead of re-asking ("Shall the team call you back on the number ending in ...?"), then attach request_callback. (2) After the callback is arranged, answer any further questions normally using the practice information.',
+              'Replies MUST be 1 to 2 short conversational sentences. No markdown, no lists, no URLs, no emoji. Never read a web address aloud — say you will text links and attach the matching action.',
+              'NEVER offer to transfer or connect the caller to a person on this call — the team already did not pick up. If they insist on a human, explain the team is unavailable right now and the fastest option is a callback message.',
+              'Callbacks: confirm the phone number by reading it back digit by digit before attaching request_callback.',
+              'NEVER repeat a sentence you have already said this call. If asked whether you are a real person, answer honestly that you are the AI assistant.',
+            ].join('\n')
         : channel === 'voice'
           ? [
               '=== CHANNEL: PHONE CALL (live voice) ===',

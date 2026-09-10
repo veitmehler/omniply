@@ -88,6 +88,47 @@ export async function endTwilioCall(sub: { sid: string; token: string }, callSid
   })
 }
 
+export interface TwilioConference {
+  sid: string
+  status: string
+}
+
+export interface TwilioParticipant {
+  call_sid: string
+}
+
+/** In-progress conferences in the subaccount (voice-rescue caller discovery). */
+export async function listConferences(sub: { sid: string; token: string }): Promise<TwilioConference[]> {
+  const data = await twilioFetch<{ conferences?: TwilioConference[] }>(
+    sub,
+    `/Accounts/${sub.sid}/Conferences.json?Status=in-progress&PageSize=20`,
+  )
+  return data.conferences ?? []
+}
+
+export async function listConferenceParticipants(
+  sub: { sid: string; token: string },
+  conferenceSid: string,
+): Promise<TwilioParticipant[]> {
+  const data = await twilioFetch<{ participants?: TwilioParticipant[] }>(
+    sub,
+    `/Accounts/${sub.sid}/Conferences/${conferenceSid}/Participants.json`,
+  )
+  return data.participants ?? []
+}
+
+/** Live-call redirect: point an in-progress leg at new TwiML. */
+export async function redirectTwilioCall(
+  sub: { sid: string; token: string },
+  callSid: string,
+  url: string,
+): Promise<void> {
+  await twilioFetch<unknown>(sub, `/Accounts/${sub.sid}/Calls/${callSid}.json`, {
+    method: 'POST',
+    form: { Url: url, Method: 'POST' },
+  })
+}
+
 export interface TwilioAddress {
   customerName: string
   street: string
