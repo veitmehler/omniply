@@ -14,6 +14,7 @@
 import { prisma } from '@omniply/shared'
 import { logger } from '../lib/logger'
 import { visitorKeyForElConversation } from './voice-shim'
+import { knownDetailsFor } from './known'
 
 export const RESCUE_TTL_MS = 3 * 60_000
 const TRANSCRIPT_MESSAGES = 10
@@ -110,6 +111,31 @@ export async function resolveRescueContext(
 export const RESCUE_FIRST_MESSAGE =
   "Sorry about that — the team couldn't pick up just now. I can take a message so they call you back. What's your name and the best number to reach you?"
 
+/** Digits spaced out so TTS reads the FULL number digit by digit
+ *  (user decision 2026-09-10: whole number, not just the tail). */
+export function spokenDigits(phone: string): string {
+  return phone.replace(/[^0-9]/g, '').split('').join(' ')
+}
+
+/**
+ * Deterministic rescue greeting, personalized from what the FIRST call
+ * already captured (live finding 2026-09-10: the static greeting re-asked
+ * for details the engine demonstrably knew). Template-only — never
+ * model-authored.
+ */
+export function buildRescueGreeting(name: string | null, phone: string | null): string {
+  if (name && phone) {
+    return `Sorry about that, ${name} — the team couldn't pick up just now. Should they call you back on ${spokenDigits(phone)}?`
+  }
+  if (name) {
+    return `Sorry about that, ${name} — the team couldn't pick up just now. I can take a message; what's the best number to reach you?`
+  }
+  if (phone) {
+    return `Sorry about that — the team couldn't pick up just now. Should they call you back on ${spokenDigits(phone)}?`
+  }
+  return RESCUE_FIRST_MESSAGE
+}
+
 /**
  * Initiation-webhook entry (one-number design): when the incoming call is a
  * rescue (stamp/phone matched), PRE-CREATE the conversation row under the
@@ -124,6 +150,9 @@ export async function prepareRescueConversation(
 ): Promise<string | null> {
   const rescue = await resolveRescueContext(accountId, callerPhone)
   if (!rescue) return null
+  // Personalize the greeting from what the first call already captured —
+  // never re-ask what is known.
+  const known = await knownDetailsFor(rescue.sourceId).catch(() => ({ name: null, phone: null }))
   const visitorKey = visitorKeyForElConversation(elConversationId)
   await prisma.agentConversation.create({
     data: {
@@ -137,8 +166,15 @@ export async function prepareRescueConversation(
     },
   })
   logger.info(
-    { accountId, visitorKey, sourceId: rescue.sourceId, converged: Boolean(rescue.ghlContactId) },
+    {
+      accountId,
+      visitorKey,
+      sourceId: rescue.sourceId,
+      converged: Boolean(rescue.ghlContactId),
+      knownName: Boolean(known.name),
+      knownPhone: Boolean(known.phone),
+    },
     '[voice-rescue] rescue conversation pre-created — greeting override returned',
   )
-  return RESCUE_FIRST_MESSAGE
+  return buildRescueGreeting(known.name, known.phone)
 }
