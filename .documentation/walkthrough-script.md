@@ -9,10 +9,14 @@ Production notes
 - Account on screen: simonchiro (post-E2E) or the demo account. Browser
   100% zoom, notifications off, clean tabs.
 - The ONLY date in the whole video is in Scene 10 (easy re-render).
-- The CRM's native onboarding wizard is OFF by design (never name the underlying vendor anywhere on screen or in narration: the white-label name is Omniply); Scene 4 replaces it.
+- The CRM's native onboarding wizard is OFF by design (never name the underlying vendor anywhere on screen or in narration: the white-label name is Omniply); Scene 3 replaces it.
 - Numbers spoken in narration are written out the way they should be said.
-- Per-scene clips are saved individually; scenes 3, 4, 7, 8, 9 double as
-  tutorial embeds for /help articles.
+- Per-scene clips are saved individually; scenes 3 (CRM setup), 4
+  (onboarding), 7, 8, 9 double as tutorial embeds for /help articles.
+- ORDER FIX 2026-09-10: CRM setup (scene 3) comes BEFORE the Omniply chat
+  onboarding (scene 4) — matches reality; email/text services get ONE
+  honest sentence here, full detail lives in a help article + later
+  tutorial video (user decision).
 
 ---
 
@@ -39,10 +43,30 @@ NARRATION:
 "One plan, everything included. When you sign up, the system builds your
 entire workspace automatically: your CRM, your pipelines, your automations,
 your lead funnels. By the time you open your welcome email, the machine is
-already assembled. Your part takes about fifteen minutes, and it starts
-with a conversation."
+already assembled. Your part starts in your new CRM, and it's quick."
 
-## Scene 3 — Onboarding chat (~45s)
+## Scene 3 — Your CRM setup first (~50s)
+
+ON SCREEN: Inside the Omniply CRM (the white-labeled sub-account). Step
+captions on screen. [TERMINOLOGY: Veit fills the exact menu names during
+script editing.] In order: (a) Business details and sender info: name,
+address, timezone, website. (b) A 2-second glimpse of the email and text
+service screens (no detail). (c) Marketing → Social Planner → connect
+Facebook page, Instagram account, LinkedIn. (d) Automation → Workflows →
+open the Facebook comment workflow, pick the connected page, Publish; same
+for Instagram.
+
+NARRATION:
+"First stop is your new CRM, and we walk you through every step. Check
+your business details and sender info, so everything that goes out carries
+your name. You'll also connect your email and text services here, with a
+guide that walks you through each screen, and while their approvals run in
+the background, you keep going. Connect your social accounts, Facebook,
+Instagram, LinkedIn. Then publish the two ready-made automations that turn
+comments on your posts into leads in your inbox. Open each one, choose
+your page, hit publish. Done. Now the fun part."
+
+## Scene 4 — Onboarding chat (~45s)
 
 ON SCREEN: The onboarding chat embed. Show, in order: pasting the website
 URL and the scan finding blog posts, the "I wrote these myself" confirmation
@@ -51,31 +75,13 @@ call-to-action step with the one-tap 'Comment "SPINE" → we DM the free Spine
 Check' option; the finale screen kicking off generation.
 
 NARRATION:
-"This chat is the whole setup. It reads your website, and if you have a
-blog, it asks one important question: did you write it? Because if you did,
-it learns to write like you, not like an AI. Then it asks you six questions,
-and you answer them out loud, in your own words. Your story, your patients,
-what makes your practice different. That's what your content gets built
-from. Pick your call to action, and you're done. From here, Omniply starts
-writing your first month."
-
-## Scene 4 — Your CRM setup, three steps (~50s)
-
-ON SCREEN: Inside the Omniply CRM (the white-labeled sub-account). Step captions on screen ("1 of 3"
-style). (a) Marketing → Social Planner → connect Facebook page, Instagram
-account, LinkedIn. (b) Automation → Workflows → open the FB comment
-workflow, pick the connected Facebook page, Publish; same for the IG
-workflow. (c) Settings → Business Profile: confirm name, address, timezone,
-website.
-
-NARRATION:
-"Three quick steps inside your new CRM, and we walk you through each one.
-Step one: connect your social accounts, Facebook, Instagram, LinkedIn, so
-your posts publish automatically. Step two: two ready-made automations are
-waiting for you. Open each one, choose your page, and hit publish. These
-are what turn comments on your posts into leads in your inbox. Step three:
-glance over your business profile, name, address, timezone. That's it.
-No wizard, no fifty settings, just these three things."
+"This chat is the actual setup, about fifteen minutes, once. It reads your
+website, and if you have a blog, it asks one important question: did you
+write it? Because if you did, it learns to write like you, not like an AI.
+Then it asks you six questions, and you answer them out loud, in your own
+words. Your story, your patients, what makes your practice different.
+That's what your content gets built from. Pick your call to action, and
+you're done. From here, Omniply starts writing your first month."
 
 ## Scene 5 — The content engine (~40s)
 
