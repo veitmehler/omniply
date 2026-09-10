@@ -42,6 +42,34 @@ const SECRET_RE = /^[A-Za-z0-9_-]{16,64}$/
 // reads these to confirm the transfer tool's exact parameter shape.
 const toolsLogged = new Set<string>()
 
+// Duplicate-turn guard: choppy caller audio makes ElevenLabs occasionally
+// send the same turn twice within milliseconds (live call 2026-09-10: two
+// requests 278ms apart) — both would run the engine and speak twice. Same
+// conversation+message inside the window shares ONE in-flight computation.
+const DEDUP_WINDOW_MS = 6_000
+const recentVoiceTurns = new Map<string, { at: number; promise: Promise<VoiceReplyPlan> }>()
+
+// Deterministic pivot phrasings: a repeated ask must not replay the identical
+// sentence (live call 2026-09-10 spoke the same line three times). Indexed by
+// how many pivots this conversation has already heard.
+const PIVOT_CLOSED = [
+  'The team is not in the practice right now, so I cannot put you through. Can I take your name and number instead? They will call you back as soon as they are in.',
+  'As I said, the team is not in yet, so a transfer will not work. The fastest option is a callback, what is your name and number?',
+  'I really cannot put you through until the team is back. Let me take your number and they will call you first thing.',
+]
+const PIVOT_GENERIC = [
+  'I am not able to connect you directly right now. Can I take your name and number instead? The team will call you back as soon as they can.',
+  'A direct connection is not possible right now, but a callback is. What is the best number for the team to reach you?',
+]
+
+function pivotLine(variants: string[], count: number): string {
+  return variants[Math.min(count, variants.length - 1)]
+}
+
+// Text-only connection promises ("I'm connecting you...") with no transfer
+// actually happening must never reach the caller.
+const CONNECT_PROMISE_RE = /connect(?:ing)?\s+you|put(?:ting)?\s+you\s+through|transferr?(?:ing)?\s+you/i
+
 async function handleVoiceCompletion(
   request: FastifyRequest<{ Params: { secret: string }; Body: VoiceCompletionBody }>,
   reply: FastifyReply,
@@ -98,6 +126,7 @@ async function handleVoiceCompletion(
   } else {
     const { key, source } = voiceVisitorKey(body)
     const callerPhone = voiceCallerPhone(body)
+    const computeTurnPlan = async (): Promise<VoiceReplyPlan> => {
     try {
       // Rescue calls: the initiation webhook already pre-created the
       // conversation row (rescueSourceId + context) under this visitor key;
@@ -121,6 +150,12 @@ async function handleVoiceCompletion(
         const ctx = await agentContextForAccount(account.id).catch(() => null)
         const open = ctx ? openStatusFor(ctx) : null
         practiceOpen = Boolean(open?.known && open.openNow)
+        // Staging test override: force the gate open. LOUD on every use so
+        // it can never silently linger in an environment.
+        if (!practiceOpen && process.env.VOICE_TRANSFER_BYPASS_HOURS === '1') {
+          practiceOpen = true
+          logger.warn({ accountId: account.id }, '[voice-agent] ⚠️ VOICE_TRANSFER_BYPASS_HOURS active — hours gate bypassed')
+        }
       }
       // Message mode NEVER transfers — the team already failed to pick up.
       const transferToolName =
@@ -128,16 +163,30 @@ async function handleVoiceCompletion(
           ? findTransferTool(body)
           : null
       let reply = result.reply
-      if (result.action?.type === 'request_human' && !transferToolName) {
-        // Never speak an empty "connecting you" promise — pivot to a callback
-        // offer, worded for WHY the transfer is off the table.
+      const needsPivot =
+        (result.action?.type === 'request_human' && !transferToolName) ||
+        // Backstop: a text-only connection promise with no transfer happening
+        // (live call 2026-09-10: model said "connecting you" without action).
+        (!transferToolName && CONNECT_PROMISE_RE.test(reply))
+      if (needsPivot) {
+        const priorPivots = await prisma.agentMessage.count({
+          where: { conversationId: result.conversationId, role: 'assistant', action: { path: ['type'], equals: 'request_human' } },
+        }).catch(() => 0)
+        // Vary phrasing per repeated ask — never the identical sentence again.
         reply =
           transferNumber && !practiceOpen
-            ? 'The team is not in the practice right now, so I cannot put you through. Can I take your name and number instead? They will call you back as soon as they are in.'
-            : 'I am not able to connect you directly right now. Can I take your name and number instead? The team will call you back as soon as they can.'
+            ? pivotLine(PIVOT_CLOSED, Math.max(0, priorPivots - 1))
+            : pivotLine(PIVOT_GENERIC, Math.max(0, priorPivots - 1))
         logger.warn(
-          { accountId: account.id, conversationId: result.conversationId, practiceOpen, hasNumber: Boolean(transferNumber) },
-          '[voice-agent] request_human without transfer — pivoted to callback offer',
+          {
+            accountId: account.id,
+            conversationId: result.conversationId,
+            practiceOpen,
+            hasNumber: Boolean(transferNumber),
+            textOnlyPromise: result.action?.type !== 'request_human',
+            priorPivots,
+          },
+          '[voice-agent] no transfer possible — pivoted to callback offer',
         )
       }
       if (transferToolName) {
@@ -165,7 +214,6 @@ async function handleVoiceCompletion(
           logger.error({ err, accountId: account.id }, '[voice-agent] failed to arm transfer watchdog')
         }
       }
-      plan = { reply, transferToolName, transferNumber, model }
       logger.info(
         {
           accountId: account.id,
@@ -177,15 +225,34 @@ async function handleVoiceCompletion(
         },
         '[voice-agent] turn served',
       )
+      return { reply, transferToolName, transferNumber, model }
     } catch (err) {
       // A dead engine must never drop the live call — speak a safe fallback.
       const code = err instanceof AgentTurnError ? err.code : 'engine-error'
       logger.error({ err, accountId: account.id, code }, '[voice-agent] turn failed — safe fallback spoken')
-      plan = {
+      return {
         reply: 'Sorry, I am having trouble right now. Please call the practice directly and the team will help you.',
         transferToolName: null,
         model,
       }
+    }
+    }
+
+    // Duplicate-turn guard: an identical turn inside the window shares the
+    // in-flight computation (one engine run, one persisted turn, one voice).
+    const turnKey = `${account.id}|${key}|${message}`
+    const cached = recentVoiceTurns.get(turnKey)
+    if (cached && Date.now() - cached.at < DEDUP_WINDOW_MS) {
+      logger.warn({ accountId: account.id, turnKey: turnKey.slice(0, 80) }, '[voice-agent] duplicate turn deduped')
+      plan = await cached.promise
+    } else {
+      const promise = computeTurnPlan()
+      recentVoiceTurns.set(turnKey, { at: Date.now(), promise })
+      if (recentVoiceTurns.size > 500) {
+        const cutoff = Date.now() - DEDUP_WINDOW_MS
+        for (const [k, v] of recentVoiceTurns) if (v.at < cutoff) recentVoiceTurns.delete(k)
+      }
+      plan = await promise
     }
   }
 
