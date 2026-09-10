@@ -339,6 +339,12 @@ async function handleVoiceInit(
 }
 
 export async function voiceAgentRoutes(app: FastifyInstance) {
+  // Twilio webhooks POST form-encoded bodies; without a parser Fastify 415s
+  // BEFORE the handler (live finding 2026-09-10: rescue TwiML fetch died as
+  // "application error"). Scoped to this plugin; the body itself is unused.
+  app.addContentTypeParser('application/x-www-form-urlencoded', { parseAs: 'string' }, (_req, body, done) =>
+    done(null, body),
+  )
   app.post('/agent/voice/:secret/chat/completions', handleVoiceCompletion)
   app.post('/agent/voice/:secret/v1/chat/completions', handleVoiceCompletion)
   // ElevenLabs conversation-initiation webhook (rescue greeting override).

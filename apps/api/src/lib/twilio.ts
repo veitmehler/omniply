@@ -118,7 +118,9 @@ export async function listConferenceParticipants(
   return data.participants ?? []
 }
 
-/** Live-call redirect: point an in-progress leg at new TwiML. */
+/** Live-call redirect: point an in-progress leg at new TwiML. Method GET so
+ *  the TwiML fetch carries no form body (Twilio's POST is form-encoded, which
+ *  JSON-only servers 415 — live finding 2026-09-10). */
 export async function redirectTwilioCall(
   sub: { sid: string; token: string },
   callSid: string,
@@ -126,7 +128,7 @@ export async function redirectTwilioCall(
 ): Promise<void> {
   await twilioFetch<unknown>(sub, `/Accounts/${sub.sid}/Calls/${callSid}.json`, {
     method: 'POST',
-    form: { Url: url, Method: 'POST' },
+    form: { Url: url, Method: 'GET' },
   })
 }
 
