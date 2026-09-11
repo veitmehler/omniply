@@ -6,14 +6,19 @@ RUN npm install -g pnpm@9.15.4
 
 WORKDIR /app
 
-# Copy workspace root files
-COPY pnpm-workspace.yaml package.json ./
+# Copy workspace root files — INCLUDING the lockfile (audit F5: the old
+# build never copied it, so every image resolved dependencies fresh).
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
 COPY .npmrc ./
 
-# Copy package manifests for all workspace packages needed
+# Copy package manifests for ALL workspace packages — a frozen install
+# validates the whole workspace against the lockfile's importers, so the
+# web manifest must be present even though web source never enters this
+# image (it deploys via Vercel).
 COPY packages/db/package.json ./packages/db/
 COPY packages/shared/package.json ./packages/shared/
 COPY apps/api/package.json ./apps/api/
+COPY apps/web/package.json ./apps/web/
 
 # Install all deps with flat node_modules (required for Docker COPY between stages).
 # --frozen-lockfile (audit F5, 2026-09-11): the image must ship EXACTLY the

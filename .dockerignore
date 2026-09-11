@@ -32,3 +32,6 @@ README.md
 
 # Apps not needed in this image
 apps/web
+# …but the manifest must enter the build context: a frozen install
+# validates ALL workspace importers against the lockfile (audit F5).
+!apps/web/package.json
