@@ -15,8 +15,13 @@ COPY packages/db/package.json ./packages/db/
 COPY packages/shared/package.json ./packages/shared/
 COPY apps/api/package.json ./apps/api/
 
-# Install all deps with flat node_modules (required for Docker COPY between stages)
-RUN pnpm install --no-frozen-lockfile --shamefully-hoist
+# Install all deps with flat node_modules (required for Docker COPY between stages).
+# --frozen-lockfile (audit F5, 2026-09-11): the image must ship EXACTLY the
+# dependency tree CI verified — the explicit flag overrides .npmrc's
+# frozen-lockfile=false (kept there for local-dev convenience). If this step
+# fails, the lockfile is out of sync with a package.json: run `pnpm install`
+# locally and commit pnpm-lock.yaml.
+RUN pnpm install --frozen-lockfile --shamefully-hoist
 
 # Copy source files
 COPY packages/db ./packages/db
