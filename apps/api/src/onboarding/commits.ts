@@ -8,6 +8,7 @@ import { getBoss, QUEUES } from '../queues/index'
 import { getSystemApiKey } from '../lib/system-keys'
 import { getGhlCredentials } from '../lib/ghl/settings'
 import { listGhlAccounts } from '../lib/ghl/client'
+import { assertSafeWpUrl } from '../lib/ssrf'
 import { processLogo } from '../newsletter/logo-process'
 import {
   generateWritingStyle,
@@ -352,8 +353,17 @@ export async function commitWordpress(ctx: StepContext, answer: unknown): Promis
   if (!siteUrl || !username || !appPassword) return 'I need the site URL, username and Application Password'
   const base = siteUrl.replace(/\/$/, '').startsWith('http') ? siteUrl.replace(/\/$/, '') : `https://${siteUrl.replace(/\/$/, '')}`
   try {
+    // Audit F4: same SSRF guard as the wp-connections twin — this fetch
+    // carries user-chosen credentials to a user-chosen URL.
+    await assertSafeWpUrl(base)
     const auth = `Basic ${Buffer.from(`${username}:${appPassword}`).toString('base64')}`
-    const res = await fetch(`${base}/wp-json/wp/v2/users/me`, { headers: { Authorization: auth } })
+    const res = await fetch(`${base}/wp-json/wp/v2/users/me`, {
+      headers: { Authorization: auth },
+      redirect: 'manual',
+    })
+    if (res.status >= 300 && res.status < 400) {
+      return 'That URL redirects somewhere else — please enter the final site address (check http vs https and www).'
+    }
     if (!res.ok) return `WordPress said no (${res.status}) — double-check the username and Application Password`
   } catch {
     return "Couldn't reach that site — is the URL right?"

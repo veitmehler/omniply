@@ -4,6 +4,9 @@ vi.mock('@omniply/shared', () => ({ prisma: {} }))
 vi.mock('../../lib/logger', () => ({ logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() } }))
 vi.mock('../../article-pipeline/enrichment/diagram-browser-pool', () => ({ withRasterPage: vi.fn() }))
 vi.mock('../../lib/net/instrument', () => ({ instrumentCall: vi.fn((_m: unknown, fn: () => unknown) => fn()) }))
+// The SSRF guard does real DNS; these tests use fake domains with a mocked
+// fetch. The guard itself is covered by lib/__tests__/ssrf.test.ts.
+vi.mock('../../lib/ssrf', () => ({ assertSafePublicUrl: vi.fn(async () => {}) }))
 
 import { crawlSite } from '../site-analysis'
 

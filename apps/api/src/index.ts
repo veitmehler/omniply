@@ -54,6 +54,12 @@ async function main() {
   // We pass our shared logger as the child logger used by request handlers.
   const app = Fastify({
     loggerInstance: logger,
+    // Audit F3 (2026-09-11): the API sits behind Caddy (bound to 127.0.0.1),
+    // so without this every rate limiter keyed on req.ip saw the PROXY's
+    // address — one worldwide shared bucket. trustProxy makes req.ip the
+    // real client from X-Forwarded-For; safe because only Caddy can reach
+    // the port.
+    trustProxy: true,
   })
 
   // ── CORS ───────────────────────────────────────────────────────────────────

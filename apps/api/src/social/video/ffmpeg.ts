@@ -1,6 +1,7 @@
 import { execFile } from 'node:child_process'
 import { REEL_HEADLINE_MAX_CHARS, REEL_HEADLINE_MAX_LINES } from '../generators/reel-bullets'
 import { Semaphore } from '../../lib/concurrency'
+import { assertSafePublicUrl } from '../../lib/ssrf'
 import { promisify } from 'node:util'
 import fs from 'node:fs/promises'
 import path from 'node:path'
@@ -117,8 +118,23 @@ export async function withTempDir<T>(prefix: string, fn: (dir: string) => Promis
 }
 
 export async function downloadToFile(url: string, dest: string): Promise<void> {
-  const res = await fetch(url, { signal: AbortSignal.timeout(3 * 60 * 1000) })
-  if (!res.ok) throw new Error(`Failed to download ${url}: ${res.status}`)
+  // Audit F4: this downloads user-supplied URLs (e.g. loop-video
+  // sourceVideoUrl). Validate every hop manually — a public host 302ing to
+  // an internal address must not reach cloud metadata / private services.
+  let current = url
+  let res: Response | null = null
+  for (let hop = 0; hop < 4; hop++) {
+    await assertSafePublicUrl(current)
+    res = await fetch(current, { signal: AbortSignal.timeout(3 * 60 * 1000), redirect: 'manual' })
+    if (res.status >= 300 && res.status < 400) {
+      const loc = res.headers.get('location')
+      if (!loc) throw new Error(`Failed to download ${url}: redirect without location`)
+      current = new URL(loc, current).toString()
+      continue
+    }
+    break
+  }
+  if (!res || !res.ok) throw new Error(`Failed to download ${url}: ${res?.status ?? 'too many redirects'}`)
   await fs.writeFile(dest, Buffer.from(await res.arrayBuffer()))
 }
 

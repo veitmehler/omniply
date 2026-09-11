@@ -104,3 +104,40 @@ export async function assertSafeWpUrl(rawUrl: string): Promise<void> {
     }
   }
 }
+
+/**
+ * SSRF guard for general user-supplied web URLs (audit F4, 2026-09-11):
+ * identical private-range protection to assertSafeWpUrl, but allows plain
+ * http (clinic websites and video URLs are not always https) and ignores
+ * the WP-specific env toggles. Callers should also pass redirect:'manual'
+ * to their fetch — a 302 to an internal address bypasses any pre-check.
+ */
+export async function assertSafePublicUrl(rawUrl: string): Promise<void> {
+  let url: URL
+  try {
+    url = new URL(rawUrl)
+  } catch {
+    throw new SsrfError(`Invalid URL: ${rawUrl}`)
+  }
+  if (url.protocol !== 'https:' && url.protocol !== 'http:') {
+    throw new SsrfError(`Blocked URL scheme "${url.protocol}"`)
+  }
+  const host = url.hostname
+  let addresses: string[]
+  if (isIP(host)) {
+    addresses = [host]
+  } else {
+    try {
+      const resolved = await lookup(host, { all: true })
+      addresses = resolved.map((r) => r.address)
+    } catch {
+      throw new SsrfError(`Could not resolve host: ${host}`)
+    }
+    if (addresses.length === 0) throw new SsrfError(`Host did not resolve: ${host}`)
+  }
+  for (const addr of addresses) {
+    if (isBlockedIp(addr)) {
+      throw new SsrfError(`Refusing to connect to non-public address for ${host} (${addr})`)
+    }
+  }
+}
