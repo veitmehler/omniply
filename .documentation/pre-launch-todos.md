@@ -138,6 +138,14 @@ User-committed 2026-09-14 ("it will make it much easier for clients to be happy"
   clobbered).
 - [ ] After approve: set nlButtonTextColor='#ffffff' on the demo account
   (commitTemplateReveal recomputes it dark — patch until the rule ships).
+- [ ] **Offer cards readability** (Veit, mid-E2E): offer text panels are hard
+  to read and scroll internally — auto-grow the textareas (or high min-height)
+  so full offer text shows without inner scrolling.
+- [ ] **Onboarding chat: wider layout + larger base font** (Veit, mid-E2E):
+  widen the chat column inside the embed page and bump the font size —
+  "look much easier and less tedious". Mind the GHL iframe viewport: keep it
+  responsive, cap with a max-width, test at common CRM sidebar widths.
+  Applies to the walkthrough video too — film AFTER this lands.
 
 ## 5. Post-launch backlog (small items, no launch impact)
 
