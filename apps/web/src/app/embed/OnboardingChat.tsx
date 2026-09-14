@@ -14,7 +14,6 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { embedFetch } from '@/lib/embedSession'
 import { VoiceRecorder } from './VoiceRecorder'
 import { BusinessCard, LogoCard, PhotoCard, ProfileCard, TemplateCard, OffersCard, WordpressCard, SocialsCard, FrontDeskCard, KbReviewCard } from './cards'
-import { currentEmbedSession, embedApiUrl } from '@/lib/embedSession'
 
 // The chat message scrolls away — the input itself must say what belongs in it.
 const TEXT_PLACEHOLDERS: Record<string, string> = {
@@ -311,8 +310,7 @@ function ConfirmCard({
       return (
         <PhotoCard
           disabled={busy}
-          uploadUrl={embedApiUrl('/api/onboarding/photo')}
-          authToken={`Bearer emb_${currentEmbedSession()?.token ?? ''}`}
+          uploadPath="/api/onboarding/photo"
           onSubmit={(a) => onSubmit(a, a.none ? 'Skip for now' : 'Use this photo ✓')}
         />
       )
@@ -333,8 +331,7 @@ function ConfirmCard({
         <WordpressCard
           card={card as { website?: string }}
           disabled={busy}
-          downloadUrl={embedApiUrl('/api/onboarding/linktree.html')}
-          authToken={`Bearer emb_${currentEmbedSession()?.token ?? ''}`}
+          downloadPath="/api/onboarding/linktree.html"
           onSubmit={(a) => onSubmit(a, a.mode === 'skip' ? 'No WordPress — HTML export' : 'Connect & verify ✓')}
         />
       )

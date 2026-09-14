@@ -6,6 +6,7 @@
  * with exactly the shape the matching server commit expects.
  */
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { embedFetch } from '@/lib/embedSession'
 import { HexColorInput, HexColorPicker } from 'react-colorful'
 
 const inputCls =
@@ -236,13 +237,11 @@ export function ProfileCard({
 
 export function PhotoCard({
   disabled,
-  uploadUrl,
-  authToken,
+  uploadPath,
   onSubmit,
 }: {
   disabled: boolean
-  uploadUrl: string
-  authToken: string
+  uploadPath: string
   onSubmit: (answer: Record<string, unknown>) => void
 }) {
   const [preview, setPreview] = useState<string | null>(null)
@@ -254,7 +253,9 @@ export function PhotoCard({
     try {
       const form = new FormData()
       form.append('photo', file, file.name)
-      const res = await fetch(uploadUrl, { method: 'POST', headers: { Authorization: authToken }, body: form })
+      // embedFetch re-runs the SSO handshake on 401 — a raw fetch with a
+      // render-time token 401s once the 15-min embed token expires mid-step.
+      const res = await embedFetch(uploadPath, { method: 'POST', body: form })
       const data = (await res.json()) as { url?: string; error?: string }
       if (!res.ok || !data.url) {
         setError(data.error ?? 'Upload failed — try again')
@@ -630,14 +631,12 @@ export function OffersCard({
 export function WordpressCard({
   card,
   disabled,
-  downloadUrl,
-  authToken,
+  downloadPath,
   onSubmit,
 }: {
   card: { website?: string }
   disabled: boolean
-  downloadUrl?: string
-  authToken?: string
+  downloadPath?: string
   onSubmit: (answer: Record<string, unknown>) => void
 }) {
   const [siteUrl, setSiteUrl] = useState(card.website ?? '')
@@ -645,10 +644,10 @@ export function WordpressCard({
   const [appPassword, setAppPassword] = useState('')
   const [downloading, setDownloading] = useState(false)
   async function downloadLinktree() {
-    if (!downloadUrl) return
+    if (!downloadPath) return
     setDownloading(true)
     try {
-      const res = await fetch(downloadUrl, { headers: authToken ? { Authorization: authToken } : {} })
+      const res = await embedFetch(downloadPath)
       if (!res.ok) return
       const blob = await res.blob()
       const a = document.createElement('a')
@@ -693,7 +692,7 @@ export function WordpressCard({
           No WordPress
         </button>
       </div>
-      {downloadUrl && (
+      {downloadPath && (
         <p className="text-xs text-muted-foreground">
           Not on WordPress? With WordPress we also publish a ready-made link-in-bio page to your site automatically —
           without it, you can{' '}

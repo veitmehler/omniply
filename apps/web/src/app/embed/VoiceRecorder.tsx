@@ -8,7 +8,7 @@
  * whenever recording is unavailable or the user prefers it.
  */
 import { useRef, useState } from 'react'
-import { embedApiUrl, currentEmbedSession, establishEmbedSession } from '@/lib/embedSession'
+import { embedFetch } from '@/lib/embedSession'
 
 const MIN_SECONDS = 5
 
@@ -65,13 +65,13 @@ export function VoiceRecorder({
 
   async function upload(blob: Blob) {
     try {
-      if (!currentEmbedSession()) await establishEmbedSession()
       const form = new FormData()
       form.append('step', step)
       form.append('audio', blob, `${step}.webm`)
-      const res = await fetch(embedApiUrl('/api/onboarding/voice-answer'), {
+      // embedFetch re-authenticates on 401 — the embed token expires after
+      // 15 minutes, easily crossed while someone thinks through an answer.
+      const res = await embedFetch('/api/onboarding/voice-answer', {
         method: 'POST',
-        headers: { Authorization: `Bearer emb_${currentEmbedSession()!.token}` },
         body: form,
       })
       const data = await res.json()
