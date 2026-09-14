@@ -1,5 +1,33 @@
 # Prod Merge — Launch Batch (staging → main, pre-E2E)
 
+## STATUS 2026-09-14: PHASES 0–4 EXECUTED ✓ (merge 12ccc11 live on prod)
+
+- Phase 0 ✓ staging green cc3607c; prod idle; azavea articleCalendarId intact
+  (cmsgxchgk…); DB backup /opt/socioply/backups/premerge-20260914.dump (32M).
+- Phase 1 ✓ prod env: TWILIO_ACCOUNT_SID/AUTH_TOKEN (same master as staging)
+  + API_PUBLIC_URL appended (docker-mount method — socioply user lacks
+  non-interactive sudo; file is root:docker 640).
+- Phase 2 ✓ merge 12ccc11 pushed; deploy run 34863639380 SUCCESS — first prod
+  image with --frozen-lockfile built green; all 4 migrations applied
+  (agent_extra_knowledge, voice_agent, voice_rescue, voice_sms); Vercel prod
+  web live (voice-assistant route 401 = present+gated, /embed 200,
+  /chiropractors says September 22).
+- Phase 3 ✓ prompt patches applied + verified byte-exact: agent_system
+  (rule 4 callback-correction, rule 5 preferredTime, button phrasing) +
+  write_article legal-citation rule. fact_check_article row verified — still
+  carries citation language. Zero non-default agent_system overrides.
+  Backup: droplet /tmp/prompt-backup-20260914.json.
+- Phase 4 ✓ containers healthy, GIT_SHA=12ccc11…, sharp 0.35.4 +
+  fast-uri 3.1.7 in image (lockfile proof), logs clean. One pre-existing
+  non-merge error noted: clientStorySpiderRun.create unique-constraint
+  collision on cron tick after restart (idempotency guard working; merge
+  touched no spider code).
+- Phase 5 ADJUSTED per Veit: no proactive regen — Azavea post publishing is
+  decided individually. Pipeline regression rides the next approval-triggered
+  generation; watch logs on that run (KT video, carousels/sharp, ffmpeg,
+  captions).
+- Phase 6 (simonchiro E2E on prod) = NEXT.
+
 Decision 2026-09-14: merge BEFORE the simonchiro E2E, then run the E2E as a real
 purchase on prod — tests the true customer path (zero-touch provisioning → new
 onboarding) with no Custom Page URL swap and gives prod a week of soak before the
