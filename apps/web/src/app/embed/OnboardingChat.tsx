@@ -59,6 +59,7 @@ export function OnboardingChat({ onCompleted }: { onCompleted: () => void }) {
   const [bubbles, setBubbles] = useState<ChatBubble[]>([])
   const [input, setInput] = useState('')
   const [busy, setBusy] = useState(false)
+  const [pasteOpen, setPasteOpen] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
 
   const load = useCallback(async () => {
@@ -101,6 +102,7 @@ export function OnboardingChat({ onCompleted }: { onCompleted: () => void }) {
     } finally {
       setBusy(false)
       setInput('')
+      setPasteOpen(false)
     }
   }
 
@@ -134,7 +136,7 @@ export function OnboardingChat({ onCompleted }: { onCompleted: () => void }) {
   }
 
   return (
-    <div className="mx-auto flex h-screen max-w-4xl flex-col">
+    <div className="mx-auto flex h-screen max-w-5xl flex-col">
       {/* progress */}
       <div className="px-4 pt-4">
         <div className="h-1 w-full rounded bg-muted">
@@ -150,7 +152,7 @@ export function OnboardingChat({ onCompleted }: { onCompleted: () => void }) {
         {bubbles.map((b, i) => (
           <div key={i} className={`flex ${b.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div
-              className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-2.5 text-sm md:text-base ${
+              className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-2.5 text-base md:text-lg ${
                 b.role === 'user'
                   ? 'rounded-br-sm bg-primary text-primary-foreground'
                   : 'rounded-bl-sm border border-border bg-card text-foreground'
@@ -218,7 +220,33 @@ export function OnboardingChat({ onCompleted }: { onCompleted: () => void }) {
           </div>
         )}
 
-        {step.kind === 'text' && (
+        {step.kind === 'text' && step.id === 'writing_sample' && step.card?.hasCandidate && !pasteOpen ? (
+          <div className="space-y-2">
+            <button
+              onClick={() => submit({ text: 'I wrote this' }, 'I wrote this ✓')}
+              disabled={busy}
+              className="w-full rounded-lg bg-primary px-4 py-2.5 text-base font-medium text-primary-foreground disabled:opacity-50"
+            >
+              I wrote this ✓
+            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setPasteOpen(true)}
+                disabled={busy}
+                className="flex-1 rounded-lg border border-border px-4 py-2.5 text-base text-foreground disabled:opacity-50"
+              >
+                Paste my article instead
+              </button>
+              <button
+                onClick={() => submit({ text: 'skip' }, 'Skip — use my spoken answers')}
+                disabled={busy}
+                className="flex-1 rounded-lg border border-border px-4 py-2.5 text-base text-muted-foreground disabled:opacity-50"
+              >
+                Skip
+              </button>
+            </div>
+          </div>
+        ) : step.kind === 'text' ? (
           <form
             onSubmit={(e) => {
               e.preventDefault()
@@ -231,18 +259,18 @@ export function OnboardingChat({ onCompleted }: { onCompleted: () => void }) {
               onChange={(e) => setInput(e.target.value)}
               rows={4}
               placeholder={TEXT_PLACEHOLDERS[step.id] ?? 'Paste here…'}
-              className="flex-1 resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm md:text-base text-foreground"
+              className="flex-1 resize-none rounded-lg border border-border bg-background px-3 py-2 text-base text-foreground"
               disabled={busy}
             />
             <button
               type="submit"
               disabled={busy || !input.trim()}
-              className="self-end rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground disabled:opacity-50"
+              className="self-end rounded-lg bg-primary px-4 py-2.5 text-base font-medium text-primary-foreground disabled:opacity-50"
             >
               Send
             </button>
           </form>
-        )}
+        ) : null}
 
         {step.kind === 'choice' && (
           <ChoiceInput step={step} busy={busy} onSubmit={(answer, display) => void submit(answer, display)} />

@@ -12,7 +12,7 @@ import { logger } from '../lib/logger'
 import { instrumentCall } from '../lib/net/instrument'
 import { withTimeout } from '../lib/net/with-timeout'
 import type { SemanticPalette, SpecializationDraft } from './site-analysis'
-import { labelColorFor } from './palette-compose'
+import { nlLabelColorFor } from './palette-compose'
 
 const MODEL = 'gemini-3-flash-preview'
 
@@ -200,20 +200,38 @@ export function buildTemplatePreviewHtml(opts: {
   organizationName: string
   logoUrl?: string | null
   palette: SemanticPalette
+  /** Header logo/name layout — MUST mirror newsletter/render.ts headerBlock. */
+  logoLayout?: 'replace' | 'beside' | 'above'
 }): string {
   const p = opts.palette
   const header = p.headerBackground ?? '#0b2545'
+  // Real sends render the header name white unless overridden — the preview
+  // must promise exactly what render.ts delivers (preview-honesty rule).
   const headerText = p.headerText ?? '#ffffff'
   const accent = p.accent ?? '#2a6f97'
   const body = p.bodyBackground ?? '#ffffff'
   const tints = p.sectionTints?.length ? p.sectionTints : ['#f2f6fa', '#fdf6ee']
   const btn = p.button ?? accent
-  const btnText = (p as { buttonText?: string }).buttonText ?? labelColorFor(btn, header)
+  const btnText = (p as { buttonText?: string }).buttonText ?? nlLabelColorFor(btn)
   const esc = (s: string) => s.replace(/</g, '&lt;')
+  const layout = opts.logoLayout ?? 'replace'
+  const nameH1 = `<h1 style="margin:0;font-size:22px;color:${headerText}">${esc(opts.organizationName)}</h1>`
+  let headerInner: string
+  if (!opts.logoUrl) {
+    headerInner = nameH1
+  } else if (layout === 'beside') {
+    headerInner = `<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto"><tr>
+      <td style="vertical-align:middle;padding-right:14px"><img src="${opts.logoUrl}" alt="logo" style="max-height:48px;max-width:160px"/></td>
+      <td style="vertical-align:middle;text-align:left">${nameH1}</td></tr></table>`
+  } else if (layout === 'above') {
+    headerInner = `<img src="${opts.logoUrl}" alt="logo" style="max-height:48px;max-width:60%"/><div style="height:8px"></div>${nameH1}`
+  } else {
+    headerInner = `<img src="${opts.logoUrl}" alt="logo" style="max-height:56px;max-width:70%"/>`
+  }
   return `<!doctype html><html><body style="margin:0;font-family:Arial,Helvetica,sans-serif;background:${body}">
 <div style="max-width:600px;margin:0 auto">
   <div style="background:${header};color:${headerText};padding:28px 24px;text-align:center">
-    ${opts.logoUrl ? `<img src="${opts.logoUrl}" alt="logo" style="max-height:56px;max-width:70%"/>` : `<h1 style="margin:0;font-size:22px">${esc(opts.organizationName)}</h1>`}
+    ${headerInner}
     <p style="margin:8px 0 0;font-size:13px;opacity:.85">Your monthly health letter</p>
   </div>
   <div style="padding:20px 24px">

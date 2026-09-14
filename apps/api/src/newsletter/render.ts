@@ -69,6 +69,8 @@ export interface RenderBrand {
   nlLogoLightUrl?: string | null
   nlLogoDarkUrl?: string | null
   nlHeaderLogoVariant?: string | null // 'auto' | 'light' | 'dark'
+  nlHeaderTextColor?: string | null // header band text (org name); default white
+  nlHeaderLogoLayout?: string | null // 'replace' (default) | 'beside' | 'above'
   nlFooterLogoVariant?: string | null
   nlFooterLogoWidth?: number | null
   nlFooterDisclaimer?: string | null
@@ -124,6 +126,8 @@ interface Theme {
   linkColor: string
   buttonColor: string // CTA/read-more buttons; falls back to linkColor
   buttonTextColor: string // label on the button fill, contrast-computed
+  headerTextColor: string // header band text (org name in beside/above/no-logo renders)
+  headerLogoLayout: 'replace' | 'beside' | 'above' // logo vs org name in the header band
   headerLogoUrl: string | null
   headerLogoWidth: number
   footerLogoUrl: string | null
@@ -205,7 +209,14 @@ function resolveTheme(brand: RenderBrand): Theme {
     buttonColor,
     buttonTextColor:
       brand.nlButtonTextColor?.trim() ||
-      (contrastRatio('#ffffff', buttonColor) >= 4.5 ? '#ffffff' : '#1c2b33'),
+      // Design rule (2026-09-14): white label on mid/dark brand fills — pure
+      // WCAG math picked black-on-teal, which reads as a broken button.
+      (luminance(buttonColor) < 150 ? '#ffffff' : '#1c2b33'),
+    headerTextColor: brand.nlHeaderTextColor?.trim() || '#ffffff',
+    headerLogoLayout:
+      brand.nlHeaderLogoLayout === 'beside' || brand.nlHeaderLogoLayout === 'above'
+        ? brand.nlHeaderLogoLayout
+        : 'replace',
     headerLogoUrl: pickLogo(brand, brand.nlHeaderLogoVariant, headerBg),
     headerLogoWidth: brand.nlLogoWidth && brand.nlLogoWidth > 0 ? brand.nlLogoWidth : 320,
     footerLogoUrl: pickLogo(brand, brand.nlFooterLogoVariant, footerBg),
@@ -500,12 +511,29 @@ export function renderNewsletterHtml(input: RenderInput, brand: RenderBrand): st
 
 // ── Shared chrome (header band · footer · document shell) ────────────────────
 
-/** Branded header band with the logo (variant-aware) + a spacer. */
+/** Branded header band: logo replace/beside/above the org name (layout-aware). */
 function headerBlock(brand: RenderBrand, theme: Theme): string {
-  const logo = theme.headerLogoUrl
-    ? `<img src="${esc(theme.headerLogoUrl)}" alt="${esc(brand.organizationName ?? 'Logo')}" width="${theme.headerLogoWidth}" style="display:block;width:100%;max-width:${theme.headerLogoWidth}px;height:auto;margin:0 auto;" />`
-    : `<div style="font-family:${HEADING_STACK};font-size:26px;font-weight:${theme.headingWeight};color:#ffffff;text-align:center;">${esc(brand.organizationName ?? '')}</div>`
-  return `<tr><td style="background-color:${theme.headerBg};padding:24px;text-align:center;">${logo}</td></tr>\n      ${spacer()}`
+  const name = `<div style="font-family:${HEADING_STACK};font-size:26px;font-weight:${theme.headingWeight};color:${theme.headerTextColor};text-align:center;">${esc(brand.organizationName ?? '')}</div>`
+  const logoImg = (maxWidth: number) =>
+    `<img src="${esc(theme.headerLogoUrl!)}" alt="${esc(brand.organizationName ?? 'Logo')}" width="${maxWidth}" style="display:block;width:100%;max-width:${maxWidth}px;height:auto;margin:0 auto;" />`
+
+  let inner: string
+  if (!theme.headerLogoUrl) {
+    inner = name
+  } else if (theme.headerLogoLayout === 'beside') {
+    // Table row, not flexbox — Outlook. Logo left, name right, vertically centered.
+    const sideLogo = Math.min(theme.headerLogoWidth, 180)
+    inner = `<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto;"><tr>
+      <td style="vertical-align:middle;padding-right:16px;">${logoImg(sideLogo)}</td>
+      <td style="vertical-align:middle;text-align:left;"><div style="font-family:${HEADING_STACK};font-size:26px;font-weight:${theme.headingWeight};color:${theme.headerTextColor};">${esc(brand.organizationName ?? '')}</div></td>
+    </tr></table>`
+  } else if (theme.headerLogoLayout === 'above') {
+    const topLogo = Math.min(theme.headerLogoWidth, 220)
+    inner = `${logoImg(topLogo)}<div style="height:10px;line-height:10px;font-size:10px;">&nbsp;</div>${name}`
+  } else {
+    inner = logoImg(theme.headerLogoWidth)
+  }
+  return `<tr><td style="background-color:${theme.headerBg};padding:24px;text-align:center;">${inner}</td></tr>\n      ${spacer()}`
 }
 
 /** Branded footer: logo · org name · stacked address+phone · social · disclaimer · unsubscribe. */

@@ -7,7 +7,7 @@
  * (Phase 1 mounts here); completed → the embedded app surface. Rendered only
  * inside the GHL iframe (frame-ancestors CSP scoped to /embed).
  */
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { establishEmbedSession, embedFetch, type EmbedSession } from '@/lib/embedSession'
 import { OnboardingChat } from './OnboardingChat'
 import { LeadMagnetsView } from '@/components/LeadMagnetsView'
@@ -20,6 +20,8 @@ type State =
 
 export default function EmbedEntry() {
   const [state, setState] = useState<State>({ phase: 'connecting' })
+  // True only for the session that JUST finished the finale (not on reloads).
+  const justCompletedRef = useRef(false)
 
   useEffect(() => {
     let cancelled = false
@@ -67,12 +69,24 @@ export default function EmbedEntry() {
 
   const { session } = state
   if (!session.onboardingCompleted) {
-    return <OnboardingChat onCompleted={() => setState({ phase: 'ready', session: { ...session, onboardingCompleted: true } })} />
+    return (
+      <OnboardingChat
+        onCompleted={() => {
+          justCompletedRef.current = true
+          setState({ phase: 'ready', session: { ...session, onboardingCompleted: true } })
+        }}
+      />
+    )
   }
 
   // Post-onboarding embedded surface: the Lead Magnets review gate lives here
   // (GHL-first clients have no Clerk login — this is their only path to it).
-  return <LeadMagnetsView apiFetch={(path, init) => embedFetch(path, init)} />
+  return (
+    <LeadMagnetsView
+      apiFetch={(path, init) => embedFetch(path, init)}
+      justCompletedOnboarding={justCompletedRef.current}
+    />
+  )
 }
 
 function Centered({ children }: { children: React.ReactNode }) {

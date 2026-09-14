@@ -13,6 +13,7 @@ import { getSystemApiKey } from '../lib/system-keys'
 import { getBoss, QUEUES } from '../queues/index'
 import { synthesizeBrandProfile, generateCtaOptions, generateClinicFaqs, type VoiceAnswers } from '../onboarding/synthesis'
 import type { SpecializationDraft } from '../onboarding/site-analysis'
+import { mergeStepData } from '../onboarding/step-data'
 
 export interface OnboardingSynthesisJobData {
   accountId: string
@@ -79,10 +80,12 @@ export async function onboardingSynthesisHandler(jobs: PgBoss.Job<OnboardingSynt
       stepData.synthesisDone = true
     }
 
-    await prisma.onboardingSession.update({
-      where: { id: session.id },
-      data: { stepData: stepData as object },
-    })
+    // Merge ONLY the keys this job owns (lost-update fix: this exact write
+    // clobbered q_proof + the logo choice on the 2026-09-14 live E2E).
+    const OWN_KEYS = ['synthesisDone', 'brandProfileDraft', 'ctaOptions', 'clinicFaqsDraft'] as const
+    const patch: Record<string, unknown> = {}
+    for (const k of OWN_KEYS) if (stepData[k] !== undefined) patch[k] = stepData[k]
+    await mergeStepData(session.id, patch)
     logger.info({ accountId, hasProfile: !!stepData.brandProfileDraft }, '[onboarding-synthesis] done')
   }
 }

@@ -1318,6 +1318,8 @@ model BrandSettings {
   nlLogoLightUrl      String? // white-on-transparent (for dark backgrounds)
   nlLogoDarkUrl       String? // navy-on-transparent (for light backgrounds)
   nlHeaderLogoVariant String? // 'auto' | 'light' | 'dark' (default auto)
+  nlHeaderTextColor   String? // header band text (org-name fallback + beside/above layouts); default white
+  nlHeaderLogoLayout  String? // 'replace' (default) | 'beside' | 'above' — logo vs org name in the header band
   nlFooterLogoVariant String? // 'auto' | 'light' | 'dark' (default auto)
   nlFooterLogoWidth   Int? // footer logo width (px)
   nlFooterDisclaimer  String? @db.Text // editable footer disclaimer (renderer has a default)

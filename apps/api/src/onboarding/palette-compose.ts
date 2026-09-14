@@ -54,6 +54,22 @@ export function relLuminance(hex: string): number {
   return 0.2126 * channel((n >> 16) & 255) + 0.7152 * channel((n >> 8) & 255) + 0.0722 * channel(n & 255)
 }
 
+/**
+ * NEWSLETTER button/header label rule (design decision 2026-09-14): prefer a
+ * WHITE label on mid-to-dark brand fills even when raw WCAG math would pick
+ * dark ink (black-on-teal read as a broken button). Simple perceptual
+ * luminance (0–255 weighted, no gamma), mirrored verbatim in
+ * newsletter/render.ts which stays import-free. Does NOT replace
+ * labelColorFor — the palette-v2 extraction pipeline keeps its locked rules.
+ */
+export function nlLabelColorFor(fill: string): string {
+  const m = /^#?([0-9a-f]{6})$/i.exec(fill.trim())
+  if (!m) return '#ffffff'
+  const n = parseInt(m[1], 16)
+  const lum = 0.2126 * ((n >> 16) & 255) + 0.7152 * ((n >> 8) & 255) + 0.0722 * (n & 255)
+  return lum < 150 ? '#ffffff' : '#1c2b33'
+}
+
 export function contrastRatio(a: string, b: string): number {
   const la = relLuminance(a)
   const lb = relLuminance(b)

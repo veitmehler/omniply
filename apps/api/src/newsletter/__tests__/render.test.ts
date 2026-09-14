@@ -251,3 +251,48 @@ describe('renderPromoEmail', () => {
     expect(html).not.toContain('Remember')
   })
 })
+
+describe('header layout + label rules (polish batch 2026-09-14)', () => {
+  it('replace layout (default): logo only, no org-name heading in the header band', () => {
+    const html = renderNewsletterHtml(full, brand)
+    const headerBand = html.slice(0, html.indexOf('Back Pain Myths'))
+    expect(headerBand).toContain('logo-light.png')
+    expect(headerBand).not.toContain('>Acme Wellness</div>')
+  })
+
+  it('beside layout: logo and org name share a table row', () => {
+    const html = renderNewsletterHtml(full, { ...brand, nlHeaderLogoLayout: 'beside' })
+    const headerBand = html.slice(0, html.indexOf('Back Pain Myths'))
+    expect(headerBand).toContain('logo-light.png')
+    expect(headerBand).toContain('Acme Wellness')
+    expect(headerBand).toContain('padding-right:16px')
+  })
+
+  it('above layout: logo, then the org name beneath', () => {
+    const html = renderNewsletterHtml(full, { ...brand, nlHeaderLogoLayout: 'above' })
+    const headerBand = html.slice(0, html.indexOf('Back Pain Myths'))
+    const logoIdx = headerBand.indexOf('logo-light.png')
+    const nameIdx = headerBand.indexOf('Acme Wellness')
+    expect(logoIdx).toBeGreaterThan(-1)
+    expect(nameIdx).toBeGreaterThan(logoIdx)
+  })
+
+  it('nlHeaderTextColor drives the header name color (beside layout)', () => {
+    const html = renderNewsletterHtml(full, {
+      ...brand,
+      nlHeaderLogoLayout: 'beside',
+      nlHeaderTextColor: '#ffee00',
+    })
+    expect(html).toContain('color:#ffee00')
+  })
+
+  it('button label prefers WHITE on a mid-luminance fill (teal) without a stored override', () => {
+    const html = renderNewsletterHtml(full, { ...brand, nlButtonColor: '#3aa6b9', nlButtonTextColor: null })
+    expect(html).toMatch(/background-color:#3aa6b9;[^"]*color:#ffffff|color:#ffffff;[^"]*background-color:#3aa6b9/)
+  })
+
+  it('button label falls back to dark ink on a genuinely light fill', () => {
+    const html = renderNewsletterHtml(full, { ...brand, nlButtonColor: '#e8e8e8', nlButtonTextColor: null })
+    expect(html).toContain('#1c2b33')
+  })
+})

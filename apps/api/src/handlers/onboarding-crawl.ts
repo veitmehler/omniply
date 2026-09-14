@@ -21,6 +21,7 @@ import {
   specializationRegistryKeys,
 } from '../onboarding/site-analysis'
 import { composePalette } from '../onboarding/palette-compose'
+import { mergeStepData } from '../onboarding/step-data'
 
 export interface OnboardingCrawlJobData {
   accountId: string
@@ -103,9 +104,21 @@ export async function onboardingCrawlHandler(jobs: PgBoss.Job<OnboardingCrawlJob
       logger.warn({ accountId, websiteUrl, err }, '[onboarding-crawl] failed — manual fallbacks apply')
     }
 
-    await prisma.onboardingSession.update({
-      where: { id: session.id },
-      data: { stepData: stepData as object },
-    })
+    // Merge ONLY the keys this job owns — a whole-object write here races the
+    // user's step commits and clobbers answers landed since the load above.
+    const OWN_KEYS = [
+      'crawl',
+      'logoCandidates',
+      'blogSample',
+      'corpus',
+      'paletteInventory',
+      'palette',
+      'specializationDraft',
+      'crawlDone',
+      'crawlError',
+    ] as const
+    const patch: Record<string, unknown> = {}
+    for (const k of OWN_KEYS) if (stepData[k] !== undefined) patch[k] = stepData[k]
+    await mergeStepData(session.id, patch)
   }
 }

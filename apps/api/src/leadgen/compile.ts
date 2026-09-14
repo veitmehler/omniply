@@ -32,6 +32,8 @@ interface SlotMeta {
 export interface BrandTokens {
   organizationName: string
   phone: string
+  /** Dial-ready form of `phone` for tel: hrefs (digits + leading '+' only). */
+  phoneTel: string
   email: string
   website: string
   address: string
@@ -120,22 +122,22 @@ export async function repointGuideTriggerLink(
 }
 
 async function brandTokensFor(userId: string): Promise<BrandTokens> {
-  const [brand, offer] = await Promise.all([
-    prisma.brandSettings.findUnique({ where: { userId } }),
-    prisma.newsletterOffer.findFirst({ where: { userId, enabled: true }, orderBy: { createdAt: 'asc' } }),
-  ])
+  const brand = await prisma.brandSettings.findUnique({ where: { userId } })
   return {
     organizationName: brand?.organizationName ?? 'Your Practice',
     phone: brand?.organizationPhone ?? '',
+    phoneTel: (brand?.organizationPhone ?? '').replace(/[^\d+]/g, ''),
     email: brand?.organizationEmail ?? '',
     website: brand?.organizationWebsite ?? '',
     address: brand?.geolocation ?? '',
     bookingCta: brand?.socialCallToAction ?? 'Book an appointment',
     bookingUrl: brand?.bookingUrl ?? '',
     openingHours: brand?.openingHours ?? '',
-    // Reader offer = the account's first enabled newsletter offer (locked
-    // decision 2026-07-23); neutral fallback when none exists yet.
-    readerOffer: offer?.title?.trim() || 'Ask about our new-patient assessment when you book',
+    // Reader offer must be EVERGREEN (decision 2026-09-14): PDFs live in
+    // patients' hands for months, and the newsletter offers are seasonal —
+    // the first-created one put "New Year" on a September guide. Seasonal
+    // offers stay newsletter-only; guides always carry the evergreen line.
+    readerOffer: 'Ask about our new-patient assessment when you book',
     // Cover renders on the dark brand color → the light (white-on-transparent)
     // processed variant; legacy single-logo field and org logo as fallbacks.
     logoUrl: brand?.nlLogoLightUrl ?? brand?.nlLogoUrl ?? brand?.organizationLogoUrl ?? '',

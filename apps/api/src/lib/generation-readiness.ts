@@ -79,8 +79,9 @@ export async function generationReadiness(accountId: string): Promise<Readiness>
   need(account.articleCalendarId, 'account.articleCalendarId', 'Article topics come from the routed calendar', 'final')
   need(owner?.newsletterCalendarId, 'user.newsletterCalendarId', 'Newsletter topics come from the routed calendar', 'final')
 
-  // Voice decision recorded (audio itself is best-effort archived)
-  need(stepData.elevenlabs !== undefined || settings?.elevenLabsVoiceId, 'elevenLabsDecision', 'Hook-video slots depend on the choice', 'elevenlabs')
+  // NOTE: no elevenLabs gate — the step was removed from client onboarding
+  // (P3); voice is a post-onboarding dashboard decision and hook-video slots
+  // degrade gracefully without a cloned voice.
 
   return { ready: missing.length === 0, missing }
 }

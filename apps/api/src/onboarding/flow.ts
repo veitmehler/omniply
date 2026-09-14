@@ -36,6 +36,7 @@ import {
   commitToggles,
 } from './commits'
 import { specializationRegistryKeys } from './site-analysis'
+import { mergeStepDataAndStep } from './step-data'
 
 export type StepKind = 'info' | 'text' | 'choice' | 'confirm_card' | 'voice' | 'action'
 
@@ -225,8 +226,11 @@ const STEPS: StepDef[] = [
         const excerpt = sample.text.slice(0, 300).trim()
         return {
           messages: [
-            `While exploring your website I found this article${sample.title ? `: "${sample.title}"` : ''} (${sample.wordCount} words).\n\n"${excerpt}…"\n\nIf YOU wrote this (not a website vendor or content service), type exactly: I wrote this — and I'll learn your written voice from it.\n\nIf it was ghostwritten, paste an article you DID write instead, or type "skip" and I'll work from your spoken answers alone.`,
+            `While exploring your website I found this article${sample.title ? `: "${sample.title}"` : ''} (${sample.wordCount} words).\n\n"${excerpt}…"\n\nIf YOU wrote this (not a website vendor or content service), confirm below and I'll learn your written voice from it.\n\nIf it was ghostwritten, paste an article you DID write instead, or skip and I'll work from your spoken answers alone.`,
           ],
+          // Buttons render for the candidate (typed magic words retired) —
+          // they submit the same strings, so the commit path is unchanged.
+          card: { type: 'writing_sample', hasCandidate: true },
         }
       }
       return {
@@ -504,10 +508,9 @@ export async function commitAndAdvance(
   ctx.stepData.__history = history
 
   const nextStep = STEP_ORDER[Math.min(idx + 1, STEP_ORDER.length - 1)]
-  await prisma.onboardingSession.update({
-    where: { id: sessionId },
-    data: { currentStep: nextStep, stepData: ctx.stepData as object },
-  })
+  // jsonb-merge instead of a whole-object write: keys a background job added
+  // since this request loaded the session survive (lost-update fix).
+  await mergeStepDataAndStep(sessionId, ctx.stepData, nextStep)
   logger.info({ sessionId, stepId, nextStep }, '[onboarding] step committed')
   return { nextStep }
 }

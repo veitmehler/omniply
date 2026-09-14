@@ -2,12 +2,16 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const sessionUpsert = vi.fn()
 const sessionUpdate = vi.fn()
+const executeRaw = vi.fn()
 vi.mock('@omniply/shared', () => ({
   prisma: {
     onboardingSession: {
       upsert: (...a: unknown[]) => sessionUpsert(...a),
       update: (...a: unknown[]) => sessionUpdate(...a),
     },
+    // step-data.ts jsonb merges (lost-update fix) — tagged-template call:
+    // (strings, ...values); values = [patchJson, currentStep, sessionId].
+    $executeRaw: (...a: unknown[]) => executeRaw(...a),
   },
 }))
 vi.mock('../../lib/logger', () => ({ logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() } }))
@@ -21,6 +25,7 @@ function ctx(stepData: Record<string, unknown> = {}): StepContext {
 beforeEach(() => {
   vi.clearAllMocks()
   sessionUpdate.mockResolvedValue({})
+  executeRaw.mockResolvedValue(1)
 })
 
 describe('onboarding flow', () => {
@@ -59,8 +64,10 @@ describe('onboarding flow', () => {
     expect(result.error).toBeUndefined()
     expect(result.nextStep).toBe(STEP_ORDER[1])
     expect((c.stepData.__history as unknown[]).length).toBe(1)
-    const update = sessionUpdate.mock.calls[0][0] as { data: { currentStep: string } }
-    expect(update.data.currentStep).toBe(STEP_ORDER[1])
+    // jsonb-merge persistence: values are [patchJson, nextStep, sessionId].
+    const [, patchJson, nextStep] = executeRaw.mock.calls[0] as [unknown, string, string]
+    expect(nextStep).toBe(STEP_ORDER[1])
+    expect(JSON.parse(patchJson).__history).toHaveLength(1)
   })
 
   it('the last step does not advance past itself', async () => {

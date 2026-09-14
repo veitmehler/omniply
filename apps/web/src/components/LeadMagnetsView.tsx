@@ -40,8 +40,11 @@ const STATUS_STYLE: Record<string, string> = {
 
 export function LeadMagnetsView({
   apiFetch,
+  justCompletedOnboarding = false,
 }: {
   apiFetch: (path: string, init?: RequestInit) => Promise<Response>
+  /** Rendered right after the onboarding finale: show the generation banner. */
+  justCompletedOnboarding?: boolean
 }) {
   const [docs, setDocs] = useState<LeadGenDoc[]>([])
   const [templates, setTemplates] = useState<Template[]>([])
@@ -128,6 +131,22 @@ export function LeadMagnetsView({
         </p>
       </div>
 
+      {justCompletedOnboarding && (
+        <div className="rounded-xl border border-green-600/30 bg-green-500/10 p-4 text-sm text-foreground">
+          🎉 <b>Setup complete — your first month&apos;s content is being generated.</b> Articles, newsletters and
+          social posts arrive for your review over the next hour. Meanwhile, review and approve your branded PDF
+          guides below.
+        </div>
+      )}
+
+      {docs.some((d) => d.status === 'compiling') && (
+        <div className="flex items-center gap-3 rounded-xl border border-blue-600/30 bg-blue-500/10 p-4 text-sm text-foreground">
+          <span className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+          Your branded guides are being created — this takes a few minutes, and each one appears for review the
+          moment it&apos;s ready. No need to refresh.
+        </div>
+      )}
+
       {docs.length === 0 && (
         <div className="rounded-xl border border-border bg-card p-6 text-sm text-muted-foreground">
           No documents yet — add one from a template below.
@@ -141,7 +160,12 @@ export function LeadMagnetsView({
               <div>
                 <div className="flex items-center gap-2">
                   <h2 className="font-medium text-foreground">{d.title}</h2>
-                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLE[d.status] ?? ''}`}>
+                  <span
+                    className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLE[d.status] ?? ''}`}
+                  >
+                    {d.status === 'compiling' && (
+                      <span className="h-2.5 w-2.5 animate-spin rounded-full border border-blue-600 border-t-transparent" />
+                    )}
                     {d.status.replace('_', ' ')}
                   </span>
                 </div>

@@ -19,7 +19,7 @@ import {
 } from './synthesis'
 import { effectiveHemisphere } from '../newsletter/calendar-routing'
 import type { SemanticPalette } from './site-analysis'
-import { labelColorFor } from './palette-compose'
+import { nlLabelColorFor } from './palette-compose'
 import type { StepContext } from './flow'
 
 async function brandUpsert(userId: string, data: Record<string, unknown>): Promise<void> {
@@ -51,6 +51,10 @@ export async function commitBusinessConfirm(ctx: StepContext, answer: unknown): 
     organizationCountryCode: merged.country || null,
     defaultAuthorName: merged.contactName || null,
     organizationWebsite: merged.website || null,
+    // Phone + email ride the same GHL Business Profile prefill — leaving them
+    // unmapped stranded the PDFs' call CTA and the chat KB without a number.
+    organizationPhone: merged.phone || null,
+    organizationEmail: merged.email || null,
   })
   if (merged.timezone) await settingsUpsert(ctx.userId, { socialTimezone: merged.timezone })
 
@@ -167,7 +171,12 @@ export async function commitBrandProfile(ctx: StepContext, answer: unknown): Pro
   ctx.stepData.brandProfileDraft = draft as unknown as Record<string, unknown>
 
   // Ready "the reveal": preview from palette + logo (manual palette fallback).
-  const palette = (ctx.stepData.palette as SemanticPalette) ?? {}
+  const palette = { ...((ctx.stepData.palette as SemanticPalette) ?? {}) }
+  // Extraction copies the SITE's header text color (black-on-teal happens);
+  // the newsletter design rule is label-by-band-luminance. The user can still
+  // override via the header-text swatch on the reveal card.
+  ;(palette as { headerText?: string }).headerText = nlLabelColorFor(palette.headerBackground ?? '#0b2545')
+  ;(palette as { buttonText?: string }).buttonText = nlLabelColorFor(palette.button ?? palette.accent ?? '#2a6f97')
   const prefill = (ctx.stepData.ghlPrefill as Record<string, string>) ?? {}
   const variants = (ctx.stepData.logoVariants as { lightUrl?: string; darkUrl?: string } | undefined) ?? {}
   const logo = variants.lightUrl ?? (ctx.stepData.logoChosen as string | null)
@@ -175,11 +184,13 @@ export async function commitBrandProfile(ctx: StepContext, answer: unknown): Pro
     palette,
     logoUrl: logo,
     logoVariants: variants,
+    logoLayout: 'replace',
     organizationName: prefill.organizationName ?? 'Your Practice',
     previewHtml: buildTemplatePreviewHtml({
       organizationName: prefill.organizationName ?? 'Your Practice',
       logoUrl: logo,
       palette,
+      logoLayout: 'replace',
     }),
   }
   ctx.stepData.templateReady = true
@@ -188,7 +199,12 @@ export async function commitBrandProfile(ctx: StepContext, answer: unknown): Pro
 
 /** template_reveal: write the nl* template fields; pre-generate the offer drafts. */
 export async function commitTemplateReveal(ctx: StepContext, answer: unknown): Promise<string | null> {
-  const a = (answer ?? {}) as { palette?: SemanticPalette; logoVariant?: 'light' | 'dark'; confirmed?: boolean }
+  const a = (answer ?? {}) as {
+    palette?: SemanticPalette
+    logoVariant?: 'light' | 'dark'
+    logoLayout?: 'replace' | 'beside' | 'above'
+    confirmed?: boolean
+  }
   const draft = (ctx.stepData.templateDraft as { palette?: SemanticPalette }) ?? {}
   const palette: SemanticPalette = { ...(draft.palette ?? {}), ...(a.palette ?? {}) }
 
@@ -205,10 +221,10 @@ export async function commitTemplateReveal(ctx: StepContext, answer: unknown): P
     nlLinkColor: palette.accent ?? '#2a6f97',
     nlButtonColor: palette.button ?? null,
     // Computed against the FINAL button color — the user may have overridden
-    // the swatch, so never trust a stale precomputed label.
-    nlButtonTextColor: palette.button
-      ? labelColorFor(palette.button, palette.headerBackground ?? '#0b2545')
-      : null,
+    // the swatch. White-preferring newsletter rule (design 2026-09-14).
+    nlButtonTextColor: palette.button ? nlLabelColorFor(palette.button) : null,
+    nlHeaderTextColor: (palette as { headerText?: string }).headerText ?? '#ffffff',
+    nlHeaderLogoLayout: a.logoLayout === 'beside' || a.logoLayout === 'above' ? a.logoLayout : 'replace',
     nlFontColor: '#222222',
     nlSectionColor1: tints[0],
     nlSectionColor2: tints[1] ?? tints[0],

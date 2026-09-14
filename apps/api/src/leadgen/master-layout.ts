@@ -249,7 +249,7 @@ ${body}
   <div class="contact">
     <strong>{{brand.organizationName}}</strong><br/>
     {{brand.address}}<br/>
-    {{brand.phone}} · {{brand.email}}<br/>
+    <span data-optional="phone"><a href="tel:{{brand.phoneTel}}" style="color:inherit;text-decoration:none">{{brand.phone}}</a> · </span><span data-optional="email">{{brand.email}}</span><br/>
     <span data-optional="bookingUrl">Book online: {{brand.bookingUrl}}<br/></span>
     <span data-optional="openingHours">{{brand.openingHours}}<br/></span>
     {{brand.website}}

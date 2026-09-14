@@ -323,29 +323,45 @@ interface Palette {
 
 const SWATCHES: { key: keyof Palette; label: string }[] = [
   { key: 'headerBackground', label: 'Header' },
+  { key: 'headerText', label: 'Header text' },
   { key: 'accent', label: 'Links & accent' },
   { key: 'button', label: 'Buttons' },
   { key: 'bodyBackground', label: 'Background' },
 ]
 
+const LOGO_LAYOUTS: { value: 'replace' | 'beside' | 'above'; label: string }[] = [
+  { value: 'replace', label: 'Logo only' },
+  { value: 'beside', label: 'Logo + name' },
+  { value: 'above', label: 'Logo above name' },
+]
+
 /** Client-side mirror of the server preview so swatch edits re-render live. */
-function previewHtml(orgName: string, logoUrl: string | null, p: Palette): string {
+function previewHtml(
+  orgName: string,
+  logoUrl: string | null,
+  p: Palette,
+  layout: 'replace' | 'beside' | 'above' = 'replace',
+): string {
   const header = p.headerBackground ?? '#0b2545'
   const headerText = p.headerText ?? '#ffffff'
   const accent = p.accent ?? '#2a6f97'
   const body = p.bodyBackground ?? '#ffffff'
   const tints = p.sectionTints?.length ? p.sectionTints : ['#f2f6fa', '#fdf6ee']
   const btn = p.button ?? accent
-  // Label: white or the dark header ink — whichever reads on the fill.
-  const labelCandidates = relLuminance(header) < 0.4 ? ['#ffffff', header, '#1c2b33'] : ['#ffffff', '#1c2b33']
-  const btnText =
-    labelCandidates.find((c) => contrastRatio(c, btn) >= 4.5) ??
-    labelCandidates.sort((a, b) => contrastRatio(b, btn) - contrastRatio(a, btn))[0]
+  // Newsletter label rule (mirrors server nlLabelColorFor): white on mid/dark fills.
+  const btnText = luminance255(btn) < 150 ? '#ffffff' : '#1c2b33'
   const esc = (s: string) => s.replace(/</g, '&lt;')
+  const nameH1 = `<h1 style="margin:0;font-size:20px;color:${headerText}">${esc(orgName)}</h1>`
+  let headerInner: string
+  if (!logoUrl) headerInner = nameH1
+  else if (layout === 'beside')
+    headerInner = `<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto"><tr><td style="vertical-align:middle;padding-right:12px"><img src="${logoUrl}" style="max-height:40px;max-width:140px"/></td><td style="vertical-align:middle;text-align:left">${nameH1}</td></tr></table>`
+  else if (layout === 'above') headerInner = `<img src="${logoUrl}" style="max-height:40px;max-width:60%"/><div style="height:6px"></div>${nameH1}`
+  else headerInner = `<img src="${logoUrl}" style="max-height:48px;max-width:70%"/>`
   return `<!doctype html><html><body style="margin:0;font-family:Arial,sans-serif;background:${body}">
 <div style="max-width:600px;margin:0 auto">
   <div style="background:${header};color:${headerText};padding:24px;text-align:center">
-    ${logoUrl ? `<img src="${logoUrl}" style="max-height:48px;max-width:70%"/>` : `<h1 style="margin:0;font-size:20px">${esc(orgName)}</h1>`}
+    ${headerInner}
     <p style="margin:6px 0 0;font-size:12px;opacity:.85">Your monthly health letter</p>
   </div>
   <div style="padding:18px 22px">
@@ -360,6 +376,14 @@ function previewHtml(orgName: string, logoUrl: string | null, p: Palette): strin
   <div style="background:${tints[1] ?? tints[0]};padding:14px 22px"><h3 style="margin:0 0 4px;font-size:14px;color:${header}">Seasonal offer</h3><p style="margin:0;font-size:12px;color:#444">Offer cards appear like this.</p></div>
   <div style="background:${header};color:${headerText};padding:14px 22px;text-align:center;font-size:11px;opacity:.9">${esc(orgName)}</div>
 </div></body></html>`
+}
+
+/** Simple perceptual luminance 0–255 (mirrors server nlLabelColorFor). */
+function luminance255(hex: string): number {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim())
+  if (!m) return 255
+  const n = parseInt(m[1], 16)
+  return 0.2126 * ((n >> 16) & 255) + 0.7152 * ((n >> 8) & 255) + 0.0722 * (n & 255)
 }
 
 /** WCAG relative luminance / contrast (mirrors the server-side palette rules). */
@@ -469,6 +493,7 @@ export function TemplateCard({
     palette?: Palette
     logoUrl?: string | null
     logoVariants?: { lightUrl?: string; darkUrl?: string }
+    logoLayout?: 'replace' | 'beside' | 'above'
     organizationName?: string
   }
   disabled: boolean
@@ -476,13 +501,14 @@ export function TemplateCard({
 }) {
   const [palette, setPalette] = useState<Palette>(card.palette ?? {})
   const [logoVariant, setLogoVariant] = useState<'light' | 'dark'>('light')
+  const [logoLayout, setLogoLayout] = useState<'replace' | 'beside' | 'above'>(card.logoLayout ?? 'replace')
   const variants = card.logoVariants ?? {}
   const hasBothVariants = Boolean(variants.lightUrl && variants.darkUrl)
   const activeLogo =
     (logoVariant === 'dark' ? variants.darkUrl : variants.lightUrl) ?? card.logoUrl ?? null
   const html = useMemo(
-    () => previewHtml(card.organizationName ?? 'Your Practice', activeLogo, palette),
-    [card.organizationName, activeLogo, palette],
+    () => previewHtml(card.organizationName ?? 'Your Practice', activeLogo, palette, logoLayout),
+    [card.organizationName, activeLogo, palette, logoLayout],
   )
   return (
     <div className="space-y-3 rounded-xl border border-border bg-card p-4">
@@ -516,6 +542,27 @@ export function TemplateCard({
           ))}
         </div>
       )}
+      {activeLogo && (
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">Header layout:</span>
+          {LOGO_LAYOUTS.map((l) => (
+            <button
+              key={l.value}
+              type="button"
+              disabled={disabled}
+              onClick={() => setLogoLayout(l.value)}
+              className={`rounded-lg border px-2.5 py-1.5 text-xs ${
+                logoLayout === l.value
+                  ? 'border-primary text-foreground ring-2 ring-primary/40'
+                  : 'border-border text-muted-foreground'
+              }`}
+              aria-pressed={logoLayout === l.value}
+            >
+              {l.label}
+            </button>
+          ))}
+        </div>
+      )}
       <div className="flex flex-wrap gap-3">
         {SWATCHES.map((s) => {
           const value = (palette[s.key] as string) ?? '#888888'
@@ -542,7 +589,7 @@ export function TemplateCard({
       <button
         className={`${primaryBtn} w-full`}
         disabled={disabled}
-        onClick={() => onSubmit({ palette, logoVariant, confirmed: true })}
+        onClick={() => onSubmit({ palette, logoVariant, logoLayout, confirmed: true })}
       >
         I love it — that&apos;s my newsletter ✓
       </button>
@@ -603,10 +650,19 @@ export function OffersCard({
             </div>
             {o.kept && (
               <textarea
-                className={`${inputCls} mt-1.5 resize-none !py-1 text-xs`}
-                rows={2}
+                className={`${inputCls} mt-1.5 resize-none text-sm leading-relaxed`}
+                rows={4}
                 value={o.body}
                 onChange={(e) => update(i, { body: e.target.value })}
+                // Auto-grow so the full offer text reads without inner scrolling.
+                onInput={(e) => {
+                  const t = e.currentTarget
+                  t.style.height = 'auto'
+                  t.style.height = `${t.scrollHeight}px`
+                }}
+                ref={(t) => {
+                  if (t) t.style.height = `${t.scrollHeight}px`
+                }}
                 disabled={disabled}
               />
             )}
