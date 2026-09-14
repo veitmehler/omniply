@@ -8,6 +8,7 @@ import { getBoss, QUEUES } from '../queues/index'
 import { getSystemApiKey } from '../lib/system-keys'
 import { getGhlCredentials } from '../lib/ghl/settings'
 import { listGhlAccounts } from '../lib/ghl/client'
+import { assertSafeWpUrl } from '../lib/ssrf'
 import { processLogo } from '../newsletter/logo-process'
 import {
   generateWritingStyle,
@@ -270,13 +271,33 @@ export async function commitOffers(ctx: StepContext, answer: unknown): Promise<s
 /** cta: socialCallToAction (+ goal mapping). */
 export async function commitCta(ctx: StepContext, answer: unknown): Promise<string | null> {
   const a = (answer ?? {}) as { value?: string; label?: string; customText?: string }
+  if (a.value === 'dm_keyword') {
+    // FIXED keyword (user decision 2026-09-09: no free input — the snapshot
+    // comment workflows hard-filter on SPINE, and the DM delivers the
+    // clinic's 2-Minute Spine Check quiz trigger link).
+    await brandUpsert(ctx.userId, {
+      socialCallToAction: 'SPINE|our 2-Minute Spine Check',
+      socialPrimaryGoal: 'dm_keyword',
+    })
+    return null
+  }
   const text = a.value === 'custom' ? a.customText?.trim() : (a.label ?? a.value)?.trim()
   if (!text) return 'Tell me where posts should send people'
-  await brandUpsert(ctx.userId, { socialCallToAction: text, socialPrimaryGoal: null })
+  const preset = a.value === 'booking' || a.value === 'newsletter' || a.value === 'custom' ? a.value : null
+  await brandUpsert(ctx.userId, { socialCallToAction: text, socialPrimaryGoal: preset })
   return null
 }
 
 /** writing_sample: transcripts (+ optional article) → writingStyle. */
+/** q_moments: real practice-owner stories → narrator moments for story-arc posts. */
+export async function commitStoryMoments(ctx: StepContext, answer: unknown): Promise<string | null> {
+  const a = (answer ?? {}) as { text?: string }
+  const text = a.text?.trim() ?? ''
+  if (!text) return 'Give me at least one real moment — a sentence or two is enough'
+  await brandUpsert(ctx.userId, { storyBeats: text })
+  return null
+}
+
 export async function commitWritingSample(ctx: StepContext, answer: unknown): Promise<string | null> {
   const a = (answer ?? {}) as { text?: string }
   const raw = a.text?.trim() ?? ''
@@ -302,7 +323,7 @@ export async function commitWritingSample(ctx: StepContext, answer: unknown): Pr
     article = null
   }
 
-  const transcripts = ['q_declaration', 'q_enemy', 'q_tribe', 'q_line', 'q_proof']
+  const transcripts = ['q_declaration', 'q_enemy', 'q_tribe', 'q_line', 'q_moments', 'q_proof']
     .map((k) => (ctx.stepData[k] as { text?: string })?.text)
     .filter(Boolean)
     .join('\n\n')
@@ -332,8 +353,17 @@ export async function commitWordpress(ctx: StepContext, answer: unknown): Promis
   if (!siteUrl || !username || !appPassword) return 'I need the site URL, username and Application Password'
   const base = siteUrl.replace(/\/$/, '').startsWith('http') ? siteUrl.replace(/\/$/, '') : `https://${siteUrl.replace(/\/$/, '')}`
   try {
+    // Audit F4: same SSRF guard as the wp-connections twin — this fetch
+    // carries user-chosen credentials to a user-chosen URL.
+    await assertSafeWpUrl(base)
     const auth = `Basic ${Buffer.from(`${username}:${appPassword}`).toString('base64')}`
-    const res = await fetch(`${base}/wp-json/wp/v2/users/me`, { headers: { Authorization: auth } })
+    const res = await fetch(`${base}/wp-json/wp/v2/users/me`, {
+      headers: { Authorization: auth },
+      redirect: 'manual',
+    })
+    if (res.status >= 300 && res.status < 400) {
+      return 'That URL redirects somewhere else — please enter the final site address (check http vs https and www).'
+    }
     if (!res.ok) return `WordPress said no (${res.status}) — double-check the username and Application Password`
   } catch {
     return "Couldn't reach that site — is the URL right?"

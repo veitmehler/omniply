@@ -23,7 +23,6 @@ To deploy Levercast to Vercel, you need to:
 
 ### 2. Accounts & Services Ready
 - [ ] Vercel account created
-- [ ] Supabase project active
 - [ ] Clerk application created (production mode)
 - [ ] LinkedIn Developer App created
 - [ ] Twitter/X Developer App created
@@ -46,17 +45,10 @@ NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
 NEXT_PUBLIC_CLERK_AFTER_SIGN_OUT_URL=/
 ```
 
-### Supabase Database (2 variables)
 ```
-DATABASE_URL=postgresql://postgres.gmjzvhviihsjpzipocxe:...@aws-1-us-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true&sslmode=require
-DIRECT_URL=postgresql://postgres.gmjzvhviihsjpzipocxe:...@aws-1-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require
 ```
 
-### Supabase Storage (3 variables)
 ```
-NEXT_PUBLIC_SUPABASE_URL=https://gmjzvhviihsjpzipocxe.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
 ### LinkedIn OAuth (3 variables)
@@ -145,16 +137,9 @@ ENCRYPTION_KEY=GENERATE_WITH_openssl_rand_-base64_32
 - Copy `Secret Key` → `CLERK_SECRET_KEY`
 - **Use production keys** (`pk_live_` and `sk_live_`)
 
-### Supabase Database
-**Location**: https://supabase.com/dashboard → Your Project → Settings → Database
 - Copy "Connection pooling" URI → `DATABASE_URL`
 - Copy "Direct connection" URI → `DIRECT_URL`
 
-### Supabase Storage
-**Location**: https://supabase.com/dashboard → Your Project → Settings → API
-- Copy "Project URL" → `NEXT_PUBLIC_SUPABASE_URL`
-- Copy "anon public" key → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- Copy "service_role" key → `SUPABASE_SERVICE_ROLE_KEY`
 
 ### LinkedIn OAuth
 **Location**: https://www.linkedin.com/developers/ → Your App → Auth tab
@@ -191,7 +176,6 @@ openssl rand -base64 32
 ### Database Connection Fails
 **Solution**: 
 - Verify `DATABASE_URL` includes `?sslmode=require`
-- Check Supabase project is active
 - Verify password is correct
 
 ### Cron Job Not Running
@@ -206,7 +190,6 @@ openssl rand -base64 32
 
 - **Full Deployment Guide**: `.documentation/vercel-deployment-guide.md`
 - **Environment Variables Template**: `.documentation/vercel-env-vars-template.md`
-- **Supabase Storage Setup**: `.documentation/supabase-storage-setup.md`
 
 ---
 
@@ -216,7 +199,6 @@ Run through these tests:
 
 1. **Authentication**: Sign in with Google OAuth
 2. **Database**: Create a draft, verify it saves
-3. **Storage**: Upload an image, verify Supabase Storage URL
 4. **Publishing**: Connect LinkedIn/Twitter and publish a post
 5. **Scheduling**: Schedule a post, verify it publishes automatically
 6. **Cron**: Check Vercel Function logs for cron execution

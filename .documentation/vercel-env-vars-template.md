@@ -16,21 +16,14 @@ NEXT_PUBLIC_CLERK_AFTER_SIGN_OUT_URL=/
 
 ---
 
-## 🗄️ Supabase Database
 
 ```bash
-DATABASE_URL=postgresql://postgres.gmjzvhviihsjpzipocxe:YOUR_PASSWORD@aws-1-us-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true&sslmode=require
-DIRECT_URL=postgresql://postgres.gmjzvhviihsjpzipocxe:YOUR_PASSWORD@aws-1-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require
 ```
 
 ---
 
-## 📦 Supabase Storage
 
 ```bash
-NEXT_PUBLIC_SUPABASE_URL=https://gmjzvhviihsjpzipocxe.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=YOUR_ANON_KEY_HERE
-SUPABASE_SERVICE_ROLE_KEY=YOUR_SERVICE_ROLE_KEY_HERE
 ```
 
 ---

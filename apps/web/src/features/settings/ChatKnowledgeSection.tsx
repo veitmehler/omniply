@@ -19,6 +19,7 @@ export function ChatKnowledgeSection() {
   const [openingHours, setOpeningHours] = useState('')
   const [phone, setPhone] = useState('')
   const [bookingUrl, setBookingUrl] = useState('')
+  const [extraKnowledge, setExtraKnowledge] = useState('')
   const [available, setAvailable] = useState(true)
 
   useEffect(() => {
@@ -36,6 +37,7 @@ export function ChatKnowledgeSection() {
         setOpeningHours(d.openingHours ?? '')
         setPhone(d.organizationPhone ?? '')
         setBookingUrl(d.bookingUrl ?? '')
+        setExtraKnowledge(d.extraKnowledge ?? '')
       } finally {
         if (alive) setLoading(false)
       }
@@ -51,7 +53,7 @@ export function ChatKnowledgeSection() {
       const res = await fetch('/api/agent/kb', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ faqs, openingHours, organizationPhone: phone, bookingUrl }),
+        body: JSON.stringify({ faqs, openingHours, organizationPhone: phone, bookingUrl, extraKnowledge }),
       })
       if (!res.ok) {
         const d = (await res.json().catch(() => null)) as { error?: string } | null
@@ -112,6 +114,23 @@ export function ChatKnowledgeSection() {
           </div>
         ))}
       </div>
+      <div className="mt-4">
+        <label className="text-xs font-medium text-muted-foreground">Anything else the assistant should know</label>
+        <p className="text-xs text-muted-foreground mb-1">
+          Practical facts that don&apos;t fit the questions above — parking, payment options, what to bring, referral
+          policy. The assistant treats this as reference information only.
+        </p>
+        <textarea
+          className={input}
+          rows={6}
+          maxLength={5000}
+          value={extraKnowledge}
+          onChange={(e) => setExtraKnowledge(e.target.value)}
+          placeholder="e.g. Free parking behind the building. We accept HSA/FSA cards. New patients should arrive 10 minutes early."
+        />
+        <p className="text-right text-xs text-muted-foreground">{extraKnowledge.length.toLocaleString()}/5,000</p>
+      </div>
+
       <div className="mt-3 flex gap-2">
         <Button variant="outline" size="sm" onClick={() => setFaqs([...faqs, { q: '', a: '' }])}>
           <Plus className="h-3.5 w-3.5 mr-1" /> Add question

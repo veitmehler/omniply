@@ -15,6 +15,8 @@ import { stripeBillingRoutes } from './routes/stripe-billing'
 import { xrayReportRoutes } from './routes/xray-report'
 import { spineCheckRoutes } from './routes/spine-check'
 import { agentRoutes } from './routes/agent'
+import { voiceAgentRoutes } from './routes/voice-agent'
+import { voiceAssistantRoutes } from './routes/voice-assistant'
 import { marketingRoutes } from './routes/marketing'
 import { articlesPublicRoutes } from './routes/articles-public'
 import { ghlReviewRoutes } from './routes/ghl-reviews'
@@ -52,6 +54,12 @@ async function main() {
   // We pass our shared logger as the child logger used by request handlers.
   const app = Fastify({
     loggerInstance: logger,
+    // Audit F3 (2026-09-11): the API sits behind Caddy (bound to 127.0.0.1),
+    // so without this every rate limiter keyed on req.ip saw the PROXY's
+    // address — one worldwide shared bucket. trustProxy makes req.ip the
+    // real client from X-Forwarded-For; safe because only Caddy can reach
+    // the port.
+    trustProxy: true,
   })
 
   // ── CORS ───────────────────────────────────────────────────────────────────
@@ -106,6 +114,8 @@ async function main() {
   await app.register(xrayReportRoutes, { prefix: '/api' })
   await app.register(spineCheckRoutes, { prefix: '/api' })
   await app.register(agentRoutes, { prefix: '/api' })
+  await app.register(voiceAgentRoutes, { prefix: '/api' })
+  await app.register(voiceAssistantRoutes, { prefix: '/api' })
   await app.register(marketingRoutes, { prefix: '/api' })
   await app.register(articlesPublicRoutes, { prefix: '/api' })
   await app.register(ghlReviewRoutes, { prefix: '/api' })

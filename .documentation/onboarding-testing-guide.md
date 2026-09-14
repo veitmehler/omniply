@@ -109,7 +109,7 @@ Before you start, tell me — I'll tail the staging logs live. Expected step-by-
 | 1 | Open sidebar app | "Connecting…" → welcome bubble, **no login** | SSO decrypt, user row created (`ghl:` clerkId), account mapped |
 | 2 | Welcome → business card | Form prefilled from Business Profile | ghlPrefill contents; crawl job enqueued the moment state loads |
 | 3 | Confirm business | Advances to Question 1 | brandSettings basics + timezone written |
-| 4 | Q1–Q5 by **voice** | Record → transcript appears → correct → confirm | S3 audio objects land; transcript quality (AU accent!) |
+| 4 | Q1–Q6 by **voice** (incl. q_moments → storyBeats) | Record → transcript appears → correct → confirm | S3 audio objects land; transcript quality (AU accent!) |
 | 5 | Logo confirm | Candidate grid from your site | crawl results; light/dark variants generated on confirm |
 | 6 | Brand profile | Synthesized profile, editable | synthesis job output; profile fields written on confirm |
 | 7 | Writing sample | Paste an article (or "skip") | writingStyle written (transcripts + article blend) |
@@ -118,7 +118,6 @@ Before you start, tell me — I'll tail the staging logs live. Expected step-by-
 | 10 | CTA | 3 generated options + custom | socialCallToAction written |
 | 11 | WordPress | Form (URL prefilled) or skip | live verify hits your WP; connection row (encrypted) or declined flag |
 | 12 | Socials | Instructions → "I've connected" | Social Planner accounts pulled into ghlSettings.accountIds |
-| 13 | ElevenLabs | "Yes" reveals guided key entry / "later" | key stored + voice cloned from chat audio, or decision recorded |
 | 14 | Toggles | auto vs manual monthly | socialAutomationEnabled + autoGenerateNextCycle |
 | 15 | **Finale** | "Start generating my first month" | validator green → calendars routed → onboardingCompletedAt → **real burst starts** |
 

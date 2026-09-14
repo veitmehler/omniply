@@ -1,5 +1,5 @@
 import { prisma, brandSettingsForUser } from '@omniply/shared'
-import { loadSocialBrandTheme } from '../brand-theme'
+import { loadSocialBrandTheme, commentHookFromTheme } from '../brand-theme'
 import { verticalForUser } from '../../lib/prompt-resolver'
 import { getLLMAdapter } from '../../article-pipeline/llm/factory'
 import { loadPromptTemplate } from '../../article-pipeline/enrichment/prompt-template'
@@ -390,7 +390,7 @@ export async function generateStoryArc(opts: {
   const commentHook =
     vertical === 'azavea'
       ? 'Comment "XRAY" and I will send you the free 2-minute Practice X-Ray.'
-      : ctaLine
+      : (commentHookFromTheme(theme) ?? ctaLine)
   // Pre-approved pivots when the generated bridge was rejected: fixed,
   // compliance-vetted, number-free — the CTA slide always keeps a bridge.
   const BRIDGE_FALLBACKS = [

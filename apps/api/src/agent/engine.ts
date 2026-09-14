@@ -40,10 +40,23 @@ export interface TurnInput {
   conversationId?: string | null
   visitorKey: string
   message: string
-  /** 'web' (widget, default) or 'ghl-dm' (social DM transport). */
-  channel?: 'web' | 'ghl-dm'
+  /** 'web' (widget, default), 'ghl-dm' (social DM), or 'voice' (phone via ElevenLabs custom-LLM). */
+  channel?: 'web' | 'ghl-dm' | 'voice'
   /** DM transport: the GHL contact behind the thread (contact exists from birth). */
   ghlContactId?: string | null
+  /** Voice: 'message' = rescue/message-taking agent posture (no transfers). */
+  voiceMode?: 'standard' | 'message'
+  /** Voice: caller's phone (parsed from CALLER=); stored for rescue linking. */
+  callerPhone?: string | null
+  /** Rescue call: prior-conversation transcript block appended to knownDetails. */
+  seedKnownBlock?: string | null
+  /** Rescue call: converge onto the source conversation's GHL contact. */
+  seedGhlContactId?: string | null
+  /** Rescue call: the conversation this one continues (audit + note context). */
+  rescueSourceId?: string | null
+  /** Voice: the clinic's GHL location can text links (latched false on a
+   *  failed send — the overlay falls back to email delivery). */
+  smsAvailable?: boolean
 }
 
 export interface TurnResult {
@@ -56,6 +69,9 @@ export interface TurnResult {
   /** Drive link for the guide card (capture_contact / send_guide_link). */
   guideLink: string | null
   ended: string | null
+  /** Voice: this conversation is a rescue call (message-taking posture) —
+   *  the transport must never offer a transfer. */
+  messageMode: boolean
 }
 
 interface ModelTurn {
@@ -149,9 +165,10 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
   }
   const channel = input.channel ?? 'web'
 
-  // DM threads are long-lived: find the latest conversation for this visitor
-  // instead of requiring the caller to track ids across webhook calls.
-  if (!conversation && channel === 'ghl-dm') {
+  // DM threads and phone calls are id-less on the caller side: find the
+  // latest conversation for this visitor instead of requiring the transport
+  // to track ids across webhook calls.
+  if (!conversation && (channel === 'ghl-dm' || channel === 'voice')) {
     conversation = await prisma.agentConversation.findFirst({
       where: { accountId: input.accountId, visitorKey: input.visitorKey, channel },
       orderBy: { createdAt: 'desc' },
@@ -166,13 +183,29 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
       visitorKey: input.visitorKey,
       channel,
       ...(input.ghlContactId ? { ghlContactId: input.ghlContactId } : {}),
+      // Rescue seeding: contact convergence + audit link + caller phone
+      // (only set on CREATE — an ongoing conversation keeps its identity).
+      ...(input.seedGhlContactId && !input.ghlContactId ? { ghlContactId: input.seedGhlContactId } : {}),
+      ...(input.rescueSourceId ? { rescueSourceId: input.rescueSourceId } : {}),
+      ...(input.callerPhone ? { callerPhone: input.callerPhone } : {}),
+      ...(input.seedKnownBlock ? { rescueContext: input.seedKnownBlock } : {}),
     },
   })
 
-  const base = { conversationId: conversation.id, bookingUrl: ctx.bookingUrl, guideTitle: null as string | null, guideLink: null as string | null }
+  // Message mode: set by the initiation webhook pre-creating the rescue
+  // conversation (one-number design), or explicitly by the transport.
+  const messageMode = (channel === 'voice' && Boolean(conversation.rescueSourceId)) || input.voiceMode === 'message'
+
+  const base = {
+    conversationId: conversation.id,
+    bookingUrl: ctx.bookingUrl,
+    guideTitle: null as string | null,
+    guideLink: null as string | null,
+    messageMode,
+  }
 
   // ── Pre-filters (no LLM) ─────────────────────────────────────────────────
-  if (channel !== 'ghl-dm' && conversation.turnCount >= MAX_VISITOR_TURNS) {
+  if (channel === 'web' && conversation.turnCount >= MAX_VISITOR_TURNS) {
     const reply = `We've covered a lot! For anything more, the ${ctx.practiceName} front desk is the best next step${ctx.phone ? `: ${ctx.phone}` : ''}.`
     await persistTurn({ conversationId: conversation.id, visitorText: message, reply, action: null, filtered: false, endedReason: 'turn-cap' })
     return { ...base, reply, action: null, ended: 'turn-cap' }
@@ -233,7 +266,13 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
     practiceName: ctx.practiceName,
     knowledge: ctx.knowledge,
     openStatus,
-    knownDetails: knownDetailsPromptBlock(known),
+    // Rescue calls carry the failed-transfer conversation's transcript as an
+    // extra known-details block (per-conversation layer, never the cached
+    // KB). Read from the ROW (persisted at create) so turns 2+ keep it —
+    // the pending stamp behind seedKnownBlock is consume-once.
+    knownDetails: [knownDetailsPromptBlock(known), conversation.rescueContext?.trim() || input.seedKnownBlock?.trim() || null]
+      .filter(Boolean)
+      .join('\n\n'),
     channelStyle:
       channel === 'ghl-dm'
         ? [
@@ -242,7 +281,42 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
             'Guides: when the visitor wants a guide, attach send_guide_link IMMEDIATELY. Never ask for an email address; the link arrives right here in the chat.',
             'Human handoff: if the visitor asks for a human, a real person, or to stop talking to a bot, attach request_human and say a team member will take over this conversation shortly.',
           ].join('\n')
-        : '',
+        : channel === 'voice' && messageMode
+          ? [
+              '=== CHANNEL: PHONE CALL (live voice) — MESSAGE-TAKING MODE ===',
+              'You are SPEAKING to a caller whose transfer to the practice team was NOT answered. Everything you write is read aloud by text-to-speech.',
+              'The call already opened with an apology that the team could not pick up — and when their details were already known, the opening ALREADY offered a callback on their number. Do NOT greet or apologize again, and NEVER ask for information present in KNOWN VISITOR DETAILS or the earlier-call context: if they confirm the offered number, attach request_callback with it immediately.',
+              'Mission order: (1) capture a callback — if KNOWN VISITOR DETAILS or the earlier-call context already contain their name and number, CONFIRM those instead of re-asking ("Shall the team call you back on the number ending in ...?"), then attach request_callback. (2) After the callback is arranged, answer any further questions normally using the practice information.',
+              input.smsAvailable
+                ? 'Replies MUST be 1 to 2 short conversational sentences. No markdown, no lists, no URLs, no emoji. NEVER read a web address aloud. Guides and the booking link can be TEXTED: confirm the number first (if KNOWN VISITOR DETAILS has one, offer it; otherwise ask and read it back digit by digit), then attach send_guide_link or send_booking_link WITH that number in the phone field. Email via capture_contact remains the alternative if they prefer.'
+                : 'Replies MUST be 1 to 2 short conversational sentences. No markdown, no lists, no URLs, no emoji. NEVER read a web address aloud and NEVER promise to text or SMS anything — texting is unavailable on this call. Guides go BY EMAIL (ask for the address, attach capture_contact); booking is by phone number or callback.',
+              'NEVER offer to transfer or connect the caller to a person on this call — the team already did not pick up. If they insist on a human, explain the team is unavailable right now and the fastest option is a callback message.',
+              'Callbacks: confirm the phone number by reading it back digit by digit before attaching request_callback. If the caller names a preferred time, repeat it back and put it in the preferredTime field of request_callback.',
+              'NEVER repeat a sentence you have already said this call. If asked whether you are a real person, answer honestly that you are the AI assistant.',
+            ].join('\n')
+        : channel === 'voice'
+          ? [
+              '=== CHANNEL: PHONE CALL (live voice) ===',
+              'You are SPEAKING to a caller. Everything you write is read aloud by text-to-speech.',
+              'Replies MUST be 1 to 2 short conversational sentences. No markdown, no lists, no URLs, no emoji, no symbols. Spell nothing out in formatting — speak it.',
+              input.smsAvailable
+                ? 'NEVER read a web address aloud. Guides and the booking link can be TEXTED: confirm the number first (offer the one in KNOWN VISITOR DETAILS when present; otherwise ask and read it back digit by digit), then attach send_guide_link or send_booking_link WITH that number in the phone field. Email via capture_contact remains the alternative. When BOOKING says no online booking, book by phone number or callback.'
+                : 'NEVER read a web address aloud, and NEVER promise to text or SMS anything — texting is unavailable on this call. Guides: offer delivery BY EMAIL (ask for their email address and attach capture_contact). Booking: when BOOKING says online booking is available, offer to email the link; otherwise give the practice phone number naturally or arrange a callback.',
+              'The call ALREADY OPENED with a greeting that named the practice, disclosed you are its AI assistant with recorded calls, and asked who is calling. NEVER greet again, never re-introduce yourself, never repeat the practice name unprompted. If asked whether you are a real person, answer honestly that you are the AI assistant. Never claim to be a person, even in a familiar voice.',
+              [
+                'INTAKE (first exchanges of the call): when the caller gives their name, thank them BY NAME and in that same reply handle the disconnect number:',
+                input.callerPhone
+                  ? `say "In case we get cut off, I will have the team use the number you are calling from, ${input.callerPhone.replace(/[^0-9]/g, '').split('').join(' ')} — does that work?". If they confirm, attach intake_details with their name and the number ${input.callerPhone}. If they give a different number instead, read the new one back digit by digit and attach intake_details with that one.`
+                  : 'ask "In case we get disconnected, what is the best number for the team to call you back?" — read the number they give back digit by digit, and attach intake_details with their name and number.',
+                'ONE attempt only: if the caller skips the name or declines a number, say "no problem" and help them anyway — NEVER ask again and NEVER make help conditional on their details. If they lead with a question instead of a name, just answer it; you may fold the intake into a later natural moment, at most once.',
+                'intake_details is silent bookkeeping — never tell the caller they have been "saved" or "added to a system".',
+              ].join('\n'),
+              'NEVER repeat a sentence you have already said this call, and do not end replies with recurring offers like "what can I help you with" — at most once per call, otherwise just answer.',
+              'Human handoff: if the caller asks for a human, a real person, the front desk, or a staff member, attach request_human and say "Of course — connecting you to the team now." Do not argue or ask why.',
+              'If the caller mentions the team did not pick up or the transfer failed, apologize briefly and offer to take a callback message (request_callback).',
+              'Callbacks: confirm the phone number by reading it back digit by digit before attaching request_callback. If the caller names a preferred time, repeat it back and put it in the preferredTime field of request_callback.',
+            ].join('\n')
+          : '',
     guides: ctx.guides.map((g) => `${g.slug} — ${g.title}`).join('\n') || '(none)',
     history: history || '(first message)',
     message,

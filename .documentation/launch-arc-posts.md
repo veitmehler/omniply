@@ -1,4 +1,4 @@
-# Launch story arc — 5 posts to doors-open (Sept 15)
+# Launch story arc — 5 posts to doors-open (Sept 22)
 
 Drafts v2 by Claude 2026-09-02 (v1 scrapped: metaphors tracked the user's
 example posts too closely). For Veit's REWRITE. `[Brackets]` mark beats
@@ -15,7 +15,7 @@ link-post reach; narrative posts stay link-free). Each post ends with an
 open loop to the next.
 
 Suggested cadence: Sep 3 (Wed), Sep 6 (Sat), Sep 9 (Tue), Sep 11 (Thu),
-Sep 15 (Tue, after 14:00 UTC = launch gate).
+Sep 22 (Tue, after 14:00 UTC = launch gate).
 
 Metaphor system (v2, original): elevator operators (P1: automation
 history + timing) → digital cameras (P2: free production, scarce trust) →
@@ -183,7 +183,7 @@ Precision from the machine. Accountability from the captain.
 Tomorrow morning, the doors open.
 
 
-## Post 5 — first into the elevator (Tue Sep 15, after 14:00 UTC)
+## Post 5 — first into the elevator (Tue Sep 22, after 14:00 UTC)
 
 The doors are open.
 

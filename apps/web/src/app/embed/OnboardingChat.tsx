@@ -417,41 +417,6 @@ function ChoiceInput({
     )
   }
 
-  if (revealed === 'elevenlabs_yes') {
-    return (
-      <div className="space-y-2 rounded-xl border border-border bg-card p-4">
-        <ol className="list-decimal space-y-1 pl-4 text-xs text-muted-foreground">
-          <li>Create an account at elevenlabs.io (Creator plan, ~$22/mo)</li>
-          <li>Profile → API Keys → create a key</li>
-          <li>Paste it below — I&apos;ll build your voice from our chat recordings</li>
-        </ol>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault()
-            if (text.trim()) onSubmit({ value: 'yes', apiKey: text.trim() }, 'Voice setup — key added ✓')
-          }}
-          className="flex gap-2"
-        >
-          <input
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            type="password"
-            placeholder="xi-…"
-            className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
-            disabled={busy}
-            autoFocus
-          />
-          <button type="submit" disabled={busy || !text.trim()} className="rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground disabled:opacity-50">
-            Create my voice
-          </button>
-        </form>
-        <button className="text-xs text-muted-foreground underline" onClick={() => setRevealed(null)} disabled={busy}>
-          back
-        </button>
-      </div>
-    )
-  }
-
   return (
     <div className="flex flex-wrap gap-2">
       {(step.options ?? []).map((o) => (
@@ -464,7 +429,6 @@ function ChoiceInput({
               const startPath = (step.card as { startPath?: string } | undefined)?.startPath
               if (startPath) window.open(`${process.env.NEXT_PUBLIC_API_URL ?? ''}${startPath}`, '_blank', 'width=520,height=680')
             }
-            if (step.id === 'elevenlabs' && o.value === 'yes') return setRevealed('elevenlabs_yes')
             onSubmit({ value: o.value, label: o.label }, o.label)
           }}
           disabled={busy}

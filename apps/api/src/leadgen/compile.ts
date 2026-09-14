@@ -65,6 +65,34 @@ export async function regrantActiveCohort(accountId: string, newFileId: string, 
   }
 }
 
+/**
+ * Repoint the location's omniply-spine-check trigger link at the clinic's
+ * live quiz URL (WP page when connected, hosted route otherwise). The comment
+ * workflows DM this link — the quiz is the funnel's front door (P3
+ * 2026-09-09). Non-fatal like the guide repoints.
+ */
+export async function repointSpineCheckTriggerLink(userId: string): Promise<void> {
+  try {
+    const { spineCheckUrlForUser } = await import('../spine-check/generate')
+    const url = await spineCheckUrlForUser(userId)
+    if (!url) return
+    const { getGhlCredentials } = await import('../lib/ghl/settings')
+    const creds = await getGhlCredentials(userId)
+    if (!creds) return
+    const { listTriggerLinks, updateTriggerLink } = await import('../lib/ghl/client')
+    const links = await listTriggerLinks(creds.apiKey, creds.locationId)
+    const match = links.find((l) => l.name === 'omniply-spine-check')
+    if (!match?.id) {
+      logger.info({ userId }, '[leadgen-compile] omniply-spine-check link not found (older snapshot) — skipped')
+      return
+    }
+    const ok = await updateTriggerLink(creds.apiKey, match.id, 'omniply-spine-check', url)
+    logger.info({ userId, ok, url }, '[leadgen-compile] spine-check trigger link repointed')
+  } catch (err) {
+    logger.warn({ userId, err }, '[leadgen-compile] spine-check trigger-link repoint failed — non-fatal')
+  }
+}
+
 /** Repoint the location's omniply-guide-<slug> trigger link at the current Drive file. */
 export async function repointGuideTriggerLink(
   userId: string,

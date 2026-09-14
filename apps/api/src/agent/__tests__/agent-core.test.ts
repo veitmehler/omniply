@@ -212,7 +212,7 @@ describe('action validation', () => {
   const CTX = { guideSlugs: ['desk-workers-survival-guide', 'better-sleep-without-pills'], bookingAvailable: true, hasContact: false }
 
   it('booking link only when booking is available', () => {
-    expect(validateAction({ type: 'send_booking_link' }, CTX)).toEqual({ type: 'send_booking_link' })
+    expect(validateAction({ type: 'send_booking_link' }, CTX)).toEqual({ type: 'send_booking_link', phone: null })
     expect(validateAction({ type: 'send_booking_link' }, { ...CTX, bookingAvailable: false })).toBeNull()
   })
 
@@ -249,6 +249,7 @@ describe('action validation', () => {
       name: 'Sam',
       phone: '+61 400 111 222',
       reason: 'pricing',
+      preferredTime: null,
     })
     expect(validateAction({ type: 'request_callback', name: 'Sam', phone: '123', reason: 'x' }, CTX)).toBeNull()
   })
@@ -257,6 +258,7 @@ describe('action validation', () => {
     expect(validateAction({ type: 'send_guide_link', slug: 'desk-workers-survival-guide' }, CTX)).toEqual({
       type: 'send_guide_link',
       slug: 'desk-workers-survival-guide',
+      phone: null,
     })
     expect(validateAction({ type: 'send_guide_link', slug: 'unknown' }, CTX)).toBeNull()
   })

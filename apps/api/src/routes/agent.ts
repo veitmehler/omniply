@@ -14,7 +14,6 @@
  * turn is the only LLM-spending public route in the API.
  */
 import type { FastifyInstance } from 'fastify'
-import { randomBytes } from 'node:crypto'
 import { prisma, canonicalAccountUserId, brandSettingsForUser } from '@omniply/shared'
 import { resolvePromptByKey } from '../lib/prompt-resolver'
 import { logger } from '../lib/logger'
@@ -26,6 +25,7 @@ import { agentContextForAccount, clearAgentContextFor } from '../agent/context'
 import { emergencyNumberFor, MAX_MESSAGE_CHARS } from '../agent/guardrails'
 import { AgentTurnError, runAgentTurn } from '../agent/engine'
 import { AGENT_LOADER_JS, buildAgentPanelHtml } from '../agent/widget'
+import { ensureAgentWidgetToken } from '../lib/omniply-connect'
 
 const TOKEN_RE = /^[A-Za-z0-9_-]{16,64}$/
 const VISITOR_KEY_RE = /^[A-Za-z0-9_-]{8,64}$/
@@ -149,10 +149,11 @@ export async function agentRoutes(app: FastifyInstance) {
       openingHours: brand.openingHours ?? '',
       organizationPhone: brand.organizationPhone ?? '',
       bookingUrl: brand.bookingUrl ?? '',
+      extraKnowledge: brand.agentExtraKnowledge ?? '',
     }
   })
 
-  app.put<{ Body: { faqs?: { q?: string; a?: string }[]; openingHours?: string; organizationPhone?: string; bookingUrl?: string } }>(
+  app.put<{ Body: { faqs?: { q?: string; a?: string }[]; openingHours?: string; organizationPhone?: string; bookingUrl?: string; extraKnowledge?: string } }>(
     '/agent/kb',
     async (request, reply) => {
       const clerkId = await requireAuth(request, reply)
@@ -175,6 +176,9 @@ export async function agentRoutes(app: FastifyInstance) {
           ...(body.openingHours !== undefined ? { openingHours: body.openingHours.trim() || null } : {}),
           ...(body.organizationPhone !== undefined ? { organizationPhone: body.organizationPhone.trim() || null } : {}),
           ...(body.bookingUrl !== undefined ? { bookingUrl: body.bookingUrl.trim() || null } : {}),
+          ...(body.extraKnowledge !== undefined
+            ? { agentExtraKnowledge: body.extraKnowledge.trim().slice(0, 5000) || null }
+            : {}),
         },
       })
       if (user.accountId) clearAgentContextFor(user.accountId)
@@ -189,18 +193,11 @@ export async function agentRoutes(app: FastifyInstance) {
     const user = await prisma.user.findUnique({ where: { clerkId }, select: { accountId: true } })
     if (!user?.accountId) return reply.status(404).send({ error: 'No account' })
 
-    const account = await prisma.account.findUnique({
-      where: { id: user.accountId },
-      select: { id: true, agentWidgetToken: true },
-    })
-    if (!account) return reply.status(404).send({ error: 'No account' })
-
-    let token = account.agentWidgetToken
-    if (!token) {
-      token = randomBytes(24).toString('base64url')
-      await prisma.account.update({ where: { id: account.id }, data: { agentWidgetToken: token } })
-      logger.info({ accountId: account.id }, '[agent] widget token minted')
+    try {
+      const token = await ensureAgentWidgetToken(user.accountId)
+      return { token }
+    } catch {
+      return reply.status(404).send({ error: 'No account' })
     }
-    return { token }
   })
 }

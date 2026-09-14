@@ -167,10 +167,11 @@ export function SocialPostsSection({ settings }: { settings: SettingsData }) {
           </p>
 
           {/* Primary goal selector */}
-          <div className="grid grid-cols-3 gap-2 mb-3">
+          <div className="grid grid-cols-2 gap-2 mb-3">
             {([
               { value: 'newsletter', label: 'Newsletter signup', hint: 'Grow your email list' },
               { value: 'booking',    label: 'Book appointment',  hint: 'Drive bookings' },
+              { value: 'dm_keyword', label: 'Comment keyword',   hint: 'DM a free guide on comment' },
               { value: 'custom',     label: 'Custom',            hint: 'Write your own' },
             ] as const).map((opt) => {
               const active = socialPrimaryGoal === opt.value
@@ -178,7 +179,10 @@ export function SocialPostsSection({ settings }: { settings: SettingsData }) {
                 <button
                   key={opt.value}
                   type="button"
-                  onClick={() => setSocialPrimaryGoal(opt.value)}
+                  onClick={() => {
+                    setSocialPrimaryGoal(opt.value)
+                    if (opt.value === 'dm_keyword') setSocialCallToAction('SPINE|our 2-Minute Spine Check')
+                  }}
                   className={`rounded-lg border px-3 py-2 text-left transition-colors ${
                     active
                       ? 'border-primary bg-primary/10 ring-2 ring-primary/20'
@@ -192,7 +196,15 @@ export function SocialPostsSection({ settings }: { settings: SettingsData }) {
             })}
           </div>
 
-          {socialPrimaryGoal === 'custom' || socialPrimaryGoal === '' ? (
+          {socialPrimaryGoal === 'dm_keyword' ? (
+            <p className="text-xs text-muted-foreground bg-muted/50 rounded-md px-3 py-2">
+              Posts invite followers to comment{' '}
+              <span className="font-medium text-card-foreground">&ldquo;SPINE&rdquo;</span> — our
+              automation DMs them your 2-Minute Spine Check (Facebook and Instagram;
+              LinkedIn posts keep a normal link). The keyword is fixed so it always
+              matches the comment automation in your account.
+            </p>
+          ) : socialPrimaryGoal === 'custom' || socialPrimaryGoal === '' ? (
             <>
               <p className="text-xs text-muted-foreground mb-2">
                 Describe what you want your posts to promote. It will be phrased as a

@@ -13,6 +13,7 @@ export type PostSource =
   | 'nl_overview' // reel bullets from the newsletter's topics
   | 'nl_tips' // quote card from quickHits.tips
   | 'nl_feature' // image carousel from the feature article
+  | 'nl_story' // story-arc beat from the edition's feature article (P3 main-app rollout), indexed by DaySlot.beatIndex
   // ── Article sources ──
   | 'art_diagram_0' // legacy: diagram carousel, 1st diagram section (fallback → image carousel)
   | 'art_diagram_1' // legacy: diagram carousel, 2nd diagram section (fallback → image carousel)
@@ -66,43 +67,47 @@ export type CarouselDesignVariant = 'brand_tint' | 'brand_tint_accent'
 /** ISO weekday: 1 = Mon … 6 = Sat (Sun = 0 has no posts). */
 export type Weekday = 1 | 2 | 3 | 4 | 5 | 6
 
+// P3 main-app rollout (user decisions 2026-09-08): every day = story-beat AM →
+// midday visual anchor → story-beat PM, 2-beat mini-arc per content piece.
+// Hours 9/12/17 (user choice). Article middays = KT loop-bait music video;
+// newsletter middays = the EXISTING newsletter visual carousel (locked design —
+// promotes the edition). No voiced post types: ElevenLabs dropped for clients.
 export const DEFAULT_WEEKLY_SOCIAL_MATRIX: Record<Weekday, DaySlot[]> = {
   // Mon — newsletter
   1: [
-    { hour: 9, postType: 'video_reel', source: 'nl_overview' },
-    { hour: 12, postType: 'quote', source: 'nl_tips' },
-    { hour: 15, postType: 'carousel', source: 'nl_feature' },
+    { hour: 9, postType: 'story_text', source: 'nl_story', beatIndex: 0 },
+    { hour: 12, postType: 'carousel', source: 'nl_feature', designVariant: 'brand_tint' },
+    { hour: 17, postType: 'story_text', source: 'nl_story', beatIndex: 1 },
   ],
-  // Tue — article (hard-bound sections 1 + 3; KT anchors the noon slot —
-  // becomes kt_music_video when Phase 3 of the sections/KT plan lands)
+  // Tue — article
   2: [
-    { hour: 9, postType: 'hook_video', source: 'art_section_0' },
-    { hour: 12, postType: 'video_reel', source: 'art_keytakeaways' },
-    { hour: 15, postType: 'carousel', source: 'art_section_2' },
+    { hour: 9, postType: 'story_text', source: 'art_story', beatIndex: 0 },
+    { hour: 12, postType: 'kt_music_video', source: 'art_keytakeaways' },
+    { hour: 17, postType: 'story_text', source: 'art_story', beatIndex: 1 },
   ],
-  // Wed — newsletter (brand-tinted carousel for feed variety)
+  // Wed — newsletter
   3: [
-    { hour: 9, postType: 'carousel', source: 'nl_feature', designVariant: 'brand_tint' },
-    { hour: 12, postType: 'quote', source: 'nl_tips' },
-    { hour: 15, postType: 'video_reel', source: 'nl_overview' },
+    { hour: 9, postType: 'story_text', source: 'nl_story', beatIndex: 0 },
+    { hour: 12, postType: 'carousel', source: 'nl_feature', designVariant: 'brand_tint' },
+    { hour: 17, postType: 'story_text', source: 'nl_story', beatIndex: 1 },
   ],
-  // Thu — article (same hard-bound shape as Tue)
+  // Thu — article
   4: [
-    { hour: 9, postType: 'hook_video', source: 'art_section_0' },
-    { hour: 12, postType: 'video_reel', source: 'art_keytakeaways' },
-    { hour: 15, postType: 'carousel', source: 'art_section_2' },
+    { hour: 9, postType: 'story_text', source: 'art_story', beatIndex: 0 },
+    { hour: 12, postType: 'kt_music_video', source: 'art_keytakeaways' },
+    { hour: 17, postType: 'story_text', source: 'art_story', beatIndex: 1 },
   ],
   // Fri — newsletter
   5: [
-    { hour: 9, postType: 'video_reel', source: 'nl_overview' },
-    { hour: 12, postType: 'quote', source: 'nl_tips' },
-    { hour: 15, postType: 'carousel', source: 'nl_feature' },
+    { hour: 9, postType: 'story_text', source: 'nl_story', beatIndex: 0 },
+    { hour: 12, postType: 'carousel', source: 'nl_feature', designVariant: 'brand_tint' },
+    { hour: 17, postType: 'story_text', source: 'nl_story', beatIndex: 1 },
   ],
-  // Sat — newsletter (brand-tinted carousel for feed variety)
+  // Sat — newsletter
   6: [
-    { hour: 9, postType: 'carousel', source: 'nl_feature', designVariant: 'brand_tint' },
-    { hour: 12, postType: 'video_reel', source: 'nl_overview' },
-    { hour: 15, postType: 'quote', source: 'nl_tips' },
+    { hour: 9, postType: 'story_text', source: 'nl_story', beatIndex: 0 },
+    { hour: 12, postType: 'carousel', source: 'nl_feature', designVariant: 'brand_tint' },
+    { hour: 17, postType: 'story_text', source: 'nl_story', beatIndex: 1 },
   ],
 }
 

@@ -21,7 +21,9 @@ import { resolveArticleCalendar, resolveNewsletterCalendar } from '../newsletter
 import { burstCurrentWindow } from '../lib/account-lifecycle'
 import { publishLinktreePage } from '../lib/linktree'
 import { publishSpineCheckPage } from '../spine-check/generate'
+import { repointSpineCheckTriggerLink } from '../leadgen/compile'
 import { publishClinicSchema } from '../lib/clinic-schema'
+import { installOmniplyConnect } from '../lib/omniply-connect'
 import { getBoss, QUEUES } from '../queues/index'
 
 export async function onboardingRoutes(app: FastifyInstance) {
@@ -137,9 +139,17 @@ export async function onboardingRoutes(app: FastifyInstance) {
 
     // Link-in-bio page on the clinic's own WordPress at /linktree (their
     // branded domain); best-effort — never blocks the finale.
-    void publishSpineCheckPage(r.account.ownerUserId)
+    void publishSpineCheckPage(r.account.ownerUserId).finally(() => {
+      // After publish the quiz URL is final (WP page or hosted) — point the
+      // snapshot's omniply-spine-check trigger link at it.
+      void repointSpineCheckTriggerLink(r.account.ownerUserId)
+    })
       .catch(() => null)
       .then(() => publishLinktreePage(r.account.ownerUserId))
+      .catch(() => {})
+      // Omniply Connect plugin: install/activate + widget token + head
+      // JSON-LD (all best-effort, logs its own failures).
+      .then(() => installOmniplyConnect(r.account.ownerUserId))
       .catch(() => {})
     // Clinic entity schema onto their editable WP pages (agent plan 3.1) —
     // env-flagged rollout: verify on the test account before enabling broadly.

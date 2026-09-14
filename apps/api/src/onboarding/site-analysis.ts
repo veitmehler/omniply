@@ -13,6 +13,7 @@ import { logger } from '../lib/logger'
 import { withRasterPage } from '../article-pipeline/enrichment/diagram-browser-pool'
 import { instrumentCall } from '../lib/net/instrument'
 import { withTimeout } from '../lib/net/with-timeout'
+import { assertSafePublicUrl } from '../lib/ssrf'
 import { normalizeHex, hexToHsl, type BrandColor, type BrandInventory } from './palette-compose'
 
 const PAGE_FETCH_TIMEOUT_MS = 15_000
@@ -87,6 +88,10 @@ const CRAWL_USER_AGENT =
 
 async function fetchHtml(url: string): Promise<string | null> {
   try {
+    // Audit F4: user-supplied crawl URLs — block private targets, and after
+    // redirects re-check the FINAL host before reading the body (a public
+    // host 302ing to an internal address must not become read-SSRF).
+    await assertSafePublicUrl(url)
     const res = await withTimeout(
       (signal) =>
         fetch(url, {
@@ -97,6 +102,7 @@ async function fetchHtml(url: string): Promise<string | null> {
       PAGE_FETCH_TIMEOUT_MS,
       `fetch ${url}`,
     )
+    if (res.url && res.url !== url) await assertSafePublicUrl(res.url)
     if (!res.ok || !(res.headers.get('content-type') ?? '').includes('html')) {
       logger.warn(
         { url, status: res.status, contentType: res.headers.get('content-type') },
@@ -213,6 +219,7 @@ const BLOG_TEXT_CAP = 12_000 // generateWritingStyle's own article cap
 
 async function fetchJson(url: string): Promise<unknown | null> {
   try {
+    await assertSafePublicUrl(url)
     const res = await withTimeout(
       (signal) =>
         fetch(url, {
@@ -223,6 +230,7 @@ async function fetchJson(url: string): Promise<unknown | null> {
       PAGE_FETCH_TIMEOUT_MS,
       `fetch ${url}`,
     )
+    if (res.url && res.url !== url) await assertSafePublicUrl(res.url)
     if (!res.ok || !(res.headers.get('content-type') ?? '').includes('json')) return null
     return await res.json()
   } catch {

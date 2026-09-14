@@ -27,14 +27,15 @@ describe('onboarding flow', () => {
   it('declares the full step order, welcome first and final last', () => {
     expect(STEP_ORDER[0]).toBe('welcome')
     expect(STEP_ORDER[STEP_ORDER.length - 1]).toBe('final')
-    // The five Manifesto questions are all present.
-    for (const q of ['q_declaration', 'q_enemy', 'q_tribe', 'q_line', 'q_proof']) {
+    // The six voice questions are all present (q_moments added P3 2026-09-09).
+    for (const q of ['q_declaration', 'q_enemy', 'q_tribe', 'q_line', 'q_moments', 'q_proof']) {
       expect(STEP_ORDER).toContain(q)
     }
-    // Every required setup surface is a step.
-    for (const s of ['business_confirm', 'logo_confirm', 'brand_profile_confirm', 'writing_sample', 'template_reveal', 'offers', 'cta', 'booking_url', 'pms', 'wordpress', 'socials', 'gbp', 'google_reviews', 'elevenlabs', 'toggles']) {
+    // Every required setup surface is a step; elevenlabs REMOVED (P3: no client voice).
+    for (const s of ['business_confirm', 'logo_confirm', 'brand_profile_confirm', 'writing_sample', 'template_reveal', 'offers', 'cta', 'booking_url', 'pms', 'wordpress', 'socials', 'gbp', 'google_reviews', 'toggles']) {
       expect(STEP_ORDER).toContain(s)
     }
+    expect(STEP_ORDER).not.toContain('elevenlabs')
   })
 
   it('renders a step view with progress', async () => {

@@ -16,6 +16,7 @@ import { analyticsSyncHandler, AnalyticsSyncJobData } from './handlers/analytics
 import { agentRetentionCleanupHandler } from './handlers/agent-retention'
 import { agentFinalizeHandler } from './handlers/agent-finalize'
 import { processDmTurn, type DmJobData } from './agent/dm'
+import { voiceTransferWatchdogHandler, type VoiceTransferWatchdogJobData } from './handlers/voice-transfer-watchdog'
 import { azaveaCadenceHandler } from './handlers/azavea-cadence'
 import { oauthStateCleanupHandler, OAuthCleanupJobData } from './handlers/oauth'
 import { dbBackupHandler, DbBackupJobData } from './handlers/backup'
@@ -159,6 +160,12 @@ async function main() {
     withSentry('agent-dm-turn', async (jobs) => {
       for (const job of jobs) await processDmTurn(job.data)
     }),
+  )
+
+  await boss.work<VoiceTransferWatchdogJobData>(
+    QUEUES.VOICE_TRANSFER_WATCHDOG,
+    { batchSize: 1 },
+    withSentry('voice-transfer-watchdog', voiceTransferWatchdogHandler),
   )
 
   await boss.work(

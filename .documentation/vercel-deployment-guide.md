@@ -10,7 +10,6 @@ This guide walks you through deploying Levercast to Vercel, including all requir
 
 - ✅ Vercel account (sign up at https://vercel.com)
 - ✅ GitHub repository connected to Vercel
-- ✅ Supabase project set up
 - ✅ Clerk account with application created
 - ✅ LinkedIn Developer App (for LinkedIn publishing)
 - ✅ Twitter/X Developer App (for Twitter publishing)
@@ -53,32 +52,21 @@ NEXT_PUBLIC_CLERK_AFTER_SIGN_OUT_URL=/
 
 ---
 
-### 🗄️ Supabase Database (Required)
 
 ```bash
-DATABASE_URL=postgresql://postgres.[PROJECT-REF]:[PASSWORD]@aws-1-us-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true&sslmode=require
-DIRECT_URL=postgresql://postgres.[PROJECT-REF]:[PASSWORD]@aws-1-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require
 ```
 
-**Where to find**: Supabase Dashboard → Settings → Database → Connection string
 
 **Note**: Replace `[PROJECT-REF]` and `[PASSWORD]` with your actual values.
 
 ---
 
-### 📦 Supabase Storage (Required)
 
 ```bash
-NEXT_PUBLIC_SUPABASE_URL=https://gmjzvhviihsjpzipocxe.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
-**Where to find**: Supabase Dashboard → Settings → API
 
 **Important**: 
-- `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are public (safe to expose)
-- `SUPABASE_SERVICE_ROLE_KEY` is **secret** - never expose to client
 
 ---
 
@@ -256,12 +244,9 @@ Then update Vercel project settings:
 ### ✅ Test Database Connection
 - Sign in and create a draft
 - Verify it saves to database
-- Check Supabase Dashboard → Table Editor
 
 ### ✅ Test Image Upload
 - Upload an image on Dashboard
-- Verify it appears in Supabase Storage
-- Check image URL is Supabase Storage URL (not base64)
 
 ### ✅ Test Social Media Publishing
 - Connect LinkedIn account (Settings page)
@@ -307,7 +292,6 @@ Then update Vercel project settings:
 
 **Error**: "Can't reach database server"
 - **Fix**: Check `DATABASE_URL` is correct
-- Verify Supabase project is active
 - Check SSL mode is set (`?sslmode=require`)
 
 ---
@@ -337,10 +321,7 @@ Then update Vercel project settings:
 
 **Error**: "Failed to upload image"
 - **Fix**:
-  - Verify Supabase Storage bucket `post-images` exists
-  - Check `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are set
   - Verify bucket is set to public
-  - Check Supabase Storage policies
 
 ---
 
@@ -357,9 +338,6 @@ Use this checklist to ensure all variables are set:
 - [ ] `NEXT_PUBLIC_CLERK_AFTER_SIGN_OUT_URL`
 - [ ] `DATABASE_URL`
 - [ ] `DIRECT_URL`
-- [ ] `NEXT_PUBLIC_SUPABASE_URL`
-- [ ] `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- [ ] `SUPABASE_SERVICE_ROLE_KEY`
 - [ ] `LINKEDIN_CLIENT_ID`
 - [ ] `LINKEDIN_CLIENT_SECRET`
 - [ ] `LINKEDIN_REDIRECT_URI`
@@ -400,7 +378,6 @@ Use this checklist to ensure all variables are set:
 - **Functions/Logs**: Project → Functions
 
 ### External Services
-- **Supabase**: https://supabase.com/dashboard
 - **Clerk**: https://dashboard.clerk.com
 - **LinkedIn Developers**: https://www.linkedin.com/developers/
 - **Twitter Developer Portal**: https://developer.twitter.com/
@@ -412,7 +389,6 @@ Use this checklist to ensure all variables are set:
 1. **Monitor Logs**: Check Vercel Function logs regularly
 2. **Set Up Monitoring**: Consider Sentry or similar for error tracking
 3. **Performance**: Monitor Vercel Analytics
-4. **Database**: Set up Supabase backups
 5. **Security**: Review environment variables regularly
 6. **Updates**: Keep dependencies updated
 

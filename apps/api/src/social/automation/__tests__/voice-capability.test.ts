@@ -1,61 +1,54 @@
 import { describe, it, expect } from 'vitest'
 import {
+  DEFAULT_WEEKLY_SOCIAL_MATRIX,
   applyVoiceCapability,
   matrixForDay,
   storySlotsForDay,
-  DEFAULT_WEEKLY_SOCIAL_MATRIX,
+  type DaySlot,
   type FeedEntry,
 } from '../weekly-matrix'
 
-function entries(slots: ReturnType<typeof matrixForDay>): FeedEntry[] {
+function entries(slots: DaySlot[]): FeedEntry[] {
   return slots.map((daySlot, i) => ({ slotKey: `P${i + 1}`, daySlot }))
 }
 
-describe('applyVoiceCapability (non-EL conversion)', () => {
-  it('voice accounts keep the matrix untouched (same reference)', () => {
+// P3 (2026-09-08): the default matrix carries no voiced post types anymore
+// (ElevenLabs dropped for clients). applyVoiceCapability stays as dormant
+// safety for any legacy/custom slot set that still contains video types.
+describe('applyVoiceCapability (dormant safety)', () => {
+  it('voice accounts keep the slots untouched (same reference)', () => {
     const slots = matrixForDay('article', 2)
     expect(applyVoiceCapability(slots, true)).toBe(slots)
   })
 
-  it('converts hook_video and video_reel to accent-tinted carousels, same source/hour', () => {
-    const tue = applyVoiceCapability(matrixForDay('article', 2), false)
-    // Tue original: hook_video(art_section_0), video_reel(art_keytakeaways), carousel(art_section_2)
-    expect(tue.map((s) => s.postType)).toEqual(['carousel', 'carousel', 'carousel'])
-    expect(tue[0]).toMatchObject({ designVariant: 'brand_tint_accent', source: 'art_section_0', hour: 9 })
-    expect(tue[1]).toMatchObject({ designVariant: 'brand_tint_accent', source: 'art_keytakeaways', hour: 12 })
-    // The pre-existing classic carousel is untouched (no variant).
-    expect(tue[2].designVariant).toBeUndefined()
+  it('still converts voiced types to accent carousels for synthetic legacy slots', () => {
+    const legacy: DaySlot[] = [
+      { hour: 9, postType: 'hook_video', source: 'art_section_0' },
+      { hour: 12, postType: 'video_reel', source: 'art_keytakeaways' },
+      { hour: 15, postType: 'quote', source: 'nl_tips' },
+    ]
+    const converted = applyVoiceCapability(legacy, false)
+    expect(converted.map((s) => s.postType)).toEqual(['carousel', 'carousel', 'quote'])
+    expect(converted[0]).toMatchObject({ designVariant: 'brand_tint_accent', source: 'art_section_0', hour: 9 })
+    expect(converted[2].designVariant).toBeUndefined()
   })
 
-  it('leaves Wed/Sat primary brand_tint carousels as primary (accent only on converted slots)', () => {
-    const wed = applyVoiceCapability(matrixForDay('newsletter', 3), false)
-    expect(wed[0].designVariant).toBe('brand_tint') // original Wed tint stays primary
-    expect(wed[2]).toMatchObject({ postType: 'carousel', designVariant: 'brand_tint_accent' }) // was video_reel
-  })
-
-  it('quote cards are never converted (already static)', () => {
-    const mon = applyVoiceCapability(matrixForDay('newsletter', 1), false)
-    expect(mon[1].postType).toBe('quote')
-    expect(mon[1].designVariant).toBeUndefined()
-  })
-
-  it('every weekday resolves with zero video post types for no-voice accounts', () => {
+  it('the P3 default matrix is voice-invariant: no-voice conversion changes nothing', () => {
     for (const day of Object.values(DEFAULT_WEEKLY_SOCIAL_MATRIX)) {
       const converted = applyVoiceCapability(day, false)
+      expect(converted.map((s) => [s.postType, s.source, s.hour, s.designVariant])).toEqual(
+        day.map((s) => [s.postType, s.source, s.hour, s.designVariant]),
+      )
       expect(converted.some((s) => s.postType === 'hook_video' || s.postType === 'video_reel')).toBe(false)
     }
   })
 
-  it('companion stories swap automatically: pitch_hook becomes pitch_carousel', () => {
-    const thuOriginal = matrixForDay('article', 4) // hook_video first slot
-    const before = storySlotsForDay('article', entries(thuOriginal))
+  it('companion stories for legacy hook slots still swap pitch_hook → pitch_carousel', () => {
+    const legacy: DaySlot[] = [{ hour: 9, postType: 'hook_video', source: 'art_section_0' }]
+    const before = storySlotsForDay('article', entries(legacy))
     expect(before[0].storyType).toBe('pitch_hook')
-
-    const thuConverted = applyVoiceCapability(thuOriginal, false)
-    const after = storySlotsForDay('article', entries(thuConverted))
+    const after = storySlotsForDay('article', entries(applyVoiceCapability(legacy, false)))
     expect(after[0].storyType).toBe('pitch_carousel')
     expect(after[0].promotesFeedKey).toBe('P1')
-    // No story type in the converted week depends on a video asset.
-    expect(after.some((s) => s.storyType === 'pitch_hook')).toBe(false)
   })
 })

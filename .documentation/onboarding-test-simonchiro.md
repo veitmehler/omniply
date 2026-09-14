@@ -10,7 +10,7 @@ mandatory "I wrote this" authorship confirmation (deployed to staging, branch co
 USER (site + accounts):
 - [√] Publish the planted article below to /blog on the WordPress site (title as given).
 - [√] WordPress → Settings → Reading → "Discourage search engines" ON — BEFORE the test.
-- [ ] Create FB + IG (optional LinkedIn) profiles under unrelated names; add their links
+- [√] Create FB + IG (optional LinkedIn) profiles under unrelated names; add their links
       to the site header/footer (tests the crawl's socialLinks prefill).
 - [ ] Staging test sub-account GHL Business Profile: name, user-controlled email, phone,
       US address (Mesa AZ), timezone America/Phoenix, website URL = the test site.
@@ -23,10 +23,20 @@ ME (before you click "start"):
 
 ## Extra verifications (on top of guide Part D table)
 
+P3 client-rollout additions (2026-09-09):
+- Voice questions are SIX now — q_moments answer lands in BrandSettings.storyBeats.
+- CTA step offers the ONE-TAP option 'Comment "SPINE" → we DM the free Spine
+  Check' (fixed keyword — no free-text input exists anymore). Pick it; verify
+  socialPrimaryGoal='dm_keyword' + socialCallToAction='SPINE|our 2-Minute
+  Spine Check' stored.
+- NO ElevenLabs step appears (removed for clients).
+- Finale burst: article days = story beats + KT music video (headline+shorts);
+  newsletter days = nl story beats + brand-tint feature carousel; captions use
+  the CLIENT keyword (not XRAY); hours 9/12/17.
+
 - Step 2 (crawl): log shows blogSample stored — url + wordCount ≥ 400, WP REST path.
 - Step 7 (writing sample): chat offers the planted article with excerpt; answer exactly
   `I wrote this`; verify Settings.writingStyle afterward ECHOES the fingerprint below.
-- Step 12: socialLinks prefilled from the new header links.
 - No GBP connected → reviews features degrade gracefully, no errors.
 - Finale burst publishes to the live WP → verify → USER blocks site from public access.
 
@@ -97,7 +107,7 @@ Your body is the only vessel you get. Sail it like you plan to keep it.
 
 *(~600 words)*
 
-## Dummy voice-interview answers (paste/speak during steps Q1–Q5)
+## Dummy voice-interview answers (SPEAK all six — the recordings become the voice clone)
 
 - **q_declaration** ("what do you stand for"): "I believe the body mostly knows what it
   is doing, and my job is to remove what is in its way. No drama, no miracle talk.
@@ -109,6 +119,21 @@ Your body is the only vessel you get. Sail it like you plan to keep it.
   one hip, desk workers, tradespeople. People who do not want a lecture, they want to
   get back to their life with less friction."
 - **q_line** ("your one line"): "Maintenance beats rescue, every time."
+- **q_moments** ("two or three short true stories — a mistake you fixed, a lesson
+  that cost you, a moment you're proud of; no patient details"): "Early on I
+  overbooked myself so badly I was adjusting people like an assembly line, and one
+  afternoon I caught myself not remembering who was on the table. I cut my schedule
+  by a third the next week and never went back. It cost me real money for a year,
+  and it is the best decision I ever made. Second one: I once spent months and a
+  small fortune on a fancy decompression machine because a conference salesman was
+  better at his job than I was at mine. It gathered dust. Taught me that hands,
+  time, and attention beat gadgets, and I have bought almost nothing since. And the
+  proud one: a few years back a father told me his kid asked why dad could suddenly
+  play on the floor again. Nobody claps for maintenance, but that one stayed with
+  me."
+  (Feeds BrandSettings.storyBeats — the story-arc generator's authenticity pool,
+  so these three beats will surface in daily story posts. Deliberately concrete,
+  no patient details, matches the persona.)
 - **q_proof** ("why believe you"): "Twenty years of practice and I still measure before
   I touch. I would rather tell someone they do not need me than invent a treatment
   plan. That is why families stay for decades."

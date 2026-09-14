@@ -179,3 +179,13 @@ app's four conversations scopes (bumped + re-granted 2026-08-07).
 5. Non-follower DMs sit in IG's **Requests folder**, invisible to tools until
    accepted — acceptance unlocks FUTURE messages only. Front desk should
    check Requests weekly.
+
+## Callback notification merge fields (voice-sms build, 2026-09-10)
+
+The Chat Callback Request workflow's front-desk SMS/email can now merge:
+- `{{contact.chat_summary}}` — reason + 2-3 sentence chat summary (existing)
+- `{{contact.callback_preferred_time}}` — the caller's requested time,
+  verbatim ("around 10:30 AM"); set only when the caller named one.
+Both custom fields are find-or-created by the platform on first use — no
+snapshot change required, but adding the time to the notification template
+is recommended: "Call {{contact.first_name}} back {{contact.callback_preferred_time}}".

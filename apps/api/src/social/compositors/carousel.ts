@@ -1,6 +1,6 @@
 import path from 'path'
 import { readFile } from 'fs/promises'
-import sharp from 'sharp'
+import sharp, { type OverlayOptions } from 'sharp'
 import { fal } from '@fal-ai/client'
 import { getSystemApiKey } from '../../lib/system-keys'
 import { logger } from '../../lib/logger'
@@ -790,7 +790,7 @@ export async function renderCarouselSlide(
     .png()
     .toBuffer()
 
-  const composites: sharp.OverlayOptions[] = [{ input: overlayPng, top: 0, left: 0 }]
+  const composites: OverlayOptions[] = [{ input: overlayPng, top: 0, left: 0 }]
 
   // Tinted slides: logo bottom-right on every slide (48px margins); on the
   // hook slide the swipe arrows sit with their RIGHT edge on the logo's LEFT
@@ -924,7 +924,7 @@ export async function renderDiagramExplainerSlide(
     .png()
     .toBuffer()
 
-  const composites: sharp.OverlayOptions[] = [
+  const composites: OverlayOptions[] = [
     { input: await sharp(Buffer.from(bannerSvg)).png().toBuffer(), top: 0, left: 0 },
     { input: textBuf, left: startX, top: Math.round(centerY - textH / 2) },
   ]

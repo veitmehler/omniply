@@ -1,4 +1,5 @@
 import type { Newsletter } from '@prisma/client'
+import { logger } from '../../lib/logger'
 import type { SlotContent } from './content'
 import type { PostSource } from './weekly-matrix'
 
@@ -14,6 +15,13 @@ export interface NewsletterContentContext {
   tips: string[]
   /** The edition's feature article — used for the image carousel. */
   feature: { title: string; body: string }
+  /**
+   * Story-arc beats for nl_story slots (P3 main-app rollout). Read from
+   * Newsletter.storyArcJson at ctx build; ensureStoryArc mutates it in place
+   * right after first generation (the resolver is pure-ctx, unlike the
+   * article path which re-reads SitePage).
+   */
+  storyArc: { postText: string; slides: string[] }[] | null
 }
 
 function asObj(v: unknown): Record<string, unknown> | null {
@@ -50,15 +58,36 @@ export function buildNewsletterContentContext(nl: Newsletter): NewsletterContent
     ? [str(feature.tldr), str(feature.body), str(feature.teaser)].filter(Boolean).join('\n\n')
     : ''
 
-  return { overviewTopics, tips, feature: { title: featureTitle, body: featureBody } }
+  const storyArc = Array.isArray(nl.storyArcJson)
+    ? (nl.storyArcJson as unknown as { postText: string; slides: string[] }[])
+    : null
+
+  return { overviewTopics, tips, feature: { title: featureTitle, body: featureBody }, storyArc }
 }
 
 /** Resolve the content payload for a newsletter-sourced slot. */
 export function resolveNewsletterSlotContent(
   source: PostSource,
   ctx: NewsletterContentContext,
+  beatIndex?: number,
 ): SlotContent {
   switch (source) {
+    case 'nl_story': {
+      // Story-arc beat (mirrors art_story resolution in
+      // article-social-selectors.ts): missing arc/beat → feature fallback.
+      const idx = beatIndex ?? 0
+      const beat = ctx.storyArc?.[idx]
+      if (beat?.postText && Array.isArray(beat.slides) && beat.slides.length > 0) {
+        return {
+          text: beat.postText,
+          title: beat.slides[0],
+          quoteText: beat.slides[0],
+          storySlides: beat.slides,
+        }
+      }
+      logger.warn({ beatIndex: idx }, '[newsletter-social] story arc missing — feature fallback')
+      return { text: ctx.feature.body, title: ctx.feature.title }
+    }
     case 'nl_overview':
       // The reel generator extracts bullets from this text; feed it the topic list.
       return {

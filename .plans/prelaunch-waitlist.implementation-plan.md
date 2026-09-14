@@ -5,8 +5,8 @@ Do It WITH You concierge onboarding + locked founders price; (2) HARD gate on
 checkout until launch; (3) weekly nurture = the existing per-article promo
 email machinery pointed at the waitlist tag.**
 
-Launch date: **September 8, 2026** (single source of truth: `LAUNCH_DATE`
-env, default `2026-09-08T14:00:00Z` ≈ 9am ET; flipping the date flips every
+Launch date: **September 22, 2026** (FINAL — moved from Sept 8→15→22; last sweep 2026-09-10) (single source of truth: `LAUNCH_DATE`
+env, default `2026-09-22T14:00:00Z` ≈ 9am ET; flipping the date flips every
 gate — no deploy-day scramble).
 
 ---
@@ -18,7 +18,7 @@ marketing components reads `LAUNCH_DATE` (env override for slips). Applied
 to:
 
 - **/chiropractors**: every checkout CTA swaps to the founding-list CTA; a
-  slim banner above the pricing section: "Doors open September 8. The
+  slim banner above the pricing section: "Doors open September 22. The
   founding cohort list is open now." Price stays visible (anchoring works
   pre-launch).
 - **/home** pricing mentions: same CTA swap.
@@ -33,7 +33,7 @@ We already hold the email at report time — the join must be ONE CLICK, no
 form:
 
 - Results/report page block (under the leak number):
-  > **Omniply opens September 8.**
+  > **Omniply opens September 22.**
   > Your X-Ray just showed you the leaks. The founding cohort gets them
   > fixed first: we onboard your practice WITH you, live and step by step,
   > and your founders price is locked in from day one. Limited spots, then
@@ -71,7 +71,7 @@ form:
     >
     > You're in. Here's what that means.
     >
-    > When Omniply opens on September 8, you go first. We onboard your
+    > When Omniply opens on September 22, you go first. We onboard your
     > practice WITH you... a live working session where we set up your
     > voice, your calendar and your first month of content together. You
     > learn the system while it's being built for you, and nothing ships
@@ -85,19 +85,19 @@ form:
     >
     > Veit
     > Azavea Inc. ... the team behind Omniply
-- **W2 "Launch Blast"** — built now, kept OFF until Sept 8. Three emails:
-  1. Sept 8: "Doors are open" + personal checkout link + founders terms
+- **W2 "Launch Blast"** — built now, kept OFF until Sept 22. Three emails:
+  1. Sept 22: "Doors are open" + personal checkout link + founders terms
      restated.
-  2. Sept 10: "Your founding spot is still held" reminder w/ scarcity count.
-  3. Sept 12: final call, spots close.
+  2. Sept 24: "Your founding spot is still held" reminder w/ scarcity count.
+  3. Sept 26: final call, spots close.
 - Comment-funnel touch (5 min): append to "Send Info 1" copy:
-  > One thing to know: doors open September 8. The founding cohort gets
+  > One thing to know: doors open September 22. The founding cohort gets
   > onboarded personally and keeps the founders price. The page explains
   > how to reserve a spot.
 
 ## P5 · Docs + timeline
 
-- `pre-launch-todos.md`: Sept 8 = launch day → implies freeze week ≈ Sept 1
+- `pre-launch-todos.md`: Sept 22 = launch day → implies freeze week ≈ Sept 15
   to 5 — **user must sanity-check against the vacation plan before the date
   appears in public copy.**
 - Founders-cohort spot count: recommend committing to a number publicly
