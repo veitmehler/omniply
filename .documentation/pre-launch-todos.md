@@ -194,6 +194,50 @@ south article calendar still staging-only.
 - [ ] Revisit the ±6-month-shifted north article calendar: fine for the demo;
       decide if it stays the real US calendar at launch or gets re-curated.
 
+## 4b-2. WP surfaces + embed follow-through (from Veit's live WP review 2026-09-14)
+
+Small API/web batch, no migration. NOT yet implemented — user reviewing scope.
+
+- [ ] **Linktree: re-publish for the demo account** (no code — the white
+  button-text fix is live; page was published with the old stored dark value;
+  publish is an idempotent WP-page upsert).
+- [ ] **Linktree: social media icon links** — builder's link list is
+  hardcoded (spine check/booking/call/review/website), socials never made it
+  in. Plumb crawl-prefill + GHL socials into brand settings, render an icon
+  row BELOW the CTA buttons (conversion first, follow second). Re-publish
+  demo after.
+- [ ] **Quiz embed: top padding** — ?embed=1 strips page chrome incl. top
+  spacing; fix in the hosted quiz app (iframe design = one deploy updates
+  every clinic instantly, no WP re-publish).
+- [ ] **Quiz: backdrop band in the brand header color** — card sits on white
+  above a headerBg band so it pops (quiz already receives headerBg; wire
+  nlButtonColor/nlButtonTextColor into its buttons too).
+- [ ] **Template reveal card: button TEXT color swatch** (Veit) — palette
+  already carries buttonText; expose the swatch next to Header text, and
+  commitTemplateReveal must HONOR the user's choice (the white-preferring
+  rule becomes the default, not an override). Flows automatically to the
+  linktree page AND quiz — both already read nlButtonTextColor (verified).
+- [ ] **Lead Magnets view: post-approval dead-end** (Veit: "approved all the
+  PDFs and I'm just stuck") — when nothing is compiling/pending, show an
+  "all set" state: guides are live + what happens next (content arrives for
+  review; where to find it).
+- [ ] **PENDING VEIT DECISION: WP publish consent toggles** — checkboxes at
+  the WordPress connect step (chat widget / linktree, default ON) + Settings
+  kill-switches (widget disable = config-side, instant). Pre- or post-launch?
+
+## 4d. ⚠️ LAUNCH-CRITICAL DISCUSSION: content review surface for GHL-first clients
+
+Found via the 4b-2 analysis (Veit stuck on the PDF page with nowhere to go):
+content approval lives ONLY in the Clerk-gated dashboard
+(features/dashboard/ContentPlan.tsx → /api/content-plan). The GHL embed
+mounts LeadMagnetsView and nothing else — a GHL-first client has NO path to
+review/approve their generated articles, newsletters, or social posts.
+LeadMagnetsView set the pattern (shared component mounted in the embed);
+ContentPlan needs the same treatment (or an explicit interim: approval via
+emailed links). Decide + build BEFORE launch — first real client hits this
+wall the day their burst finishes. E2E workaround: Veit can use the main
+dashboard with the buyer-email Clerk login.
+
 ## 5. Post-launch backlog (small items, no launch impact)
 
 - [x] **Writing-sample step buttons** — MOVED to §4b (pre-filming batch,
