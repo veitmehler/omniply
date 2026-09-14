@@ -152,6 +152,30 @@ User-committed 2026-09-14 ("it will make it much easier for clients to be happy"
   responsive, cap with a max-width, test at common CRM sidebar widths.
   Applies to the walkthrough video too — film AFTER this lands.
 
+## 4c. ⚠️ LAUNCH-CRITICAL: calendar coverage for US clients (found 2026-09-14 E2E)
+
+The finale gate routes calendars by specialization × hemisphere and BLOCKS
+completion when none match. Before Sept 22, prod must cover every
+specialization a US (north) client can end up with as primary, or they die
+at "Start generating my first month" exactly like the demo account did.
+
+State after the E2E unblock: prod now has family_care × north for BOTH
+article (208 topics, ±6-month-shifted copy of the curated south calendar)
+and newsletter (110 topics, copied from staging). south newsletter existed;
+south article calendar still staging-only.
+
+- [ ] DECIDE: either (a) curate/copy calendars for the remaining
+      specializations (prenatal_pediatric, wellness_maintenance, + any other
+      enabled Specialization rows) × north, or (b) add fallback routing
+      (no exact match → family_care same-hemisphere), or (c) constrain the
+      onboarding specialization checkboxes to keys with calendars.
+      (b) is the cheapest safe launch posture — a routed calendar beats a
+      blocked finale; curation can follow post-launch.
+- [ ] Whichever path: copy the family_care × south ARTICLE calendar (104
+      topics) staging → prod too (AU/NZ clients hit the same wall today).
+- [ ] Revisit the ±6-month-shifted north article calendar: fine for the demo;
+      decide if it stays the real US calendar at launch or gets re-curated.
+
 ## 5. Post-launch backlog (small items, no launch impact)
 
 - [x] **Writing-sample step buttons** — MOVED to §4b (pre-filming batch,
