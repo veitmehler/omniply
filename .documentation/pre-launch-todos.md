@@ -105,6 +105,16 @@ production (env backup: `/opt/socioply/.env.production.bak-20260731`).
 
 ## 5. Post-launch backlog (small items, no launch impact)
 
+- [ ] **Writing-sample step: buttons instead of typed magic words** (Veit,
+  2026-09-14, from the simonchiro E2E): when a scraped article candidate exists,
+  show "I wrote this ✓" and "Paste my article instead" buttons (+ "Skip");
+  the paste button opens the textarea. Keeps the conscious authorship claim,
+  kills the read-three-options-from-a-paragraph UX. Implementation: flow.ts
+  writing_sample prepare() passes a card marker; OnboardingChat renders the
+  buttons for it; commit path unchanged (buttons submit the same strings).
+  ⚠️ Decide BEFORE filming the walkthrough video — if the demo films the
+  typed version, this change makes the footage stale.
+
 - [ ] **Sync GHL location name → Account.name** (Veit, 2026-09-14): renames done in
   GHL (e.g. a typo fixed after signup) should reflect in our Account.name, which is
   set once at provisioning and never updated. Linkage is by locationId so nothing
