@@ -109,34 +109,111 @@ Your body is the only vessel you get. Sail it like you plan to keep it.
 
 ## Dummy voice-interview answers (SPEAK all six — the recordings become the voice clone)
 
-- **q_declaration** ("what do you stand for"): "I believe the body mostly knows what it
-  is doing, and my job is to remove what is in its way. No drama, no miracle talk.
-  Small corrections, applied consistently, change how people carry their whole day."
-- **q_enemy** ("what are you against"): "I am against the quick-fix promise. The
-  crack-and-bill model. Anyone who tells you one visit fixes ten years of habits is
-  selling you the weather forecast, not the voyage."
-- **q_tribe** ("who do you serve"): "Working families mostly. Parents who carry kids on
-  one hip, desk workers, tradespeople. People who do not want a lecture, they want to
-  get back to their life with less friction."
-- **q_line** ("your one line"): "Maintenance beats rescue, every time."
-- **q_moments** ("two or three short true stories — a mistake you fixed, a lesson
-  that cost you, a moment you're proud of; no patient details"): "Early on I
-  overbooked myself so badly I was adjusting people like an assembly line, and one
-  afternoon I caught myself not remembering who was on the table. I cut my schedule
-  by a third the next week and never went back. It cost me real money for a year,
-  and it is the best decision I ever made. Second one: I once spent months and a
-  small fortune on a fancy decompression machine because a conference salesman was
-  better at his job than I was at mine. It gathered dust. Taught me that hands,
-  time, and attention beat gadgets, and I have bought almost nothing since. And the
-  proud one: a few years back a father told me his kid asked why dad could suddenly
-  play on the floor again. Nobody claps for maintenance, but that one stayed with
-  me."
+Answers below are matched to the LIVE question wordings in flow.ts (the earlier
+shorthand versions didn't fit them). The flow explicitly asks you to ramble and
+tell stories — longer spoken answers also make a better voice clone, so feel free
+to pad these out loud; the text is the skeleton, not a script to read stiffly.
+
+- **q_declaration** (live wording: "Imagine a patient describing your clinic to a
+  friend three years from now. What do you want them to say you did for them?"):
+  "I want them to say he gave me my mornings back. Not that I got fixed in one
+  visit, nobody honest promises that. I want them telling their friend they used
+  to plan their whole day around their back, and now they just live. That we
+  taught them how their own body actually works, in plain language, and gave them
+  small boring habits that stuck. And honestly, I want them to say: he told me
+  the truth, even when the truth was that I didn't need another appointment."
+- **q_enemy** (live: "What's the one thing in your industry that drives you crazy —
+  the thing patients keep falling for before they find you?"): "The quick-fix
+  promise. People walk in here having already spent a fortune somewhere that sold
+  them a thirty-visit plan on day one, or some gadget of the month. The
+  crack-and-bill model. Anyone who tells you one visit undoes ten years of habits
+  is selling you the weather forecast, not the voyage. It drives me crazy because
+  it burns people's trust before they ever reach someone who will level with them."
+- **q_tribe** (live: "Describe your favorite patient — the one you wish you had 100
+  more of. Who are they, what does their life look like?"): "A working parent,
+  somewhere in their late thirties or forties. Desk job or a trade, carries the
+  toddler on the same hip every time, weekends are sports and yard work. They
+  don't want a lecture and they don't want magic, they want to get back to their
+  life with less friction. And when you give them two small things to do at home,
+  they actually do them. That person, I could see a hundred of them a week and
+  never get tired of it."
+- **q_line** (live: "What do you refuse to compromise on, even when it costs you?"):
+  "Time with each patient, and telling the truth about what they need. I measure
+  before I touch, every visit, and if the measurements say someone doesn't need
+  me anymore, I say so and send them home. That costs me real money, always has.
+  I cut my own schedule rather than run an assembly line. Maintenance beats
+  rescue, every time, and I refuse to sell rescue to someone who needs habits."
+- **q_moments** (live: "two or three short TRUE stories — a mistake you fixed, a
+  lesson that cost you something, a moment you're proud of; no patient details"):
+  "Early on I overbooked myself so badly I was adjusting people like an assembly
+  line, and one afternoon I caught myself not remembering who was on the table. I
+  cut my schedule by a third the next week and never went back. It cost me real
+  money for a year, and it is the best decision I ever made. Second one: I once
+  spent months and a small fortune on a fancy decompression machine because a
+  conference salesman was better at his job than I was at mine. It gathered dust.
+  Taught me that hands, time, and attention beat gadgets, and I have bought
+  almost nothing since. And the proud one: a few years back a father told me his
+  kid asked why dad could suddenly play on the floor again. Nobody claps for
+  maintenance, but that one stayed with me."
   (Feeds BrandSettings.storyBeats — the story-arc generator's authenticity pool,
   so these three beats will surface in daily story posts. Deliberately concrete,
   no patient details, matches the persona.)
-- **q_proof** ("why believe you"): "Twenty years of practice and I still measure before
-  I touch. I would rather tell someone they do not need me than invent a treatment
-  plan. That is why families stay for decades."
+- **q_proof** (live: "walk me through what actually happens in a patient's first
+  visit and first month with you."): "First visit is about forty-five minutes and
+  most of it is listening and measuring. Full history, how you sit, how you move,
+  where the day loads your spine. Then I explain what I found in plain language,
+  no scary posters, and if I don't think we're the right fit I say so on day one.
+  If we are, the first month is usually two short visits a week tapering down,
+  plus two or three small home habits, nothing heroic. At week four we re-measure
+  and have an honest conversation about what changed, and the plan follows the
+  measurements, not the other way around."
+
+## Prepared content for the FORM steps (no content existed for these before)
+
+- **booking_url** (free text, format-checked only): `https://simonchirocenter.com/book`
+  (page doesn't need to exist for the test).
+- **pms** (choice): pick **ChiroTouch** (US-typical; capture-only, no integration).
+- **cta** (choice): the one-tap **'Comment "SPINE" → we DM the free Spine Check'**
+  (per the verification section above).
+- **offers / logo_confirm / brand_profile_confirm / template_reveal** (confirm
+  cards): review + approve; edit one seasonal offer's wording so the edit path
+  gets exercised once.
+- **photo**: have a headshot file ready on the machine before starting (any
+  portrait works for the test).
+- **front_desk form** (powers the chat assistant KB — fill like this):
+  - Insurance: funds = "Blue Cross Blue Shield of Arizona, Aetna, Cigna,
+    UnitedHealthcare, Medicare"; workers' comp YES; motor accident YES; leave the
+    AU-specific toggles (HICAPS, Medicare care plans) OFF.
+  - First visit: duration "45 minutes"; description "Mostly listening and
+    measuring: full history, movement assessment, and a plain-language
+    explanation of findings before anything else."; bring "Photo ID, insurance
+    card, comfortable clothes you can move in."
+  - Free assessment: OFFERED, terms "Free 10-minute posture screen for new
+    patients. One per person, no obligation, and it is a screen, not a full
+    examination." (terms are REQUIRED when offered — advertising-rules gate,
+    also exercises the C3-tested boundary).
+  - Pricing: share ON; standard "New patient first visit $150 including
+    examination; standard adjustment visit $85."; discounts "10% for seniors,
+    military, and first responders."
+  - Booking: how "Online at simonchirocenter.com/book or call the front desk.";
+    cancellation "24 hours notice, no fee; late cancels may be charged $40."
+  - Practitioners: Dr. Simon — USE THE EXACT NAME ON THE SITE (male, Mon–Fri);
+    plus invented associate "Dr. Elena Ruiz" (female, Tue + Thu) — she exists to
+    exercise the female-practitioner FAQ the builder generates.
+  - Treats: children YES, pregnancy YES, seniors YES; age note "infants from 6
+    months".
+  - Referrals: "No referral needed — book directly."
+  - Payment: card, cash, HSA/FSA.
+  - Access: "Free parking on site; ground floor, wheelchair accessible."
+  - Languages: "English and Spanish."
+  - After hours: "Leave a voicemail and we return calls the next business
+    morning. For anything urgent, go to urgent care or call 911."
+- **kb_review**: check the form answers won over crawl-derived duplicates, then
+  approve.
+- **toggles** (monthly auto-run on payment): pick **"I'll trigger each month
+  myself"** for THIS demo account — 'fully automatic' would generate a full
+  paid content month on every billing cycle of a permanent demo account. (Real
+  clients: auto is the pitch.)
 
 ## Post-test teardown
 
