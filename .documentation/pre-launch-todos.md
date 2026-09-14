@@ -103,17 +103,46 @@ production (env backup: `/opt/socioply/.env.production.bak-20260731`).
 - [ ] Confirm monitoring green: BetterStack `https://svc.omniply.io/health/deep`,
   Sentry envs now correctly split prod/staging, alert email = protonmail.
 
+## 4b. Onboarding-polish batch — AFTER simonchiro E2E, BEFORE filming (added 2026-09-14)
+
+One batch, one API+web deploy (needs a migration — never mid-onboarding/burst).
+User-committed 2026-09-14 ("it will make it much easier for clients to be happy"):
+
+- [ ] **FIX (bug): onboarding session lost-update race.** Background jobs
+  (onboarding-synthesis, onboarding-crawl) and submitStep all write the WHOLE
+  stepData JSON back after seconds of work — concurrent writers clobber each
+  other's keys. Hit the live E2E: synthesis wiped q_proof + logoChosen +
+  logoVariants + logo_confirm (restored by hand via jsonb_set). Fix: every
+  writer merges ONLY its own keys atomically (jsonb || / jsonb_set), never a
+  full-object write.
+- [ ] **Template reveal card: header font color swatch** (+ new
+  nlHeaderTextColor brand field; renderer defaults to today's white).
+- [ ] **Template reveal card: logo layout option** — a) replace header name
+  (today's behavior = default), b) beside name, c) above name. New
+  nlHeaderLogoLayout field (default 'replace' → zero change for existing
+  accounts), email-safe table markup in newsletter render.ts, both preview
+  builders (server synthesis.ts + client cards.tsx mirror) kept in LOCKSTEP
+  with the renderer + render tests. (Light/dark logo toggle already exists.)
+- [ ] **Button/header text color rule: prefer white on mid/dark brand colors**
+  (labelColorFor currently picks black on teal #3aa6b9 by WCAG math; user
+  design rule = white). Align preview + commitTemplateReveal + renderer.
+- [ ] **Preview honesty**: onboarding preview used extracted headerText
+  (black) while real sends hardcode white — unify (covered by the two items
+  above; add a test asserting preview palette == renderer output).
+- [ ] **Writing-sample step buttons** (moved from §5): "I wrote this ✓" /
+  "Paste my article instead" / "Skip" when a scraped candidate exists —
+  film the walkthrough with the NEW UI.
+- [ ] **Restore q_proof transcript** for the demo account: re-transcribe the
+  surviving S3 audio (onboarding/cmtxbfoi5000fmi014yx125bt/voice/q_proof-*)
+  back into stepData (audio itself is safe; only the session reference was
+  clobbered).
+- [ ] After approve: set nlButtonTextColor='#ffffff' on the demo account
+  (commitTemplateReveal recomputes it dark — patch until the rule ships).
+
 ## 5. Post-launch backlog (small items, no launch impact)
 
-- [ ] **Writing-sample step: buttons instead of typed magic words** (Veit,
-  2026-09-14, from the simonchiro E2E): when a scraped article candidate exists,
-  show "I wrote this ✓" and "Paste my article instead" buttons (+ "Skip");
-  the paste button opens the textarea. Keeps the conscious authorship claim,
-  kills the read-three-options-from-a-paragraph UX. Implementation: flow.ts
-  writing_sample prepare() passes a card marker; OnboardingChat renders the
-  buttons for it; commit path unchanged (buttons submit the same strings).
-  ⚠️ Decide BEFORE filming the walkthrough video — if the demo films the
-  typed version, this change makes the footage stale.
+- [x] **Writing-sample step buttons** — MOVED to §4b (pre-filming batch,
+  user-committed 2026-09-14).
 
 - [ ] **Sync GHL location name → Account.name** (Veit, 2026-09-14): renames done in
   GHL (e.g. a typo fixed after signup) should reflect in our Account.name, which is
