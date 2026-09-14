@@ -299,7 +299,11 @@ Return ONLY the rewritten passage.`,
             }),
             signal,
           }),
-        60_000,
+        // 150s: gemini-3-flash-preview drifted to ~60s+ per rewrite (observed
+        // 2026-09-14: one success at 58.9s, everything else killed at the old
+        // 60s cap → circuit-open → neutral fallbacks on every slot). Compile
+        // is a background job — latency is harmless, silent de-voicing isn't.
+        150_000,
         'leadgen.rewrite',
       ),
     )
