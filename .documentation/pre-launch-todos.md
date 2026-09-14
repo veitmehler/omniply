@@ -138,6 +138,11 @@ User-committed 2026-09-14 ("it will make it much easier for clients to be happy"
   clobbered).
 - [ ] After approve: set nlButtonTextColor='#ffffff' on the demo account
   (commitTemplateReveal recomputes it dark — patch until the rule ships).
+- [ ] **FIX (bug): readiness validator still requires the REMOVED elevenlabs
+  step** (generation-readiness.ts: `stepData.elevenlabs !== undefined`) —
+  every P3-era client fails the finale gate. Drop the check (voice is a
+  post-onboarding dashboard decision now). Demo account worked around via
+  stepData patch 2026-09-14.
 - [ ] **Offer cards readability** (Veit, mid-E2E): offer text panels are hard
   to read and scroll internally — auto-grow the textareas (or high min-height)
   so full offer text shows without inner scrolling.
