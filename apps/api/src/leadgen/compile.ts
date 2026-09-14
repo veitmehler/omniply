@@ -206,7 +206,7 @@ function hexToRgb01(hex: string): { r: number; g: number; b: number } {
  * unusable). 26mm bottom = 13mm guaranteed air + the 13mm strip.
  */
 async function assemblePdf(coverPdf: Buffer, contentPdf: Buffer, t: BrandTokens): Promise<Buffer> {
-  const { PDFDocument, StandardFonts, rgb } = await import('pdf-lib')
+  const { PDFDocument, StandardFonts, rgb, PDFName, PDFString, PDFArray } = await import('pdf-lib')
   const merged = await PDFDocument.create()
   const cover = await PDFDocument.load(coverPdf)
   const content = await PDFDocument.load(contentPdf)
@@ -225,7 +225,29 @@ async function assemblePdf(coverPdf: Buffer, contentPdf: Buffer, t: BrandTokens)
     try {
       pg.drawText(t.organizationName, { x: SIDE_INSET_MM * MM, y: baseline, size: fontSize, font, color: rgb(1, 1, 1) })
       const lw = font.widthOfTextAtSize(line, fontSize)
-      pg.drawText(line, { x: width - SIDE_INSET_MM * MM - lw, y: baseline, size: fontSize, font, color: rgb(1, 1, 1) })
+      const lineX = width - SIDE_INSET_MM * MM - lw
+      pg.drawText(line, { x: lineX, y: baseline, size: fontSize, font, color: rgb(1, 1, 1) })
+      // Tappable phone (Veit 2026-09-14): Chromium's print pass does not
+      // reliably export <a href="tel:"> annotations, so stamp a real link
+      // annotation over the strip's phone segment — exact coords are known
+      // here, and the strip is on EVERY content page.
+      if (t.phone && t.phoneTel) {
+        const phoneW = font.widthOfTextAtSize(t.phone, fontSize)
+        const annot = merged.context.obj({
+          Type: 'Annot',
+          Subtype: 'Link',
+          Rect: [lineX - 2, 2, lineX + phoneW + 2, STRIP_MM * MM - 2],
+          Border: [0, 0, 0],
+          A: { Type: 'Action', S: 'URI', URI: PDFString.of(`tel:${t.phoneTel}`) },
+        })
+        const ref = merged.context.register(annot)
+        const existing = pg.node.lookupMaybe(PDFName.of('Annots'), PDFArray)
+        if (existing) {
+          existing.push(ref)
+        } else {
+          pg.node.set(PDFName.of('Annots'), merged.context.obj([ref]))
+        }
+      }
     } catch (err) {
       logger.warn({ err }, '[leadgen-compile] strip text encoding failed — strip drawn without text')
     }

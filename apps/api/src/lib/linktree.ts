@@ -22,6 +22,19 @@ interface LinkEntry {
   url: string
 }
 
+// Same CDN icon set the newsletter footer uses (dark monochrome on white).
+const SOCIAL_ICON_BASE = 'https://cdn.omniply.io/newsletter/social'
+const SOCIAL_ICONS = new Set(['facebook', 'instagram', 'x', 'linkedin', 'youtube', 'tiktok', 'pinterest', 'threads'])
+const SOCIAL_ALIASES: Record<string, string> = {
+  fb: 'facebook', ig: 'instagram', insta: 'instagram', twitter: 'x', 'twitter/x': 'x',
+  yt: 'youtube', 'youtube.com': 'youtube', 'linked-in': 'linkedin',
+}
+function socialSlug(platform?: string | null): string | null {
+  const p = (platform ?? '').trim().toLowerCase()
+  const slug = SOCIAL_ALIASES[p] ?? p
+  return SOCIAL_ICONS.has(slug) ? slug : null
+}
+
 export function buildLinktreeHtml(opts: {
   organizationName: string
   logoUrl: string | null
@@ -31,8 +44,19 @@ export function buildLinktreeHtml(opts: {
   bodyBg: string
   accent: string
   links: LinkEntry[]
+  socials?: { slug: string; url: string }[]
 }): string {
   const { organizationName, logoUrl, headerBg, buttonColor, buttonTextColor, bodyBg, accent, links } = opts
+  // Icon row BELOW the CTA buttons — the page's job is conversion first,
+  // follow second (design decision 2026-09-14).
+  const socialRow = (opts.socials ?? []).length
+    ? `<div style="text-align:center;padding:18px 24px 0;">${(opts.socials ?? [])
+        .map(
+          (s) =>
+            `<a href="${esc(s.url)}" target="_blank" rel="noopener" style="display:inline-block;margin:0 9px;"><img src="${SOCIAL_ICON_BASE}/${s.slug}-dark.png" width="30" height="30" alt="${s.slug}" style="display:inline-block;width:30px;height:30px;border:0;" /></a>`,
+        )
+        .join('')}</div>`
+    : ''
   const buttons = links
     .map(
       (l) =>
@@ -46,6 +70,7 @@ ${logoUrl ? `<img src="${esc(logoUrl)}" alt="${esc(organizationName)}" style="ma
 <div style="padding:28px 24px 0;">
 ${buttons}
 </div>
+${socialRow}
 <div style="text-align:center;color:${accent};font-size:13px;padding-top:10px;">${esc(organizationName)}</div>
 </div>`
 }
@@ -62,7 +87,11 @@ async function linktreeDataForUser(userId: string) {
   if (brand.organizationPhone) links.push({ label: 'Call Us', url: `tel:${brand.organizationPhone.replace(/[^+\d]/g, '')}` })
   if (brand.googleBusinessProfileUrl) links.push({ label: 'Review Us on Google', url: brand.googleBusinessProfileUrl })
   if (brand.organizationWebsite) links.push({ label: 'Visit Our Website', url: brand.organizationWebsite })
-  return { brand, links }
+  const raw = Array.isArray(brand.socialMediaLinks) ? (brand.socialMediaLinks as { platform?: string; url?: string }[]) : []
+  const socials = raw
+    .map((l) => ({ slug: socialSlug(l.platform), url: (l.url ?? '').trim() }))
+    .filter((l): l is { slug: string; url: string } => !!l.slug && !!l.url)
+  return { brand, links, socials }
 }
 
 /**
@@ -73,7 +102,7 @@ async function linktreeDataForUser(userId: string) {
 export async function buildStandaloneLinktreeHtml(userId: string): Promise<string | null> {
   const data = await linktreeDataForUser(userId)
   if (!data || data.links.length === 0) return null
-  const { brand, links } = data
+  const { brand, links, socials } = data
 
   let logoUrl = brand.nlLogoLightUrl ?? brand.nlLogoUrl ?? null
   if (logoUrl) {
@@ -98,6 +127,7 @@ export async function buildStandaloneLinktreeHtml(userId: string): Promise<strin
     bodyBg: '#ffffff',
     accent: brand.nlLinkColor ?? '#2a6f97',
     links,
+    socials,
   })
   const name = esc(brand.organizationName ?? 'Links')
   const entitySchemas = [buildClinicEntity(brand)]
@@ -126,7 +156,7 @@ export async function publishLinktreePage(userId: string): Promise<string | null
   try {
     const data = await linktreeDataForUser(userId)
     if (!data) return null
-    const { brand, links } = data
+    const { brand, links, socials } = data
     const memberIds = await accountMemberIdsForUser(userId)
     const conn = await prisma.wordPressConnection.findFirst({
       where: { userId: { in: memberIds } },
@@ -154,6 +184,7 @@ export async function publishLinktreePage(userId: string): Promise<string | null
       bodyBg: '#ffffff',
       accent: brand.nlLinkColor ?? '#2a6f97',
       links,
+      socials,
     })
 
     const wp = (path: string, init?: RequestInit) =>

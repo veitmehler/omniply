@@ -55,6 +55,14 @@ export async function commitBusinessConfirm(ctx: StepContext, answer: unknown): 
     // unmapped stranded the PDFs' call CTA and the chat KB without a number.
     organizationPhone: merged.phone || null,
     organizationEmail: merged.email || null,
+    // Crawl-harvested social profiles → newsletter footer + linktree icon row.
+    ...(() => {
+      const socials = (merged as unknown as { socials?: Record<string, string> }).socials
+      const rows = Object.entries(socials ?? {})
+        .filter(([, url]) => typeof url === 'string' && url.trim())
+        .map(([platform, url]) => ({ platform, url: url.trim() }))
+      return rows.length ? { socialMediaLinks: rows } : {}
+    })(),
   })
   if (merged.timezone) await settingsUpsert(ctx.userId, { socialTimezone: merged.timezone })
 
@@ -220,9 +228,11 @@ export async function commitTemplateReveal(ctx: StepContext, answer: unknown): P
     nlFooterBgColor: palette.headerBackground ?? '#0b2545',
     nlLinkColor: palette.accent ?? '#2a6f97',
     nlButtonColor: palette.button ?? null,
-    // Computed against the FINAL button color — the user may have overridden
-    // the swatch. White-preferring newsletter rule (design 2026-09-14).
-    nlButtonTextColor: palette.button ? nlLabelColorFor(palette.button) : null,
+    // The user's "Button text" swatch pick wins; the white-preferring rule
+    // (design 2026-09-14) is only the default when they never touched it.
+    nlButtonTextColor:
+      (palette as { buttonText?: string }).buttonText ??
+      (palette.button ? nlLabelColorFor(palette.button) : null),
     nlHeaderTextColor: (palette as { headerText?: string }).headerText ?? '#ffffff',
     nlHeaderLogoLayout: a.logoLayout === 'beside' || a.logoLayout === 'above' ? a.logoLayout : 'replace',
     nlFontColor: '#222222',

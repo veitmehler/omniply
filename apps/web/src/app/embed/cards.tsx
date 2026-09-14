@@ -317,6 +317,7 @@ interface Palette {
   headerText?: string
   accent?: string
   button?: string
+  buttonText?: string
   bodyBackground?: string
   sectionTints?: string[]
 }
@@ -326,6 +327,7 @@ const SWATCHES: { key: keyof Palette; label: string }[] = [
   { key: 'headerText', label: 'Header text' },
   { key: 'accent', label: 'Links & accent' },
   { key: 'button', label: 'Buttons' },
+  { key: 'buttonText', label: 'Button text' },
   { key: 'bodyBackground', label: 'Background' },
 ]
 
@@ -348,8 +350,9 @@ function previewHtml(
   const body = p.bodyBackground ?? '#ffffff'
   const tints = p.sectionTints?.length ? p.sectionTints : ['#f2f6fa', '#fdf6ee']
   const btn = p.button ?? accent
-  // Newsletter label rule (mirrors server nlLabelColorFor): white on mid/dark fills.
-  const btnText = luminance255(btn) < 150 ? '#ffffff' : '#1c2b33'
+  // User's swatch pick wins; the white-on-mid/dark rule (mirrors server
+  // nlLabelColorFor) is only the default.
+  const btnText = p.buttonText ?? (luminance255(btn) < 150 ? '#ffffff' : '#1c2b33')
   const esc = (s: string) => s.replace(/</g, '&lt;')
   const nameH1 = `<h1 style="margin:0;font-size:20px;color:${headerText}">${esc(orgName)}</h1>`
   let headerInner: string

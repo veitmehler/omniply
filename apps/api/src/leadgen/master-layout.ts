@@ -200,11 +200,13 @@ export function buildMasterHtml(spec: MasterDocSpec): string {
   .back-page .accent-bar { width: 34mm; height: 2mm; background: {{brand.accentColor}}; border-radius: 2px; margin: 5mm auto 0; }
   .back-logo { margin-top: 10mm; }
   .back-logo img { max-height: 16mm; max-width: 55mm; }
-  .offer-box { background: {{brand.headerColor}}; border-left: 1.5mm solid {{brand.accentColor}}; border-radius: 3mm; padding: 7mm 12mm; margin-top: 8mm; max-width: 135mm; color: #fff; }
+  .offer-box { background: {{brand.headerColor}}; border-left: 1.5mm solid {{brand.accentColor}}; border-radius: 3mm; padding: 7mm 12mm; margin-top: 8mm; width: 100%; max-width: 135mm; box-sizing: border-box; color: #fff; }
   .offer-box .offer-label { font-weight: 700; color: {{brand.accentColor}}; filter: brightness(1.6); font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px; }
   .offer-box .offer-text { font-size: 15px; line-height: 1.5; margin-top: 2.5mm; font-weight: 700; }
   .offer-box .offer-note { font-size: 12px; color: rgba(255,255,255,.8); margin-top: 2.5mm; }
-  .back-page .cta-btn { display: inline-block; margin-top: 8mm; background: {{brand.accentColor}}; color: #fff; padding: 5.5mm 14mm; border-radius: 3mm; font-size: 17px; font-weight: 700; }
+  /* Same width as the offer box (Veit 2026-09-14: the two CTA boxes must align). */
+  .back-page .cta-btn { display: block; margin-top: 8mm; background: {{brand.accentColor}}; color: #fff; padding: 5.5mm 14mm; border-radius: 3mm; font-size: 17px; font-weight: 700; width: 100%; max-width: 135mm; box-sizing: border-box; text-decoration: none; }
+  .back-page .cta-btn .cta-phone { display: block; font-size: 26px; font-weight: 800; letter-spacing: 0.5px; margin-top: 2.5mm; }
   .back-page .contact { margin-top: 9mm; font-size: 13px; line-height: 1.9; color: {{brand.fontColor}}; }
   .disclaimer { margin: 6mm auto 2mm; font-size: 9.5px; line-height: 1.5; color: #777; max-width: 160mm; }
 </style>
@@ -245,7 +247,7 @@ ${body}
     <div class="offer-text">{{brand.readerOffer}}</div>
     <div class="offer-note">Mention this guide when you book.</div>
   </div>
-  <div class="cta-btn">{{brand.bookingCta}}</div>
+  <a class="cta-btn" href="tel:{{brand.phoneTel}}">{{brand.bookingCta}}<span class="cta-phone" data-optional="phone">{{brand.phone}}</span></a>
   <div class="contact">
     <strong>{{brand.organizationName}}</strong><br/>
     {{brand.address}}<br/>

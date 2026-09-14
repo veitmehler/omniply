@@ -139,6 +139,15 @@ export function LeadMagnetsView({
         </div>
       )}
 
+      {docs.length > 0 && docs.every((d) => d.status === 'live') && (
+        <div className="rounded-xl border border-green-600/30 bg-green-500/10 p-4 text-sm text-foreground">
+          ✅ <b>All guides approved and live.</b> Prospects can now request them, and every request becomes a
+          tagged lead in your CRM. Next up: your generated articles, newsletters and social posts arrive for
+          review — you&apos;ll get an email when each batch is ready. Come back here anytime to add or update
+          guides.
+        </div>
+      )}
+
       {docs.some((d) => d.status === 'compiling') && (
         <div className="flex items-center gap-3 rounded-xl border border-blue-600/30 bg-blue-500/10 p-4 text-sm text-foreground">
           <span className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />

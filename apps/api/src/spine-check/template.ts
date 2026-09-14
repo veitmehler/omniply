@@ -76,8 +76,13 @@ export function buildSpineCheckFragment(c: SpineCheckClinic): string {
   #sc-app .sc-disclaimer { font-size: 12.5px; color: var(--dim); margin-top: 18px; }
   #sc-app .sc-credit { text-align: center; color: var(--accent); font-size: 13px; padding-top: 18px; }
   /* Embedded context (iframe on the clinic's own site): their page header
-     already carries the brand — drop the redundant strip + credit. */
+     already carries the brand — drop the redundant strip + credit. Instead,
+     the whole quiz sits as a white card on a brand-color backdrop so it pops
+     off the host page, with real breathing room at the top (both were Veit
+     feedback from the 2026-09-14 live WP review). */
   #sc-app.sc-embedded .sc-brand, #sc-app.sc-embedded .sc-credit { display: none; }
+  #sc-app.sc-embedded { background: var(--headerBg); border-radius: 18px; padding: 26px 22px 34px; }
+  #sc-app.sc-embedded .sc-screen.sc-active { background: var(--card); border-radius: 14px; padding: 26px 22px; }
 </style>
 <div id="sc-app">
   <div class="sc-brand">
