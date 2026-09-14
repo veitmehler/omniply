@@ -146,6 +146,24 @@ User-committed 2026-09-14 ("it will make it much easier for clients to be happy"
 - [ ] **Offer cards readability** (Veit, mid-E2E): offer text panels are hard
   to read and scroll internally — auto-grow the textareas (or high min-height)
   so full offer text shows without inner scrolling.
+- [ ] **Lead Magnets view: post-finale notification + live compile status**
+  (Veit requirement, mid-E2E): (1) banner "Your first month's content is being
+  generated — it arrives for review shortly" after onboarding completes;
+  (2) spinner + polling while any doc status='compiling' (currently a stale
+  "compiling" flag until manual refresh, no approve buttons visible).
+- [ ] **FIX: PDF back-page offer must be EVERGREEN, never seasonal**
+  (compile.ts:138 picks the FIRST enabled newsletter offer by createdAt —
+  demo got "New Year Posture Check" in September; PDFs live for months).
+  Use the neutral fallback or a dedicated evergreen readerOffer field;
+  seasonal offers stay newsletter-only.
+- [ ] **BUG: GHL Business Profile phone/email never reach BrandSettings** —
+  demo has organizationPhone=null, organizationEmail=null (only the address
+  landed in geolocation). Consequence: PDF back page says "Call our Mesa
+  office" with NO number (contact line drops empty fields), and the chat KB
+  has no phone. Fix the prefill→brand mapping in onboarding; backfill the
+  demo account; recompile its PDFs.
+- [ ] **PDF phone numbers become clickable tel: links** (mobile launch-a-call)
+  — back-page contact block + footer strip.
 - [ ] **Onboarding chat: wider layout + larger base font** (Veit, mid-E2E):
   widen the chat column inside the embed page and bump the font size —
   "look much easier and less tedious". Mind the GHL iframe viewport: keep it
