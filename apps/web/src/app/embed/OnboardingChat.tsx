@@ -186,6 +186,7 @@ export function OnboardingChat({ onCompleted }: { onCompleted: () => void }) {
         {step.kind === 'voice' && (
           <div className="space-y-3">
             <VoiceRecorder
+              key={step.id}
               step={step.id}
               disabled={busy}
               onConfirm={(answer) => void submit(answer, answer.text)}
