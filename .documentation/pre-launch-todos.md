@@ -221,6 +221,17 @@ Small API/web batch, no migration. NOT yet implemented — user reviewing scope.
   PDFs and I'm just stuck") — when nothing is compiling/pending, show an
   "all set" state: guides are live + what happens next (content arrives for
   review; where to find it).
+- [ ] **PDF back page: equal-width CTA boxes** (Veit) — the reader-offer box
+  and the "Call Us Now" box render at different widths; align them (offer-box
+  is max-width:135mm — give both the same constraint).
+- [ ] **PDF back page: phone TAPPABLE + bigger** (Veit) — the email reads as
+  clickable (viewer auto-detection) but the tel: anchor is NOT live in the
+  final PDF even though the batch put it in the HTML. Investigate where the
+  link annotation dies: Chromium print-to-PDF link export vs the pdf-lib
+  copyPages/merge pass — if the merge drops annotations, stamp a link
+  annotation rect over the phone text at assemble time instead. Also bump
+  the phone's font size well up inside the Call-Us box (it's the #1 action;
+  currently body-small).
 - [ ] **PENDING VEIT DECISION: WP publish consent toggles** — checkboxes at
   the WordPress connect step (chat widget / linktree, default ON) + Settings
   kill-switches (widget disable = config-side, instant). Pre- or post-launch?
