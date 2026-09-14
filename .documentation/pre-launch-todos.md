@@ -103,6 +103,16 @@ production (env backup: `/opt/socioply/.env.production.bak-20260731`).
 - [ ] Confirm monitoring green: BetterStack `https://svc.omniply.io/health/deep`,
   Sentry envs now correctly split prod/staging, alert email = protonmail.
 
+## 5. Post-launch backlog (small items, no launch impact)
+
+- [ ] **Sync GHL location name → Account.name** (Veit, 2026-09-14): renames done in
+  GHL (e.g. a typo fixed after signup) should reflect in our Account.name, which is
+  set once at provisioning and never updated. Linkage is by locationId so nothing
+  breaks — this is admin-display hygiene. Options when built: refresh on SSO session
+  exchange (cheap, every open) or on the location-update webhook class. Until then:
+  manual DB patch (account.update name), done once for the demo account
+  ("Onboarding Demo Account", cmtxbfoi5000fmi014yx125bt).
+
 ## Appendix: connection usage one-liner
 
 ```bash
