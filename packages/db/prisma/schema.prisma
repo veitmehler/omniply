@@ -767,6 +767,10 @@ model ArticleJob {
   qualityStatus        String? // pass | revise | fail | needs_review | error
   qualityVerdict       Json? // { verdict, severity, reasons[], geminiSummary }
   qualityAttempts      Int                   @default(0)
+  // FINAL (post-enrichment) Google-guidelines check (§parity batch B): the
+  // automated replacement for the manual paste-into-Gemini review.
+  finalQualityVerdict  Json? // { verdict, severity, reasons[], geminiSummary, attempt }
+  finalQualityAttempts Int                   @default(0)
   totalCost            Float                 @default(0)
   totalTokens          Int                   @default(0)
   createdAt            DateTime              @default(now())

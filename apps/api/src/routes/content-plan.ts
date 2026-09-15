@@ -274,7 +274,13 @@ export async function contentPlanRoutes(app: FastifyInstance) {
     const [readyArticles, flaggedArticles, readyNewsletters, socialReadyRuns] = await Promise.all([
       prisma.articleJob.findMany({
         where: { userId: account.userId, status: 'enriched' }, // extension → account members
-        select: { id: true, topic: { select: { topic: true } }, sitePage: { select: { title: true } }, enrichedAt: true },
+        select: {
+          id: true,
+          topic: { select: { topic: true } },
+          sitePage: { select: { title: true } },
+          enrichedAt: true,
+          finalQualityVerdict: true,
+        },
         orderBy: { enrichedAt: 'desc' },
         take: 50,
       }),
@@ -327,11 +333,17 @@ export async function contentPlanRoutes(app: FastifyInstance) {
     }
 
     return reply.send({
-      articles: readyArticles.map((a) => ({
-        jobId: a.id,
-        title: a.sitePage?.title ?? a.topic.topic,
-        at: a.enrichedAt,
-      })),
+      articles: readyArticles.map((a) => {
+        // Automated final Google-guidelines verdict (parity batch B): the
+        // review UI badges pass/fail and offers the rewrite remedy inline.
+        const fq = a.finalQualityVerdict as { verdict?: string; reasons?: string[] } | null
+        return {
+          jobId: a.id,
+          title: a.sitePage?.title ?? a.topic.topic,
+          at: a.enrichedAt,
+          finalQuality: fq ? { verdict: fq.verdict ?? 'error', reasons: fq.reasons ?? [] } : null,
+        }
+      }),
       newsletters: readyNewsletters.map((n) => ({
         newsletterId: n.id,
         title: n.topic.topic,

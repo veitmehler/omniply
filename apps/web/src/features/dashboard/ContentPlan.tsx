@@ -34,7 +34,7 @@ interface Idea {
   outlineFrameworkNumber?: number | null; outlineSpecialInstructions?: string | null; realCaseStudies?: string | null
 }
 interface Inbox {
-  articles: { jobId: string; title: string }[]
+  articles: { jobId: string; title: string; finalQuality?: { verdict: string; reasons: string[] } | null }[]
   newsletters: { newsletterId: string; title: string }[]
   flagged: { jobId: string; title: string; reasons: string[] }[]
   assignedToMe?: { jobId: string; title: string }[]
@@ -95,7 +95,7 @@ export function ContentPlan() {
   const socialReadyArticleIds = new Set(inbox?.socialReady?.articleJobIds ?? [])
   const socialReadyNewsletterIds = new Set(inbox?.socialReady?.newsletterIds ?? [])
   const readyQueue: ReviewItem[] = [
-    ...(inbox?.articles ?? []).map((a) => ({ kind: 'article' as const, id: a.jobId, title: a.title })),
+    ...(inbox?.articles ?? []).map((a) => ({ kind: 'article' as const, id: a.jobId, title: a.title, finalQuality: a.finalQuality ?? null })),
     ...(inbox?.newsletters ?? []).map((n) => ({ kind: 'newsletter' as const, id: n.newsletterId, title: n.title })),
   ]
   const queueIndexFor = (kind: 'article' | 'newsletter', id: string) => readyQueue.findIndex((q) => q.kind === kind && q.id === id)

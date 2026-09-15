@@ -4,6 +4,7 @@ import type { Prisma } from '@prisma/client'
 import { prisma, ghlSettingsForUser } from '@omniply/shared'
 import { requireAuth } from '../middleware/auth'
 import { runPipelinePhaseA } from '../article-pipeline/executor'
+import { triggerArticleRewrite } from '../article-pipeline/rewrite-trigger'
 import { approveArticleJob } from '../article-pipeline/approval-service'
 import { getBoss, QUEUES } from '../queues/index'
 import { VALID_TARGETS } from '../article-pipeline/output/registry'
@@ -556,25 +557,10 @@ export async function articleRoutes(app: FastifyInstance) {
     })
     if (!job) return reply.status(404).send({ error: 'Article job not found' })
 
-    if (job.status !== 'completed') {
-      return reply.status(400).send({
-        error: `Cannot rewrite a job with status: ${job.status}. Job must be 'completed' (before approval).`,
-      })
-    }
-
-    await prisma.pipelineStep.deleteMany({
-      where: { jobId, stepNumber: { gte: 7, lte: 12 } },
-    })
-
-    await prisma.articleJob.update({
-      where: { id: jobId },
-      data: { status: 'in_progress', currentStep: 6 },
-    })
-
-    runPipelinePhaseA(jobId).catch((err) => {
-      request.log.error({ jobId, err }, '[articles] rewrite failed')
-    })
-
+    // Shared trigger (parity batch B): also accepts 'enriched' so the
+    // review surface can request a rewrite of a ready article.
+    const result = await triggerArticleRewrite(jobId)
+    if (!result.ok) return reply.status(400).send({ error: result.error })
     return reply.send({ ok: true, message: 'Article rewrite started' })
   })
 

@@ -16,6 +16,7 @@ import { decrypt } from '@omniply/shared'
 import { uploadBufferWithKey, deleteS3Prefix, downloadImageFromUrl } from '@omniply/shared'
 import { getSystemApiKey } from '../../lib/system-keys'
 import { specializationLabel } from '../../newsletter/calendar-routing'
+import { getBoss, QUEUES } from '../../queues/index'
 import {
   extractH2Sections,
   buildEnrichedHtml,
@@ -1159,6 +1160,15 @@ async function finishEnrichment(
       currentStep: 25,
     },
   })
+
+  // Final Google-guidelines check on the ENRICHED body (parity batch B) —
+  // best-effort enqueue: a queue hiccup must never fail enrichment.
+  try {
+    const boss = await getBoss()
+    await boss.send(QUEUES.FINAL_QUALITY_CHECK, { jobId }, { singletonKey: `final-quality-${jobId}-${Date.now()}` })
+  } catch (err) {
+    logger.warn({ jobId, err }, '[enrichment] final-quality enqueue failed (article stays reviewable)')
+  }
 
   logger.info({ jobId, cost }, '[enrichment] article enriched successfully')
 }

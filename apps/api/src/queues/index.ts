@@ -90,6 +90,7 @@ export const QUEUES = {
   PG_CONN_MONITOR: 'pg-conn-monitor',
   ARTICLE_PIPELINE: 'article-pipeline',
   ARTICLE_QUALITY_GATE: 'article-quality-gate',
+  FINAL_QUALITY_CHECK: 'final-quality-check',
   ARTICLE_ENRICHMENT: 'article-enrichment',
   ARTICLE_OUTPUT: 'article-output',
   GENERATE_SOCIAL_FROM_ARTICLE: 'generate-social-from-article',

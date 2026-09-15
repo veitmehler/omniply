@@ -10,6 +10,8 @@ export interface ReviewItem {
   kind: 'article' | 'newsletter'
   id: string // jobId for article, newsletterId for newsletter
   title: string
+  /** Automated final Google-guidelines verdict (articles; parity batch B). */
+  finalQuality?: { verdict: string; reasons: string[] } | null
 }
 
 interface PendingEdit {
@@ -61,6 +63,23 @@ export function ReviewApproveModal({
   const [assignee, setAssignee] = useState('')
   const [members, setMembers] = useState<{ email: string; name: string | null }[]>([])
   const [sending, setSending] = useState(false)
+  const [rewriting, setRewriting] = useState(false)
+
+  async function requestRewrite() {
+    setRewriting(true)
+    try {
+      const res = await fetch(`/api/articles/${item.id}/rewrite`, { method: 'POST' })
+      if (res.ok) {
+        toast.success('Rewrite started — the article returns for review when it finishes.')
+        onClose()
+      } else {
+        const body = await res.json().catch(() => ({}))
+        toast.error(body.error ?? 'Could not start the rewrite')
+      }
+    } finally {
+      setRewriting(false)
+    }
+  }
 
   const scrollRef = useRef<HTMLDivElement>(null)
   const bodyRef = useRef<HTMLDivElement>(null)
@@ -205,6 +224,35 @@ export function ReviewApproveModal({
         <div className="flex min-h-0 flex-1">
           {/* Content */}
           <div ref={scrollRef} onScroll={onScroll} className="flex-1 overflow-y-auto bg-background px-6 py-5">
+            {isArticle && item.finalQuality && !loading && (
+              item.finalQuality.verdict === 'pass' ? (
+                <div className="mb-4 flex items-center gap-2 rounded-lg border border-green-600/30 bg-green-500/10 px-3 py-2 text-sm text-foreground">
+                  <span aria-hidden>✅</span> Passed the automated Google quality check.
+                </div>
+              ) : (
+                <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm">
+                  <div className="mb-1 font-medium text-amber-900">
+                    ⚠️ The automated Google quality check flagged this article
+                    {item.finalQuality.verdict === 'error' ? ' (the check itself failed to run)' : ''}.
+                  </div>
+                  {item.finalQuality.reasons.length > 0 && (
+                    <ul className="mb-2 list-disc pl-5 text-amber-900/90">
+                      {item.finalQuality.reasons.slice(0, 5).map((r, i) => (
+                        <li key={i}>{r}</li>
+                      ))}
+                    </ul>
+                  )}
+                  <button
+                    className="rounded-lg border border-amber-400 bg-white px-3 py-1.5 text-xs font-medium text-amber-900 hover:bg-amber-100 disabled:opacity-50"
+                    disabled={rewriting}
+                    onClick={() => void requestRewrite()}
+                  >
+                    {rewriting ? 'Starting rewrite…' : 'Rewrite this article'}
+                  </button>
+                  <span className="ml-2 text-xs text-amber-800/80">You can still approve as-is if you disagree.</span>
+                </div>
+              )
+            )}
             {loading ? (
               <div className="flex items-center gap-2 py-12 text-sm text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin" /> Loading…</div>
             ) : isArticle ? (

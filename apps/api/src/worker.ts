@@ -24,6 +24,7 @@ import { pgMonitorHandler } from './handlers/pg-monitor'
 import { articlePipelineHandler, ArticlePipelineJobData } from './handlers/article-pipeline'
 import { articleEnrichmentHandler, ArticleEnrichmentJobData } from './handlers/article-enrichment'
 import { qualityGateHandler, QualityGateJobData } from './handlers/quality-gate'
+import { finalQualityCheckHandler, FinalQualityCheckJobData } from './handlers/final-quality-check'
 import { contentBatchMonitorHandler } from './handlers/content-batch-monitor'
 import { articleOutputHandler, ArticleOutputJobData } from './handlers/article-output'
 import { generateSocialFromArticleHandler, GenerateSocialFromArticleJobData } from './handlers/generate-social-from-article'
@@ -209,6 +210,12 @@ async function main() {
     QUEUES.ARTICLE_QUALITY_GATE,
     { batchSize: 1 },
     withSentry('article-quality-gate', qualityGateHandler),
+  )
+
+  await boss.work<FinalQualityCheckJobData>(
+    QUEUES.FINAL_QUALITY_CHECK,
+    { batchSize: 1 },
+    withSentry('final-quality-check', finalQualityCheckHandler),
   )
 
   await boss.work(
