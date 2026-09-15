@@ -1,5 +1,7 @@
 # Funnel + Consent Batch (§4b-3) — SPINE-only CTA, install consents, GHL-first socials
 
+## STATUS 2026-09-15: EXECUTED — live on prod (74827a9). Demo patch (G) superseded by the full RESET; fresh E2E run validates everything.
+
 Decisions locked with Veit 2026-09-15 (mid-E2E). One API+web batch, one small
 migration. Supersedes the "PENDING VEIT DECISION: WP publish consent toggles"
 item in pre-launch-todos §4b-2.

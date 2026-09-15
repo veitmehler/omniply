@@ -1,5 +1,7 @@
 # Embed Client Shell (§4d) — the FULL client app inside GHL, incl. Settings
 
+## STATUS 2026-09-15: EXECUTED — live on prod (1b74700). Dual-auth smoke-tested on staging (direct 200 / proxy 200 / no-auth 401); clerkMiddleware bypass for emb_ bearers on /api. EMBED_JWT_SECRET set in Vercel prod+preview. First-burst gate skip + reset-onboarding.ts shipped same batch; demo account RESET to clean pre-onboarding state.
+
 Veit decisions 2026-09-15: (1) the embed is the client app — GHL clients never
 log into the main platform; (2) Settings access at launch is NON-NEGOTIABLE
 ("what if they made a mistake and want to fix it"). LAUNCH-CRITICAL (Sept 22).
