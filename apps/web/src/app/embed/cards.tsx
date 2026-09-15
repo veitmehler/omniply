@@ -143,6 +143,11 @@ const PROFILE_FIELDS: { key: string; label: string; rows: number }[] = [
   { key: 'articleGoal', label: 'What every article should achieve', rows: 2 },
   { key: 'specialInstructions', label: 'Your editorial stance', rows: 3 },
   { key: 'industry', label: 'Industry', rows: 1 },
+  // E-E-A-T author credentials — site-extracted when the About page states
+  // them, otherwise asked here (they feed the article author schema Google
+  // reads for credibility). Optional; never invented.
+  { key: 'authorAlmaMater', label: 'Where did you study? (shown to Google as your credential)', rows: 1 },
+  { key: 'authorLinkedIn', label: 'Your personal LinkedIn profile URL (optional)', rows: 1 },
 ]
 
 export function ProfileCard({

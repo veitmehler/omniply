@@ -6,7 +6,7 @@ import { logger } from '../lib/logger'
 import {
   renderAndSave,
   regenerateNewsletterSection,
-  normalizeSocialLinks,
+  toRenderBrand,
   type NewsletterSection,
 } from '../newsletter/generate'
 import { getNewsletterEmailConfig, type NewsletterEmailConfig } from '../lib/ghl/settings'
@@ -58,6 +58,10 @@ const TEMPLATE_FIELDS = [
   'nlHeadingFontWeight',
   'nlBodyFontWeight',
   'nlLinkColor',
+  'nlButtonColor',
+  'nlButtonTextColor',
+  'nlHeaderTextColor',
+  'nlHeaderLogoLayout',
   'nlLogoUrl',
   'nlHeaderLogoVariant',
   'nlFooterLogoVariant',
@@ -498,41 +502,23 @@ export async function newsletterRoutes(app: FastifyInstance) {
       if (!userId) return reply.status(404).send({ error: 'User not found' })
 
       const brand = await brandSettingsForUser(userId)
-      // Overlay any unsaved edits from the request on top of the saved brand.
-      const t = request.body?.template ?? {}
-      const s = (k: string) => (t[k] as string) ?? (brand as Record<string, unknown> | null)?.[k] ?? null
-      const renderBrand: RenderBrand = {
-        organizationName: brand?.organizationName,
-        organizationLogoUrl: brand?.organizationLogoUrl,
-        organizationAddress: brand?.organizationAddress,
-        organizationEmail: brand?.organizationEmail,
-        organizationPhone: brand?.organizationPhone,
-        socialMediaLinks: normalizeSocialLinks(brand?.socialMediaLinks),
-        addressLine1: brand?.addressLine1,
-        addressLine2: brand?.addressLine2,
-        addressLocality: brand?.addressLocality,
-        addressRegion: brand?.addressRegion,
-        postalCode: brand?.postalCode,
-        addressCountryName: brand?.addressCountryName,
-        nlLogoUrl: s('nlLogoUrl'),
-        nlLogoLightUrl: brand?.nlLogoLightUrl,
-        nlLogoDarkUrl: brand?.nlLogoDarkUrl,
-        nlHeaderLogoVariant: s('nlHeaderLogoVariant'),
-        nlFooterLogoVariant: s('nlFooterLogoVariant'),
-        nlFooterLogoWidth: (t.nlFooterLogoWidth as number) ?? brand?.nlFooterLogoWidth ?? null,
-        nlFooterDisclaimer: s('nlFooterDisclaimer'),
-        nlLogoWidth: (t.nlLogoWidth as number) ?? brand?.nlLogoWidth ?? null,
-        nlHeaderBgColor: s('nlHeaderBgColor'),
-        nlFooterBgColor: s('nlFooterBgColor'),
-        nlSectionColor1: s('nlSectionColor1'),
-        nlSectionColor2: s('nlSectionColor2'),
-        nlSectionColor3: s('nlSectionColor3'),
-        nlSectionColor4: s('nlSectionColor4'),
-        nlFontFamily: s('nlFontFamily'),
-        nlFontColor: s('nlFontColor'),
-        nlHeadingFontWeight: s('nlHeadingFontWeight'),
-        nlBodyFontWeight: s('nlBodyFontWeight'),
-        nlLinkColor: s('nlLinkColor'),
+      // ONE mapping (toRenderBrand) — the previous hand-copied field list
+      // silently dropped every field added after it was written
+      // (nlHeaderTextColor/nlHeaderLogoLayout/button colors: the review
+      // preview ignored the design the client approved at onboarding —
+      // found live 2026-09-15). Unsaved editor edits overlay on top.
+      const t = (request.body?.template ?? {}) as Record<string, unknown>
+      const renderBrand: RenderBrand = { ...toRenderBrand(brand) }
+      const OVERLAYABLE: (keyof RenderBrand)[] = [
+        'nlLogoUrl', 'nlHeaderLogoVariant', 'nlFooterLogoVariant', 'nlFooterLogoWidth',
+        'nlFooterDisclaimer', 'nlLogoWidth', 'nlHeaderBgColor', 'nlFooterBgColor',
+        'nlSectionColor1', 'nlSectionColor2', 'nlSectionColor3', 'nlSectionColor4',
+        'nlFontFamily', 'nlFontColor', 'nlHeadingFontWeight', 'nlBodyFontWeight',
+        'nlLinkColor', 'nlButtonColor', 'nlButtonTextColor', 'nlHeaderTextColor',
+        'nlHeaderLogoLayout',
+      ]
+      for (const k of OVERLAYABLE) {
+        if (t[k] !== undefined) (renderBrand as Record<string, unknown>)[k] = t[k]
       }
       return reply.send({ html: renderNewsletterHtml(SAMPLE_PREVIEW, renderBrand) })
     },

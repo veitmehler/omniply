@@ -195,6 +195,12 @@ export async function commitBrandProfile(ctx: StepContext, answer: unknown): Pro
       ...(((ctx.stepData.ghlPrefill as { socials?: Record<string, string> })?.socials) ?? {}),
       ...(((ctx.stepData.crawl as { socialLinks?: Record<string, string> })?.socialLinks) ?? {}),
     }),
+    // E-E-A-T author credentials (Veit 2026-09-15: "super important for
+    // Google credibility"): site-extracted, owner-confirmed on the card.
+    ...(draft.authorAlmaMater?.trim() ? { defaultAuthorAlumniOf: draft.authorAlmaMater.trim() } : {}),
+    ...(draft.authorLinkedIn?.trim() && /linkedin\.com\//i.test(draft.authorLinkedIn)
+      ? { defaultAuthorLinkedIn: draft.authorLinkedIn.trim() }
+      : {}),
   })
   ctx.stepData.brandProfileDraft = draft as unknown as Record<string, unknown>
 
@@ -502,6 +508,32 @@ export async function commitSocials(ctx: StepContext, _answer: unknown): Promise
       const ghlPlatforms = new Set(ghlUrls.map((l) => l.platform))
       const merged = [...ghlUrls, ...existing.filter((l) => l.platform && !ghlPlatforms.has(l.platform))]
       await brandUpsert(ctx.userId, { socialMediaLinks: merged })
+    }
+
+    // PERSONAL LinkedIn profile connected → author schema (Veit 2026-09-15).
+    // Public personal URLs need the vanity slug; probe the fields GHL may
+    // expose and only fill when a real linkedin.com URL is present. Never
+    // overwrite a value the owner set.
+    const personalLi = (accounts as unknown as Record<string, unknown>[]).find(
+      (a) => String(a.platform ?? '').toLowerCase() === 'linkedin' && String(a.type ?? '').toLowerCase() === 'profile',
+    )
+    if (personalLi) {
+      const candidate = [personalLi.profileUrl, personalLi.publicUrl, personalLi.url, personalLi.vanityName]
+        .map((v) => (typeof v === 'string' ? v.trim() : ''))
+        .find((v) => /linkedin\.com\//i.test(v) || /^[\w-]{3,}$/.test(v))
+      if (candidate) {
+        const url = /linkedin\.com\//i.test(candidate) ? candidate : `https://www.linkedin.com/in/${candidate}`
+        const brand = await brandSettingsForUser(ctx.userId)
+        if (!brand?.defaultAuthorLinkedIn?.trim()) {
+          await brandUpsert(ctx.userId, { defaultAuthorLinkedIn: url })
+          logger.info({ url }, '[onboarding] personal LinkedIn → author schema')
+        }
+      } else {
+        logger.info(
+          { keys: Object.keys(personalLi) },
+          '[onboarding] personal LinkedIn connected but no public URL field — author LinkedIn stays manual',
+        )
+      }
     }
   } catch (err) {
     logger.warn({ err }, '[onboarding] social account fetch failed (retryable from settings)')

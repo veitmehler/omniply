@@ -48,6 +48,10 @@ export interface BrandProfileDraft {
   industry: string
   primarySpecialization?: string
   specializations?: string[]
+  /** E-E-A-T author credentials extracted from the site (About pages often
+   * state them); confirmed/completed by the owner on the profile card. */
+  authorAlmaMater?: string | null
+  authorLinkedIn?: string | null
 }
 
 export interface VoiceAnswers {
@@ -89,7 +93,9 @@ Return STRICT JSON:
  "specialInstructions": "Editorial stance distilled from answers 2 and 4: what the content should consistently push against and stand for. CRITICAL: phrase as critique of PRACTICES/patterns, never named competitors, and no therapeutic-outcome claims (AHPRA-safe).",
  "industry": "e.g. Chiropractor",
  "primarySpecialization": "keep from detected classification unless the answers clearly contradict it",
- "specializations": ["..."]
+ "specializations": ["..."],
+ "authorAlmaMater": "the institution where the practitioner studied, ONLY if the website explicitly states it (About/bio pages) — EXACT name as written, else null. NEVER guess or invent: this becomes public structured data about a real person",
+ "authorLinkedIn": "the practitioner's PERSONAL LinkedIn profile URL, ONLY if it appears verbatim in the website text (linkedin.com/in/...) — else null. Company pages do not count"
 }`,
     'onboarding.brand_profile',
   )
