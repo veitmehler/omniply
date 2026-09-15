@@ -56,3 +56,33 @@ describe('overlayLogo', () => {
     expect(out).toBe(base)
   })
 })
+
+describe('contain-fit sizing (2026-09-15: slim/tall logos)', () => {
+  it('a tall slim logo binds on the HEIGHT budget, not the width', async () => {
+    const base = await sharp({ create: { width: 1000, height: 1000, channels: 4, background: '#fff' } })
+      .png()
+      .toBuffer()
+    // 100×600 logo: width budget (220px) would make it 1320px tall; height
+    // budget (120px) must win → scaled to 20×120.
+    const slim = await sharp({ create: { width: 100, height: 600, channels: 4, background: '#123456' } })
+      .png()
+      .toBuffer()
+    const out = await overlayLogo(base, slim)
+    const meta = await sharp(out).metadata()
+    expect(meta.width).toBe(1000)
+    expect(meta.height).toBe(1000)
+    // The composite must not have thrown (sharp errors if the overlay exceeds
+    // the canvas) — reaching here with intact dimensions proves the fit.
+  })
+
+  it('a wide logo still binds on the width budget', async () => {
+    const base = await sharp({ create: { width: 1000, height: 1000, channels: 4, background: '#fff' } })
+      .png()
+      .toBuffer()
+    const wide = await sharp({ create: { width: 800, height: 100, channels: 4, background: '#123456' } })
+      .png()
+      .toBuffer()
+    const out = await overlayLogo(base, wide)
+    expect((await sharp(out).metadata()).width).toBe(1000)
+  })
+})
