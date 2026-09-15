@@ -55,14 +55,9 @@ export async function commitBusinessConfirm(ctx: StepContext, answer: unknown): 
     // unmapped stranded the PDFs' call CTA and the chat KB without a number.
     organizationPhone: merged.phone || null,
     organizationEmail: merged.email || null,
-    // Crawl-harvested social profiles → newsletter footer + linktree icon row.
-    ...(() => {
-      const socials = (merged as unknown as { socials?: Record<string, string> }).socials
-      const rows = Object.entries(socials ?? {})
-        .filter(([, url]) => typeof url === 'string' && url.trim())
-        .map(([platform, url]) => ({ platform, url: url.trim() }))
-      return rows.length ? { socialMediaLinks: rows } : {}
-    })(),
+    // GHL Business Profile social links (crawl-harvested ones land later at
+    // brand_profile_confirm — the crawl hasn't finished when this step runs).
+    ...socialRowsFrom((merged as unknown as { socials?: Record<string, string> }).socials),
   })
   if (merged.timezone) await settingsUpsert(ctx.userId, { socialTimezone: merged.timezone })
 
@@ -149,6 +144,14 @@ export async function commitPhoto(ctx: StepContext, answer: unknown): Promise<st
   return null
 }
 
+/** Coerce a platform→url map into the socialMediaLinks rows (empty → no-op patch). */
+function socialRowsFrom(socials?: Record<string, string>): { socialMediaLinks?: { platform: string; url: string }[] } {
+  const rows = Object.entries(socials ?? {})
+    .filter(([, url]) => typeof url === 'string' && url.trim())
+    .map(([platform, url]) => ({ platform, url: url.trim() }))
+  return rows.length ? { socialMediaLinks: rows } : {}
+}
+
 /** brand_profile_confirm: persist the (possibly edited) profile; ready the reveal. */
 export async function commitBrandProfile(ctx: StepContext, answer: unknown): Promise<string | null> {
   const edited = (answer ?? {}) as Partial<BrandProfileDraft> & { confirmed?: boolean }
@@ -175,6 +178,12 @@ export async function commitBrandProfile(ctx: StepContext, answer: unknown): Pro
     ...(Array.isArray(ctx.stepData.clinicFaqsDraft) && (ctx.stepData.clinicFaqsDraft as unknown[]).length > 0
       ? { clinicFaqs: ctx.stepData.clinicFaqsDraft }
       : {}),
+    // Crawl-harvested socials (available only NOW — the crawl finishes after
+    // business_confirm): site links win per-platform, GHL prefill fills gaps.
+    ...socialRowsFrom({
+      ...(((ctx.stepData.ghlPrefill as { socials?: Record<string, string> })?.socials) ?? {}),
+      ...(((ctx.stepData.crawl as { socialLinks?: Record<string, string> })?.socialLinks) ?? {}),
+    }),
   })
   ctx.stepData.brandProfileDraft = draft as unknown as Record<string, unknown>
 
