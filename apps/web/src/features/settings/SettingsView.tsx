@@ -24,6 +24,8 @@ import { VoiceAssistantSection } from '@/features/settings/VoiceAssistantSection
 import { ConnectedAccountsSection } from '@/features/settings/ConnectedAccountsSection'
 import { TeamSection } from '@/features/settings/TeamSection'
 import { useSettingsData } from '@/features/settings/useSettingsData'
+import { TemplateEditorView } from '@/features/newsletter/TemplateEditorView'
+import { OffersView } from '@/features/newsletter/OffersView'
 import { useSocialConnections } from '@/features/settings/useSocialConnections'
 
 export function SettingsView({ embedMode = false }: { embedMode?: boolean }) {
@@ -81,6 +83,21 @@ export function SettingsView({ embedMode = false }: { embedMode?: boolean }) {
         ) : (
           <ConnectedAccountsSection settings={settings} social={social} />
         )}
+
+        {/* Newsletter design + offers (parity batch C — Veit: Settings must
+            hold these). Collapsed by default; both shells see them. */}
+        <details className="rounded-xl border border-border bg-card">
+          <summary className="cursor-pointer p-5 font-medium text-foreground">Newsletter design</summary>
+          <div className="border-t border-border">
+            <TemplateEditorView embedMode={embedMode} />
+          </div>
+        </details>
+        <details className="rounded-xl border border-border bg-card">
+          <summary className="cursor-pointer p-5 font-medium text-foreground">Seasonal offers</summary>
+          <div className="border-t border-border">
+            <OffersView embedMode={embedMode} />
+          </div>
+        </details>
       </div>
     </div>
   )

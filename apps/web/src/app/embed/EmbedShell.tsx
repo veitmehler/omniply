@@ -12,11 +12,14 @@ import { embedFetch, installEmbedFetchBridge } from '@/lib/embedSession'
 import { ContentPlan } from '@/features/dashboard/ContentPlan'
 import { SettingsView } from '@/features/settings/SettingsView'
 import { LeadMagnetsView } from '@/components/LeadMagnetsView'
+import { IdeasBankView } from '@/features/ideas/IdeasBankView'
+import { IdeaCapturePanel } from './IdeaCapturePanel'
 
-type Tab = 'content' | 'leadmagnets' | 'settings'
+type Tab = 'content' | 'ideas' | 'leadmagnets' | 'settings'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'content', label: 'My Content' },
+  { id: 'ideas', label: 'Ideas' },
   { id: 'leadmagnets', label: 'Lead Magnets' },
   { id: 'settings', label: 'Settings' },
 ]
@@ -70,9 +73,11 @@ export function EmbedShell({ justCompletedOnboarding = false }: { justCompletedO
                 newsletters and social posts appear below for review as they finish.
               </div>
             )}
+            <IdeaCapturePanel onFleshOut={() => setTab('ideas')} />
             <ContentPlan />
           </>
         )}
+        {tab === 'ideas' && <IdeasBankView embedMode />}
         {tab === 'leadmagnets' && (
           <LeadMagnetsView
             apiFetch={(path, init) => embedFetch(path, init)}
