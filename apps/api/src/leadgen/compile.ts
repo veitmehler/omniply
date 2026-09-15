@@ -10,6 +10,7 @@
  */
 import { prisma, uploadBufferWithKey } from '@omniply/shared'
 import { logger } from '../lib/logger'
+import { getLLMAdapter } from '../article-pipeline/llm/factory'
 import { getSystemApiKey } from '../lib/system-keys'
 import { withRasterPage } from '../article-pipeline/enrichment/diagram-browser-pool'
 import { sanitizeDashesText } from '../lib/text/dash-sanitizer'
@@ -17,7 +18,6 @@ import { instrumentCall } from '../lib/net/instrument'
 import { withTimeout } from '../lib/net/with-timeout'
 import { ensureAccountFolder, uploadPdf, driveConfigured, deleteFile, grantReader } from '../lib/gdrive/client'
 
-const MODEL = 'gemini-3-flash-preview'
 /** Active-drip window: leads captured within it get silently regranted on a
  * rotated (recompiled) file so their drip links keep working. */
 const COHORT_REGRANT_DAYS = 42
@@ -295,24 +295,23 @@ export function rewriteWithinGuards(original: string, rewritten: string, maxChar
 }
 
 async function rewriteSlot(
-  geminiKey: string,
   slotText: string,
   writingStyle: string,
   feedbackNote?: string,
 ): Promise<string | null> {
   try {
-    const res = await instrumentCall({ provider: 'gemini', op: 'leadgen.rewrite' }, () =>
+    // Claude Sonnet 4.5 (decision 2026-09-15 after the Gemini trial:
+    // flash-preview was either slow-and-obedient at 60-150s/slot or
+    // fast-and-inventing-content; tuned budget peaked at ~51% guard-pass).
+    // Sonnet: seconds-fast, precise under hard constraints; ~$0.50/library.
+    const res = await instrumentCall({ provider: 'anthropic', op: 'leadgen.rewrite' }, () =>
       withTimeout(
-        (signal) =>
-          fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${geminiKey}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [
-                {
-                  parts: [
-                    {
-                      text: `Rewrite this lead-magnet passage in the practitioner's voice. HARD RULES:
+        () =>
+          getLLMAdapter('anthropic').call({
+            model: 'claude-sonnet-4-5-20250929',
+            systemPrompt:
+              "You rewrite lead-magnet passages in a practitioner's voice for regulated healthcare content. Follow the HARD RULES in the user message exactly.",
+            userPrompt: `Rewrite this lead-magnet passage in the practitioner's voice. HARD RULES:
 - Keep ALL facts, numbers and claims EXACTLY as written (change nothing factual — this is regulated healthcare content, no new therapeutic claims, no guarantees).
 - Keep the length within ±20% of the original.
 - Keep any HTML tags exactly where they are.
@@ -324,29 +323,14 @@ PASSAGE:
 ${slotText}
 
 Return ONLY the rewritten passage.`,
-                    },
-                  ],
-                },
-              ],
-              // thinkingBudget 512 (2026-09-15, measured): the default budget
-              // costs 60-150s per two-sentence rewrite; budget 0 is 1.2s but
-              // IGNORES the hard rules (6x length, invented lists/numbers).
-              // 512 is the sweet spot: ~6s, rules obeyed, voice intact.
-              generationConfig: { temperature: 0.5, maxOutputTokens: 1024, thinkingConfig: { thinkingBudget: 512 } },
-            }),
-            signal,
+            temperature: 0.5,
+            maxTokens: 1024,
           }),
-        // 150s: gemini-3-flash-preview drifted to ~60s+ per rewrite (observed
-        // 2026-09-14: one success at 58.9s, everything else killed at the old
-        // 60s cap → circuit-open → neutral fallbacks on every slot). Compile
-        // is a background job — latency is harmless, silent de-voicing isn't.
-        150_000,
+        60_000,
         'leadgen.rewrite',
       ),
     )
-    if (!res.ok) return null
-    const data = (await res.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[] }
-    return data.candidates?.[0]?.content?.parts?.map((p) => p.text ?? '').join('').trim() || null
+    return res.content.trim() || null
   } catch {
     return null
   }
@@ -375,7 +359,7 @@ export async function compileLeadGenDocument(documentId: string, feedbackNote?: 
     const tokens = await brandTokensFor(doc.userId)
     const settings = await prisma.settings.findUnique({ where: { userId: doc.userId }, select: { writingStyle: true } })
     const slotMeta = (doc.template.slotMeta as Record<string, SlotMeta>) ?? {}
-    const geminiKey = await getSystemApiKey('gemini')
+    const anthropicKey = await getSystemApiKey('anthropic')
 
     // 1. Voice-rewrite eligible slots under guards; fallback = neutral master text.
     let html = doc.template.sourceHtml
@@ -385,8 +369,8 @@ export async function compileLeadGenDocument(documentId: string, feedbackNote?: 
       const [full, name, original] = m
       const meta = slotMeta[name] ?? {}
       let finalText = original
-      if (meta.rewriteEligible !== false && geminiKey && settings?.writingStyle) {
-        const rewritten = await rewriteSlot(geminiKey, original, settings.writingStyle, feedbackNote)
+      if (meta.rewriteEligible !== false && anthropicKey && settings?.writingStyle) {
+        const rewritten = await rewriteSlot(original, settings.writingStyle, feedbackNote)
         if (rewritten && rewriteWithinGuards(original, rewritten, meta.maxChars)) {
           finalText = await sanitizeDashesText(rewritten, { surface: 'leadgen_slot' })
         } else if (rewritten) {
