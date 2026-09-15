@@ -48,8 +48,16 @@ export async function commitBusinessConfirm(ctx: StepContext, answer: unknown): 
   await brandUpsert(ctx.userId, {
     organizationName: merged.organizationName.trim(),
     geolocation: merged.address || null,
+    // Settings + JSON-LD read organizationAddress; geolocation alone left the
+    // "Business address" field empty (Veit, fresh-E2E Settings review).
+    organizationAddress: merged.address || null,
     organizationCountryCode: merged.country || null,
     defaultAuthorName: merged.contactName || null,
+    // E-E-A-T author defaults derivable from the profile; LinkedIn/alumniOf
+    // stay blank — we can't honestly derive personal facts, Settings is the
+    // place to add them.
+    defaultAuthorWebsite: merged.website || null,
+    defaultAuthorJobTitle: 'Chiropractor',
     organizationWebsite: merged.website || null,
     // Phone + email ride the same GHL Business Profile prefill — leaving them
     // unmapped stranded the PDFs' call CTA and the chat KB without a number.
@@ -124,10 +132,13 @@ export async function commitLogoConfirm(ctx: StepContext, answer: unknown): Prom
       nlLogoLightUrl: light ?? null,
       nlLogoDarkUrl: dark ?? null,
       nlLogoWidth: 180,
+      // Schema publisher.logo (renders on white → dark variant first) — was
+      // never set, leaving Settings' "Organization logo" empty.
+      organizationLogoUrl: dark ?? light ?? source,
     })
   } catch (err) {
     logger.warn({ err }, '[onboarding] logo processing failed — using source as-is')
-    await brandUpsert(ctx.userId, { nlLogoUrl: source, nlLogoWidth: 180 })
+    await brandUpsert(ctx.userId, { nlLogoUrl: source, nlLogoWidth: 180, organizationLogoUrl: source })
   }
   ctx.stepData.logoChosen = source
   return null

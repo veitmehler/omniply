@@ -236,7 +236,7 @@ export function SocialPostsSection({ settings }: { settings: SettingsData }) {
             Link-in-bio URL
           </label>
           <p className="text-xs text-muted-foreground mb-2">
-            Your link-in-bio page (e.g. your GoHighLevel page). Paste this URL into your Instagram &amp;
+            Your link-in-bio page (we publish one to your website at /linktree). Paste this URL into your Instagram &amp;
             Facebook profile bio so the &ldquo;link in bio&rdquo; CTA works. Stored for reference.
           </p>
           <input
