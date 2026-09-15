@@ -137,19 +137,30 @@ export async function onboardingRoutes(app: FastifyInstance) {
     await prisma.onboardingSession.update({ where: { id: r.session.id }, data: { status: 'completed' } })
     logger.info({ accountId: r.account.accountId }, '[onboarding] completed — starting first burst')
 
-    // Link-in-bio page on the clinic's own WordPress at /linktree (their
-    // branded domain); best-effort — never blocks the finale.
-    void publishSpineCheckPage(r.account.ownerUserId).finally(() => {
-      // After publish the quiz URL is final (WP page or hosted) — point the
-      // snapshot's omniply-spine-check trigger link at it.
-      void repointSpineCheckTriggerLink(r.account.ownerUserId)
+    // Website installs, gated by the onboarding consents (§4b-3): quiz page
+    // (cta step), linktree + chat widget (install_consent step). Missing
+    // key = consented (pre-batch accounts grandfathered). Best-effort —
+    // never blocks the finale.
+    const consentBrand = await prisma.brandSettings.findFirst({
+      where: { userId: r.account.ownerUserId },
+      select: { installConsents: true },
     })
+    const consents = (consentBrand?.installConsents ?? {}) as Record<string, boolean>
+    const consented = (key: string) => consents[key] !== false
+    void (consented('quiz')
+      ? publishSpineCheckPage(r.account.ownerUserId).finally(() => {
+          // After publish the quiz URL is final (WP page or hosted) — point
+          // the snapshot's omniply-spine-check trigger link at it.
+          void repointSpineCheckTriggerLink(r.account.ownerUserId)
+        })
+      : Promise.resolve(null)
+    )
       .catch(() => null)
-      .then(() => publishLinktreePage(r.account.ownerUserId))
+      .then(() => (consented('linktree') ? publishLinktreePage(r.account.ownerUserId) : null))
       .catch(() => {})
       // Omniply Connect plugin: install/activate + widget token + head
       // JSON-LD (all best-effort, logs its own failures).
-      .then(() => installOmniplyConnect(r.account.ownerUserId))
+      .then(() => (consented('chatWidget') ? installOmniplyConnect(r.account.ownerUserId) : null))
       .catch(() => {})
     // Clinic entity schema onto their editable WP pages (agent plan 3.1) —
     // env-flagged rollout: verify on the test account before enabling broadly.

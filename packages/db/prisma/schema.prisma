@@ -1320,6 +1320,10 @@ model BrandSettings {
   nlHeaderLogoVariant String? // 'auto' | 'light' | 'dark' (default auto)
   nlHeaderTextColor   String? // header band text (org-name fallback + beside/above layouts); default white
   nlHeaderLogoLayout  String? // 'replace' (default) | 'beside' | 'above' — logo vs org name in the header band
+  // Website-install consents captured during onboarding (§4b-3):
+  // { quiz?: boolean, linktree?: boolean, chatWidget?: boolean }.
+  // Missing field/key = consented (pre-batch accounts grandfathered).
+  installConsents     Json?
   nlFooterLogoVariant String? // 'auto' | 'light' | 'dark' (default auto)
   nlFooterLogoWidth   Int? // footer logo width (px)
   nlFooterDisclaimer  String? @db.Text // editable footer disclaimer (renderer has a default)

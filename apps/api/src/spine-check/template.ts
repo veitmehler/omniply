@@ -111,7 +111,7 @@ export function buildSpineCheckFragment(c: SpineCheckClinic): string {
     <div class="sc-err" id="sc-err">Please enter your name and a valid email.</div>
     <input type="tel" id="sc-f-phone" placeholder="Mobile (optional)" autocomplete="tel" />
     <button class="sc-btn" id="sc-reveal" type="button">Show my results</button>
-    <p class="sc-fine">We'll email your guide and a few helpful follow-ups from ${name}. Unsubscribe anytime.</p>
+    <p class="sc-fine">We'll email your guide, and you'll receive ${name}'s monthly health letter and occasional offers. Unsubscribe anytime.</p>
   </div>
 
   <div class="sc-screen" id="sc-results">

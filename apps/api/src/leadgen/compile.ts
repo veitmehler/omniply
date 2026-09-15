@@ -130,7 +130,13 @@ async function brandTokensFor(userId: string): Promise<BrandTokens> {
     email: brand?.organizationEmail ?? '',
     website: brand?.organizationWebsite ?? '',
     address: brand?.geolocation ?? '',
-    bookingCta: brand?.socialCallToAction ?? 'Book an appointment',
+    // socialCallToAction may hold the SPINE machine format ('KEYWORD|asset',
+    // goal dm_keyword) — never print that raw on a PDF; the back page's CTA
+    // is the phone box, so a call-to-book line is the right fallback.
+    bookingCta:
+      brand?.socialPrimaryGoal === 'dm_keyword' || (brand?.socialCallToAction ?? '').includes('|')
+        ? 'Call us to book your appointment'
+        : brand?.socialCallToAction ?? 'Book an appointment',
     bookingUrl: brand?.bookingUrl ?? '',
     openingHours: brand?.openingHours ?? '',
     // Reader offer must be EVERGREEN (decision 2026-09-14): PDFs live in

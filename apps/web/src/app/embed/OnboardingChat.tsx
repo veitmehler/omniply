@@ -13,7 +13,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { embedFetch } from '@/lib/embedSession'
 import { VoiceRecorder } from './VoiceRecorder'
-import { BusinessCard, LogoCard, PhotoCard, ProfileCard, TemplateCard, OffersCard, WordpressCard, SocialsCard, FrontDeskCard, KbReviewCard } from './cards'
+import { BusinessCard, LogoCard, PhotoCard, ProfileCard, TemplateCard, OffersCard, WordpressCard, SocialsCard, FrontDeskCard, KbReviewCard, InstallConsentCard } from './cards'
 
 // The chat message scrolls away — the input itself must say what belongs in it.
 const TEXT_PLACEHOLDERS: Record<string, string> = {
@@ -369,6 +369,19 @@ function ConfirmCard({
       return <FrontDeskCard disabled={busy} onSubmit={onSubmit} />
     case 'kb_review':
       return <KbReviewCard card={card} disabled={busy} onSubmit={onSubmit} />
+    case 'install_consent':
+      return (
+        <InstallConsentCard
+          disabled={busy}
+          onSubmit={(a) =>
+            onSubmit(
+              a,
+              [a.linktree && 'link-in-bio page', a.chatWidget && 'chat assistant'].filter(Boolean).join(' + ') ||
+                'No website installs',
+            )
+          }
+        />
+      )
     default:
       return (
         <button

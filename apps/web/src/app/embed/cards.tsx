@@ -600,6 +600,51 @@ export function TemplateCard({
   )
 }
 
+// ── install consent (linktree page + chat widget, §4b-3) ─────────────────────
+
+export function InstallConsentCard({
+  disabled,
+  onSubmit,
+}: {
+  disabled: boolean
+  onSubmit: (answer: Record<string, unknown>) => void
+}) {
+  const [linktree, setLinktree] = useState(true)
+  const [chatWidget, setChatWidget] = useState(true)
+  const row = (checked: boolean, toggle: () => void, title: string, desc: string) => (
+    <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border bg-card p-4">
+      <input type="checkbox" checked={checked} onChange={toggle} disabled={disabled} className="mt-1 h-5 w-5 accent-current" />
+      <span>
+        <span className="block font-medium text-foreground">{title}</span>
+        <span className="mt-0.5 block text-sm text-muted-foreground">{desc}</span>
+      </span>
+    </label>
+  )
+  return (
+    <div className="space-y-3">
+      {row(
+        linktree,
+        () => setLinktree((v) => !v),
+        'Publish my link-in-bio page',
+        'A branded page at yoursite.com/linktree with your booking, quiz and contact links — your social profiles’ bio link points here.',
+      )}
+      {row(
+        chatWidget,
+        () => setChatWidget((v) => !v),
+        'Add the chat assistant to my website',
+        'Answers visitor questions like your best receptionist and books appointments — removable anytime.',
+      )}
+      <button
+        className={`${primaryBtn} w-full`}
+        disabled={disabled}
+        onClick={() => onSubmit({ linktree, chatWidget, confirmed: true })}
+      >
+        Continue ✓
+      </button>
+    </div>
+  )
+}
+
 // ── offers ────────────────────────────────────────────────────────────────────
 
 interface OfferDraft {

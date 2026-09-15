@@ -232,9 +232,11 @@ Small API/web batch, no migration. NOT yet implemented — user reviewing scope.
   annotation rect over the phone text at assemble time instead. Also bump
   the phone's font size well up inside the Call-Us box (it's the #1 action;
   currently body-small).
-- [ ] **PENDING VEIT DECISION: WP publish consent toggles** — checkboxes at
-  the WordPress connect step (chat widget / linktree, default ON) + Settings
-  kill-switches (widget disable = config-side, instant). Pre- or post-launch?
+- [x] **WP publish consent toggles** — DECIDED + BUILT 2026-09-15 as the
+  funnel+consent batch (.plans/funnel-consent-batch.implementation-plan.md):
+  quiz consent = the rebuilt cta step; linktree/chat-widget = the new
+  install_consent step before the finale; finale honors installConsents.
+  Settings kill-switches remain post-launch backlog.
 
 ## 4d. ⚠️ LAUNCH-CRITICAL DISCUSSION: content review surface for GHL-first clients
 

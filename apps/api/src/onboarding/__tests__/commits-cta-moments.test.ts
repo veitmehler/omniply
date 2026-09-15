@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 const brandUpserts: unknown[] = []
+let mockBrand: Record<string, unknown> | null = null
 vi.mock('@omniply/shared', () => ({
   prisma: {
     brandSettings: {
@@ -10,6 +11,7 @@ vi.mock('@omniply/shared', () => ({
   },
   encrypt: vi.fn(),
   ghlSettingsForUser: vi.fn(),
+  brandSettingsForUser: vi.fn(async () => mockBrand),
 }))
 vi.mock('../../lib/logger', () => ({ logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() } }))
 vi.mock('../../queues/index', () => ({ getBoss: vi.fn(), QUEUES: {} }))
@@ -32,25 +34,39 @@ function lastUpdate(): Record<string, unknown> {
 
 beforeEach(() => {
   brandUpserts.length = 0
+  mockBrand = null
 })
 
-describe('commitCta', () => {
-  it('dm_keyword stores the FIXED SPINE preset (no free input — 2026-09-09)', async () => {
-    expect(await commitCta(ctx(), { value: 'dm_keyword' })).toBeNull()
+describe('commitCta (social lead-gen consent, §4b-3)', () => {
+  it('yes → fixed SPINE preset + dm_keyword goal + quiz consent', async () => {
+    expect(await commitCta(ctx(), { value: 'yes' })).toBeNull()
     expect(lastUpdate()).toMatchObject({
       socialCallToAction: 'SPINE|our 2-Minute Spine Check',
       socialPrimaryGoal: 'dm_keyword',
+      installConsents: { quiz: true },
     })
   })
 
-  it('booking/newsletter now store their preset', async () => {
-    expect(await commitCta(ctx(), { value: 'booking', label: 'Book an appointment' })).toBeNull()
-    expect(lastUpdate()).toMatchObject({ socialPrimaryGoal: 'booking' })
+  it('no → phone-first call CTA, null goal, quiz consent declined', async () => {
+    mockBrand = { organizationPhone: '+1 809 555 5555' }
+    expect(await commitCta(ctx(), { value: 'no' })).toBeNull()
+    expect(lastUpdate()).toMatchObject({
+      socialCallToAction: 'Call us at +1 809 555 5555 to book your appointment.',
+      socialPrimaryGoal: null,
+      installConsents: { quiz: false },
+    })
   })
 
-  it('custom stores custom text + custom preset', async () => {
-    expect(await commitCta(ctx(), { value: 'custom', customText: 'Grab our guide' })).toBeNull()
-    expect(lastUpdate()).toMatchObject({ socialCallToAction: 'Grab our guide', socialPrimaryGoal: 'custom' })
+  it('no without a phone falls back to the booking-link CTA', async () => {
+    mockBrand = { bookingUrl: 'https://x.test/book' }
+    expect(await commitCta(ctx(), { value: 'no' })).toBeNull()
+    expect(lastUpdate()).toMatchObject({
+      socialCallToAction: 'Book your appointment through the link in our bio.',
+    })
+  })
+
+  it('rejects anything but yes/no', async () => {
+    expect(await commitCta(ctx(), { value: 'dm_keyword' })).toMatch(/options/i)
   })
 })
 

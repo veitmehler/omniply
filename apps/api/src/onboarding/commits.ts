@@ -2,7 +2,7 @@
  * Real commit bodies for the onboarding steps (onboarding plan Phases 4–7).
  * Kept out of flow.ts so the step machine stays readable.
  */
-import { prisma, encrypt, ghlSettingsForUser } from '@omniply/shared'
+import { prisma, encrypt, ghlSettingsForUser, brandSettingsForUser } from '@omniply/shared'
 import { logger } from '../lib/logger'
 import { getBoss, QUEUES } from '../queues/index'
 import { getSystemApiKey } from '../lib/system-keys'
@@ -304,22 +304,56 @@ export async function commitOffers(ctx: StepContext, answer: unknown): Promise<s
 }
 
 /** cta: socialCallToAction (+ goal mapping). */
+/**
+ * cta = the social lead-gen CONSENT (§4b-3). SPINE is the only wired funnel:
+ * yes → fixed keyword + dm_keyword goal + quiz-install consent; no → captions
+ * fall back phone-first ("call the office", Veit decision 2026-09-15), and
+ * the finale skips the quiz-page publish.
+ */
 export async function commitCta(ctx: StepContext, answer: unknown): Promise<string | null> {
-  const a = (answer ?? {}) as { value?: string; label?: string; customText?: string }
-  if (a.value === 'dm_keyword') {
-    // FIXED keyword (user decision 2026-09-09: no free input — the snapshot
-    // comment workflows hard-filter on SPINE, and the DM delivers the
-    // clinic's 2-Minute Spine Check quiz trigger link).
+  const a = (answer ?? {}) as { value?: string }
+  if (a.value !== 'yes' && a.value !== 'no') return 'Pick one of the two options'
+  if (a.value === 'yes') {
     await brandUpsert(ctx.userId, {
       socialCallToAction: 'SPINE|our 2-Minute Spine Check',
       socialPrimaryGoal: 'dm_keyword',
+      installConsents: { ...(await currentConsents(ctx.userId)), quiz: true },
     })
     return null
   }
-  const text = a.value === 'custom' ? a.customText?.trim() : (a.label ?? a.value)?.trim()
-  if (!text) return 'Tell me where posts should send people'
-  const preset = a.value === 'booking' || a.value === 'newsletter' || a.value === 'custom' ? a.value : null
-  await brandUpsert(ctx.userId, { socialCallToAction: text, socialPrimaryGoal: preset })
+  const brand = await brandSettingsForUser(ctx.userId)
+  const phone = brand?.organizationPhone?.trim()
+  const booking = brand?.bookingUrl?.trim()
+  const text = phone
+    ? `Call us at ${phone} to book your appointment.`
+    : booking
+      ? 'Book your appointment through the link in our bio.'
+      : 'Contact us to book your appointment.'
+  await brandUpsert(ctx.userId, {
+    socialCallToAction: text,
+    socialPrimaryGoal: null,
+    installConsents: { ...(await currentConsents(ctx.userId)), quiz: false },
+  })
+  return null
+}
+
+/** Read the current consent map (missing = {}; keys default to consented downstream). */
+async function currentConsents(userId: string): Promise<Record<string, boolean>> {
+  const brand = await brandSettingsForUser(userId)
+  const v = brand?.installConsents
+  return v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, boolean>) : {}
+}
+
+/** install_consent: linktree page + chat-widget plugin (both default ON). */
+export async function commitInstallConsent(ctx: StepContext, answer: unknown): Promise<string | null> {
+  const a = (answer ?? {}) as { linktree?: boolean; chatWidget?: boolean }
+  await brandUpsert(ctx.userId, {
+    installConsents: {
+      ...(await currentConsents(ctx.userId)),
+      linktree: a.linktree !== false,
+      chatWidget: a.chatWidget !== false,
+    },
+  })
   return null
 }
 
@@ -438,11 +472,53 @@ export async function commitSocials(ctx: StepContext, _answer: unknown): Promise
     // holds them — the session user (a second account member) may not own it.
     const row = await ghlSettingsForUser(ctx.userId)
     if (row) await prisma.ghlSettings.update({ where: { id: row.id }, data: { accountIds: ids } })
+
+    // GHL-FIRST public social URLs (Veit decision 2026-09-15): the connected
+    // Social Planner accounts are OAuth-verified — the accounts we actually
+    // post to — so they beat anything harvested from the website. Merge over
+    // the crawl/prefill rows persisted at brand_profile_confirm.
+    const ghlUrls = publicSocialUrls(accounts as { platform?: string; name?: string; type?: string; originId?: string }[])
+    if (ghlUrls.length) {
+      const brand = await brandSettingsForUser(ctx.userId)
+      const existing = Array.isArray(brand?.socialMediaLinks)
+        ? (brand!.socialMediaLinks as { platform?: string; url?: string }[])
+        : []
+      const ghlPlatforms = new Set(ghlUrls.map((l) => l.platform))
+      const merged = [...ghlUrls, ...existing.filter((l) => l.platform && !ghlPlatforms.has(l.platform))]
+      await brandUpsert(ctx.userId, { socialMediaLinks: merged })
+    }
   } catch (err) {
     logger.warn({ err }, '[onboarding] social account fetch failed (retryable from settings)')
     ctx.stepData.socialAccounts = []
   }
   return null
+}
+
+/** Construct public profile URLs from GHL Social Planner account records. */
+export function publicSocialUrls(
+  accounts: { platform?: string; name?: string; type?: string; originId?: string }[],
+): { platform: string; url: string }[] {
+  const out: { platform: string; url: string }[] = []
+  const seen = new Set<string>()
+  for (const acc of accounts) {
+    const platform = acc.platform?.toLowerCase()
+    if (!platform || seen.has(platform)) continue
+    let url: string | null = null
+    if (platform === 'facebook' && acc.originId) {
+      url = `https://www.facebook.com/${acc.originId}`
+    } else if ((platform === 'instagram' || platform === 'threads') && acc.name && /^[\w.]+$/.test(acc.name)) {
+      url = platform === 'instagram' ? `https://www.instagram.com/${acc.name}` : `https://www.threads.net/@${acc.name}`
+    } else if (platform === 'linkedin' && acc.originId && (acc.type ?? '').toLowerCase() !== 'profile') {
+      // Company/organization pages resolve by id; personal profiles need a
+      // vanity slug we don't have — skip those rather than guess.
+      url = `https://www.linkedin.com/company/${acc.originId}`
+    }
+    if (url) {
+      out.push({ platform, url })
+      seen.add(platform)
+    }
+  }
+  return out
 }
 
 /** elevenlabs: store key + clone the voice from the archived answers. */

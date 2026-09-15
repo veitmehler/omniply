@@ -169,27 +169,6 @@ ${corpus.slice(0, 20_000)}`,
   return (result.faqs ?? []).filter((f) => f.q?.trim() && f.a?.trim())
 }
 
-export async function generateCtaOptions(
-  apiKey: string,
-  profile: BrandProfileDraft,
-): Promise<{ value: string; label: string }[]> {
-  try {
-    const result = await geminiJson<{ ctas: string[] }>(
-      apiKey,
-      `Write 3 alternative social-media call-to-action lines for this practice (each ≤ 12 words, concrete, no hashtags, no outcome claims):
-PRACTICE: ${profile.businessDescription}
-FIRST-VISIT PROCESS: ${profile.ourExperience}
-Return STRICT JSON: {"ctas":["...","...","..."]}`,
-      'onboarding.ctas',
-      0.7,
-    )
-    return (result.ctas ?? []).map((c) => ({ value: c, label: c }))
-  } catch (err) {
-    logger.warn({ err }, '[onboarding] CTA generation failed — defaults apply')
-    return []
-  }
-}
-
 /**
  * Lightweight branded preview for "the reveal" — a self-contained HTML page
  * demonstrating the palette + logo as a newsletter would use them. The REAL

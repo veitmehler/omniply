@@ -114,6 +114,13 @@ export async function spineCheckRoutes(app: FastifyInstance) {
     try {
       const creds = await getGhlCredentials(ownerUserId)
       if (!creds) throw new Error('No GHL credentials for account owner')
+      // Quiz takers join the newsletter audience (§4b-3 — the consent copy
+      // promises it, and the quiz capture screen discloses it).
+      const nlTag = await prisma.ghlSettings
+        .findFirst({ where: { userId: ownerUserId }, select: { newsletterTagName: true } })
+        .then((s) => s?.newsletterTagName?.trim() || null)
+        .catch(() => null)
+      if (nlTag) tags.push(nlTag)
       let customFields: { id: string; value: string }[] | undefined
       if (matched?.driveLink) {
         const fieldId = await getGuideLinkFieldId(creds.apiKey, creds.locationId).catch(() => null)

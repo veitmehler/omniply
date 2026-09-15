@@ -41,6 +41,11 @@ describe('onboarding flow', () => {
       expect(STEP_ORDER).toContain(s)
     }
     expect(STEP_ORDER).not.toContain('elevenlabs')
+    // §4b-3: wordpress connects BEFORE the quiz consent pitch (cta), and the
+    // install_consent step sits right before the finale.
+    expect(STEP_ORDER.indexOf('wordpress')).toBeLessThan(STEP_ORDER.indexOf('cta'))
+    expect(STEP_ORDER).toContain('install_consent')
+    expect(STEP_ORDER.indexOf('install_consent')).toBe(STEP_ORDER.indexOf('final') - 1)
   })
 
   it('renders a step view with progress', async () => {

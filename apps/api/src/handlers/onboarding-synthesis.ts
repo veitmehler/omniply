@@ -3,7 +3,7 @@
  *
  * Enqueued when the fifth question commits. Needs the crawl corpus; if the
  * crawl is still running it re-enqueues itself (up to ~2 min) rather than
- * blocking a worker slot. Writes brandProfileDraft + ctaOptions + synthesisDone
+ * blocking a worker slot. Writes brandProfileDraft + synthesisDone
  * into the session so the confirm steps go live.
  */
 import type PgBoss from 'pg-boss'
@@ -11,7 +11,7 @@ import { prisma } from '@omniply/shared'
 import { logger } from '../lib/logger'
 import { getSystemApiKey } from '../lib/system-keys'
 import { getBoss, QUEUES } from '../queues/index'
-import { synthesizeBrandProfile, generateCtaOptions, generateClinicFaqs, type VoiceAnswers } from '../onboarding/synthesis'
+import { synthesizeBrandProfile, generateClinicFaqs, type VoiceAnswers } from '../onboarding/synthesis'
 import type { SpecializationDraft } from '../onboarding/site-analysis'
 import { mergeStepData } from '../onboarding/step-data'
 
@@ -65,10 +65,6 @@ export async function onboardingSynthesisHandler(jobs: PgBoss.Job<OnboardingSynt
           (stepData.specializationDraft as SpecializationDraft) ?? null,
         )
         stepData.brandProfileDraft = profile as unknown as Record<string, unknown>
-        stepData.ctaOptions = [
-          ...(await generateCtaOptions(geminiKey, profile)),
-          { value: 'custom', label: 'Something else…' },
-        ]
         // Logistics-only FAQ pairs for FAQPage schema (agent plan 3.1) —
         // persisted to brandSettings at brand-profile commit.
         stepData.clinicFaqsDraft = (await generateClinicFaqs(geminiKey, (stepData.corpus as string) ?? '').catch(
@@ -82,7 +78,7 @@ export async function onboardingSynthesisHandler(jobs: PgBoss.Job<OnboardingSynt
 
     // Merge ONLY the keys this job owns (lost-update fix: this exact write
     // clobbered q_proof + the logo choice on the 2026-09-14 live E2E).
-    const OWN_KEYS = ['synthesisDone', 'brandProfileDraft', 'ctaOptions', 'clinicFaqsDraft'] as const
+    const OWN_KEYS = ['synthesisDone', 'brandProfileDraft', 'clinicFaqsDraft'] as const
     const patch: Record<string, unknown> = {}
     for (const k of OWN_KEYS) if (stepData[k] !== undefined) patch[k] = stepData[k]
     await mergeStepData(session.id, patch)

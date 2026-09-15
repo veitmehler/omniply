@@ -25,10 +25,14 @@ ME (before you click "start"):
 
 P3 client-rollout additions (2026-09-09):
 - Voice questions are SIX now — q_moments answer lands in BrandSettings.storyBeats.
-- CTA step offers the ONE-TAP option 'Comment "SPINE" → we DM the free Spine
-  Check' (fixed keyword — no free-text input exists anymore). Pick it; verify
-  socialPrimaryGoal='dm_keyword' + socialCallToAction='SPINE|our 2-Minute
-  Spine Check' stored.
+- CTA step is now the SOCIAL LEAD-GEN CONSENT (§4b-3, runs AFTER wordpress):
+  quiz pitch + "Yes, please set this up." / "No, I don't want to generate
+  leads…". Pick YES; verify socialPrimaryGoal='dm_keyword' +
+  socialCallToAction='SPINE|our 2-Minute Spine Check' +
+  installConsents.quiz=true stored. (First live run 2026-09-14 hit the OLD
+  bug: LLM-generated options hid the SPINE one-tap entirely — fixed.)
+- NEW install_consent step right before the finale: link-in-bio +
+  chat-widget toggles (both default ON) → installConsents.linktree/chatWidget.
 - NO ElevenLabs step appears (removed for clients).
 - Finale burst: article days = story beats + KT music video (headline+shorts);
   newsletter days = nl story beats + brand-tint feature carousel; captions use

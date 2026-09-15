@@ -22,6 +22,7 @@ import {
   commitTemplateReveal,
   commitOffers,
   commitCta,
+  commitInstallConsent,
   commitBookingUrl,
   commitPms,
   commitFrontDesk,
@@ -274,24 +275,6 @@ const STEPS: StepDef[] = [
     },
   },
   {
-    id: 'cta',
-    kind: 'choice',
-    prepare: async (ctx) => ({
-      messages: ['When someone loves a post, where should it send them?'],
-      options: (ctx.stepData.ctaOptions as { value: string; label: string }[]) ?? [
-        { value: 'booking', label: 'Book an appointment' },
-        { value: 'newsletter', label: 'Join my newsletter' },
-        { value: 'dm_keyword', label: 'Comment "SPINE" → we DM the free Spine Check' },
-        { value: 'custom', label: 'Something else…' },
-      ],
-    }),
-    commit: async (ctx, answer) => {
-      const err = await commitCta(ctx, answer)
-      if (!err) ctx.stepData.cta = answer
-      return err
-    },
-  },
-  {
     id: 'booking_url',
     kind: 'text',
     prepare: async (ctx) => ({
@@ -341,6 +324,31 @@ const STEPS: StepDef[] = [
     commit: async (ctx, answer) => {
       const err = await commitWordpress(ctx, answer)
       if (!err) ctx.stepData.wordpress = answer
+      return err
+    },
+  },
+  // Social lead-gen consent (§4b-3, replaces the old CTA choice — the SPINE
+  // comment→DM funnel is the only wired machine; every alternative silently
+  // deactivated it, and the LLM-generated options hid the SPINE one-tap
+  // entirely on the first live run). Runs AFTER wordpress (Veit: connect the
+  // site first, then pitch what we install on it).
+  {
+    id: 'cta',
+    kind: 'choice',
+    prepare: async () => ({
+      messages: [
+        "As part of Omniply, you can get a full lead-generation quiz installed on your website automatically. Quizzes are the best way for social media followers to become leads. Once they complete the quiz, they're subscribed to your newsletter and get offers to book an appointment.",
+        "If you enable this, we'll add a page to your website automatically. It's safe and reversible — you can remove it anytime.",
+        'Every social media post then tells your readers they\'ll get the quiz link messaged to them when they reply "SPINE" on any of your posts.',
+      ],
+      options: [
+        { value: 'yes', label: 'Yes, please set this up.' },
+        { value: 'no', label: "No, I don't want to generate leads from my social media activity." },
+      ],
+    }),
+    commit: async (ctx, answer) => {
+      const err = await commitCta(ctx, answer)
+      if (!err) ctx.stepData.cta = answer
       return err
     },
   },
@@ -452,6 +460,24 @@ const STEPS: StepDef[] = [
     commit: async (ctx, answer) => {
       const err = await commitToggles(ctx, answer)
       if (!err) ctx.stepData.toggles = answer
+      return err
+    },
+  },
+  // Website-install consents for the two remaining finale installs (§4b-3;
+  // the quiz page consent lives at the cta step). Both default ON.
+  {
+    id: 'install_consent',
+    kind: 'confirm_card',
+    prepare: async () => ({
+      messages: [
+        'Two finishing touches for your website — both safe and reversible, you can remove either anytime:',
+        'A link-in-bio page at /linktree (where your social profiles\' bio link points), and your website chat assistant that answers visitors like your best receptionist.',
+      ],
+      card: { type: 'install_consent' },
+    }),
+    commit: async (ctx, answer) => {
+      const err = await commitInstallConsent(ctx, answer)
+      if (!err) ctx.stepData.install_consent = answer
       return err
     },
   },
