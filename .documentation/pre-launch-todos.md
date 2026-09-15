@@ -170,86 +170,19 @@ User-committed 2026-09-14 ("it will make it much easier for clients to be happy"
   responsive, cap with a max-width, test at common CRM sidebar widths.
   Applies to the walkthrough video too — film AFTER this lands.
 
-## 4c. ⚠️ LAUNCH-CRITICAL: calendar coverage for US clients (found 2026-09-14 E2E)
+## 4c. ✅ RESOLVED 2026-09-15: full calendar coverage shipped
 
-The finale gate routes calendars by specialization × hemisphere and BLOCKS
-completion when none match. Before Sept 22, prod must cover every
-specialization a US (north) client can end up with as primary, or they die
-at "Start generating my first month" exactly like the demo account did.
-
-State after the E2E unblock: prod now has family_care × north for BOTH
-article (208 topics, ±6-month-shifted copy of the curated south calendar)
-and newsletter (110 topics, copied from staging). south newsletter existed;
-south article calendar still staging-only.
-
-- [ ] DECIDE: either (a) curate/copy calendars for the remaining
-      specializations (prenatal_pediatric, wellness_maintenance, + any other
-      enabled Specialization rows) × north, or (b) add fallback routing
-      (no exact match → family_care same-hemisphere), or (c) constrain the
-      onboarding specialization checkboxes to keys with calendars.
-      (b) is the cheapest safe launch posture — a routed calendar beats a
-      blocked finale; curation can follow post-launch.
-- [ ] Whichever path: copy the family_care × south ARTICLE calendar (104
-      topics) staging → prod too (AU/NZ clients hit the same wall today).
-- [ ] Revisit the ±6-month-shifted north article calendar: fine for the demo;
-      decide if it stays the real US calendar at launch or gets re-curated.
-
-## 4b-2. WP surfaces + embed follow-through (from Veit's live WP review 2026-09-14)
-
-Small API/web batch, no migration. NOT yet implemented — user reviewing scope.
-
-- [ ] **Linktree: re-publish for the demo account** (no code — the white
-  button-text fix is live; page was published with the old stored dark value;
-  publish is an idempotent WP-page upsert).
-- [ ] **Linktree: social media icon links** — builder's link list is
-  hardcoded (spine check/booking/call/review/website), socials never made it
-  in. Plumb crawl-prefill + GHL socials into brand settings, render an icon
-  row BELOW the CTA buttons (conversion first, follow second). Re-publish
-  demo after.
-- [ ] **Quiz embed: top padding** — ?embed=1 strips page chrome incl. top
-  spacing; fix in the hosted quiz app (iframe design = one deploy updates
-  every clinic instantly, no WP re-publish).
-- [ ] **Quiz: backdrop band in the brand header color** — card sits on white
-  above a headerBg band so it pops (quiz already receives headerBg; wire
-  nlButtonColor/nlButtonTextColor into its buttons too).
-- [ ] **Template reveal card: button TEXT color swatch** (Veit) — palette
-  already carries buttonText; expose the swatch next to Header text, and
-  commitTemplateReveal must HONOR the user's choice (the white-preferring
-  rule becomes the default, not an override). Flows automatically to the
-  linktree page AND quiz — both already read nlButtonTextColor (verified).
-- [ ] **Lead Magnets view: post-approval dead-end** (Veit: "approved all the
-  PDFs and I'm just stuck") — when nothing is compiling/pending, show an
-  "all set" state: guides are live + what happens next (content arrives for
-  review; where to find it).
-- [ ] **PDF back page: equal-width CTA boxes** (Veit) — the reader-offer box
-  and the "Call Us Now" box render at different widths; align them (offer-box
-  is max-width:135mm — give both the same constraint).
-- [ ] **PDF back page: phone TAPPABLE + bigger** (Veit) — the email reads as
-  clickable (viewer auto-detection) but the tel: anchor is NOT live in the
-  final PDF even though the batch put it in the HTML. Investigate where the
-  link annotation dies: Chromium print-to-PDF link export vs the pdf-lib
-  copyPages/merge pass — if the merge drops annotations, stamp a link
-  annotation rect over the phone text at assemble time instead. Also bump
-  the phone's font size well up inside the Call-Us box (it's the #1 action;
-  currently body-small).
-- [x] **WP publish consent toggles** — DECIDED + BUILT 2026-09-15 as the
-  funnel+consent batch (.plans/funnel-consent-batch.implementation-plan.md):
-  quiz consent = the rebuilt cta step; linktree/chat-widget = the new
-  install_consent step before the finale; finale honors installConsents.
-  Settings kill-switches remain post-launch backlog.
-
-## 4d. ⚠️ LAUNCH-CRITICAL DISCUSSION: content review surface for GHL-first clients
-
-Found via the 4b-2 analysis (Veit stuck on the PDF page with nowhere to go):
-content approval lives ONLY in the Clerk-gated dashboard
-(features/dashboard/ContentPlan.tsx → /api/content-plan). The GHL embed
-mounts LeadMagnetsView and nothing else — a GHL-first client has NO path to
-review/approve their generated articles, newsletters, or social posts.
-LeadMagnetsView set the pattern (shared component mounted in the embed);
-ContentPlan needs the same treatment (or an explicit interim: approval via
-emailed links). Decide + build BEFORE launch — first real client hits this
-wall the day their burst finishes. E2E workaround: Veit can use the main
-dashboard with the buyer-email Clerk login.
+Every enabled specialization (family_care, sports, prenatal_pediatric,
+geriatric, wellness_maintenance) × BOTH hemispheres now has an article AND
+newsletter calendar on prod — verified programmatically ("COVERAGE
+COMPLETE"). 17 new calendars, ~2,600 dated topic rows: family_care×south
+articles copied from the curated staging export (+12mo runway); the four new
+specializations generated season-tagged (articles ~2/week, newsletters
+weekly, Oct 2026–Sep 2027 + 12-month runway; southern variants shifted +6
+months so seasons align). Import script: scratchpad import-all-calendars.js
+(idempotent). REMAINING (small, hardening): fallback routing (no exact
+match → family_care same hemisphere) so a FUTURE registry addition without
+calendars can't re-open the trap — post-launch acceptable now.
 
 ## 5. Post-launch backlog (small items, no launch impact)
 
