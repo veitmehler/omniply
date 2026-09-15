@@ -61,16 +61,39 @@ export async function resolveNewsletterCalendar(userId: string): Promise<Routing
     return { calendarId: null, hemisphere: null, reason: 'no_country' }
   }
 
-  const calendar = await prisma.newsletterCalendar.findFirst({
-    where: { specializationKey: primary, hemisphere },
-    select: { id: true },
-  })
+  const calendar = await withFallback(
+    (spec, hemi) => prisma.newsletterCalendar.findFirst({ where: { specializationKey: spec, hemisphere: hemi }, select: { id: true } }),
+    primary,
+    hemisphere,
+  )
   await setCalendar(calendar?.id ?? null)
   if (!calendar) {
     logger.info({ userId, primary, hemisphere }, '[calendar-routing] no matching calendar — client left unassigned')
     return { calendarId: null, hemisphere, reason: 'no_calendar' }
   }
+  if (calendar.fallback) logger.warn({ userId, primary, hemisphere, via: calendar.fallback }, '[calendar-routing] newsletter routed via FALLBACK')
   return { calendarId: calendar.id, hemisphere, reason: 'ok' }
+}
+
+/**
+ * Fallback chain (hardening, Veit 2026-09-15): a client must NEVER dead-end
+ * at the finale because a registry specialization lacks calendars. Chain:
+ * exact → family_care same hemisphere → family_care other hemisphere.
+ * Full per-spec coverage exists today; this guards future registry additions.
+ */
+async function withFallback<T extends { id: string }>(
+  find: (spec: string, hemi: Hemisphere) => Promise<T | null>,
+  primary: string,
+  hemisphere: Hemisphere,
+): Promise<(T & { fallback?: string }) | null> {
+  const exact = await find(primary, hemisphere)
+  if (exact) return exact
+  const sameHemi = await find('family_care', hemisphere)
+  if (sameHemi) return { ...sameHemi, fallback: `family_care/${hemisphere}` }
+  const other: Hemisphere = hemisphere === 'north' ? 'south' : 'north'
+  const otherHemi = await find('family_care', other)
+  if (otherHemi) return { ...otherHemi, fallback: `family_care/${other}` }
+  return null
 }
 
 /** Re-resolve every client routed (or routable) to a given specialization — used after a calendar is created/uploaded. */
@@ -107,15 +130,17 @@ export async function resolveArticleCalendar(userId: string): Promise<RoutingRes
     return { calendarId: null, hemisphere: null, reason: 'no_country' }
   }
 
-  const calendar = await prisma.articleCalendar.findFirst({
-    where: { specializationKey: primary, hemisphere },
-    select: { id: true },
-  })
+  const calendar = await withFallback(
+    (spec, hemi) => prisma.articleCalendar.findFirst({ where: { specializationKey: spec, hemisphere: hemi }, select: { id: true } }),
+    primary,
+    hemisphere,
+  )
   await setCalendar(calendar?.id ?? null)
   if (!calendar) {
     logger.info({ userId, primary, hemisphere }, '[calendar-routing] no matching article calendar — account left unassigned')
     return { calendarId: null, hemisphere, reason: 'no_calendar' }
   }
+  if (calendar.fallback) logger.warn({ userId, primary, hemisphere, via: calendar.fallback }, '[calendar-routing] articles routed via FALLBACK')
   return { calendarId: calendar.id, hemisphere, reason: 'ok' }
 }
 
