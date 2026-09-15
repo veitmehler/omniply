@@ -298,6 +298,7 @@ async function rewriteSlot(
   slotText: string,
   writingStyle: string,
   feedbackNote?: string,
+  lengthNote?: string,
 ): Promise<string | null> {
   try {
     // Claude Sonnet 4.5 (decision 2026-09-15 after the Gemini trial:
@@ -311,18 +312,25 @@ async function rewriteSlot(
             model: 'claude-sonnet-4-5-20250929',
             systemPrompt:
               "You rewrite lead-magnet passages in a practitioner's voice for regulated healthcare content. Follow the HARD RULES in the user message exactly.",
-            userPrompt: `Rewrite this lead-magnet passage in the practitioner's voice. HARD RULES:
+            // LENGTH IS THE #1 RULE, stated numerically and repeated — a
+            // relative "±20%" buried under 1500 chars of expansive voice
+            // instructions lost to BOTH models (measured: 4-8x expansions
+            // were 100% of guard failures).
+            userPrompt: `Rewrite this lead-magnet passage in the practitioner's voice.
+
+RULE #1 — LENGTH (overrides everything, including the voice): the original is ${slotText.length} characters. Your rewrite MUST be between ${Math.round(slotText.length * 0.8)} and ${Math.round(slotText.length * 1.2)} characters. Do NOT expand, add stories, or elaborate — this is a SHORT slot in a designed layout. Apply the voice WITHIN this budget.${lengthNote ? `\n${lengthNote}` : ''}
+
+OTHER HARD RULES:
 - Keep ALL facts, numbers and claims EXACTLY as written (change nothing factual — this is regulated healthcare content, no new therapeutic claims, no guarantees).
-- Keep the length within ±20% of the original.
 - Keep any HTML tags exactly where they are.
 - No em-dashes.
 - Never introduce numbers or statistics that are not in the original passage; prefer flowing prose over converting sentences into numbered lists.
-VOICE: ${writingStyle.slice(0, 1500)}${feedbackNote ? `\nCLIENT FEEDBACK on the previous version (honor it within the rules above): ${feedbackNote}` : ''}
+VOICE (apply within the length budget): ${writingStyle.slice(0, 1500)}${feedbackNote ? `\nCLIENT FEEDBACK on the previous version (honor it within the rules above): ${feedbackNote}` : ''}
 
 PASSAGE:
 ${slotText}
 
-Return ONLY the rewritten passage.`,
+REMINDER: maximum ${Math.round(slotText.length * 1.2)} characters. Return ONLY the rewritten passage.`,
             temperature: 0.5,
             maxTokens: 1024,
           }),
@@ -370,7 +378,13 @@ export async function compileLeadGenDocument(documentId: string, feedbackNote?: 
       const meta = slotMeta[name] ?? {}
       let finalText = original
       if (meta.rewriteEligible !== false && anthropicKey && settings?.writingStyle) {
-        const rewritten = await rewriteSlot(original, settings.writingStyle, feedbackNote)
+        let rewritten = await rewriteSlot(original, settings.writingStyle, feedbackNote)
+        if (rewritten && !rewriteWithinGuards(original, rewritten, meta.maxChars)) {
+          // One corrective retry with the concrete miss fed back (usually
+          // length) — cheap at seconds-per-call, saves the slot's voice.
+          const note = `YOUR PREVIOUS ATTEMPT WAS ${rewritten.length} characters — REJECTED. Obey the character budget exactly this time.`
+          rewritten = await rewriteSlot(original, settings.writingStyle, feedbackNote, note)
+        }
         if (rewritten && rewriteWithinGuards(original, rewritten, meta.maxChars)) {
           finalText = await sanitizeDashesText(rewritten, { surface: 'leadgen_slot' })
         } else if (rewritten) {
