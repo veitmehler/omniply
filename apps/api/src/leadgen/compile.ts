@@ -328,11 +328,11 @@ Return ONLY the rewritten passage.`,
                   ],
                 },
               ],
-              // thinkingBudget 0 (2026-09-15): gemini-3-flash defaults to a
-              // LARGE thinking budget — 60-150s per two-sentence rewrite,
-              // timing out half the slots. Disabled: measured 1.2s, same
-              // quality on a mechanical style-transfer task.
-              generationConfig: { temperature: 0.5, maxOutputTokens: 1024, thinkingConfig: { thinkingBudget: 0 } },
+              // thinkingBudget 512 (2026-09-15, measured): the default budget
+              // costs 60-150s per two-sentence rewrite; budget 0 is 1.2s but
+              // IGNORES the hard rules (6x length, invented lists/numbers).
+              // 512 is the sweet spot: ~6s, rules obeyed, voice intact.
+              generationConfig: { temperature: 0.5, maxOutputTokens: 1024, thinkingConfig: { thinkingBudget: 512 } },
             }),
             signal,
           }),
