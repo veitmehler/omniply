@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
-import { auth, currentUser } from '@clerk/nextjs/server'
+import { resolveClerkId } from '@/lib/requestAuth'
+import { currentUser } from '@clerk/nextjs/server'
 import { prisma } from '@omniply/shared'
 
 // Helper function to get or create user
@@ -42,7 +43,7 @@ async function getOrCreateUser(clerkId: string) {
 // GET /api/social/connections - List user's connected platforms
 export async function GET() {
   try {
-    const authResult = await auth()
+    const authResult = { userId: await resolveClerkId() }
     const clerkId = authResult.userId
 
     if (!clerkId) {

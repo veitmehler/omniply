@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth, clerkClient } from '@clerk/nextjs/server'
+import { resolveClerkId } from '@/lib/requestAuth'
+import { clerkClient } from '@clerk/nextjs/server'
 import { prisma, ACCOUNT_SEAT_LIMIT } from '@omniply/shared'
 import { getOrCreateUser } from '@/lib/user'
 
@@ -10,7 +11,7 @@ const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
 // (Clerk emails a set-password link; we also keep the link for the owner to
 // copy). On accept, the roster email-match joins them to this account.
 export async function POST(request: NextRequest) {
-  const { userId: clerkId } = await auth()
+  const clerkId = await resolveClerkId()
   if (!clerkId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const me = await getOrCreateUser(clerkId)

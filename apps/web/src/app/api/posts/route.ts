@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
-import { auth, clerkClient } from '@clerk/nextjs/server'
+import { resolveClerkId } from '@/lib/requestAuth'
+import { clerkClient } from '@clerk/nextjs/server'
 import { prisma } from '@omniply/shared'
 import { dispatchPublish, isGhlManagedPlatform } from '@/lib/social/dispatcher'
 
@@ -40,7 +41,7 @@ async function getOrCreateUser(clerkId: string) {
 // GET /api/posts - Get all posts for the authenticated user
 export async function GET(request: Request) {
   try {
-    const authResult = await auth()
+    const authResult = { userId: await resolveClerkId() }
     const userId = authResult.userId
 
     if (!userId) {
@@ -121,7 +122,7 @@ export async function POST(request: Request) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let body: any
   try {
-    const authResult = await auth()
+    const authResult = { userId: await resolveClerkId() }
     const userId = authResult.userId
 
     if (!userId) {

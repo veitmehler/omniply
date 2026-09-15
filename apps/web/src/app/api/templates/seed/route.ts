@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
-import { auth, currentUser } from '@clerk/nextjs/server'
+import { resolveClerkId } from '@/lib/requestAuth'
+import { currentUser } from '@clerk/nextjs/server'
 import { prisma } from '@omniply/shared'
 
 // Default templates to seed
@@ -331,7 +332,7 @@ What's your story?`,
 // POST /api/templates/seed - Seed default templates for user
 export async function POST() {
   try {
-    const { userId: clerkId } = await auth()
+    const clerkId = await resolveClerkId()
 
     if (!clerkId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth, currentUser } from '@clerk/nextjs/server'
+import { resolveClerkId } from '@/lib/requestAuth'
+import { currentUser } from '@clerk/nextjs/server'
 import { prisma } from '@omniply/shared'
 
 // Helper function to get or create user
@@ -49,7 +50,7 @@ export async function GET(
   context: RouteContext
 ) {
   try {
-    const { userId: clerkId } = await auth()
+    const clerkId = await resolveClerkId()
     const { id } = await context.params
 
     if (!clerkId) {
@@ -85,7 +86,7 @@ export async function PATCH(
   context: RouteContext
 ) {
   try {
-    const { userId: clerkId } = await auth()
+    const clerkId = await resolveClerkId()
     const { id } = await context.params
 
     if (!clerkId) {
@@ -166,7 +167,7 @@ export async function DELETE(
   context: RouteContext
 ) {
   try {
-    const { userId: clerkId } = await auth()
+    const clerkId = await resolveClerkId()
     const { id } = await context.params
 
     if (!clerkId) {

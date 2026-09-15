@@ -133,7 +133,10 @@ async function redateStaleTopics(
  * days actually have planned content and skips the rest. Implements the
  * "generate when a cycle's payment clears" behavior.
  */
-export async function burstCurrentWindow(accountId: string): Promise<{ batchId: string; itemCount: number } | null> {
+export async function burstCurrentWindow(
+  accountId: string,
+  opts?: { skipStoryGate?: boolean },
+): Promise<{ batchId: string; itemCount: number } | null> {
   const acct = await prisma.account.findUnique({
     where: { id: accountId },
     select: { id: true, ownerUserId: true, subscriptionStartedAt: true },
@@ -161,7 +164,12 @@ export async function burstCurrentWindow(accountId: string): Promise<{ batchId: 
   // has a GBP configured and this cycle's review spidering hasn't finished,
   // skip the auto-burst (the check itself starts the spider run; the dashboard
   // button remains available once it completes).
-  if (hasArticleCadenceDate(dates)) {
+  // The FIRST burst (onboarding finale) skips the client-story gate (Veit
+  // decision 2026-09-15): a brand-new clinic has no mined stories either way,
+  // the deferral has no auto-retry, and a GHL-embedded client has no button
+  // to re-trigger — the live E2E dead-ended exactly here. Billing-cycle
+  // bursts keep the gate (its actual purpose).
+  if (!opts?.skipStoryGate && hasArticleCadenceDate(dates)) {
     const brand = await prisma.brandSettings.findFirst({
       where: { user: { accountId } },
       select: { googleBusinessProfileUrl: true },

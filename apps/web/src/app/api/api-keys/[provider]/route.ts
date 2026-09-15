@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth, currentUser } from '@clerk/nextjs/server'
+import { resolveClerkId } from '@/lib/requestAuth'
+import { currentUser } from '@clerk/nextjs/server'
 import { prisma } from '@omniply/shared'
 import { decrypt, maskApiKey } from '@omniply/shared'
 
@@ -49,7 +50,7 @@ export async function GET(
   { params }: { params: Promise<{ provider: string }> }
 ) {
   try {
-    const authResult = await auth()
+    const authResult = { userId: await resolveClerkId() }
     const clerkId = authResult.userId
 
     if (!clerkId) {
@@ -104,7 +105,7 @@ export async function DELETE(
   { params }: { params: Promise<{ provider: string }> }
 ) {
   try {
-    const authResult = await auth()
+    const authResult = { userId: await resolveClerkId() }
     const clerkId = authResult.userId
 
     if (!clerkId) {

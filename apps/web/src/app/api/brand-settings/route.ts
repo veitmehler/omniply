@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
+import { resolveClerkId } from '@/lib/requestAuth'
 import { Prisma } from '@prisma/client'
 import {
   prisma,
@@ -70,7 +70,7 @@ async function getUserId(clerkId: string): Promise<string | null> {
 // GET /api/brand-settings
 export async function GET() {
   try {
-    const { userId: clerkId } = await auth()
+    const clerkId = await resolveClerkId()
     if (!clerkId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const userId = await getUserId(clerkId)
@@ -143,7 +143,7 @@ export async function GET() {
 // PATCH /api/brand-settings
 export async function PATCH(request: NextRequest) {
   try {
-    const { userId: clerkId } = await auth()
+    const clerkId = await resolveClerkId()
     if (!clerkId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     const userId = await getUserId(clerkId)

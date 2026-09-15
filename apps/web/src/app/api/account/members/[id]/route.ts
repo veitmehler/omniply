@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth, clerkClient } from '@clerk/nextjs/server'
+import { resolveClerkId } from '@/lib/requestAuth'
+import { clerkClient } from '@clerk/nextjs/server'
 import { prisma } from '@omniply/shared'
 import { getOrCreateUser } from '@/lib/user'
 
@@ -8,7 +9,7 @@ const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
 
 // PATCH /api/account/members/:id { email?, name? } — email editable only while Pending.
 export async function PATCH(request: NextRequest, { params }: Ctx) {
-  const { userId: clerkId } = await auth()
+  const clerkId = await resolveClerkId()
   if (!clerkId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const me = await getOrCreateUser(clerkId)
   if (!me.accountId) return NextResponse.json({ error: 'No account' }, { status: 500 })
@@ -36,7 +37,7 @@ export async function PATCH(request: NextRequest, { params }: Ctx) {
 
 // DELETE /api/account/members/:id — remove from roster; move an active user to a solo account.
 export async function DELETE(_request: NextRequest, { params }: Ctx) {
-  const { userId: clerkId } = await auth()
+  const clerkId = await resolveClerkId()
   if (!clerkId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const me = await getOrCreateUser(clerkId)
   if (!me.accountId) return NextResponse.json({ error: 'No account' }, { status: 500 })

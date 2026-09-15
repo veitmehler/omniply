@@ -196,7 +196,7 @@ export async function onboardingRoutes(app: FastifyInstance) {
       logger.warn({ err }, '[onboarding] starter library enqueue failed (non-fatal)')
     }
 
-    const burst = await burstCurrentWindow(r.account.accountId).catch((err: unknown) => {
+    const burst = await burstCurrentWindow(r.account.accountId, { skipStoryGate: true }).catch((err: unknown) => {
       logger.error({ err }, '[onboarding] first burst failed (dashboard generate available)')
       return null
     })

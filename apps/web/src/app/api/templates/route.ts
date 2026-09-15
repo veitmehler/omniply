@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth, currentUser } from '@clerk/nextjs/server'
+import { resolveClerkId } from '@/lib/requestAuth'
+import { currentUser } from '@clerk/nextjs/server'
 import { prisma } from '@omniply/shared'
 
 // GET /api/templates - Get all templates for the authenticated user
 export async function GET() {
   try {
     console.log('[Templates API] Starting GET request...')
-    const authResult = await auth()
+    const authResult = { userId: await resolveClerkId() }
     console.log('[Templates API] Auth result:', authResult)
     const clerkId = authResult.userId
 
@@ -80,7 +81,7 @@ export async function GET() {
 // POST /api/templates - Create a new template
 export async function POST(request: NextRequest) {
   try {
-    const authResult = await auth()
+    const authResult = { userId: await resolveClerkId() }
     const clerkId = authResult.userId
 
     if (!clerkId) {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth, currentUser } from '@clerk/nextjs/server'
+import { resolveClerkId } from '@/lib/requestAuth'
+import { currentUser } from '@clerk/nextjs/server'
 import { prisma } from '@omniply/shared'
 import { encrypt, decrypt, maskApiKey } from '@omniply/shared'
 
@@ -46,7 +47,7 @@ async function getOrCreateUser(clerkId: string) {
 // GET /api/api-keys - Get all API keys for user (masked)
 export async function GET() {
   try {
-    const authResult = await auth()
+    const authResult = { userId: await resolveClerkId() }
     const clerkId = authResult.userId
 
     if (!clerkId) {
@@ -100,7 +101,7 @@ export async function GET() {
 // POST /api/api-keys - Create or update API key for a provider
 export async function POST(request: NextRequest) {
   try {
-    const authResult = await auth()
+    const authResult = { userId: await resolveClerkId() }
     const clerkId = authResult.userId
 
     if (!clerkId) {

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
+import { resolveClerkId } from '@/lib/requestAuth'
 import { prisma } from '@omniply/shared'
 
 async function getOrCreateUser(clerkId: string) {
@@ -21,7 +21,7 @@ async function getOrCreateUser(clerkId: string) {
 // GET /api/posts/calendar - posts + automation runs for calendar view
 export async function GET(request: Request) {
   try {
-    const authResult = await auth()
+    const authResult = { userId: await resolveClerkId() }
     if (!authResult.userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }

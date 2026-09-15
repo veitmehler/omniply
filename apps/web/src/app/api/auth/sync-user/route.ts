@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
-import { auth, currentUser } from '@clerk/nextjs/server'
+import { resolveClerkId } from '@/lib/requestAuth'
+import { currentUser } from '@clerk/nextjs/server'
 import { prisma, getOrCreateUserWithAccount } from '@omniply/shared'
 
 /**
@@ -8,7 +9,7 @@ import { prisma, getOrCreateUserWithAccount } from '@omniply/shared'
  */
 export async function POST() {
   try {
-    const { userId: clerkId } = await auth()
+    const clerkId = await resolveClerkId()
 
     if (!clerkId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -77,7 +78,7 @@ export async function POST() {
  */
 export async function GET() {
   try {
-    const { userId: clerkId } = await auth()
+    const clerkId = await resolveClerkId()
 
     if (!clerkId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

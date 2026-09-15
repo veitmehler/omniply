@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
+import { resolveClerkId } from '@/lib/requestAuth'
 import { prisma } from '@omniply/shared'
 import { encrypt, decrypt } from '@omniply/shared'
 import { verifyOAuthState } from '@/lib/oauth'
@@ -36,7 +36,7 @@ export async function GET(
   context: RouteContext
 ) {
   try {
-    const authResult = await auth()
+    const authResult = { userId: await resolveClerkId() }
     const clerkId = authResult.userId
 
     if (!clerkId) {

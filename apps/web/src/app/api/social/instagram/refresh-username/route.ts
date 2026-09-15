@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
+import { resolveClerkId } from '@/lib/requestAuth'
 import { prisma, accountMemberIdsForUser } from '@omniply/shared'
 import { refreshInstagramUsername } from '@omniply/shared'
 
@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
   try {
     console.log('[Refresh Instagram Username API] Request received')
     
-    const { userId: clerkId } = await auth()
+    const clerkId = await resolveClerkId()
     if (!clerkId) {
       console.log('[Refresh Instagram Username API] Unauthorized - no clerkId')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

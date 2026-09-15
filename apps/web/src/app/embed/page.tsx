@@ -10,7 +10,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { establishEmbedSession, embedFetch, type EmbedSession } from '@/lib/embedSession'
 import { OnboardingChat } from './OnboardingChat'
-import { LeadMagnetsView } from '@/components/LeadMagnetsView'
+import { EmbedShell } from './EmbedShell'
 
 type State =
   | { phase: 'connecting' }
@@ -79,14 +79,9 @@ export default function EmbedEntry() {
     )
   }
 
-  // Post-onboarding embedded surface: the Lead Magnets review gate lives here
-  // (GHL-first clients have no Clerk login — this is their only path to it).
-  return (
-    <LeadMagnetsView
-      apiFetch={(path, init) => embedFetch(path, init)}
-      justCompletedOnboarding={justCompletedRef.current}
-    />
-  )
+  // Post-onboarding: the full client shell (Content · Lead Magnets ·
+  // Settings) — GHL clients manage everything from inside the iframe.
+  return <EmbedShell justCompletedOnboarding={justCompletedRef.current} />
 }
 
 function Centered({ children }: { children: React.ReactNode }) {

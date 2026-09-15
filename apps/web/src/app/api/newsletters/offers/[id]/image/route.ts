@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
+import { resolveClerkId } from '@/lib/requestAuth'
 import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
 import { prisma } from '@omniply/shared'
 
@@ -40,7 +40,7 @@ type Ctx = { params: Promise<{ id: string }> }
 
 export async function POST(request: NextRequest, { params }: Ctx) {
   try {
-    const { userId: clerkId } = await auth()
+    const clerkId = await resolveClerkId()
     if (!clerkId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     const uid = await userId(clerkId)
     if (!uid) return NextResponse.json({ error: 'User not found' }, { status: 404 })
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest, { params }: Ctx) {
 
 export async function DELETE(_request: NextRequest, { params }: Ctx) {
   try {
-    const { userId: clerkId } = await auth()
+    const clerkId = await resolveClerkId()
     if (!clerkId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     const uid = await userId(clerkId)
     if (!uid) return NextResponse.json({ error: 'User not found' }, { status: 404 })

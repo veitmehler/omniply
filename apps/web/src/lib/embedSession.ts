@@ -87,3 +87,39 @@ export async function embedFetch(path: string, init: RequestInit = {}): Promise<
   }
   return res
 }
+
+/**
+ * Global fetch bridge for the embed client shell (plan 2026-09-15): the
+ * feature components (Settings sections, ContentPlan, …) call relative
+ * `/api/...` Next routes with PLAIN fetch. Inside the GHL iframe there is no
+ * Clerk session, so this wraps window.fetch once to attach the embed bearer
+ * to same-origin API calls — with one transparent re-handshake on a 401
+ * (the token lives 15 minutes). Requests that already carry an
+ * Authorization header (Clerk-minted) are left untouched.
+ */
+let bridgeInstalled = false
+export function installEmbedFetchBridge(): void {
+  if (bridgeInstalled || typeof window === 'undefined') return
+  bridgeInstalled = true
+  const original = window.fetch.bind(window)
+  window.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url
+    const isApiCall = url.startsWith('/api/') || url.startsWith(`${window.location.origin}/api/`)
+    if (!isApiCall) return original(input, init)
+    const existing = new Headers(init?.headers ?? (input instanceof Request ? input.headers : undefined))
+    if (existing.has('authorization')) return original(input, init)
+
+    const call = (token: string) => {
+      const headers = new Headers(init?.headers ?? (input instanceof Request ? input.headers : undefined))
+      headers.set('Authorization', `Bearer emb_${token}`)
+      return original(input, { ...init, headers })
+    }
+    if (!session) await establishEmbedSession()
+    let res = await call(session!.token)
+    if (res.status === 401) {
+      await establishEmbedSession()
+      res = await call(session!.token)
+    }
+    return res
+  }
+}

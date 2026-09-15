@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
+import { resolveClerkId } from '@/lib/requestAuth'
 import { prisma, ACCOUNT_SEAT_LIMIT } from '@omniply/shared'
 import { getOrCreateUser } from '@/lib/user'
 
 // GET /api/account — team overview (owner + roster, no invitations)
 export async function GET() {
-  const { userId: clerkId } = await auth()
+  const clerkId = await resolveClerkId()
   if (!clerkId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const me = await getOrCreateUser(clerkId)
@@ -36,7 +36,7 @@ export async function GET() {
 
 // PATCH /api/account — update account name
 export async function PATCH(request: NextRequest) {
-  const { userId: clerkId } = await auth()
+  const clerkId = await resolveClerkId()
   if (!clerkId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const me = await getOrCreateUser(clerkId)

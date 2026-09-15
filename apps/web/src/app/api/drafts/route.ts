@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
-import { auth, clerkClient } from '@clerk/nextjs/server'
+import { resolveClerkId } from '@/lib/requestAuth'
+import { clerkClient } from '@clerk/nextjs/server'
 import { prisma } from '@omniply/shared'
 
 // Helper function to get or create user
@@ -39,7 +40,7 @@ async function getOrCreateUser(clerkId: string) {
 // GET /api/drafts - Get all drafts for the authenticated user
 export async function GET() {
   try {
-    const authResult = await auth()
+    const authResult = { userId: await resolveClerkId() }
     const userId = authResult.userId
 
     if (!userId) {
@@ -105,7 +106,7 @@ export async function GET() {
 // POST /api/drafts - Create a new draft
 export async function POST(request: Request) {
   try {
-    const authResult = await auth()
+    const authResult = { userId: await resolveClerkId() }
     const userId = authResult.userId
 
     if (!userId) {

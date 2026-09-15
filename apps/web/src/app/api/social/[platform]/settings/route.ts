@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
+import { resolveClerkId } from '@/lib/requestAuth'
 import { getSocialConnection } from '@omniply/shared'
 
 type RouteContext = {
@@ -15,7 +15,7 @@ export async function PATCH(
 ) {
   let platform: string | undefined
   try {
-    const authResult = await auth()
+    const authResult = { userId: await resolveClerkId() }
     const clerkId = authResult.userId
 
     if (!clerkId) {

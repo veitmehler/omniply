@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { auth } from '@clerk/nextjs/server'
+import { resolveClerkId } from '@/lib/requestAuth'
 import { prisma } from '@omniply/shared'
 import { Prisma } from '@prisma/client'
 import { getTwitterAnalytics } from '@omniply/shared'
@@ -14,7 +14,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const authResult = await auth()
+    const authResult = { userId: await resolveClerkId() }
     const userId = authResult.userId
 
     if (!userId) {
