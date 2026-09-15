@@ -125,6 +125,16 @@ const withClerk = clerkMiddleware(async (auth, request) => {
 export default function middleware(request: Parameters<typeof withClerk>[0], event: Parameters<typeof withClerk>[1]) {
   const host = request.headers.get('host') ?? ''
   if (MARKETING_HOSTS.has(host)) return marketingResponse(request)
+  // Embed-bearer API calls (GHL client shell): Clerk's middleware chokes on
+  // the non-Clerk JWT in the Authorization header (MIDDLEWARE_INVOCATION_
+  // FAILED) — and has nothing to add: these requests authenticate in the
+  // route handlers via resolveClerkId(). Skip Clerk entirely.
+  if (
+    request.nextUrl.pathname.startsWith('/api/') &&
+    (request.headers.get('authorization') ?? '').startsWith('Bearer emb_')
+  ) {
+    return NextResponse.next()
+  }
   return withClerk(request, event)
 }
 
