@@ -437,8 +437,12 @@ export async function commitWordpress(ctx: StepContext, answer: unknown): Promis
   } catch {
     return "Couldn't reach that site — is the URL right?"
   }
-  await prisma.wordPressConnection.create({
-    data: {
+  // Upsert on (userId, siteUrl): a strict create P2002s on any re-run —
+  // step retry, corrected credentials, or an onboarding reset that kept the
+  // connection (hit live on the 2026-09-15 fresh E2E run).
+  await prisma.wordPressConnection.upsert({
+    where: { userId_siteUrl: { userId: ctx.userId, siteUrl: base } },
+    create: {
       userId: ctx.userId,
       label: 'Main website',
       siteUrl: base,
@@ -446,6 +450,7 @@ export async function commitWordpress(ctx: StepContext, answer: unknown): Promis
       appPassword: encrypt(appPassword),
       defaultStatus: 'draft',
     },
+    update: { username, appPassword: encrypt(appPassword) },
   })
   ctx.stepData.wordpressConnected = true
   return null
