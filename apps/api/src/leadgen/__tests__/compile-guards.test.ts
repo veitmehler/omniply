@@ -27,3 +27,19 @@ describe('leadgen rewrite guards', () => {
     expect(rewriteWithinGuards(original, 'Take a break every 1–2 hours on long drives so you stay comfortable.')).toBe(true)
   })
 })
+
+describe('list markers are structure, not facts (live E2E 2026-09-15)', () => {
+  it('added numbered-list markers do not fail the numeric guard', () => {
+    expect(numericTokensMatch('Move and wait. Then decide.', '1. Move.\n2. Wait.\n3. Decide.')).toBe(true)
+  })
+
+  it('real added numbers still fail', () => {
+    expect(numericTokensMatch('Move and wait.', '1. Move for 20 minutes.\n2. Wait.')).toBe(false)
+  })
+
+  it('a list-styled rewrite of a factless passage passes full guards', () => {
+    const original = 'Most back pain improves with movement and time. This guide helps you tell the difference.'
+    const rewritten = "Here's the thing:\n1. Most back pain improves with movement and time.\n2. This guide helps you tell the difference."
+    expect(rewriteWithinGuards(original, rewritten)).toBe(true)
+  })
+})

@@ -277,7 +277,11 @@ function applyBrandTokens(html: string, t: BrandTokens): string {
 
 /** Numeric tokens (claims, dosages, stats) must survive a rewrite verbatim. */
 export function numericTokensMatch(a: string, b: string): boolean {
-  const nums = (s: string) => (s.match(/\d+(?:[.,]\d+)?%?/g) ?? []).sort()
+  // List markers ("1. ", "2) ") are STRUCTURE, not facts — writing styles
+  // that favor numbered lists (the live E2E's voice did) otherwise fail this
+  // guard on nearly every slot and silently de-voice whole documents.
+  const stripListMarkers = (s: string) => s.replace(/^\s*\d+[.)]\s+/gm, '')
+  const nums = (s: string) => (stripListMarkers(s).match(/\d+(?:[.,]\d+)?%?/g) ?? []).sort()
   return JSON.stringify(nums(a)) === JSON.stringify(nums(b))
 }
 
@@ -313,6 +317,7 @@ async function rewriteSlot(
 - Keep the length within ±20% of the original.
 - Keep any HTML tags exactly where they are.
 - No em-dashes.
+- Never introduce numbers or statistics that are not in the original passage; prefer flowing prose over converting sentences into numbered lists.
 VOICE: ${writingStyle.slice(0, 1500)}${feedbackNote ? `\nCLIENT FEEDBACK on the previous version (honor it within the rules above): ${feedbackNote}` : ''}
 
 PASSAGE:
