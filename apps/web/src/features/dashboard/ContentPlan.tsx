@@ -513,8 +513,19 @@ export function ContentPlan() {
         </div>
       )}
 
-      {openIndex != null && readyQueue[openIndex] && (
+      {openIndex != null && readyQueue[openIndex] && readyQueue[openIndex].kind === 'article' && (
         <ReviewApproveModal item={readyQueue[openIndex]} hasNext={openIndex < readyQueue.length - 1} onClose={() => setOpenIndex(null)} onApproved={onApproved} />
+      )}
+
+      {/* Newsletters open the FULL review experience (edit sections, toggles,
+          video controls, approve) — the generic scroll-gate modal hid all of
+          it (run-5 report: "it's not showing up"). */}
+      {openIndex != null && readyQueue[openIndex] && readyQueue[openIndex].kind === 'newsletter' && (
+        <NewsletterReviewModal
+          newsletterId={readyQueue[openIndex].id}
+          title={readyQueue[openIndex].title}
+          onClose={() => { setOpenIndex(null); void load() }}
+        />
       )}
 
       {editTopic && (
