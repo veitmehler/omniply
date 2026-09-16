@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Loader2, ArrowLeft, Plus, Trash2, Sparkles, ImageIcon, RefreshCw } from 'lucide-react'
 
 interface Offer {
@@ -32,6 +32,10 @@ export function OffersView({ embedMode = false }: { embedMode?: boolean } = {}) 
   const [offers, setOffers] = useState<Offer[]>([])
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState<Partial<Offer> | null>(null)
+  // Bumped each time an editor session opens — the form renders below the
+  // whole list, so without a scroll the click looks like it did nothing.
+  const [editSession, setEditSession] = useState(0)
+  const editorRef = useRef<HTMLDivElement | null>(null)
   const [seasonal, setSeasonal] = useState(false)
   const [busy, setBusy] = useState(false)
   const [brief, setBrief] = useState('')
@@ -60,7 +64,12 @@ export function OffersView({ embedMode = false }: { embedMode?: boolean } = {}) 
       setEditing(blank())
       setSeasonal(false)
     }
+    setEditSession((n) => n + 1)
   }
+
+  useEffect(() => {
+    if (editSession > 0) editorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [editSession])
 
   async function save() {
     if (!editing) return
@@ -231,7 +240,7 @@ export function OffersView({ embedMode = false }: { embedMode?: boolean } = {}) 
 
       {/* Editor */}
       {editing && (
-        <div className="mt-6 rounded-xl border border-border bg-card p-4">
+        <div ref={editorRef} className="mt-6 scroll-mt-16 rounded-xl border border-border bg-card p-4">
           <h3 className="mb-3 text-sm font-semibold">{editing.id ? 'Edit offer' : 'New offer'}</h3>
 
           {/* AI draft */}
