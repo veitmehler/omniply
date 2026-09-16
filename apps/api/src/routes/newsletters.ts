@@ -64,6 +64,7 @@ const TEMPLATE_FIELDS = [
   'nlHeaderLogoLayout',
   'nlLogoUrl',
   'nlHeaderLogoVariant',
+  'nlLogoColorUrl',
   'nlFooterLogoVariant',
   'nlFooterDisclaimer',
 ] as const
@@ -510,7 +511,7 @@ export async function newsletterRoutes(app: FastifyInstance) {
       const t = (request.body?.template ?? {}) as Record<string, unknown>
       const renderBrand: RenderBrand = { ...toRenderBrand(brand) }
       const OVERLAYABLE: (keyof RenderBrand)[] = [
-        'nlLogoUrl', 'nlHeaderLogoVariant', 'nlFooterLogoVariant', 'nlFooterLogoWidth',
+        'nlLogoUrl', 'nlLogoColorUrl', 'nlHeaderLogoVariant', 'nlFooterLogoVariant', 'nlFooterLogoWidth',
         'nlFooterDisclaimer', 'nlLogoWidth', 'nlHeaderBgColor', 'nlFooterBgColor',
         'nlSectionColor1', 'nlSectionColor2', 'nlSectionColor3', 'nlSectionColor4',
         'nlFontFamily', 'nlFontColor', 'nlHeadingFontWeight', 'nlBodyFontWeight',
@@ -537,12 +538,12 @@ export async function newsletterRoutes(app: FastifyInstance) {
     if (!sourceUrl) return reply.status(400).send({ error: 'No source logo uploaded yet' })
 
     try {
-      const { lightUrl, darkUrl } = await processLogo(userId, sourceUrl)
+      const { lightUrl, darkUrl, colorUrl, colorLuminance } = await processLogo(userId, sourceUrl)
       await prisma.brandSettings.update({
         where: { userId: await canonicalAccountUserId(userId) },
-        data: { nlLogoLightUrl: lightUrl, nlLogoDarkUrl: darkUrl },
+        data: { nlLogoLightUrl: lightUrl, nlLogoDarkUrl: darkUrl, nlLogoColorUrl: colorUrl, nlLogoColorLuminance: colorLuminance },
       })
-      return reply.send({ lightUrl, darkUrl })
+      return reply.send({ lightUrl, darkUrl, colorUrl })
     } catch (err) {
       logger.error({ userId, err }, '[newsletters] logo processing failed')
       return reply.status(500).send({ error: 'Logo processing failed' })

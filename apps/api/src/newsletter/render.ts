@@ -68,7 +68,9 @@ export interface RenderBrand {
   // Auto-generated light/dark logo variants + per-placement assignment
   nlLogoLightUrl?: string | null
   nlLogoDarkUrl?: string | null
-  nlHeaderLogoVariant?: string | null // 'auto' | 'light' | 'dark'
+  nlLogoColorUrl?: string | null
+  nlLogoColorLuminance?: number | null
+  nlHeaderLogoVariant?: string | null // 'auto' | 'light' | 'dark' | 'original'
   nlHeaderTextColor?: string | null // header band text (org name); default white
   nlHeaderLogoLayout?: string | null // 'replace' (default) | 'beside' | 'above'
   nlFooterLogoVariant?: string | null
@@ -166,8 +168,30 @@ function wantLight(variant: string | null | undefined, bg: string): boolean {
 function pickLogo(brand: RenderBrand, variant: string | null | undefined, bg: string): string | null {
   const light = brand.nlLogoLightUrl?.trim() || null
   const dark = brand.nlLogoDarkUrl?.trim() || null
+  const color = brand.nlLogoColorUrl?.trim() || null
   const legacy = brand.nlLogoUrl?.trim() || brand.organizationLogoUrl?.trim() || null
+  // Explicit client choice: the real logo.
+  if ((variant === 'original' || variant === 'color') && color) return color
+  // Auto: prefer the real logo when it reads against the band (>= 2.5 lum contrast).
+  if ((!variant || variant === 'auto') && color && typeof brand.nlLogoColorLuminance === 'number') {
+    const bgLum = hexLum(bg)
+    const [hi, lo] =
+      brand.nlLogoColorLuminance >= bgLum ? [brand.nlLogoColorLuminance, bgLum] : [bgLum, brand.nlLogoColorLuminance]
+    if ((hi + 0.05) / (lo + 0.05) >= 2.5) return color
+  }
   return wantLight(variant, bg) ? light ?? dark ?? legacy : dark ?? light ?? legacy
+}
+
+/** WCAG relative luminance of a hex color (module stays import-free). */
+function hexLum(hex: string): number {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim())
+  if (!m) return 0.5
+  const n = parseInt(m[1], 16)
+  const ch = (c: number) => {
+    const v = c / 255
+    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)
+  }
+  return 0.2126 * ch((n >> 16) & 255) + 0.7152 * ch((n >> 8) & 255) + 0.0722 * ch(n & 255)
 }
 
 /** WCAG contrast (module stays import-free — mirrors onboarding/palette-compose). */

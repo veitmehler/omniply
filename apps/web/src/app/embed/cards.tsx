@@ -550,7 +550,7 @@ export function TemplateCard({
   card: {
     palette?: Palette
     logoUrl?: string | null
-    logoVariants?: { lightUrl?: string; darkUrl?: string }
+    logoVariants?: { lightUrl?: string; darkUrl?: string; colorUrl?: string; colorLuminance?: number }
     logoLayout?: 'replace' | 'beside' | 'above'
     fontFamily?: string | null
     organizationName?: string
@@ -559,12 +559,30 @@ export function TemplateCard({
   onSubmit: (answer: Record<string, unknown>) => void
 }) {
   const [palette, setPalette] = useState<Palette>(card.palette ?? {})
-  const [logoVariant, setLogoVariant] = useState<'light' | 'dark'>('light')
-  const [logoLayout, setLogoLayout] = useState<'replace' | 'beside' | 'above'>(card.logoLayout ?? 'replace')
   const variants = card.logoVariants ?? {}
-  const hasBothVariants = Boolean(variants.lightUrl && variants.darkUrl)
+  // Contrast of a variant against a band (luminance ratio; ~1 = invisible).
+  const variantContrast = (variant: 'color' | 'light' | 'dark', bgHex: string): number => {
+    const bg = /^#[0-9a-fA-F]{6}$/.test(bgHex) ? bgHex : '#0b2545'
+    const bgLum = luminance255(bg) / 255
+    const vLum = variant === 'light' ? 1 : variant === 'dark' ? 0.02 : (variants.colorLuminance ?? 0.5)
+    const [hi, lo] = vLum >= bgLum ? [vLum, bgLum] : [bgLum, vLum]
+    return (hi + 0.05) / (lo + 0.05)
+  }
+  const [logoVariant, setLogoVariant] = useState<'color' | 'light' | 'dark'>(() => {
+    // The REAL logo by default — unless it can't be seen on this header.
+    const header = (card.palette?.headerBackground as string) ?? '#0b2545'
+    if (variants.colorUrl && variantContrast('color', header) >= 2.5) return 'color'
+    if (variants.lightUrl && variantContrast('light', header) >= variantContrast('dark', header)) return 'light'
+    return variants.darkUrl ? 'dark' : variants.colorUrl ? 'color' : 'light'
+  })
+  const [logoLayout, setLogoLayout] = useState<'replace' | 'beside' | 'above'>(card.logoLayout ?? 'replace')
+  const hasVariantChoice = [variants.colorUrl, variants.lightUrl, variants.darkUrl].filter(Boolean).length >= 2
+  const headerBgNow = (palette.headerBackground as string) ?? '#0b2545'
+  const selectedLowContrast = variantContrast(logoVariant, headerBgNow) < 1.8
   const activeLogo =
-    (logoVariant === 'dark' ? variants.darkUrl : variants.lightUrl) ?? card.logoUrl ?? null
+    (logoVariant === 'dark' ? variants.darkUrl : logoVariant === 'light' ? variants.lightUrl : variants.colorUrl) ??
+    card.logoUrl ??
+    null
   const html = useMemo(
     () => previewHtml(card.organizationName ?? 'Your Practice', activeLogo, palette, logoLayout, card.fontFamily),
     [card.organizationName, activeLogo, palette, logoLayout, card.fontFamily],
@@ -577,28 +595,39 @@ export function TemplateCard({
         className="h-96 w-full rounded-lg border border-border bg-white"
         sandbox=""
       />
-      {hasBothVariants && (
-        <div className="flex items-center gap-2">
+      {hasVariantChoice && (
+        <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs text-muted-foreground">Logo on header:</span>
-          {(['light', 'dark'] as const).map((v) => (
+          {(
+            [
+              { v: 'color' as const, url: variants.colorUrl, label: 'Original', title: 'Your logo, real colors', bg: headerBgNow },
+              { v: 'light' as const, url: variants.lightUrl, label: 'Light', title: 'White silhouette (for dark headers)', bg: headerBgNow },
+              { v: 'dark' as const, url: variants.darkUrl, label: 'Dark', title: 'Dark silhouette (for light headers)', bg: '#ffffff' },
+            ].filter((o) => o.url)
+          ).map((o) => (
             <button
-              key={v}
+              key={o.v}
               type="button"
               disabled={disabled}
-              onClick={() => setLogoVariant(v)}
-              className={`rounded-lg border px-2 py-1.5 ${
-                logoVariant === v ? 'border-primary ring-2 ring-primary/40' : 'border-border'
+              onClick={() => setLogoVariant(o.v)}
+              className={`flex items-center gap-1.5 rounded-lg border px-2 py-1.5 ${
+                logoVariant === o.v ? 'border-primary ring-2 ring-primary/40' : 'border-border'
               }`}
-              // Each variant on the ground it's made for — a dark logo on the
-              // dark header swatch would be invisible.
-              style={{ background: v === 'light' ? ((palette.headerBackground as string) ?? '#0b2545') : '#ffffff' }}
-              aria-pressed={logoVariant === v}
-              title={v === 'light' ? 'Light logo (for dark headers)' : 'Dark logo (for light headers)'}
+              // Each variant previews on the ground it would actually sit on.
+              style={{ background: o.bg }}
+              aria-pressed={logoVariant === o.v}
+              title={o.title}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={v === 'light' ? variants.lightUrl : variants.darkUrl} alt={`${v} logo`} className="h-6" />
+              <img src={o.url} alt={`${o.label} logo`} className="h-6" />
+              <span className="text-[11px]" style={{ color: luminance255(o.bg) > 140 ? '#333333' : '#ffffff' }}>{o.label}</span>
             </button>
           ))}
+          {selectedLowContrast && (
+            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] text-amber-800">
+              Hard to see on this header color — try another version
+            </span>
+          )}
         </div>
       )}
       {activeLogo && (

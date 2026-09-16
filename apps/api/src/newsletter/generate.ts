@@ -487,6 +487,8 @@ export function toRenderBrand(
     nlLogoUrl: b.nlLogoUrl,
     nlLogoLightUrl: b.nlLogoLightUrl,
     nlLogoDarkUrl: b.nlLogoDarkUrl,
+    nlLogoColorUrl: b.nlLogoColorUrl,
+    nlLogoColorLuminance: b.nlLogoColorLuminance,
     nlHeaderLogoVariant: b.nlHeaderLogoVariant,
     nlHeaderTextColor: b.nlHeaderTextColor,
     nlHeaderLogoLayout: b.nlHeaderLogoLayout,

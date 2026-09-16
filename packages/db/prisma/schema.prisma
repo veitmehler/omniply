@@ -1321,7 +1321,11 @@ model BrandSettings {
   // Auto-generated light/dark logo variants (one upload → white + navy transparent)
   nlLogoSourceUrl     String? // original upload, kept so re-processing needs no re-upload
   nlLogoLightUrl      String? // white-on-transparent (for dark backgrounds)
-  nlLogoDarkUrl       String? // navy-on-transparent (for light backgrounds)
+  nlLogoDarkUrl       String?
+  // True-color cutout (mask applied, colors preserved) + its avg opaque-pixel
+  // WCAG luminance — the contrast input for auto logo-variant selection.
+  nlLogoColorUrl           String?
+  nlLogoColorLuminance     Float? // navy-on-transparent (for light backgrounds)
   nlHeaderLogoVariant String? // 'auto' | 'light' | 'dark' (default auto)
   nlHeaderTextColor   String? // header band text (org-name fallback + beside/above layouts); default white
   nlHeaderLogoLayout  String? // 'replace' (default) | 'beside' | 'above' — logo vs org name in the header band

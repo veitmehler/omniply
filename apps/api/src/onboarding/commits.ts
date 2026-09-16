@@ -3,6 +3,7 @@
  * Kept out of flow.ts so the step machine stays readable.
  */
 import { relativeLuminance, darkenHex } from '../article-pipeline/enrichment/diagram-theme'
+import { pickBrandLogoForBackground } from '../newsletter/logo-process'
 import { prisma, encrypt, ghlSettingsForUser, brandSettingsForUser } from '@omniply/shared'
 import { logger } from '../lib/logger'
 import { getBoss, QUEUES } from '../queues/index'
@@ -134,14 +135,19 @@ export async function commitLogoConfirm(ctx: StepContext, answer: unknown): Prom
     ctx.stepData.logoVariants = processed as unknown as Record<string, unknown>
     const light = (processed as { lightUrl?: string }).lightUrl
     const dark = (processed as { darkUrl?: string }).darkUrl
+    const color = (processed as { colorUrl?: string }).colorUrl
+    const colorLum = (processed as { colorLuminance?: number }).colorLuminance
     await brandUpsert(ctx.userId, {
-      nlLogoUrl: light ?? source,
+      // The client's REAL logo is the default; the reveal step's explicit
+      // variant choice can still swap to a silhouette.
+      nlLogoUrl: color ?? light ?? source,
       nlLogoLightUrl: light ?? null,
       nlLogoDarkUrl: dark ?? null,
+      nlLogoColorUrl: color ?? null,
+      nlLogoColorLuminance: typeof colorLum === 'number' ? colorLum : null,
       nlLogoWidth: 180,
-      // Schema publisher.logo (renders on white → dark variant first) — was
-      // never set, leaving Settings' "Organization logo" empty.
-      organizationLogoUrl: dark ?? light ?? source,
+      // Schema publisher.logo: the real logo, not a silhouette.
+      organizationLogoUrl: color ?? dark ?? light ?? source,
     })
   } catch (err) {
     logger.warn({ err }, '[onboarding] logo processing failed — using source as-is')
@@ -225,8 +231,17 @@ export async function commitBrandProfile(ctx: StepContext, answer: unknown): Pro
   ;(palette as { headerText?: string }).headerText = nlLabelColorFor(palette.headerBackground ?? '#0b2545')
   ;(palette as { buttonText?: string }).buttonText = nlLabelColorFor(palette.button ?? palette.accent ?? '#2a6f97')
   const prefill = (ctx.stepData.ghlPrefill as Record<string, string>) ?? {}
-  const variants = (ctx.stepData.logoVariants as { lightUrl?: string; darkUrl?: string } | undefined) ?? {}
-  const logo = variants.lightUrl ?? (ctx.stepData.logoChosen as string | null)
+  const variants = (ctx.stepData.logoVariants as { lightUrl?: string; darkUrl?: string; colorUrl?: string; colorLuminance?: number } | undefined) ?? {}
+  const logo =
+    pickBrandLogoForBackground(
+      {
+        nlLogoColorUrl: variants.colorUrl,
+        nlLogoColorLuminance: variants.colorLuminance,
+        nlLogoLightUrl: variants.lightUrl,
+        nlLogoDarkUrl: variants.darkUrl,
+      },
+      palette.headerBackground ?? '#0b2545',
+    ) ?? (ctx.stepData.logoChosen as string | null)
   const detectedFont = ((ctx.stepData.crawl as { fontHints?: string[] })?.fontHints ?? [])[0] ?? null
   ctx.stepData.templateDraft = {
     palette,
@@ -251,17 +266,26 @@ export async function commitBrandProfile(ctx: StepContext, answer: unknown): Pro
 export async function commitTemplateReveal(ctx: StepContext, answer: unknown): Promise<string | null> {
   const a = (answer ?? {}) as {
     palette?: SemanticPalette
-    logoVariant?: 'light' | 'dark'
+    logoVariant?: 'light' | 'dark' | 'color'
     logoLayout?: 'replace' | 'beside' | 'above'
     confirmed?: boolean
   }
   const draft = (ctx.stepData.templateDraft as { palette?: SemanticPalette }) ?? {}
   const palette: SemanticPalette = { ...(draft.palette ?? {}), ...(a.palette ?? {}) }
 
-  // Honor the light/dark logo choice against the (possibly recolored) header.
-  const variants = (ctx.stepData.logoVariants as { lightUrl?: string; darkUrl?: string } | undefined) ?? {}
-  const pickedLogo = a.logoVariant === 'dark' ? variants.darkUrl : a.logoVariant === 'light' ? variants.lightUrl : null
-  if (pickedLogo) await brandUpsert(ctx.userId, { nlLogoUrl: pickedLogo })
+  // Honor the original/light/dark logo choice against the (possibly recolored)
+  // header — and persist it so the newsletter render keeps making it.
+  const variants = (ctx.stepData.logoVariants as { lightUrl?: string; darkUrl?: string; colorUrl?: string } | undefined) ?? {}
+  const pickedLogo =
+    a.logoVariant === 'dark' ? variants.darkUrl
+    : a.logoVariant === 'light' ? variants.lightUrl
+    : a.logoVariant === 'color' ? variants.colorUrl
+    : null
+  if (pickedLogo)
+    await brandUpsert(ctx.userId, {
+      nlLogoUrl: pickedLogo,
+      nlHeaderLogoVariant: a.logoVariant === 'color' ? 'original' : a.logoVariant,
+    })
   const tints = palette.sectionTints?.length ? palette.sectionTints : ['#f2f6fa', '#fdf6ee']
   const fonts = ((ctx.stepData.crawl as { fontHints?: string[] })?.fontHints ?? [])[0]
 

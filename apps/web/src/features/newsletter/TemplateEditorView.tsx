@@ -92,9 +92,10 @@ export function TemplateEditorView({ embedMode = false }: { embedMode?: boolean 
     source: 'nlLogoSourceUrl',
     light: 'nlLogoLightUrl',
     dark: 'nlLogoDarkUrl',
+    original: 'nlLogoColorUrl',
   }
 
-  async function uploadLogoSlot(file: File, slot: 'source' | 'light' | 'dark'): Promise<string | null> {
+  async function uploadLogoSlot(file: File, slot: 'source' | 'light' | 'dark' | 'original'): Promise<string | null> {
     setUploadingLogo(true)
     setError(null)
     try {
@@ -128,7 +129,7 @@ export function TemplateEditorView({ embedMode = false }: { embedMode?: boolean 
         setError(data.error ?? 'Logo processing failed')
         return
       }
-      setTemplate((prev) => ({ ...prev, nlLogoLightUrl: data.lightUrl, nlLogoDarkUrl: data.darkUrl }))
+      setTemplate((prev) => ({ ...prev, nlLogoLightUrl: data.lightUrl, nlLogoDarkUrl: data.darkUrl, ...(data.colorUrl ? { nlLogoColorUrl: data.colorUrl } : {}) }))
       setNotice('Logo processed into light + dark versions.')
     } catch (err) {
       setError((err as Error).message ?? 'Logo processing failed')
@@ -145,7 +146,7 @@ export function TemplateEditorView({ embedMode = false }: { embedMode?: boolean 
     if (url) await processSourceLogo()
   }
 
-  async function onOverrideUpload(e: React.ChangeEvent<HTMLInputElement>, slot: 'light' | 'dark') {
+  async function onOverrideUpload(e: React.ChangeEvent<HTMLInputElement>, slot: 'light' | 'dark' | 'original') {
     const file = e.target.files?.[0]
     if (!file) return
     e.target.value = ''
@@ -298,8 +299,8 @@ export function TemplateEditorView({ embedMode = false }: { embedMode?: boolean 
               <div className="border-t border-border pt-3">
                 <label className="mb-1 block text-xs font-medium text-foreground">Logo</label>
                 <p className="mb-2 text-xs text-muted-foreground">
-                  Upload your logo once — we generate a white (for dark backgrounds) and a dark (for light
-                  backgrounds) transparent version automatically. Replace either manually if needed.
+                  Upload your logo once — we keep a cleaned full-colour version and generate white (for dark
+                  backgrounds) and dark (for light backgrounds) silhouettes automatically. Replace any manually if needed.
                 </p>
                 <div className="mb-3 flex items-center gap-3">
                   <input
@@ -312,8 +313,26 @@ export function TemplateEditorView({ embedMode = false }: { embedMode?: boolean 
                   {processingLogo && <span className="text-xs text-muted-foreground">Generating variants…</span>}
                 </div>
 
-                {(template.nlLogoLightUrl || template.nlLogoDarkUrl) && (
-                  <div className="mb-3 grid grid-cols-2 gap-3">
+                {(template.nlLogoColorUrl || template.nlLogoLightUrl || template.nlLogoDarkUrl) && (
+                  <div className="mb-3 grid grid-cols-3 gap-3">
+                    {/* Original (full colour) on a neutral swatch */}
+                    <div className="rounded-lg border border-border p-2">
+                      <div className="mb-1 flex items-center justify-between">
+                        <span className="text-[11px] font-medium text-muted-foreground">Original (full colour)</span>
+                        <label className="cursor-pointer text-[11px] text-blue-600 hover:underline">
+                          Replace
+                          <input type="file" accept="image/png,image/svg+xml" onChange={(e) => onOverrideUpload(e, 'original')} className="hidden" />
+                        </label>
+                      </div>
+                      <div className="flex h-20 items-center justify-center rounded" style={{ backgroundColor: '#eef1f4' }}>
+                        {template.nlLogoColorUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={template.nlLogoColorUrl} alt="Original logo" className="max-h-16 max-w-[90%]" />
+                        ) : (
+                          <span className="text-[11px] text-black/40">—</span>
+                        )}
+                      </div>
+                    </div>
                     {/* Light variant on a dark swatch */}
                     <div className="rounded-lg border border-border p-2">
                       <div className="mb-1 flex items-center justify-between">
@@ -379,6 +398,7 @@ export function TemplateEditorView({ embedMode = false }: { embedMode?: boolean 
                       className="mb-2 w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm"
                     >
                       <option value="auto">Auto (by header colour)</option>
+                      <option value="original">Original (full colour)</option>
                       <option value="light">Light</option>
                       <option value="dark">Dark</option>
                     </select>
@@ -395,6 +415,7 @@ export function TemplateEditorView({ embedMode = false }: { embedMode?: boolean 
                       className="mb-2 w-full rounded-md border border-border bg-background px-2 py-1.5 text-sm"
                     >
                       <option value="auto">Auto (by footer colour)</option>
+                      <option value="original">Original (full colour)</option>
                       <option value="light">Light</option>
                       <option value="dark">Dark</option>
                     </select>

@@ -18,10 +18,14 @@ import { logger } from '../lib/logger'
 export interface ProcessedLogo {
   lightUrl: string
   darkUrl: string
+  /** Mask applied to the ORIGINAL pixels — the client's real logo colors. */
+  colorUrl: string
+  /** Avg WCAG luminance of the color cutout's opaque pixels (contrast input). */
+  colorLuminance: number
 }
 
-interface BBox { left: number; top: number; width: number; height: number }
-interface Mask { alpha: Buffer; width: number; height: number }
+export interface BBox { left: number; top: number; width: number; height: number }
+export interface Mask { alpha: Buffer; width: number; height: number }
 
 // Distance→alpha knee: < FLOOR transparent (the background), >= FULL fully opaque
 // (logo content), smooth toe between for clean anti-aliased edges.
@@ -131,8 +135,81 @@ async function recolor(mask: Mask, rgb: { r: number; g: number; b: number }, bbo
   return sharp(composed).extract(bbox).png().toBuffer()
 }
 
+/** Original-colour RGBA: the source pixels under the mask's alpha, cropped. */
+export async function colorCutout(srcBuf: Buffer, mask: Mask, bbox: BBox): Promise<Buffer> {
+  const rgb = await sharp(srcBuf)
+    .resize(mask.width, mask.height, { fit: 'fill' }) // no-op unless birefnet resized
+    .removeAlpha()
+    .raw()
+    .toBuffer()
+  const composed = await sharp(rgb, { raw: { width: mask.width, height: mask.height, channels: 3 } })
+    .joinChannel(mask.alpha, { raw: { width: mask.width, height: mask.height, channels: 1 } })
+    .png()
+    .toBuffer()
+  return sharp(composed).extract(bbox).png().toBuffer()
+}
+
+/** Avg WCAG relative luminance of a PNG's opaque (alpha>128) pixels. */
+export async function avgOpaqueLuminance(pngBuf: Buffer): Promise<number> {
+  const { data, info } = await sharp(pngBuf).ensureAlpha().raw().toBuffer({ resolveWithObject: true })
+  const lin = (c: number) => {
+    const v = c / 255
+    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)
+  }
+  let sum = 0
+  let count = 0
+  for (let p = 0; p < info.width * info.height; p++) {
+    const i = p * 4
+    if (data[i + 3] > 128) {
+      sum += 0.2126 * lin(data[i]) + 0.7152 * lin(data[i + 1]) + 0.0722 * lin(data[i + 2])
+      count++
+    }
+  }
+  return count ? sum / count : 0.5
+}
+
 /**
- * Generate + store light/dark transparent variants from a source logo URL.
+ * Pick the logo asset for an arbitrary background: the true-color logo when it
+ * reads against the band (contrast >= 2.5), else the silhouette the band's
+ * luminance calls for. Newsletter headers honor the client's explicit variant
+ * choice instead (render.ts pickLogo); this is for the automatic surfaces
+ * (quiz, linktree). Social slides + diagram watermarks stay silhouette-only by
+ * design (user decision 2026-09-16: branding, not color).
+ */
+export function pickBrandLogoForBackground(
+  b: {
+    nlLogoColorUrl?: string | null
+    nlLogoColorLuminance?: number | null
+    nlLogoLightUrl?: string | null
+    nlLogoDarkUrl?: string | null
+    nlLogoUrl?: string | null
+  },
+  bgHex: string,
+): string | null {
+  const hexLum = (hex: string): number => {
+    const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim())
+    if (!m) return 0.5
+    const n = parseInt(m[1], 16)
+    const lin = (c: number) => {
+      const v = c / 255
+      return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)
+    }
+    return 0.2126 * lin((n >> 16) & 255) + 0.7152 * lin((n >> 8) & 255) + 0.0722 * lin(n & 255)
+  }
+  const bgLum = hexLum(bgHex)
+  const color = b.nlLogoColorUrl?.trim() || null
+  const light = b.nlLogoLightUrl?.trim() || null
+  const dark = b.nlLogoDarkUrl?.trim() || null
+  const legacy = b.nlLogoUrl?.trim() || null
+  if (color && typeof b.nlLogoColorLuminance === 'number') {
+    const [hi, lo] = b.nlLogoColorLuminance >= bgLum ? [b.nlLogoColorLuminance, bgLum] : [bgLum, b.nlLogoColorLuminance]
+    if ((hi + 0.05) / (lo + 0.05) >= 2.5) return color
+  }
+  return bgLum < 0.5 ? light ?? dark ?? color ?? legacy : dark ?? light ?? color ?? legacy
+}
+
+/**
+ * Generate + store light/dark/colour transparent variants from a source logo URL.
  * `darkHex` is the colour of the dark variant (for light backgrounds).
  */
 export async function processLogo(
@@ -150,17 +227,22 @@ export async function processLogo(
 
   const lightBuf = await recolor(mask, { r: 255, g: 255, b: 255 }, bbox)
   const darkBuf = await recolor(mask, hexToRgb(darkHex), bbox)
+  const colorBuf = await colorCutout(srcBuf, mask, bbox)
+  const colorLuminance = await avgOpaqueLuminance(colorBuf)
 
   const base = keyBase
   const lightKey = `${base}-light-${vtoken()}.png`
   const darkKey = `${base}-dark-${vtoken()}.png`
-  const [{ url: lightUrl }, { url: darkUrl }] = await Promise.all([
+  const colorKey = `${base}-color-${vtoken()}.png`
+  const [{ url: lightUrl }, { url: darkUrl }, { url: colorUrl }] = await Promise.all([
     uploadBufferWithKey(lightKey, lightBuf, 'image/png'),
     uploadBufferWithKey(darkKey, darkBuf, 'image/png'),
+    uploadBufferWithKey(colorKey, colorBuf, 'image/png'),
   ])
   await deleteOldVersions(`${base}-light-`, lightKey)
   await deleteOldVersions(`${base}-dark-`, darkKey)
+  await deleteOldVersions(`${base}-color-`, colorKey)
 
-  logger.info({ userId }, '[newsletter/logo-process] generated light + dark variants')
-  return { lightUrl, darkUrl }
+  logger.info({ userId, colorLuminance }, '[newsletter/logo-process] generated light + dark + colour variants')
+  return { lightUrl, darkUrl, colorUrl, colorLuminance }
 }

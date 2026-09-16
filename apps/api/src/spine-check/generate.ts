@@ -7,6 +7,7 @@
  * route. Best-effort by design — onboarding's finale never breaks on this.
  */
 import { prisma, decrypt, brandSettingsForUser, accountMemberIdsForUser } from '@omniply/shared'
+import { pickBrandLogoForBackground } from '../newsletter/logo-process'
 import { logger } from '../lib/logger'
 import { assertSafeWpUrl } from '../lib/ssrf'
 import { withTimeout } from '../lib/net/with-timeout'
@@ -55,7 +56,7 @@ export async function spineCheckClinicForUser(userId: string): Promise<SpineChec
   return {
     accountId: user.accountId,
     practiceName: brand.organizationName ?? 'Our Practice',
-    logoUrl: brand.nlLogoLightUrl ?? brand.nlLogoUrl ?? null,
+    logoUrl: pickBrandLogoForBackground(brand, brand.nlHeaderBgColor ?? '#0b2545'),
     headerBg: brand.nlHeaderBgColor ?? '#0b2545',
     buttonColor: brand.nlButtonColor ?? brand.nlLinkColor ?? '#2a6f97',
     buttonTextColor: brand.nlButtonTextColor ?? '#ffffff',

@@ -9,6 +9,7 @@
  * Non-WordPress clinics keep the bookingUrl fallback (hosted version = later).
  */
 import { prisma, decrypt, brandSettingsForUser, accountMemberIdsForUser } from '@omniply/shared'
+import { pickBrandLogoForBackground } from '../newsletter/logo-process'
 import { logger } from './logger'
 import { assertSafeWpUrl } from './ssrf'
 import { withTimeout } from './net/with-timeout'
@@ -106,7 +107,7 @@ export async function buildStandaloneLinktreeHtml(userId: string): Promise<strin
   if (!data || data.links.length === 0) return null
   const { brand, links, socials } = data
 
-  let logoUrl = brand.nlLogoLightUrl ?? brand.nlLogoUrl ?? null
+  let logoUrl = pickBrandLogoForBackground(brand, brand.nlHeaderBgColor ?? '#0b2545')
   if (logoUrl) {
     try {
       const res = await withTimeout((signal) => fetch(logoUrl!, { signal }), 15_000, 'linktree logo inline')
