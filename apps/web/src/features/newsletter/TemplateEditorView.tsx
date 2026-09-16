@@ -29,6 +29,7 @@ const FONT_OPTIONS = [
 
 export function TemplateEditorView({ embedMode = false }: { embedMode?: boolean } = {}) {
   const [template, setTemplate] = useState<Template>({})
+  const [sectionsDisabled, setSectionsDisabled] = useState<string[]>([])
   const [delivery, setDelivery] = useState<Delivery>({})
   const [ghlConnected, setGhlConnected] = useState(false)
   const [previewHtml, setPreviewHtml] = useState('')
@@ -68,7 +69,11 @@ export function TemplateEditorView({ embedMode = false }: { embedMode?: boolean 
         }
         const data = await res.json()
         const t: Template = {}
-        for (const [k, v] of Object.entries(data.template ?? {})) t[k] = (v as string) ?? ''
+        for (const [k, v] of Object.entries(data.template ?? {})) {
+          if (k === 'nlSectionsDisabled') continue // Json array — own state below
+          t[k] = (v as string) ?? ''
+        }
+        setSectionsDisabled(Array.isArray(data.template?.nlSectionsDisabled) ? data.template.nlSectionsDisabled : [])
         const d: Delivery = {}
         for (const [k, v] of Object.entries(data.delivery ?? {})) d[k] = (v as string) ?? ''
         setTemplate(t)
@@ -178,7 +183,7 @@ export function TemplateEditorView({ embedMode = false }: { embedMode?: boolean 
       const res = await fetch('/api/newsletters/settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ template, delivery }),
+        body: JSON.stringify({ template: { ...template, nlSectionsDisabled: sectionsDisabled }, delivery }),
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
@@ -391,6 +396,33 @@ export function TemplateEditorView({ embedMode = false }: { embedMode?: boolean 
                     </button>
                   </div>
                 )}
+
+                {/* Default sections (template-level; per-edition overrides live
+                    on each edition's review page) */}
+                <div className="border-t border-border pt-3">
+                  <label className="mb-1 block text-xs font-medium text-muted-foreground">Sections included by default</label>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {([
+                      ['video', 'Video'], ['teaser1', 'Teaser 1'], ['teaser2', 'Teaser 2'], ['teaser3', 'Teaser 3'],
+                      ['tips', 'Tips of the day'], ['didYouKnow', 'Did you know'], ['joke', 'Joke'], ['trivia', 'Trivia'],
+                      ['recipe', 'Recipe 1'], ['recipe2', 'Recipe 2'], ['secondaryArticle', 'Secondary article'],
+                      ['seasonalOffer', 'Seasonal offer'], ['evergreenOffer', 'Evergreen offer'],
+                    ] as const).map(([key, label]) => (
+                      <label key={key} className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={!sectionsDisabled.includes(key)}
+                          onChange={() =>
+                            setSectionsDisabled((prev) =>
+                              prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key],
+                            )
+                          }
+                        />
+                        {label}
+                      </label>
+                    ))}
+                  </div>
+                </div>
 
                 {/* Header / footer placement: variant + size */}
                 <div className="grid grid-cols-2 gap-4">

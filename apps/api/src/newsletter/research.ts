@@ -207,6 +207,37 @@ export async function researchVideo(
   return { url: hit.url, title: (oe?.title ?? hit.title) ? decodeEntities(oe?.title ?? hit.title ?? '') : null, thumbnailUrl: thumb, s3Url, manual: false }
 }
 
+/** "Find another" (review UX): next search hit not in `excludeUrls`. */
+export async function findAlternateVideo(
+  topicId: string,
+  excludeUrls: string[],
+): Promise<VideoResearch | null> {
+  const topic = await prisma.newsletterTopic.findUnique({ where: { id: topicId }, include: { calendar: true } })
+  if (!topic) return null
+  const excludeIds = excludeUrls
+    .map((u) => /(?:v=|youtu\.be\/)([\w-]{11})/.exec(u)?.[1])
+    .filter((x): x is string => !!x)
+  const hit = await youtubeSearch(topic.topic, excludeIds)
+  if (!hit) return null
+  const oe = await fetchYouTubeOEmbed(hit.url)
+  const thumb = hit.thumbnailUrl ?? oe?.thumbnail_url ?? null
+  const s3Url = await thumbnailToS3(topic.id, thumb)
+  return { url: hit.url, title: oe?.title ? decodeEntities(oe.title) : null, thumbnailUrl: thumb, s3Url, manual: false }
+}
+
+/** "Use my link" (review UX): explicit URL → enriched VideoResearch. */
+export async function explicitVideo(topicId: string, url: string): Promise<VideoResearch> {
+  const oe = await fetchYouTubeOEmbed(url)
+  const s3Url = await thumbnailToS3(topicId, oe?.thumbnail_url ?? null)
+  return {
+    url,
+    title: oe?.title ? decodeEntities(oe.title) : null,
+    thumbnailUrl: oe?.thumbnail_url ?? null,
+    s3Url,
+    manual: false,
+  }
+}
+
 // ── Recipe ──────────────────────────────────────────────────────────────────
 
 function firstH2(html: string): string | null {

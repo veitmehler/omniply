@@ -217,25 +217,30 @@ export interface YoutubeHit {
  * id out of the embedded ytInitialData. Title/thumbnail are filled in by the
  * caller (deterministic ytimg thumbnail + oEmbed title).
  */
-export async function youtubeSearch(query: string): Promise<YoutubeHit | null> {
+export async function youtubeSearch(query: string, excludeIds: string[] = []): Promise<YoutubeHit | null> {
   const resp = await oxyQuery({ source: 'youtube_search', query })
   const content = resp.results?.[0]?.content
   if (typeof content !== 'string') {
     logger.warn({ query }, '[newsletter/oxylabs] youtube_search returned no HTML content')
     return null
   }
-  const m = content.match(/"videoId":"([\w-]{11})"/)
-  if (!m) {
-    logger.warn({ query }, '[newsletter/oxylabs] youtube_search HTML had no videoId')
-    return null
+  const seen = new Set<string>()
+  const skip = new Set(excludeIds)
+  for (const m of content.matchAll(/"videoId":"([\w-]{11})"/g)) {
+    const videoId = m[1]
+    if (seen.has(videoId) || skip.has(videoId)) {
+      seen.add(videoId)
+      continue
+    }
+    return {
+      videoId,
+      url: `https://www.youtube.com/watch?v=${videoId}`,
+      title: null,
+      thumbnailUrl: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
+    }
   }
-  const videoId = m[1]
-  return {
-    videoId,
-    url: `https://www.youtube.com/watch?v=${videoId}`,
-    title: null,
-    thumbnailUrl: `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`,
-  }
+  logger.warn({ query, excluded: excludeIds.length }, '[newsletter/oxylabs] youtube_search had no fresh videoId')
+  return null
 }
 
 // ── Universal scrape + URL validation ─────────────────────────────────────────

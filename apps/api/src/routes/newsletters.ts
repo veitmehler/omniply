@@ -11,6 +11,7 @@ import {
 } from '../newsletter/generate'
 import { getNewsletterEmailConfig, type NewsletterEmailConfig } from '../lib/ghl/settings'
 import { renderNewsletterHtml, type RenderBrand, type RenderInput } from '../newsletter/render'
+import { findAlternateVideo, explicitVideo } from '../newsletter/research'
 import { processLogo } from '../newsletter/logo-process'
 import { maybeEnqueueNewsletterSocialAutomation } from '../social/automation/enqueue'
 import { generateWithGeminiImage, uploadBufferWithKey, deleteOldVersions, deleteS3Keys } from '@omniply/shared'
@@ -45,6 +46,39 @@ const REGEN_SECTIONS: NewsletterSection[] = [
 // JSON section columns that inline edit (PATCH) may overwrite wholesale.
 const EDITABLE_JSON = ['featureArticle', 'secondaryArticle', 'teasers', 'quickHits', 'fun', 'modules'] as const
 
+/** Allowlist HTML sanitizer for client-edited section content (review UX).
+ *  The render normalizer restyles everything anyway — this only has to make
+ *  stored content safe: no scripts, no event handlers, no foreign tags. */
+export function sanitizeEditedHtml(html: string): string {
+  let out = html
+    .replace(/<(script|style|iframe|object|embed|form)[\s\S]*?<\/\1>/gi, '')
+    .replace(/<(script|style|iframe|object|embed|form)[^>]*\/?>(?:)/gi, '')
+  const ALLOWED = new Set(['p', 'h2', 'h3', 'ul', 'ol', 'li', 'strong', 'em', 'b', 'i', 'a', 'br', 'div', 'span', 'u'])
+  out = out.replace(/<\/?([a-z][a-z0-9]*)([^>]*)>/gi, (m, tag: string, attrs: string) => {
+    const t = tag.toLowerCase()
+    if (!ALLOWED.has(t)) return ''
+    if (m.startsWith('</')) return `</${t}>`
+    if (t === 'a') {
+      const href = /href="(https?:[^"]+)"/i.exec(attrs)?.[1]
+      return href ? `<a href="${href}" target="_blank">` : '<a>'
+    }
+    return `<${t}>`
+  })
+  return out
+}
+
+/** Deep-sanitize every string in a client-submitted section payload. */
+function sanitizeSectionPayload<T>(value: T): T {
+  if (typeof value === 'string') return (value.includes('<') ? sanitizeEditedHtml(value) : value) as T
+  if (Array.isArray(value)) return value.map((v) => sanitizeSectionPayload(v)) as T
+  if (value && typeof value === 'object') {
+    const out: Record<string, unknown> = {}
+    for (const [k, v] of Object.entries(value)) out[k] = sanitizeSectionPayload(v)
+    return out as T
+  }
+  return value
+}
+
 // BrandSettings.nl* string fields the template editor controls.
 const TEMPLATE_FIELDS = [
   'nlHeaderBgColor',
@@ -55,6 +89,7 @@ const TEMPLATE_FIELDS = [
   'nlSectionColor4',
   'nlBandTextColor',
   'nlFooterTextColor',
+  'nlSectionsDisabled',
   'nlFontFamily',
   'nlFontColor',
   'nlHeadingFontWeight',
@@ -270,6 +305,51 @@ export async function newsletterRoutes(app: FastifyInstance) {
     return reply.send({ newsletter: nl })
   })
 
+  // POST /newsletters/:id/video { url? } — review UX: "use my link" (url set)
+  // or "find another" (no url → next search hit excluding already-seen ones).
+  app.post<{ Params: { id: string }; Body: { url?: string } }>(
+    '/newsletters/:id/video',
+    async (request, reply) => {
+      const clerkId = await requireAuth(request, reply)
+      if (!clerkId) return
+      const userId = await resolveUserId(clerkId)
+      if (!userId) return reply.status(404).send({ error: 'User not found' })
+      const nl = await prisma.newsletter.findFirst({
+        where: { id: request.params.id, userId },
+        select: { id: true, status: true, topicId: true },
+      })
+      if (!nl) return reply.status(404).send({ error: 'Newsletter not found' })
+      if (nl.status !== 'ready_for_review') {
+        return reply.status(400).send({ error: `Cannot change the video in status "${nl.status}"` })
+      }
+      const topic = await prisma.newsletterTopic.findUnique({ where: { id: nl.topicId! } })
+      if (!topic) return reply.status(404).send({ error: 'Topic not found' })
+      const research = (topic.research as Record<string, unknown> | null) ?? {}
+      const current = (research.video ?? {}) as { url?: string | null; rejectedUrls?: string[] }
+
+      const url = request.body?.url?.trim()
+      let video
+      let rejected = current.rejectedUrls ?? []
+      if (url) {
+        if (!/^https:\/\/(www\.)?(youtube\.com\/watch\?|youtu\.be\/|vimeo\.com\/)/i.test(url)) {
+          return reply.status(400).send({ error: 'Paste a YouTube or Vimeo link (https://…)' })
+        }
+        video = await explicitVideo(topic.id, url)
+      } else {
+        rejected = [...rejected, ...(current.url ? [current.url] : [])]
+        video = await findAlternateVideo(topic.id, rejected)
+        if (!video) return reply.status(404).send({ error: 'No other video found — try pasting a link instead' })
+      }
+      await prisma.newsletterTopic.update({
+        where: { id: topic.id },
+        data: { research: J({ ...research, video: { ...video, rejectedUrls: rejected } }) },
+      })
+      await renderAndSave(nl.id)
+      const updated = await prisma.newsletter.findUnique({ where: { id: nl.id } })
+      return reply.send({ newsletter: updated })
+    },
+  )
+
   // POST /newsletters/:id/regenerate { section }
   app.post<{ Params: { id: string }; Body: { section?: string } }>(
     '/newsletters/:id/regenerate',
@@ -328,8 +408,13 @@ export async function newsletterRoutes(app: FastifyInstance) {
       if (typeof body.previewText === 'string') data.previewText = body.previewText
       for (const key of EDITABLE_JSON) {
         if (body[key] !== undefined) {
-          ;(data as Record<string, unknown>)[key] = J(body[key])
+          ;(data as Record<string, unknown>)[key] = J(sanitizeSectionPayload(body[key]))
         }
+      }
+      if (Array.isArray(body.sectionsDisabled)) {
+        ;(data as Record<string, unknown>).sectionsDisabled = J(
+          (body.sectionsDisabled as unknown[]).filter((k): k is string => typeof k === 'string').slice(0, 20),
+        )
       }
       if (Object.keys(data).length === 0) {
         return reply.status(400).send({ error: 'No editable fields provided' })
@@ -463,9 +548,15 @@ export async function newsletterRoutes(app: FastifyInstance) {
       const ownerUserId = await canonicalAccountUserId(userId)
 
       if (template) {
-        const data: Record<string, string | number | null> = {}
+        const data: Record<string, string | number | null | string[]> = {}
         for (const k of TEMPLATE_FIELDS) {
+          if (k === 'nlSectionsDisabled') continue // Json — handled below
           if (template[k] !== undefined) data[k] = (template[k] as string) || null
+        }
+        if (Array.isArray(template.nlSectionsDisabled)) {
+          data.nlSectionsDisabled = (template.nlSectionsDisabled as unknown[]).filter(
+            (k): k is string => typeof k === 'string',
+          )
         }
         for (const wk of ['nlLogoWidth', 'nlFooterLogoWidth'] as const) {
           if (template[wk] !== undefined) {

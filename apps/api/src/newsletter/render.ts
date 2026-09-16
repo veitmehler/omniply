@@ -75,6 +75,7 @@ export interface RenderBrand {
   nlHeaderLogoLayout?: string | null // 'replace' (default) | 'beside' | 'above'
   nlFooterLogoVariant?: string | null
   nlFooterTextColor?: string | null
+  nlSectionsDisabled?: unknown
   nlFooterLogoWidth?: number | null
   nlFooterDisclaimer?: string | null
   nlLogoWidth?: number | null
@@ -107,6 +108,7 @@ export interface RenderInput {
   secondaryArticle?: RenderArticle | null
   evergreenOffer?: RenderOffer | null // after the feature article
   seasonalOffer?: RenderOffer | null // after Tips Of The Day
+  disabledSections?: string[] | null
   teasers?: RenderTeaser[] | null
   quickHits?: { tips: string[]; facts: string[] } | null
   fun?: { triviaQuestion: string | null; triviaAnswer: string | null; joke: string | null } | null
@@ -523,6 +525,11 @@ export function buildRenderInput(
 export function renderNewsletterHtml(input: RenderInput, brand: RenderBrand): string {
   const theme = resolveTheme(brand)
   const rows: string[] = []
+  // Section toggles: template-level defaults (brand) ∪ per-edition overrides.
+  const off = new Set<string>([
+    ...((Array.isArray(brand.nlSectionsDisabled) ? brand.nlSectionsDisabled : []) as string[]),
+    ...(input.disabledSections ?? []),
+  ])
   // Semantic band colors (from the 4 brand section colors):
   //   pink = the rest · lightBlue = curated teasers · navy = articles + facts · green = recipes
   const [pink, lightBlue, navy, green] = theme.sections
@@ -540,7 +547,7 @@ export function renderNewsletterHtml(input: RenderInput, brand: RenderBrand): st
   const teasers = input.teasers ?? []
 
   // Trivia question — plain heading (no band)
-  if (fun?.triviaQuestion) {
+  if (fun?.triviaQuestion && !off.has('trivia')) {
     rows.push(plainHeading('Trivia Question', theme))
     rows.push(content(para(`<p style="margin:0;font-size:20px;">${esc(fun.triviaQuestion)}</p>`, theme, 'center')))
     rows.push(spacer())
@@ -571,52 +578,52 @@ export function renderNewsletterHtml(input: RenderInput, brand: RenderBrand): st
   }
 
   // Video (pink)
-  if (input.video?.url) section('Watch This', videoCard(input.video, theme), pink)
+  if (input.video?.url && !off.has('video')) section('Watch This', videoCard(input.video, theme), pink)
 
   // Facts (navy)
-  if (input.quickHits && input.quickHits.facts.length > 0) {
+  if (input.quickHits && input.quickHits.facts.length > 0 && !off.has('didYouKnow')) {
     section('Did You Know?', bulletList(input.quickHits.facts, theme), navy)
   }
 
   // Teaser 1 (curated → light blue)
-  if (teasers[0]) section(teaserHeading(teasers[0]), teaserBlock(teasers[0], theme), lightBlue)
+  if (teasers[0] && !off.has('teaser1')) section(teaserHeading(teasers[0]), teaserBlock(teasers[0], theme), lightBlue)
 
   // Tips (pink)
-  if (input.quickHits && input.quickHits.tips.length > 0) {
+  if (input.quickHits && input.quickHits.tips.length > 0 && !off.has('tips')) {
     section('Tips Of The Day', bulletList(input.quickHits.tips, theme), pink)
   }
 
   // Seasonal offer (after Tips) — green "Special Offer"
-  if (input.seasonalOffer) rows.push(offerCard(input.seasonalOffer, theme, green, 'Special Offer'))
+  if (input.seasonalOffer && !off.has('seasonalOffer')) rows.push(offerCard(input.seasonalOffer, theme, green, 'Special Offer'))
 
   // Teaser 2 (curated → light blue)
-  if (teasers[1]) section(teaserHeading(teasers[1]), teaserBlock(teasers[1], theme), lightBlue)
+  if (teasers[1] && !off.has('teaser2')) section(teaserHeading(teasers[1]), teaserBlock(teasers[1], theme), lightBlue)
 
   // Joke (pink)
-  if (fun?.joke) section('Joke Of The Day', para(fun.joke, theme, 'center'), pink)
+  if (fun?.joke && !off.has('joke')) section('Joke Of The Day', para(fun.joke, theme, 'center'), pink)
 
   // Recipe 1 — mid-edition (green), deliberately separated from Recipe 2 near the
   // end so the two green bands don't stack back-to-back.
-  if (input.modules?.recipe) section('Recipe Of The Day', recipeBlock(input.modules.recipe, theme), green)
+  if (input.modules?.recipe && !off.has('recipe')) section('Recipe Of The Day', recipeBlock(input.modules.recipe, theme), green)
 
   // Feature article (navy)
   if (input.featureArticle) section('Article Of The Day', articleBlock(input.featureArticle, theme), navy)
 
   // Evergreen offer (after the feature) — pink "Remember" call-to-action
-  if (input.evergreenOffer) rows.push(offerCard(input.evergreenOffer, theme, pink, 'Remember'))
+  if (input.evergreenOffer && !off.has('evergreenOffer')) rows.push(offerCard(input.evergreenOffer, theme, pink, 'Remember'))
 
   // Teaser 3 (curated → light blue)
-  if (teasers[2]) section(teaserHeading(teasers[2]), teaserBlock(teasers[2], theme), lightBlue)
+  if (teasers[2] && !off.has('teaser3')) section(teaserHeading(teasers[2]), teaserBlock(teasers[2], theme), lightBlue)
 
   // Secondary (specialization) article — band shows its own headline (navy)
-  if (input.secondaryArticle) section(input.secondaryArticle.title, articleBlock(input.secondaryArticle, theme, false), navy)
+  if (input.secondaryArticle && !off.has('secondaryArticle')) section(decodeEntities(input.secondaryArticle.title), articleBlock(input.secondaryArticle, theme, false), navy)
 
   // Recipe 2 — near the end (green); Recipe 1 renders mid-edition, before the feature.
-  if (input.modules?.recipe2) section('Another Recipe', recipeBlock(input.modules.recipe2, theme), green)
+  if (input.modules?.recipe2 && !off.has('recipe2')) section('Another Recipe', recipeBlock(input.modules.recipe2, theme), green)
 
   // Trivia answer (payoff, last — pink). Extra 60px bottom padding for whitespace
   // before the footer (no trailing spacer — the padding is the gap).
-  if (fun?.triviaQuestion && fun?.triviaAnswer) {
+  if (fun?.triviaQuestion && fun?.triviaAnswer && !off.has('trivia')) {
     rows.push(band('Trivia Answer', pink, theme))
     rows.push(
       `<tr><td style="background-color:#ffffff;padding:32px 28px 60px;">${para(`<p style="margin:0;">${esc(fun.triviaAnswer)}</p>`, theme, 'center')}</td></tr>`,

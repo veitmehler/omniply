@@ -504,6 +504,7 @@ export function toRenderBrand(
     nlSectionColor4: b.nlSectionColor4,
     nlBandTextColor: b.nlBandTextColor,
     nlFooterTextColor: b.nlFooterTextColor,
+    nlSectionsDisabled: b.nlSectionsDisabled,
     nlFontFamily: b.nlFontFamily,
     nlFontColor: b.nlFontColor,
     nlHeadingFontWeight: b.nlHeadingFontWeight,
@@ -580,6 +581,7 @@ export async function renderAndSave(newsletterId: string): Promise<string> {
 
   const offers = await selectOffers(nl.userId, nl.topic.date)
   const input = buildRenderInput(nl, video, nl.topic.date, offers)
+  input.disabledSections = Array.isArray(nl.sectionsDisabled) ? (nl.sectionsDisabled as string[]) : null
 
   // Recipes come from SHARED topic research rendered verbatim (no per-client LLM
   // call), so pre-sanitizer research can still carry em-dashes — clean them at
