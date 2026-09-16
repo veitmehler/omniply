@@ -31,6 +31,7 @@ import {
   scrapeUrl,
   urlStatus,
 } from './oxylabs'
+import { decodeEntities } from './render'
 import { overlayPlayButton, overlayTitleBanner, vtoken } from './image-overlay'
 import { specializationLabel } from './calendar-routing'
 
@@ -203,7 +204,7 @@ export async function researchVideo(
   const oe = await fetchYouTubeOEmbed(hit.url)
   const thumb = hit.thumbnailUrl ?? oe?.thumbnail_url ?? null
   const s3Url = await thumbnailToS3(topic.id, thumb)
-  return { url: hit.url, title: oe?.title ?? hit.title ?? null, thumbnailUrl: thumb, s3Url, manual: false }
+  return { url: hit.url, title: (oe?.title ?? hit.title) ? decodeEntities(oe?.title ?? hit.title ?? '') : null, thumbnailUrl: thumb, s3Url, manual: false }
 }
 
 // ── Recipe ──────────────────────────────────────────────────────────────────
@@ -392,7 +393,7 @@ async function researchOneTeaser(
   const extract = extractReadable(html)
   if (!extract) return null
   const { headline, image } = extractMeta(html)
-  return { bullet, url: chosen, extract, headline, image }
+  return { bullet, url: chosen, extract: decodeEntities(extract), headline: headline ? decodeEntities(headline) : headline, image }
 }
 
 export async function researchTeaserSources(

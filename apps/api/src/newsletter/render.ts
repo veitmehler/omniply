@@ -261,7 +261,7 @@ function esc(s: string | null | undefined): string {
 /** A full-width colored heading band. */
 function band(title: string, bg: string, theme: Theme): string {
   return `<tr><td style="background-color:${bg};padding:22px 24px;text-align:center;">
-    <h1 style="margin:0;font-family:${HEADING_STACK};font-size:30px;font-weight:${theme.headingWeight};color:${theme.bandTextColor};letter-spacing:0.5px;line-height:1.2;">${esc(title)}</h1>
+    <h1 style="margin:0;font-family:${HEADING_STACK};font-size:30px;font-weight:${theme.headingWeight};color:${theme.bandTextColor};letter-spacing:0.5px;line-height:1.2;">${esc(decodeEntities(title))}</h1>
   </td></tr>`
 }
 
@@ -326,12 +326,77 @@ function spacedParagraphs(html: string): string {
   return html.replace(/<p(?![^>]*style=)/gi, '<p style="margin:0 0 16px;"')
 }
 
+/** Decode HTML entities that arrive pre-encoded from scraped sources (run-5:
+ *  "I&#039;m" showed literally). Runs twice to unwrap double-encoding. */
+export function decodeEntities(s: string): string {
+  const once = (x: string) =>
+    x
+      .replace(/&amp;/g, '&')
+      .replace(/&#(\d+);/g, (_m, n: string) => String.fromCodePoint(parseInt(n, 10)))
+      .replace(/&#x([0-9a-f]+);/gi, (_m, n: string) => String.fromCodePoint(parseInt(n, 16)))
+      .replace(/&quot;/g, '"')
+      .replace(/&apos;/g, "'")
+      .replace(/&nbsp;/g, ' ')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+  return once(once(s))
+}
+
+/** Inline-style body headings — email clients strip default h2/h3 CSS, so an
+ *  unstyled <h2>Your Practical Takeaway</h2> renders as flat text (run-5). */
+function styleInlineHeadings(html: string, theme: Theme): string {
+  return html
+    .replace(
+      /<h2(?![^>]*style=)/gi,
+      `<h2 style="margin:26px 0 12px;font-family:${HEADING_STACK};font-size:21px;font-weight:${theme.headingWeight};color:${theme.fontColor};line-height:1.3;"`,
+    )
+    .replace(
+      /<h3(?![^>]*style=)/gi,
+      `<h3 style="margin:22px 0 10px;font-family:${HEADING_STACK};font-size:18px;font-weight:${theme.headingWeight};color:${theme.fontColor};line-height:1.3;"`,
+    )
+}
+
+/** Convert native <ul>/<ol> lists in generated bodies to explicit glyph /
+ *  numbered lines — native list markers are unreliable in email clients. */
+function normalizeBodyLists(html: string, theme: Theme): string {
+  const dot = `<span style="color:${theme.linkColor};font-weight:700;">&bull;</span>&nbsp;&nbsp;`
+  const line = (inner: string, prefix: string) =>
+    `<div style="margin:0 0 12px;padding-left:22px;text-indent:-22px;line-height:1.5;">${prefix}${inner}</div>`
+  let out = html.replace(/<ul[^>]*>([\s\S]*?)<\/ul>/gi, (_m, body: string) =>
+    `<div style="margin:0 0 16px;">` +
+    body.replace(/<li[^>]*>([\s\S]*?)<\/li>/gi, (_m2, inner: string) => line(inner.trim(), dot)) +
+    `</div>`,
+  )
+  out = out.replace(/<ol[^>]*>([\s\S]*?)<\/ol>/gi, (_m, body: string) => {
+    let n = 0
+    return (
+      `<div style="margin:0 0 16px;">` +
+      body.replace(/<li[^>]*>([\s\S]*?)<\/li>/gi, (_m2, inner: string) => {
+        n++
+        return line(inner.trim(), `<span style="color:${theme.linkColor};font-weight:700;">${n}.</span>&nbsp;&nbsp;`)
+      }) +
+      `</div>`
+    )
+  })
+  return out
+}
+
+/** Full body normalization for generated article/teaser HTML. */
+function normalizeBody(html: string, theme: Theme): string {
+  return normalizeBodyLists(styleInlineHeadings(spacedParagraphs(html), theme), theme)
+}
+
 /** Bullet-glyph treatment for research-sourced ingredient lists (they arrive
  *  as <li> items or plain <br>/<p>-separated lines with no list styling). */
 function bulletizeLines(html: string, theme: Theme): string {
   const dot = `<span style="color:${theme.linkColor};font-weight:700;">&bull;</span>&nbsp;&nbsp;`
+  // Group headers inside ingredient lists ("For the Creamy Herb Drizzle:")
+  // are sub-headings, not items (run-5 finding).
+  const isHeader = (t: string) => /^[^.!?]{2,60}:$/.test(t.replace(/<[^>]+>/g, '').trim())
   const wrap = (inner: string) =>
-    `<div style="margin:0 0 10px;padding-left:20px;text-indent:-20px;line-height:1.5;">${dot}${inner}</div>`
+    isHeader(inner)
+      ? `<div style="margin:14px 0 8px;font-weight:700;">${inner}</div>`
+      : `<div style="margin:0 0 10px;padding-left:20px;text-indent:-20px;line-height:1.5;">${dot}${inner}</div>`
   if (/<li[\s>]/i.test(html)) {
     return html
       .replace(/<\/?[uo]l[^>]*>/gi, '')
@@ -394,11 +459,11 @@ function articleBlock(a: RenderArticle, theme: Theme, showTitle = true): string 
   const tldr = a.tldr
     ? `<p style="margin:0 0 14px;font-family:${theme.fontStack};font-size:15px;color:${theme.fontColor};"><u>TL;DR:</u> ${esc(a.tldr)}</p>`
     : ''
-  return `${img}${h2}${tldr}${para(spacedParagraphs(stylePlainLanguageBoxes(a.body, theme)), theme)}`
+  return `${img}${h2}${tldr}${para(normalizeBody(stylePlainLanguageBoxes(a.body, theme), theme), theme)}`
 }
 
 function teaserBlock(t: RenderTeaser, theme: Theme): string {
-  return `${para(spacedParagraphs(t.body), theme)}<div style="margin-top:14px;">${para(t.cta, theme)}</div>${readMoreButton(t.link, theme)}`
+  return `${para(normalizeBody(t.body, theme), theme)}<div style="margin-top:14px;">${para(t.cta, theme)}</div>${readMoreButton(t.link, theme)}`
 }
 
 function videoCard(v: RenderVideo, theme: Theme): string {
@@ -420,7 +485,7 @@ function recipeBlock(r: RenderRecipe, theme: Theme): string {
   const intro = r.imageUrl ? r.intro.replace(/<h2[^>]*>[\s\S]*?<\/h2>/i, '').trim() : r.intro
   const h3 = (t: string) =>
     `<h3 style="margin:22px 0 10px;font-family:${theme.fontStack};font-size:18px;font-weight:${theme.headingWeight};color:${theme.fontColor};">${t}</h3>`
-  return `${img}${para(spacedParagraphs(intro), theme)}${h3('Ingredients')}${para(bulletizeLines(r.ingredients, theme), theme)}${h3('Instructions')}${para(spacedParagraphs(r.instructions), theme)}`
+  return `${img}${para(normalizeBody(intro, theme), theme)}${h3('Ingredients')}${para(bulletizeLines(r.ingredients, theme), theme)}${h3('Instructions')}${para(normalizeBody(r.instructions, theme), theme)}`
 }
 
 export function buildRenderInput(
@@ -720,5 +785,5 @@ export function renderPromoEmail(bodyHtml: string, brand: RenderBrand, previewTe
 
 /** Teaser heading = the real source article title, falling back to the voiced title. */
 function teaserHeading(t: RenderTeaser): string {
-  return (t.headline || t.title || 'Around the web').trim()
+  return decodeEntities((t.headline || t.title || 'Around the web').trim())
 }
