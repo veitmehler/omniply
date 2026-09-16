@@ -178,7 +178,7 @@ export function darkenHex(hex: string, percentTowardBlack: number): string {
   return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0').toUpperCase()}`
 }
 
-function lightenHex(hex: string, percentTowardWhite: number): string {
+export function lightenHex(hex: string, percentTowardWhite: number): string {
   const n = normalizeHex(hex)
   const v = /^#([0-9A-F]{6})$/i.exec(n)
   if (!v) return hex

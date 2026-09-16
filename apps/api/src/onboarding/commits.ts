@@ -2,7 +2,7 @@
  * Real commit bodies for the onboarding steps (onboarding plan Phases 4–7).
  * Kept out of flow.ts so the step machine stays readable.
  */
-import { relativeLuminance, darkenHex } from '../article-pipeline/enrichment/diagram-theme'
+import { relativeLuminance, darkenHex, lightenHex } from '../article-pipeline/enrichment/diagram-theme'
 import { pickBrandLogoForBackground } from '../newsletter/logo-process'
 import { prisma, encrypt, ghlSettingsForUser, brandSettingsForUser } from '@omniply/shared'
 import { logger } from '../lib/logger'
@@ -313,10 +313,16 @@ export async function commitTemplateReveal(ctx: StepContext, answer: unknown): P
     nlHeaderTextColor: (palette as { headerText?: string }).headerText ?? '#ffffff',
     nlHeaderLogoLayout: a.logoLayout === 'beside' || a.logoLayout === 'above' ? a.logoLayout : 'replace',
     nlFontColor: '#222222',
-    nlSectionColor1: tints[0],
-    nlSectionColor2: tints[1] ?? tints[0],
-    nlSectionColor3: palette.bodyBackground ?? '#ffffff',
-    nlSectionColor4: tints[0],
+    // Heading BANDS need vivid colors (render draws band text over them) —
+    // the pale sectionTints were body-wash colors and produced near-white
+    // bands with white text (run-5 finding). Derive vivid brand hues:
+    // s1 = general bands, s2 = curated teasers, s3 = articles (dark ink),
+    // s4 = recipes.
+    nlSectionColor1: accentHex,
+    nlSectionColor2: lightenHex(accentHex, 18),
+    nlSectionColor3: relativeLuminance(headerHex) < 0.5 ? headerHex : darkenHex(accentHex, 30),
+    nlSectionColor4: darkenHex(accentHex, 12),
+    nlBandTextColor: '#ffffff',
     ...(fonts ? { nlFontFamily: fonts } : {}),
     diagramPrimaryColor: diagramPrimary,
     diagramSecondaryColor: diagramSecondary,

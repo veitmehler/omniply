@@ -15,6 +15,7 @@ const COLOR_FIELDS: Array<[string, string, string]> = [
   ['nlSectionColor2', 'Curated article bands', '#00bbf9'],
   ['nlSectionColor3', 'Articles & “Did you know” bands', '#00142b'],
   ['nlSectionColor4', 'Recipe bands', '#00dd81'],
+  ['nlBandTextColor', 'Band text color (all bands)', '#ffffff'],
   ['nlFontColor', 'Body text color', '#00142b'],
   ['nlLinkColor', 'Link color', '#fa00bb'],
 ]
@@ -235,7 +236,9 @@ export function TemplateEditorView({ embedMode = false }: { embedMode?: boolean 
         </div>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
+      {/* 1-column (Veit 2026-09-16): email-width preview on top, controls
+          below — col-reverse keeps DOM order, preview renders first. */}
+      <div className="flex flex-col-reverse gap-6">
         <div className="space-y-4">
           {/* Appearance */}
           <div className="rounded-xl border border-border bg-card p-4">
@@ -511,7 +514,7 @@ export function TemplateEditorView({ embedMode = false }: { embedMode?: boolean 
         </div>
 
         {/* Live preview */}
-        <div className="rounded-xl border border-border bg-card p-2">
+        <div className="mx-auto w-full max-w-[680px] rounded-xl border border-border bg-card p-2">
           <div className="flex items-center justify-between px-2 py-1">
             <span className="text-xs text-muted-foreground">Live preview (sample content)</span>
             <button

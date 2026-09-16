@@ -83,6 +83,7 @@ export interface RenderBrand {
   nlSectionColor2?: string | null
   nlSectionColor3?: string | null
   nlSectionColor4?: string | null
+  nlBandTextColor?: string | null
   nlFontFamily?: string | null
   nlFontColor?: string | null
   nlHeadingFontWeight?: string | null
@@ -124,6 +125,7 @@ interface Theme {
   fontStack: string
   fontColor: string
   headingWeight: string
+  bandTextColor: string
   bodyWeight: string
   linkColor: string
   buttonColor: string // CTA/read-more buttons; falls back to linkColor
@@ -228,6 +230,7 @@ function resolveTheme(brand: RenderBrand): Theme {
     fontStack: `'${primary}', ${FALLBACK_FONTS}`,
     fontColor: brand.nlFontColor?.trim() || '#00142b',
     headingWeight: brand.nlHeadingFontWeight?.trim() || '700',
+    bandTextColor: brand.nlBandTextColor?.trim() || '#ffffff',
     bodyWeight: brand.nlBodyFontWeight?.trim() || '400',
     linkColor: brand.nlLinkColor?.trim() || '#fa00bb',
     buttonColor,
@@ -257,7 +260,7 @@ function esc(s: string | null | undefined): string {
 /** A full-width colored heading band. */
 function band(title: string, bg: string, theme: Theme): string {
   return `<tr><td style="background-color:${bg};padding:22px 24px;text-align:center;">
-    <h1 style="margin:0;font-family:${HEADING_STACK};font-size:30px;font-weight:${theme.headingWeight};color:#ffffff;letter-spacing:0.5px;line-height:1.2;">${esc(title)}</h1>
+    <h1 style="margin:0;font-family:${HEADING_STACK};font-size:30px;font-weight:${theme.headingWeight};color:${theme.bandTextColor};letter-spacing:0.5px;line-height:1.2;">${esc(title)}</h1>
   </td></tr>`
 }
 

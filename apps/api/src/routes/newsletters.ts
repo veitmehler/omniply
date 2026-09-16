@@ -53,6 +53,7 @@ const TEMPLATE_FIELDS = [
   'nlSectionColor2',
   'nlSectionColor3',
   'nlSectionColor4',
+  'nlBandTextColor',
   'nlFontFamily',
   'nlFontColor',
   'nlHeadingFontWeight',
@@ -126,8 +127,9 @@ async function approveOne(
   })
   if (!nl) throw new Error('Newsletter not found')
 
-  // Ensure we have rendered HTML (render on demand if missing).
-  const html = nl.renderedHtml ?? (await renderAndSave(newsletterId))
+  // Freeze the CURRENT design at approval (Option B, Veit 2026-09-16):
+  // unsent editions always preview fresh, so what was just seen is what sends.
+  const html = await renderAndSave(newsletterId)
 
   const subject = nl.subjectLine || nl.topic.topic
   const meta: GhlEmailMeta = {
@@ -252,12 +254,16 @@ export async function newsletterRoutes(app: FastifyInstance) {
     })
     if (!nl) return reply.status(404).send({ error: 'Newsletter not found' })
 
-    // Render on demand if missing (e.g. an older row before renderedHtml existed).
-    if (!nl.renderedHtml) {
+    // Option B (Veit 2026-09-16): UNSENT editions always render fresh from
+    // stored parts + CURRENT brand/template — template edits show up
+    // immediately in every unsent preview. Approved/scheduled/sent editions
+    // serve the HTML frozen at approval.
+    const UNSENT = ['pending', 'researching', 'generating', 'ready_for_review', 'failed']
+    if (UNSENT.includes(nl.status) || !nl.renderedHtml) {
       try {
         nl.renderedHtml = await renderAndSave(nl.id)
       } catch (err) {
-        logger.warn({ id: nl.id, err }, '[newsletters] on-demand render failed')
+        logger.warn({ id: nl.id, err }, '[newsletters] fresh render failed — serving cached html')
       }
     }
     return reply.send({ newsletter: nl })
@@ -511,7 +517,7 @@ export async function newsletterRoutes(app: FastifyInstance) {
       const t = (request.body?.template ?? {}) as Record<string, unknown>
       const renderBrand: RenderBrand = { ...toRenderBrand(brand) }
       const OVERLAYABLE: (keyof RenderBrand)[] = [
-        'nlLogoUrl', 'nlLogoColorUrl', 'nlHeaderLogoVariant', 'nlFooterLogoVariant', 'nlFooterLogoWidth',
+        'nlLogoUrl', 'nlLogoColorUrl', 'nlHeaderLogoVariant', 'nlFooterLogoVariant', 'nlFooterLogoWidth', 'nlBandTextColor',
         'nlFooterDisclaimer', 'nlLogoWidth', 'nlHeaderBgColor', 'nlFooterBgColor',
         'nlSectionColor1', 'nlSectionColor2', 'nlSectionColor3', 'nlSectionColor4',
         'nlFontFamily', 'nlFontColor', 'nlHeadingFontWeight', 'nlBodyFontWeight',
