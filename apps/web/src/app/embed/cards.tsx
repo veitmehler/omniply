@@ -172,6 +172,13 @@ export function ProfileCard({
     ].filter((s) => registry.includes(s))
     return new Set(detected)
   })
+  // Explicit PRIMARY choice (run-3 item 3, Veit: "too important — they should
+  // confirm it"): detection is the default, never the silent decision.
+  const [primary, setPrimary] = useState<string>(() =>
+    card.primarySpecialization && registry.includes(String(card.primarySpecialization))
+      ? String(card.primarySpecialization)
+      : '',
+  )
   return (
     <div className="space-y-3 rounded-xl border border-border bg-card p-4">
       {registry.length > 0 && (
@@ -204,6 +211,33 @@ export function ProfileCard({
               </label>
             ))}
           </div>
+          {specs.size > 0 && (
+            <div className="mt-3">
+              <label className={labelCls}>
+                Your PRIMARY specialization — this drives your monthly content calendar
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {[...specs].map((key) => (
+                  <label
+                    key={key}
+                    className={`flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium ${
+                      primary === key ? 'border-primary bg-primary text-primary-foreground' : 'border-border text-muted-foreground'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="primary-spec"
+                      className="sr-only"
+                      checked={primary === key}
+                      disabled={disabled}
+                      onChange={() => setPrimary(key)}
+                    />
+                    {primary === key ? '★ ' : ''}{key.replace(/_/g, ' ')}
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
       {PROFILE_FIELDS.map((f) => (
@@ -229,8 +263,14 @@ export function ProfileCard({
       ))}
       <button
         className={`${primaryBtn} w-full`}
-        disabled={disabled || !values.businessDescription.trim() || !values.who.trim() || (registry.length > 0 && specs.size === 0)}
-        onClick={() => onSubmit({ ...values, specializations: [...specs], confirmed: true })}
+        disabled={
+          disabled ||
+          !values.businessDescription.trim() ||
+          !values.who.trim() ||
+          (registry.length > 0 && specs.size === 0) ||
+          (specs.size > 0 && !specs.has(primary))
+        }
+        onClick={() => onSubmit({ ...values, specializations: [...specs], primarySpecialization: primary, confirmed: true })}
       >
         This is my brand ✓
       </button>
@@ -348,6 +388,7 @@ function previewHtml(
   logoUrl: string | null,
   p: Palette,
   layout: 'replace' | 'beside' | 'above' = 'replace',
+  fontFamily?: string | null,
 ): string {
   const header = p.headerBackground ?? '#0b2545'
   const headerText = p.headerText ?? '#ffffff'
@@ -366,7 +407,8 @@ function previewHtml(
     headerInner = `<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto"><tr><td style="vertical-align:middle;padding-right:12px"><img src="${logoUrl}" style="max-height:40px;max-width:140px"/></td><td style="vertical-align:middle;text-align:left">${nameH1}</td></tr></table>`
   else if (layout === 'above') headerInner = `<img src="${logoUrl}" style="max-height:40px;max-width:60%"/><div style="height:6px"></div>${nameH1}`
   else headerInner = `<img src="${logoUrl}" style="max-height:48px;max-width:70%"/>`
-  return `<!doctype html><html><body style="margin:0;font-family:Arial,sans-serif;background:${body}">
+  const font = fontFamily?.trim() ? `'${fontFamily.trim()}',Arial,sans-serif` : 'Arial,sans-serif'
+  return `<!doctype html><html><body style="margin:0;font-family:${font};background:${body}">
 <div style="max-width:600px;margin:0 auto">
   <div style="background:${header};color:${headerText};padding:24px;text-align:center">
     ${headerInner}
@@ -502,6 +544,7 @@ export function TemplateCard({
     logoUrl?: string | null
     logoVariants?: { lightUrl?: string; darkUrl?: string }
     logoLayout?: 'replace' | 'beside' | 'above'
+    fontFamily?: string | null
     organizationName?: string
   }
   disabled: boolean
@@ -515,8 +558,8 @@ export function TemplateCard({
   const activeLogo =
     (logoVariant === 'dark' ? variants.darkUrl : variants.lightUrl) ?? card.logoUrl ?? null
   const html = useMemo(
-    () => previewHtml(card.organizationName ?? 'Your Practice', activeLogo, palette, logoLayout),
-    [card.organizationName, activeLogo, palette, logoLayout],
+    () => previewHtml(card.organizationName ?? 'Your Practice', activeLogo, palette, logoLayout, card.fontFamily),
+    [card.organizationName, activeLogo, palette, logoLayout, card.fontFamily],
   )
   return (
     <div className="space-y-3 rounded-xl border border-border bg-card p-4">

@@ -229,22 +229,22 @@ export function OnboardingChat({ onCompleted }: { onCompleted: () => void }) {
             >
               I wrote this ✓
             </button>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setPasteOpen(true)}
-                disabled={busy}
-                className="flex-1 rounded-lg border border-border px-4 py-2.5 text-base text-foreground disabled:opacity-50"
-              >
-                Paste my article instead
-              </button>
-              <button
-                onClick={() => submit({ text: 'skip' }, 'Skip — use my spoken answers')}
-                disabled={busy}
-                className="flex-1 rounded-lg border border-border px-4 py-2.5 text-base text-muted-foreground disabled:opacity-50"
-              >
-                Skip
-              </button>
-            </div>
+            <button
+              onClick={() => setPasteOpen(true)}
+              disabled={busy}
+              className="w-full rounded-lg border border-border px-4 py-2.5 text-base text-foreground disabled:opacity-50"
+            >
+              Paste my article instead
+            </button>
+            {/* Skip is a deliberate escape hatch (ghostwritten blog + nothing
+                to paste), not a peer option — demoted with honest costs. */}
+            <button
+              onClick={() => submit({ text: 'skip' }, 'Skip — use my spoken answers only')}
+              disabled={busy}
+              className="w-full pt-1 text-center text-xs text-muted-foreground hover:text-foreground disabled:opacity-50"
+            >
+              Skip — my written style will be built from my spoken answers only
+            </button>
           </div>
         ) : step.kind === 'text' ? (
           <form
@@ -252,8 +252,18 @@ export function OnboardingChat({ onCompleted }: { onCompleted: () => void }) {
               e.preventDefault()
               if (input.trim()) void submit({ text: input.trim() })
             }}
-            className="flex gap-2"
+            className="flex flex-wrap gap-2"
           >
+            {step.id === 'writing_sample' && pasteOpen && (
+              <button
+                type="button"
+                onClick={() => setPasteOpen(false)}
+                disabled={busy}
+                className="w-full text-left text-xs text-muted-foreground hover:text-foreground"
+              >
+                ← Back — I&apos;ll use the article you found
+              </button>
+            )}
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -269,6 +279,16 @@ export function OnboardingChat({ onCompleted }: { onCompleted: () => void }) {
             >
               Send
             </button>
+            {step.id === 'booking_url' && step.card?.allowPhoneOnly === true && (
+              <button
+                type="button"
+                onClick={() => submit({ phoneOnly: true }, 'We take bookings by phone')}
+                disabled={busy}
+                className="w-full rounded-lg border border-border px-4 py-2.5 text-base text-foreground disabled:opacity-50"
+              >
+                📞 We take bookings by phone{typeof step.card?.phone === 'string' && step.card.phone ? ` — ${step.card.phone}` : ''}
+              </button>
+            )}
           </form>
         ) : null}
 

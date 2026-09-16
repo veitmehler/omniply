@@ -296,3 +296,28 @@ describe('header layout + label rules (polish batch 2026-09-14)', () => {
     expect(html).toContain('#1c2b33')
   })
 })
+
+describe('toRenderBrand completeness (run-3 finding: silently dropped nl* fields)', () => {
+  it('maps EVERY nl* BrandSettings column — a new unmapped column fails here', async () => {
+    const { Prisma } = await import('@prisma/client')
+    const { toRenderBrand } = await import('../generate')
+    const model = Prisma.dmmf.datamodel.models.find((m) => m.name === 'BrandSettings')!
+    // Render-irrelevant nl* columns, each with a reason — additions here
+    // require the same justification.
+    const EXCLUDED = new Set([
+      'nlLogoSourceUrl', // original upload archive for re-processing; never rendered
+    ])
+    const nlFields = model.fields
+      .filter((f) => f.name.startsWith('nl') && !EXCLUDED.has(f.name))
+      .map((f) => f.name)
+    expect(nlFields.length).toBeGreaterThan(15)
+    // Fixture: every nl* field set to a sentinel its type allows.
+    const fixture: Record<string, unknown> = {}
+    for (const f of model.fields.filter((f) => f.name.startsWith('nl'))) {
+      fixture[f.name] = f.type === 'Int' ? 7 : 'sentinel'
+    }
+    const out = toRenderBrand(fixture as never) as Record<string, unknown>
+    const dropped = nlFields.filter((name) => out[name] === undefined)
+    expect(dropped).toEqual([])
+  })
+})

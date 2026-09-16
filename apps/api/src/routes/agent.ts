@@ -176,6 +176,8 @@ export async function agentRoutes(app: FastifyInstance) {
           ...(body.openingHours !== undefined ? { openingHours: body.openingHours.trim() || null } : {}),
           ...(body.organizationPhone !== undefined ? { organizationPhone: body.organizationPhone.trim() || null } : {}),
           ...(body.bookingUrl !== undefined ? { bookingUrl: body.bookingUrl.trim() || null } : {}),
+          // A URL added later upgrades a phone-only clinic to online booking everywhere.
+          ...(body.bookingUrl?.trim() ? { bookingMode: 'online' } : {}),
           ...(body.extraKnowledge !== undefined
             ? { agentExtraKnowledge: body.extraKnowledge.trim().slice(0, 5000) || null }
             : {}),

@@ -166,7 +166,7 @@ function normalizeHex(hex: string): string {
   return hex.length === 7 ? hex.toUpperCase() : hex
 }
 
-function darkenHex(hex: string, percentTowardBlack: number): string {
+export function darkenHex(hex: string, percentTowardBlack: number): string {
   const n = normalizeHex(hex)
   const v = /^#([0-9A-F]{6})$/i.exec(n)
   if (!v) return hex

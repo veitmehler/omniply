@@ -84,7 +84,9 @@ async function linktreeDataForUser(userId: string) {
   const spineCheckUrl = await spineCheckUrlForUser(userId).catch(() => null)
   if (spineCheckUrl) links.push({ label: 'Take the 2-Minute Spine Check', url: spineCheckUrl })
   if (brand.bookingUrl) links.push({ label: 'Book an Appointment', url: brand.bookingUrl })
-  if (brand.organizationPhone) links.push({ label: 'Call Us', url: `tel:${brand.organizationPhone.replace(/[^+\d]/g, '')}` })
+  // Phone-only clinics: the call link IS the booking CTA (run-3 item 8).
+  if (brand.organizationPhone)
+    links.push({ label: brand.bookingUrl ? 'Call Us' : 'Call Us to Book', url: `tel:${brand.organizationPhone.replace(/[^+\d]/g, '')}` })
   if (brand.googleBusinessProfileUrl) links.push({ label: 'Review Us on Google', url: brand.googleBusinessProfileUrl })
   if (brand.organizationWebsite) links.push({ label: 'Visit Our Website', url: brand.organizationWebsite })
   const raw = Array.isArray(brand.socialMediaLinks) ? (brand.socialMediaLinks as { platform?: string; url?: string }[]) : []

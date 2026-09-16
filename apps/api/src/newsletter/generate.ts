@@ -505,6 +505,11 @@ export function toRenderBrand(
     nlHeadingFontWeight: b.nlHeadingFontWeight,
     nlBodyFontWeight: b.nlBodyFontWeight,
     nlLinkColor: b.nlLinkColor,
+    // Button colors (run-3 finding: NEVER mapped here — every render dropped
+    // the client's approved button color/label; the completeness test below
+    // guards this whole class from recurring).
+    nlButtonColor: b.nlButtonColor,
+    nlButtonTextColor: b.nlButtonTextColor,
   }
 }
 

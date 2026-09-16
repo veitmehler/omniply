@@ -187,6 +187,9 @@ export function buildTemplatePreviewHtml(opts: {
   palette: SemanticPalette
   /** Header logo/name layout — MUST mirror newsletter/render.ts headerBlock. */
   logoLayout?: 'replace' | 'beside' | 'above'
+  /** Site-detected font (fontHints[0]) — real sends use it, so the preview
+   * must too (item 7: hardcoded Arial was another reveal-vs-real gap). */
+  fontFamily?: string | null
 }): string {
   const p = opts.palette
   const header = p.headerBackground ?? '#0b2545'
@@ -213,7 +216,8 @@ export function buildTemplatePreviewHtml(opts: {
   } else {
     headerInner = `<img src="${opts.logoUrl}" alt="logo" style="max-height:56px;max-width:70%"/>`
   }
-  return `<!doctype html><html><body style="margin:0;font-family:Arial,Helvetica,sans-serif;background:${body}">
+  const font = opts.fontFamily?.trim() ? `'${opts.fontFamily.trim()}',Arial,Helvetica,sans-serif` : 'Arial,Helvetica,sans-serif'
+  return `<!doctype html><html><body style="margin:0;font-family:${font};background:${body}">
 <div style="max-width:600px;margin:0 auto">
   <div style="background:${header};color:${headerText};padding:28px 24px;text-align:center">
     ${headerInner}

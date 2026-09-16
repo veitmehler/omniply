@@ -61,6 +61,7 @@ export async function spineCheckClinicForUser(userId: string): Promise<SpineChec
     buttonTextColor: brand.nlButtonTextColor ?? '#ffffff',
     accent: brand.nlLinkColor ?? '#2a6f97',
     bookingUrl: brand.bookingUrl ?? null,
+    phone: brand.organizationPhone ?? null,
     captureUrl: `${publicApiBase()}/api/spine-check/capture`,
     guideTitles,
     firstVisitGuideTitle: guidesAvailable ? (titleBySlug.get(FIRST_VISIT_SLUG) ?? null) : null,

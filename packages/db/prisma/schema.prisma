@@ -1262,6 +1262,7 @@ model BrandSettings {
   // Universal CTA destination (onboarding "where should bookings go?") — the
   // clinic's PMS online-booking URL. GHL never owns booking (snapshot guide).
   bookingUrl               String?
+  bookingMode              String? // 'online' | 'phone' — phone-only clinics are a valid business model, not a skip
   // Practice-management system (onboarding dropdown) — market-research capture
   // that decides which PMS connector gets built first (pms-connector plan).
   pmsSystem                String?

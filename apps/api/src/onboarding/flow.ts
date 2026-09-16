@@ -279,9 +279,13 @@ const STEPS: StepDef[] = [
     kind: 'text',
     prepare: async (ctx) => ({
       messages: [
-        "Where should bookings go? Paste the link patients use to book with you online (your booking system's page).",
+        "Where should bookings go? Paste the link patients use to book with you online (your booking system's page). If you take bookings by phone only, that works too — just say so below.",
       ],
-      card: { website: (ctx.stepData.ghlPrefill as { website?: string })?.website ?? '' },
+      card: {
+        website: (ctx.stepData.ghlPrefill as { website?: string })?.website ?? '',
+        allowPhoneOnly: true,
+        phone: (ctx.stepData.ghlPrefill as { phone?: string })?.phone ?? '',
+      },
     }),
     commit: async (ctx, answer) => {
       const err = await commitBookingUrl(ctx, answer)

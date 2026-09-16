@@ -182,7 +182,26 @@ export async function crawlSite(websiteUrl: string): Promise<CrawlResult> {
     const tag = m[0]
     if (/logo/i.test(tag)) {
       const src = /src=["']([^"']+)["']/i.exec(tag)?.[1]
-      push(src ? absolutize(src, websiteUrl) : null)
+      // WordPress custom-logo puts the SMALLEST thumbnail in src and the
+      // real sizes in srcset (run-3 finding: the original full-size logo
+      // was never collected). Prefer the largest srcset entry, and also
+      // derive the original by stripping WP's -WxH size suffix.
+      const srcset = /srcset=["']([^"']+)["']/i.exec(tag)?.[1]
+      if (srcset) {
+        const best = srcset
+          .split(',')
+          .map((e) => {
+            const [u, w] = e.trim().split(/\s+/)
+            return { u, w: parseInt(w ?? '0', 10) || 0 }
+          })
+          .sort((a, b) => b.w - a.w)[0]
+        if (best?.u) push(absolutize(best.u, websiteUrl))
+      }
+      if (src) {
+        const original = src.replace(/-\d+x\d+(\.[a-z]{3,4})$/i, '$1')
+        if (original !== src) push(absolutize(original, websiteUrl))
+        push(absolutize(src, websiteUrl))
+      }
     }
   }
   push(og ? absolutize(og[1], websiteUrl) : null)
@@ -200,8 +219,12 @@ export async function crawlSite(websiteUrl: string): Promise<CrawlResult> {
   result.cssColorHints = [...colorCounts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 8).map(([c]) => c)
   const fonts = new Set<string>()
   for (const m of styleBlocks.matchAll(/font-family:\s*([^;}]+)/gi)) {
-    const fam = m[1].split(',')[0].replace(/["']/g, '').trim()
-    if (fam && !/inherit|sans-serif|serif|monospace/i.test(fam)) fonts.add(fam)
+    let fam = m[1].split(',')[0].replace(/["']/g, '').trim()
+    // WordPress preset vars carry the family in the slug:
+    // var(--wp--preset--font-family--cardo) → Cardo (item 7).
+    const wpVar = /var\(--wp--preset--font-family--([a-z0-9-]+)\)/i.exec(fam)
+    if (wpVar) fam = wpVar[1].split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+    if (fam && !/inherit|sans-serif|serif|monospace|var\(/i.test(fam)) fonts.add(fam)
   }
   result.fontHints = [...fonts].slice(0, 4)
 

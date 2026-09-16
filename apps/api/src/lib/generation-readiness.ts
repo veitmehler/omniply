@@ -65,7 +65,8 @@ export async function generationReadiness(accountId: string): Promise<Readiness>
   // Voice + CTAs
   need(settings?.writingStyle?.trim(), 'settings.writingStyle', 'Every generator writes in this voice', 'writing_sample')
   need(brand?.socialCallToAction?.trim(), 'brandSettings.socialCallToAction', 'Social posts need a destination', 'cta')
-  need(brand?.bookingUrl?.trim(), 'brandSettings.bookingUrl', 'Every CTA resolves to the booking page', 'booking_url')
+  const phoneBooking = brand?.bookingMode === 'phone' && !!brand?.organizationPhone?.trim()
+  need(brand?.bookingUrl?.trim() || phoneBooking, 'brandSettings.bookingUrl', 'Every CTA resolves to the booking page (or phone-mode + clinic phone)', 'booking_url')
   need(settings?.socialTimezone?.trim(), 'settings.socialTimezone', 'Post scheduling timezone', 'business_confirm')
 
   // Distribution

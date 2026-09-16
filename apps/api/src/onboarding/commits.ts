@@ -2,6 +2,7 @@
  * Real commit bodies for the onboarding steps (onboarding plan Phases 4–7).
  * Kept out of flow.ts so the step machine stays readable.
  */
+import { relativeLuminance, darkenHex } from '../article-pipeline/enrichment/diagram-theme'
 import { prisma, encrypt, ghlSettingsForUser, brandSettingsForUser } from '@omniply/shared'
 import { logger } from '../lib/logger'
 import { getBoss, QUEUES } from '../queues/index'
@@ -51,6 +52,12 @@ export async function commitBusinessConfirm(ctx: StepContext, answer: unknown): 
     // Settings + JSON-LD read organizationAddress; geolocation alone left the
     // "Business address" field empty (Veit, fresh-E2E Settings review).
     organizationAddress: merged.address || null,
+    // Structured components (item 2): what the Settings section actually
+    // edits — no more "re-enter in the new format" prompt.
+    addressLine1: merged.addressLine1 || null,
+    addressLocality: merged.addressCity || null,
+    addressRegion: merged.addressState || null,
+    postalCode: merged.addressPostal || null,
     organizationCountryCode: merged.country || null,
     defaultAuthorName: merged.contactName || null,
     // E-E-A-T author defaults derivable from the profile; LinkedIn/alumniOf
@@ -174,7 +181,13 @@ export async function commitBrandProfile(ctx: StepContext, answer: unknown): Pro
   // free text). Primary = the detected one if still checked, else the first.
   const checked = Array.isArray(edited.specializations) ? edited.specializations.filter(Boolean) : draft.specializations ?? []
   if (checked.length === 0) return 'Check at least one specialization — it routes your content calendar'
-  const primary = checked.includes(draft.primarySpecialization ?? '') ? draft.primarySpecialization! : checked[0]
+  // Explicit client choice wins (item 3); detection is only the fallback.
+  const chosen = (edited as { primarySpecialization?: string }).primarySpecialization
+  const primary = chosen && checked.includes(chosen)
+    ? chosen
+    : checked.includes(draft.primarySpecialization ?? '')
+      ? draft.primarySpecialization!
+      : checked[0]
   await brandUpsert(ctx.userId, {
     businessDescription: draft.businessDescription,
     who: draft.who,
@@ -214,17 +227,20 @@ export async function commitBrandProfile(ctx: StepContext, answer: unknown): Pro
   const prefill = (ctx.stepData.ghlPrefill as Record<string, string>) ?? {}
   const variants = (ctx.stepData.logoVariants as { lightUrl?: string; darkUrl?: string } | undefined) ?? {}
   const logo = variants.lightUrl ?? (ctx.stepData.logoChosen as string | null)
+  const detectedFont = ((ctx.stepData.crawl as { fontHints?: string[] })?.fontHints ?? [])[0] ?? null
   ctx.stepData.templateDraft = {
     palette,
     logoUrl: logo,
     logoVariants: variants,
     logoLayout: 'replace',
+    fontFamily: detectedFont,
     organizationName: prefill.organizationName ?? 'Your Practice',
     previewHtml: buildTemplatePreviewHtml({
       organizationName: prefill.organizationName ?? 'Your Practice',
       logoUrl: logo,
       palette,
       logoLayout: 'replace',
+      fontFamily: detectedFont,
     }),
   }
   ctx.stepData.templateReady = true
@@ -249,6 +265,17 @@ export async function commitTemplateReveal(ctx: StepContext, answer: unknown): P
   const tints = palette.sectionTints?.length ? palette.sectionTints : ['#f2f6fa', '#fdf6ee']
   const fonts = ((ctx.stepData.crawl as { fontHints?: string[] })?.fontHints ?? [])[0]
 
+  // Diagrams inherit the approved palette (run-3 item 6): primary fill = the
+  // header brand color, secondary = the accent. A near-white header (the
+  // white template) would render invisible fills — then the accent takes
+  // primary and a darkened accent becomes secondary.
+  const isHex = (v: string | null | undefined): v is string => typeof v === 'string' && /^#[0-9a-f]{6}$/i.test(v.trim())
+  const headerHex = isHex(palette.headerBackground) ? palette.headerBackground.trim() : '#0b2545'
+  const accentHex = isHex(palette.accent) ? palette.accent.trim() : '#2a6f97'
+  const diagramPrimary = relativeLuminance(headerHex) > 0.8 ? accentHex : headerHex
+  const diagramSecondary =
+    diagramPrimary.toLowerCase() === accentHex.toLowerCase() ? darkenHex(accentHex, 20) : accentHex
+
   await brandUpsert(ctx.userId, {
     nlHeaderBgColor: palette.headerBackground ?? '#0b2545',
     nlFooterBgColor: palette.headerBackground ?? '#0b2545',
@@ -267,6 +294,10 @@ export async function commitTemplateReveal(ctx: StepContext, answer: unknown): P
     nlSectionColor3: palette.bodyBackground ?? '#ffffff',
     nlSectionColor4: tints[0],
     ...(fonts ? { nlFontFamily: fonts } : {}),
+    diagramPrimaryColor: diagramPrimary,
+    diagramSecondaryColor: diagramSecondary,
+    diagramTextColor: '#222222',
+    ...(fonts ? { diagramFontFamily: fonts } : {}),
   })
   ctx.stepData.paletteFinal = palette as unknown as Record<string, unknown>
 
@@ -637,7 +668,17 @@ export async function commitToggles(ctx: StepContext, answer: unknown): Promise<
 
 /** booking_url: the universal CTA destination (clinic's PMS booking page). */
 export async function commitBookingUrl(ctx: StepContext, answer: unknown): Promise<string | null> {
-  const a = (answer ?? {}) as { text?: string }
+  const a = (answer ?? {}) as { text?: string; phoneOnly?: boolean }
+  if (a.phoneOnly === true) {
+    // Phone-only bookings are a valid business model (run-3 item 8) — but
+    // every call-first fallback needs a number to dial.
+    const brand = await prisma.brandSettings.findUnique({ where: { userId: ctx.userId }, select: { organizationPhone: true } })
+    if (!brand?.organizationPhone?.trim()) {
+      return "We don't have a phone number for your clinic yet — add it on the business details step first, then choose phone bookings"
+    }
+    await brandUpsert(ctx.userId, { bookingMode: 'phone' })
+    return null
+  }
   const raw = a.text?.trim()
   if (!raw) return 'Paste your online booking link (the page patients use to book)'
   const url = raw.startsWith('http') ? raw : `https://${raw}`
@@ -649,6 +690,7 @@ export async function commitBookingUrl(ctx: StepContext, answer: unknown): Promi
   const brand = await prisma.brandSettings.findUnique({ where: { userId: ctx.userId }, select: { socialBioUrl: true } })
   await brandUpsert(ctx.userId, {
     bookingUrl: url,
+    bookingMode: 'online',
     // Existing CTA consumers read socialBioUrl — backfill it so the booking
     // destination takes effect immediately without touching those call sites.
     ...(brand?.socialBioUrl?.trim() ? {} : { socialBioUrl: url }),

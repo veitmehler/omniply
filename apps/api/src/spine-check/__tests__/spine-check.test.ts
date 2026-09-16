@@ -11,6 +11,7 @@ const CLINIC: SpineCheckClinic = {
   buttonColor: '#2a6f97',
   buttonTextColor: '#ffffff',
   accent: '#2a6f97',
+  phone: '+1 480 555 0100',
   bookingUrl: 'https://book.example.com',
   captureUrl: 'https://svc.omniply.io/api/spine-check/capture',
   guideTitles: {
@@ -35,6 +36,24 @@ function loadSpine(html: string) {
     compute: (answers: number[]) => { scores: Record<string, number>; total: number; weakest: string }
   }
 }
+
+describe('booking CTA fallback', () => {
+  it('renders the online booking button when bookingUrl is set', () => {
+    const html = buildSpineCheckFragment(CLINIC)
+    expect(html).toContain('https://book.example.com')
+    expect(html).not.toContain('tel:')
+  })
+  it('falls back to a call-to-book tel: button for phone-only clinics', () => {
+    const html = buildSpineCheckFragment({ ...CLINIC, bookingUrl: null })
+    expect(html).toContain('tel:+14805550100')
+    expect(html).toContain('Call Coast Chiropractic Kawana to book')
+  })
+  it('renders no booking CTA when neither url nor phone exists', () => {
+    const html = buildSpineCheckFragment({ ...CLINIC, bookingUrl: null, phone: null })
+    expect(html).not.toContain('tel:')
+    expect(html).not.toContain('Book a visit')
+  })
+})
 
 const SPINE = loadSpine(buildSpineCheckHtml(CLINIC))
 

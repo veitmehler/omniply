@@ -28,6 +28,7 @@ export interface SpineCheckClinic {
   buttonTextColor: string
   accent: string
   bookingUrl: string | null
+  phone: string | null // call-to-book fallback when no online booking (run-3 item 8)
   captureUrl: string // absolute POST endpoint
   guideTitles: { desk: string; sleep: string; morning: string; niggle: string }
   firstVisitGuideTitle: string | null
@@ -124,7 +125,7 @@ export function buildSpineCheckFragment(c: SpineCheckClinic): string {
       <div class="sc-verdict" id="sc-verdict"></div>
       <div class="sc-guidebox" id="sc-guidebox"></div>
     </div>
-    ${c.bookingUrl ? `<div style="margin-top:18px;"><a class="sc-btn" href="${esc(c.bookingUrl)}" target="_blank" rel="noopener">Book a visit with ${name}</a></div>` : ''}
+    ${c.bookingUrl ? `<div style="margin-top:18px;"><a class="sc-btn" href="${esc(c.bookingUrl)}" target="_blank" rel="noopener">Book a visit with ${name}</a></div>` : c.phone ? `<div style="margin-top:18px;"><a class="sc-btn" href="tel:${esc(c.phone.replace(/[^+\d]/g, ''))}">Call ${name} to book</a></div>` : ''}
     <p class="sc-disclaimer">This is an educational self-check of your daily habits... not a medical assessment or diagnosis. If something has been bothering you, a professional look is always the safest next step.</p>
   </div>
 

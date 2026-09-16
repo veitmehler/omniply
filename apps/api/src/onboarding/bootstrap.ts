@@ -68,6 +68,13 @@ export async function bootstrapOnboarding(
         phone: loc.phone || '',
         website: (loc.website || business.website || '').trim(),
         address: [loc.address, loc.city, loc.state, loc.postalCode].filter(Boolean).join(', '),
+        // Structured components (run-3 batch item 2): Settings uses the
+        // structured address fields — joining then asking the client to
+        // un-join was absurd.
+        addressLine1: loc.address || '',
+        addressCity: loc.city || '',
+        addressState: loc.state || '',
+        addressPostal: loc.postalCode || '',
         country: loc.country || '',
         timezone: loc.timezone || business.timezone || '',
         logoUrl: loc.logoUrl || '',
