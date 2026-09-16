@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Loader2, ArrowLeft, Plus, Trash2, Sparkles, ImageIcon, RefreshCw } from 'lucide-react'
 
 interface Offer {
@@ -32,10 +32,6 @@ export function OffersView({ embedMode = false }: { embedMode?: boolean } = {}) 
   const [offers, setOffers] = useState<Offer[]>([])
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState<Partial<Offer> | null>(null)
-  // Bumped each time an editor session opens — the form renders below the
-  // whole list, so without a scroll the click looks like it did nothing.
-  const [editSession, setEditSession] = useState(0)
-  const editorRef = useRef<HTMLDivElement | null>(null)
   const [seasonal, setSeasonal] = useState(false)
   const [busy, setBusy] = useState(false)
   const [brief, setBrief] = useState('')
@@ -64,12 +60,7 @@ export function OffersView({ embedMode = false }: { embedMode?: boolean } = {}) 
       setEditing(blank())
       setSeasonal(false)
     }
-    setEditSession((n) => n + 1)
   }
-
-  useEffect(() => {
-    if (editSession > 0) editorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  }, [editSession])
 
   async function save() {
     if (!editing) return
@@ -194,53 +185,11 @@ export function OffersView({ embedMode = false }: { embedMode?: boolean } = {}) 
     )
   }
 
-  return (
-    <div className="mx-auto max-w-4xl px-4 py-8">
-      {!embedMode && (
-        <Link href="/newsletter" className="mb-4 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="h-3.5 w-3.5" /> Newsletter
-        </Link>
-      )}
-      <div className="mb-2 flex items-center justify-between">
-        <h1 className="text-xl font-semibold">Offers</h1>
-        <button onClick={() => startEdit()} className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-sm text-primary-foreground">
-          <Plus className="h-4 w-4" /> New offer
-        </button>
-      </div>
-      <p className="mb-5 text-sm text-muted-foreground">
-        Set offers once — they auto-include by schedule. An <b>Always</b> offer shows after the feature article;
-        a <b>date-range</b> (seasonal) offer shows after “Tips of the Day” and auto-expires.
-      </p>
-
-      {error && <div className="mb-3 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
-
-      {/* List */}
-      <div className="space-y-2">
-        {offers.map((o) => (
-          <div key={o.id} className="flex items-center gap-3 rounded-lg border border-border bg-card p-3">
-            <div className="h-12 w-20 flex-none overflow-hidden rounded bg-muted">
-              {o.imageUrl && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={o.imageUrl} alt="" className="h-full w-full object-cover" />
-              )}
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="truncate text-sm font-medium">{o.title || '(untitled)'}</div>
-              <div className="text-xs text-muted-foreground">
-                <span className="rounded bg-muted px-1.5 py-0.5">{scheduleBadge(o)}</span>
-                {!o.enabled && <span className="ml-2 text-amber-600">disabled</span>}
-              </div>
-            </div>
-            <button onClick={() => startEdit(o)} className="text-xs text-blue-600 hover:underline">Edit</button>
-            <button onClick={() => remove(o.id)} className="text-red-600 hover:text-red-700"><Trash2 className="h-4 w-4" /></button>
-          </div>
-        ))}
-        {offers.length === 0 && <div className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">No offers yet.</div>}
-      </div>
-
-      {/* Editor */}
-      {editing && (
-        <div ref={editorRef} className="mt-6 scroll-mt-16 rounded-xl border border-border bg-card p-4">
+  // Inline editing drawer (Veit 2026-09-16): opens directly below the offer
+  // being edited (or above the list for a new offer) instead of a form at the
+  // bottom the click can't see.
+  const editorPanel = editing && (
+        <div className="mt-2 rounded-xl border border-primary/40 bg-card p-4">
           <h3 className="mb-3 text-sm font-semibold">{editing.id ? 'Edit offer' : 'New offer'}</h3>
 
           {/* AI draft */}
@@ -312,7 +261,57 @@ export function OffersView({ embedMode = false }: { embedMode?: boolean } = {}) 
             </div>
           </div>
         </div>
+  )
+
+  return (
+    <div className="mx-auto max-w-4xl px-4 py-8">
+      {!embedMode && (
+        <Link href="/newsletter" className="mb-4 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="h-3.5 w-3.5" /> Newsletter
+        </Link>
       )}
+      <div className="mb-2 flex items-center justify-between">
+        <h1 className="text-xl font-semibold">Offers</h1>
+        <button onClick={() => startEdit()} className="inline-flex items-center gap-1 rounded-md bg-primary px-3 py-1.5 text-sm text-primary-foreground">
+          <Plus className="h-4 w-4" /> New offer
+        </button>
+      </div>
+      <p className="mb-5 text-sm text-muted-foreground">
+        Set offers once — they auto-include by schedule. An <b>Always</b> offer shows after the feature article;
+        a <b>date-range</b> (seasonal) offer shows after “Tips of the Day” and auto-expires.
+      </p>
+
+      {error && <div className="mb-3 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
+
+      {editing && !editing.id && <div className="mb-4">{editorPanel}</div>}
+
+      {/* List */}
+      <div className="space-y-2">
+        {offers.map((o) => (
+          <div key={o.id}>
+          <div className="flex items-center gap-3 rounded-lg border border-border bg-card p-3">
+            <div className="h-12 w-20 flex-none overflow-hidden rounded bg-muted">
+              {o.imageUrl && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={o.imageUrl} alt="" className="h-full w-full object-cover" />
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-sm font-medium">{o.title || '(untitled)'}</div>
+              <div className="text-xs text-muted-foreground">
+                <span className="rounded bg-muted px-1.5 py-0.5">{scheduleBadge(o)}</span>
+                {!o.enabled && <span className="ml-2 text-amber-600">disabled</span>}
+              </div>
+            </div>
+            <button onClick={() => startEdit(o)} className="text-xs text-blue-600 hover:underline">Edit</button>
+            <button onClick={() => remove(o.id)} className="text-red-600 hover:text-red-700"><Trash2 className="h-4 w-4" /></button>
+          </div>
+          {editing?.id === o.id && editorPanel}
+          </div>
+        ))}
+        {offers.length === 0 && <div className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">No offers yet.</div>}
+      </div>
+
     </div>
   )
 }
