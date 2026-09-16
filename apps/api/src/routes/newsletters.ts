@@ -54,6 +54,7 @@ const TEMPLATE_FIELDS = [
   'nlSectionColor3',
   'nlSectionColor4',
   'nlBandTextColor',
+  'nlFooterTextColor',
   'nlFontFamily',
   'nlFontColor',
   'nlHeadingFontWeight',
@@ -517,7 +518,7 @@ export async function newsletterRoutes(app: FastifyInstance) {
       const t = (request.body?.template ?? {}) as Record<string, unknown>
       const renderBrand: RenderBrand = { ...toRenderBrand(brand) }
       const OVERLAYABLE: (keyof RenderBrand)[] = [
-        'nlLogoUrl', 'nlLogoColorUrl', 'nlHeaderLogoVariant', 'nlFooterLogoVariant', 'nlFooterLogoWidth', 'nlBandTextColor',
+        'nlLogoUrl', 'nlLogoColorUrl', 'nlHeaderLogoVariant', 'nlFooterLogoVariant', 'nlFooterLogoWidth', 'nlBandTextColor', 'nlFooterTextColor',
         'nlFooterDisclaimer', 'nlLogoWidth', 'nlHeaderBgColor', 'nlFooterBgColor',
         'nlSectionColor1', 'nlSectionColor2', 'nlSectionColor3', 'nlSectionColor4',
         'nlFontFamily', 'nlFontColor', 'nlHeadingFontWeight', 'nlBodyFontWeight',

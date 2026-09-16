@@ -1337,6 +1337,7 @@ model BrandSettings {
   installConsents     Json?
   nlFooterLogoVariant String? // 'auto' | 'light' | 'dark' (default auto)
   nlFooterLogoWidth   Int? // footer logo width (px)
+  nlFooterTextColor   String? // explicit footer text color; null = derived from footer logo variant
   nlFooterDisclaimer  String? @db.Text // editable footer disclaimer (renderer has a default)
 
   createdAt DateTime @default(now())

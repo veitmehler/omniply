@@ -74,6 +74,7 @@ export interface RenderBrand {
   nlHeaderTextColor?: string | null // header band text (org name); default white
   nlHeaderLogoLayout?: string | null // 'replace' (default) | 'beside' | 'above'
   nlFooterLogoVariant?: string | null
+  nlFooterTextColor?: string | null
   nlFooterLogoWidth?: number | null
   nlFooterDisclaimer?: string | null
   nlLogoWidth?: number | null
@@ -595,8 +596,8 @@ function footerBlock(brand: RenderBrand, theme: Theme): string {
   const footerLogo = theme.footerLogoUrl
     ? `<img src="${esc(theme.footerLogoUrl)}" alt="${esc(brand.organizationName ?? 'Logo')}" width="${theme.footerLogoWidth}" style="display:block;width:100%;max-width:${theme.footerLogoWidth}px;height:auto;margin:0 auto 18px;" />`
     : ''
-  // Footer text flips with the background (synced with the logo/icon variant).
-  const footerText = theme.footerIconVariant === 'light' ? '#ffffff' : '#00142b'
+  // Explicit choice wins (run-5 request); else flip with the logo/icon variant.
+  const footerText = brand.nlFooterTextColor?.trim() || (theme.footerIconVariant === 'light' ? '#ffffff' : '#00142b')
 
   const street = [brand.addressLine1, brand.addressLine2].filter(Boolean).join(', ')
   const cityLine = [

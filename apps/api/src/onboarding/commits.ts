@@ -142,6 +142,7 @@ export async function commitLogoConfirm(ctx: StepContext, answer: unknown): Prom
     const dims = processed as { contentWidth?: number; contentHeight?: number }
     const aspect = dims.contentWidth && dims.contentHeight ? dims.contentWidth / dims.contentHeight : 1
     const defaultWidth = aspect < 0.7 ? 100 : aspect < 1 ? 140 : 180
+    ctx.stepData.logoWidthDefault = defaultWidth
     await brandUpsert(ctx.userId, {
       // The client's REAL logo is the default; the reveal step's explicit
       // variant choice can still swap to a silhouette.
@@ -248,11 +249,13 @@ export async function commitBrandProfile(ctx: StepContext, answer: unknown): Pro
       palette.headerBackground ?? '#0b2545',
     ) ?? (ctx.stepData.logoChosen as string | null)
   const detectedFont = ((ctx.stepData.crawl as { fontHints?: string[] })?.fontHints ?? [])[0] ?? null
+  const logoWidthDefault = (ctx.stepData.logoWidthDefault as number | undefined) ?? 140
   ctx.stepData.templateDraft = {
     palette,
     logoUrl: logo,
     logoVariants: variants,
     logoLayout: 'replace',
+    logoWidth: logoWidthDefault,
     fontFamily: detectedFont,
     organizationName: prefill.organizationName ?? 'Your Practice',
     previewHtml: buildTemplatePreviewHtml({
@@ -260,6 +263,8 @@ export async function commitBrandProfile(ctx: StepContext, answer: unknown): Pro
       logoUrl: logo,
       palette,
       logoLayout: 'replace',
+      logoWidth: logoWidthDefault,
+      footerLogoUrl: logo,
       fontFamily: detectedFont,
     }),
   }
@@ -273,6 +278,9 @@ export async function commitTemplateReveal(ctx: StepContext, answer: unknown): P
     palette?: SemanticPalette
     logoVariant?: 'light' | 'dark' | 'color'
     logoLayout?: 'replace' | 'beside' | 'above'
+    logoWidth?: number
+    footerLogoVariant?: 'light' | 'dark' | 'color'
+    footerLogoWidth?: number
     confirmed?: boolean
   }
   const draft = (ctx.stepData.templateDraft as { palette?: SemanticPalette }) ?? {}
@@ -317,6 +325,16 @@ export async function commitTemplateReveal(ctx: StepContext, answer: unknown): P
       (palette.button ? nlLabelColorFor(palette.button) : null),
     nlHeaderTextColor: (palette as { headerText?: string }).headerText ?? '#ffffff',
     nlHeaderLogoLayout: a.logoLayout === 'beside' || a.logoLayout === 'above' ? a.logoLayout : 'replace',
+    // Full template at onboarding (run-5): logo sizes, footer logo variant,
+    // footer text color — the reveal card IS the template builder now.
+    ...(typeof a.logoWidth === 'number' ? { nlLogoWidth: Math.min(600, Math.max(40, Math.round(a.logoWidth))) } : {}),
+    ...(a.footerLogoVariant
+      ? { nlFooterLogoVariant: a.footerLogoVariant === 'color' ? 'original' : a.footerLogoVariant }
+      : {}),
+    ...(typeof a.footerLogoWidth === 'number'
+      ? { nlFooterLogoWidth: Math.min(500, Math.max(40, Math.round(a.footerLogoWidth))) }
+      : {}),
+    nlFooterTextColor: (palette as { footerText?: string }).footerText ?? '#ffffff',
     nlFontColor: '#222222',
     // Heading BANDS need vivid colors (render draws band text over them) —
     // the pale sectionTints were body-wash colors and produced near-white

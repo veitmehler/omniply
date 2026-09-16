@@ -190,6 +190,9 @@ export function buildTemplatePreviewHtml(opts: {
   /** Site-detected font (fontHints[0]) — real sends use it, so the preview
    * must too (item 7: hardcoded Arial was another reveal-vs-real gap). */
   fontFamily?: string | null
+  logoWidth?: number | null
+  footerLogoUrl?: string | null
+  footerLogoWidth?: number | null
 }): string {
   const p = opts.palette
   const header = p.headerBackground ?? '#0b2545'
@@ -212,9 +215,9 @@ export function buildTemplatePreviewHtml(opts: {
       <td style="vertical-align:middle;padding-right:14px"><img src="${opts.logoUrl}" alt="logo" style="max-height:48px;max-width:160px"/></td>
       <td style="vertical-align:middle;text-align:left">${nameH1}</td></tr></table>`
   } else if (layout === 'above') {
-    headerInner = `<img src="${opts.logoUrl}" alt="logo" style="max-height:48px;max-width:60%"/><div style="height:8px"></div>${nameH1}`
+    headerInner = `<img src="${opts.logoUrl}" alt="logo" style="width:${Math.round((opts.logoWidth ?? 140) * 0.6)}px;max-width:60%"/><div style="height:8px"></div>${nameH1}`
   } else {
-    headerInner = `<img src="${opts.logoUrl}" alt="logo" style="max-height:56px;max-width:70%"/>`
+    headerInner = `<img src="${opts.logoUrl}" alt="logo" style="width:${Math.round((opts.logoWidth ?? 140) * 0.6)}px;max-width:70%"/>`
   }
   const font = opts.fontFamily?.trim() ? `'${opts.fontFamily.trim()}',Arial,Helvetica,sans-serif` : 'Arial,Helvetica,sans-serif'
   return `<!doctype html><html><body style="margin:0;font-family:${font};background:${body}">
@@ -238,7 +241,8 @@ export function buildTemplatePreviewHtml(opts: {
     <h3 style="margin:0 0 6px;font-size:15px;color:${header}">Seasonal offer</h3>
     <p style="margin:0;font-size:13px;color:#444">Your offers will appear in cards like this one.</p>
   </div>
-  <div style="background:${header};color:${headerText};padding:18px 24px;text-align:center;font-size:12px;opacity:.9">
+  <div style="background:${header};color:${(p as { footerText?: string }).footerText ?? '#ffffff'};padding:18px 24px;text-align:center;font-size:12px">
+    ${opts.footerLogoUrl ? `<img src="${opts.footerLogoUrl}" alt="logo" style="width:${Math.round((opts.footerLogoWidth ?? 160) * 0.6)}px;max-width:50%;display:block;margin:0 auto 8px"/>` : ''}
     ${esc(opts.organizationName)} · You're receiving this because you're a valued patient.
   </div>
 </div></body></html>`

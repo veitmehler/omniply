@@ -372,6 +372,7 @@ interface Palette {
   button?: string
   buttonText?: string
   bodyBackground?: string
+  footerText?: string
   sectionTints?: string[]
 }
 
@@ -382,6 +383,7 @@ const SWATCHES: { key: keyof Palette; label: string }[] = [
   { key: 'button', label: 'Buttons' },
   { key: 'buttonText', label: 'Button text' },
   { key: 'bodyBackground', label: 'Background' },
+  { key: 'footerText', label: 'Footer text' },
 ]
 
 const LOGO_LAYOUTS: { value: 'replace' | 'beside' | 'above'; label: string }[] = [
@@ -397,6 +399,7 @@ function previewHtml(
   p: Palette,
   layout: 'replace' | 'beside' | 'above' = 'replace',
   fontFamily?: string | null,
+  extras?: { logoWidth?: number; footerLogoUrl?: string | null; footerLogoWidth?: number },
 ): string {
   const header = p.headerBackground ?? '#0b2545'
   const headerText = p.headerText ?? '#ffffff'
@@ -413,8 +416,8 @@ function previewHtml(
   if (!logoUrl) headerInner = nameH1
   else if (layout === 'beside')
     headerInner = `<table role="presentation" cellpadding="0" cellspacing="0" border="0" align="center" style="margin:0 auto"><tr><td style="vertical-align:middle;padding-right:12px"><img src="${logoUrl}" style="max-height:40px;max-width:140px"/></td><td style="vertical-align:middle;text-align:left">${nameH1}</td></tr></table>`
-  else if (layout === 'above') headerInner = `<img src="${logoUrl}" style="max-height:40px;max-width:60%"/><div style="height:6px"></div>${nameH1}`
-  else headerInner = `<img src="${logoUrl}" style="max-height:48px;max-width:70%"/>`
+  else if (layout === 'above') headerInner = `<img src="${logoUrl}" style="width:${Math.round((extras?.logoWidth ?? 140) * 0.6)}px;max-width:60%"/><div style="height:6px"></div>${nameH1}`
+  else headerInner = `<img src="${logoUrl}" style="width:${Math.round((extras?.logoWidth ?? 140) * 0.6)}px;max-width:70%"/>`
   const font = fontFamily?.trim() ? `'${fontFamily.trim()}',Arial,sans-serif` : 'Arial,sans-serif'
   return `<!doctype html><html><body style="margin:0;font-family:${font};background:${body}">
 <div style="max-width:600px;margin:0 auto">
@@ -432,7 +435,10 @@ function previewHtml(
   </div>
   <div style="padding:14px 22px"><a href="#" style="display:inline-block;background:${btn};color:${btnText};padding:9px 16px;border-radius:6px;font-size:13px;text-decoration:none">Book an appointment</a></div>
   <div style="background:${tints[1] ?? tints[0]};padding:14px 22px"><h3 style="margin:0 0 4px;font-size:14px;color:${header}">Seasonal offer</h3><p style="margin:0;font-size:12px;color:#444">Offer cards appear like this.</p></div>
-  <div style="background:${header};color:${headerText};padding:14px 22px;text-align:center;font-size:11px;opacity:.9">${esc(orgName)}</div>
+  <div style="background:${header};color:${p.footerText ?? '#ffffff'};padding:16px 22px;text-align:center;font-size:11px">
+    ${extras?.footerLogoUrl ? `<img src="${extras.footerLogoUrl}" style="width:${Math.round((extras.footerLogoWidth ?? 160) * 0.6)}px;max-width:50%;display:block;margin:0 auto 8px"/>` : ''}
+    ${esc(orgName)} · 123 Example St · Unsubscribe
+  </div>
 </div></body></html>`
 }
 
@@ -552,6 +558,7 @@ export function TemplateCard({
     logoUrl?: string | null
     logoVariants?: { lightUrl?: string; darkUrl?: string; colorUrl?: string; colorLuminance?: number }
     logoLayout?: 'replace' | 'beside' | 'above'
+    logoWidth?: number
     fontFamily?: string | null
     organizationName?: string
   }
@@ -576,6 +583,14 @@ export function TemplateCard({
     return variants.darkUrl ? 'dark' : variants.colorUrl ? 'color' : 'light'
   })
   const [logoLayout, setLogoLayout] = useState<'replace' | 'beside' | 'above'>(card.logoLayout ?? 'replace')
+  const [logoWidth, setLogoWidth] = useState<number>(card.logoWidth ?? 140)
+  const [footerLogoWidth, setFooterLogoWidth] = useState<number>(160)
+  const [footerVariant, setFooterVariant] = useState<'color' | 'light' | 'dark'>(() => {
+    // Footer sits on the header color — same contrast-first default as the header logo.
+    const header = (card.palette?.headerBackground as string) ?? '#0b2545'
+    if (variants.colorUrl && variantContrast('color', header) >= 2.5) return 'color'
+    return variants.lightUrl && variantContrast('light', header) >= variantContrast('dark', header) ? 'light' : 'dark'
+  })
   const hasVariantChoice = [variants.colorUrl, variants.lightUrl, variants.darkUrl].filter(Boolean).length >= 2
   const headerBgNow = (palette.headerBackground as string) ?? '#0b2545'
   const selectedLowContrast = variantContrast(logoVariant, headerBgNow) < 1.8
@@ -583,9 +598,16 @@ export function TemplateCard({
     (logoVariant === 'dark' ? variants.darkUrl : logoVariant === 'light' ? variants.lightUrl : variants.colorUrl) ??
     card.logoUrl ??
     null
+  const footerLogo =
+    (footerVariant === 'dark' ? variants.darkUrl : footerVariant === 'light' ? variants.lightUrl : variants.colorUrl) ?? null
   const html = useMemo(
-    () => previewHtml(card.organizationName ?? 'Your Practice', activeLogo, palette, logoLayout, card.fontFamily),
-    [card.organizationName, activeLogo, palette, logoLayout, card.fontFamily],
+    () =>
+      previewHtml(card.organizationName ?? 'Your Practice', activeLogo, palette, logoLayout, card.fontFamily, {
+        logoWidth,
+        footerLogoUrl: footerLogo,
+        footerLogoWidth,
+      }),
+    [card.organizationName, activeLogo, palette, logoLayout, card.fontFamily, logoWidth, footerLogo, footerLogoWidth],
   )
   return (
     <div className="space-y-3 rounded-xl border border-border bg-card p-4">
@@ -651,6 +673,48 @@ export function TemplateCard({
           ))}
         </div>
       )}
+      {activeLogo && (
+        <div className="flex items-center gap-3">
+          <span className="w-28 flex-none text-xs text-muted-foreground">Header logo size:</span>
+          <input type="range" min={40} max={400} step={10} value={logoWidth} disabled={disabled} onChange={(e) => setLogoWidth(parseInt(e.target.value, 10))} className="flex-1" />
+          <span className="w-12 text-right text-xs text-muted-foreground">{logoWidth}px</span>
+        </div>
+      )}
+      {hasVariantChoice && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs text-muted-foreground">Footer logo:</span>
+          {(
+            [
+              { v: 'color' as const, url: variants.colorUrl, label: 'Original', bg: headerBgNow },
+              { v: 'light' as const, url: variants.lightUrl, label: 'Light', bg: headerBgNow },
+              { v: 'dark' as const, url: variants.darkUrl, label: 'Dark', bg: '#ffffff' },
+            ].filter((o) => o.url)
+          ).map((o) => (
+            <button
+              key={o.v}
+              type="button"
+              disabled={disabled}
+              onClick={() => setFooterVariant(o.v)}
+              className={`flex items-center gap-1.5 rounded-lg border px-2 py-1.5 ${
+                footerVariant === o.v ? 'border-primary ring-2 ring-primary/40' : 'border-border'
+              }`}
+              style={{ background: o.bg }}
+              aria-pressed={footerVariant === o.v}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={o.url} alt={`${o.label} footer logo`} className="h-6" />
+              <span className="text-[11px]" style={{ color: luminance255(o.bg) > 140 ? '#333333' : '#ffffff' }}>{o.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
+      {footerLogo && (
+        <div className="flex items-center gap-3">
+          <span className="w-28 flex-none text-xs text-muted-foreground">Footer logo size:</span>
+          <input type="range" min={40} max={400} step={10} value={footerLogoWidth} disabled={disabled} onChange={(e) => setFooterLogoWidth(parseInt(e.target.value, 10))} className="flex-1" />
+          <span className="w-12 text-right text-xs text-muted-foreground">{footerLogoWidth}px</span>
+        </div>
+      )}
       <div className="flex flex-wrap gap-3">
         {SWATCHES.map((s) => {
           const value = (palette[s.key] as string) ?? '#888888'
@@ -677,7 +741,7 @@ export function TemplateCard({
       <button
         className={`${primaryBtn} w-full`}
         disabled={disabled}
-        onClick={() => onSubmit({ palette, logoVariant, logoLayout, confirmed: true })}
+        onClick={() => onSubmit({ palette, logoVariant, logoLayout, logoWidth, footerLogoVariant: footerVariant, footerLogoWidth, confirmed: true })}
       >
         I love it — that&apos;s my newsletter ✓
       </button>

@@ -16,6 +16,7 @@ const COLOR_FIELDS: Array<[string, string, string]> = [
   ['nlSectionColor3', 'Articles & “Did you know” bands', '#00142b'],
   ['nlSectionColor4', 'Recipe bands', '#00dd81'],
   ['nlBandTextColor', 'Band text color (all bands)', '#ffffff'],
+  ['nlFooterTextColor', 'Footer text color', '#ffffff'],
   ['nlFontColor', 'Body text color', '#00142b'],
   ['nlLinkColor', 'Link color', '#fa00bb'],
 ]
@@ -425,7 +426,7 @@ export function TemplateEditorView({ embedMode = false }: { embedMode?: boolean 
                     <label className="mb-1 block text-[11px] text-muted-foreground">
                       Width: {parseInt(template.nlFooterLogoWidth || '0', 10) || 200}px
                     </label>
-                    <input type="range" min={100} max={500} step={10} value={parseInt(template.nlFooterLogoWidth || '0', 10) || 200} onChange={(e) => setT('nlFooterLogoWidth', e.target.value)} className="w-full" />
+                    <input type="range" min={40} max={500} step={10} value={parseInt(template.nlFooterLogoWidth || '0', 10) || 200} onChange={(e) => setT('nlFooterLogoWidth', e.target.value)} className="w-full" />
                   </div>
                 </div>
 
