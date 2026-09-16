@@ -83,6 +83,14 @@ export function LogoCard({
   const [customUrl, setCustomUrl] = useState('')
   return (
     <div className="space-y-3 rounded-xl border border-border bg-card p-4">
+      {candidates.length > 0 && (
+        <p className="text-sm text-muted-foreground">
+          Most websites store just the logo <em>mark</em> as an image and add the practice
+          name next to it as text — so you may only see your icon here, without your name.
+          That&apos;s normal: pick the mark, and your newsletter template pairs it with your
+          practice name to recreate your header look.
+        </p>
+      )}
       {candidates.length > 0 ? (
         <div className="grid grid-cols-2 gap-3">
           {candidates.map((url) => (
