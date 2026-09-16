@@ -206,7 +206,7 @@ export function buildMasterHtml(spec: MasterDocSpec): string {
   .offer-box .offer-note { font-size: 12px; color: rgba(255,255,255,.8); margin-top: 2.5mm; }
   /* Same width as the offer box (Veit 2026-09-14: the two CTA boxes must align). */
   .back-page .cta-btn { display: block; margin-top: 8mm; background: {{brand.accentColor}}; color: #fff; padding: 5.5mm 14mm; border-radius: 3mm; font-size: 17px; font-weight: 700; width: 100%; max-width: 135mm; box-sizing: border-box; text-decoration: none; }
-  .back-page .cta-btn .cta-phone { display: block; font-size: 26px; font-weight: 800; letter-spacing: 0.5px; margin-top: 2.5mm; }
+  .back-page .cta-btn .cta-phone { display: block; font-size: 26px; font-weight: 800; letter-spacing: 0.5px; margin-top: 7mm; }
   .back-page .contact { margin-top: 9mm; font-size: 13px; line-height: 1.9; color: {{brand.fontColor}}; }
   .disclaimer { margin: 6mm auto 2mm; font-size: 9.5px; line-height: 1.5; color: #777; max-width: 160mm; }
 </style>
