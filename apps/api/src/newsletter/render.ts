@@ -308,13 +308,40 @@ function para(html: string, theme: Theme, align: 'left' | 'center' = 'left'): st
 }
 
 function bulletList(items: string[], theme: Theme): string {
-  const lis = items
+  // Explicit glyph bullets — native <ul> markers render inconsistently (or not
+  // at all) across email clients (run-5 finding). Hanging indent keeps
+  // wrapped lines aligned under the text, not the dot.
+  return items
     .map(
       (i) =>
-        `<li style="margin:0 0 12px;font-family:${theme.fontStack};font-size:16px;font-weight:${theme.bodyWeight};color:${theme.fontColor};line-height:1.5;">${esc(i)}</li>`,
+        `<div style="margin:0 0 12px;padding-left:20px;text-indent:-20px;font-family:${theme.fontStack};font-size:16px;font-weight:${theme.bodyWeight};color:${theme.fontColor};line-height:1.5;"><span style="color:${theme.linkColor};font-weight:700;">&bull;</span>&nbsp;&nbsp;${esc(i)}</div>`,
     )
     .join('')
-  return `<ul style="margin:0;padding:0 0 0 22px;">${lis}</ul>`
+}
+
+/** Give unstyled <p> tags an explicit bottom margin — email clients strip
+ *  default margins, collapsing all paragraph whitespace (run-5 finding). */
+function spacedParagraphs(html: string): string {
+  return html.replace(/<p(?![^>]*style=)/gi, '<p style="margin:0 0 16px;"')
+}
+
+/** Bullet-glyph treatment for research-sourced ingredient lists (they arrive
+ *  as <li> items or plain <br>/<p>-separated lines with no list styling). */
+function bulletizeLines(html: string, theme: Theme): string {
+  const dot = `<span style="color:${theme.linkColor};font-weight:700;">&bull;</span>&nbsp;&nbsp;`
+  const wrap = (inner: string) =>
+    `<div style="margin:0 0 10px;padding-left:20px;text-indent:-20px;line-height:1.5;">${dot}${inner}</div>`
+  if (/<li[\s>]/i.test(html)) {
+    return html
+      .replace(/<\/?[uo]l[^>]*>/gi, '')
+      .replace(/<li[^>]*>([\s\S]*?)<\/li>/gi, (_m, inner: string) => wrap(inner.trim()))
+  }
+  const lines = html
+    .split(/<br\s*\/?>(?:\s*)|<\/p>\s*<p[^>]*>|<\/?p[^>]*>/gi)
+    .map((l) => l.replace(/<\/?p[^>]*>/gi, '').trim())
+    .filter(Boolean)
+  if (lines.length < 2) return html
+  return lines.map(wrap).join('')
 }
 
 function readMoreButton(link: string, theme: Theme, label = 'Read full article →'): string {
@@ -366,11 +393,11 @@ function articleBlock(a: RenderArticle, theme: Theme, showTitle = true): string 
   const tldr = a.tldr
     ? `<p style="margin:0 0 14px;font-family:${theme.fontStack};font-size:15px;color:${theme.fontColor};"><u>TL;DR:</u> ${esc(a.tldr)}</p>`
     : ''
-  return `${img}${h2}${tldr}${para(stylePlainLanguageBoxes(a.body, theme), theme)}`
+  return `${img}${h2}${tldr}${para(spacedParagraphs(stylePlainLanguageBoxes(a.body, theme)), theme)}`
 }
 
 function teaserBlock(t: RenderTeaser, theme: Theme): string {
-  return `${para(t.body, theme)}<div style="margin-top:14px;">${para(t.cta, theme)}</div>${readMoreButton(t.link, theme)}`
+  return `${para(spacedParagraphs(t.body), theme)}<div style="margin-top:14px;">${para(t.cta, theme)}</div>${readMoreButton(t.link, theme)}`
 }
 
 function videoCard(v: RenderVideo, theme: Theme): string {
@@ -392,7 +419,7 @@ function recipeBlock(r: RenderRecipe, theme: Theme): string {
   const intro = r.imageUrl ? r.intro.replace(/<h2[^>]*>[\s\S]*?<\/h2>/i, '').trim() : r.intro
   const h3 = (t: string) =>
     `<h3 style="margin:22px 0 10px;font-family:${theme.fontStack};font-size:18px;font-weight:${theme.headingWeight};color:${theme.fontColor};">${t}</h3>`
-  return `${img}${para(intro, theme)}${h3('Ingredients')}${para(r.ingredients, theme)}${h3('Instructions')}${para(r.instructions, theme)}`
+  return `${img}${para(spacedParagraphs(intro), theme)}${h3('Ingredients')}${para(bulletizeLines(r.ingredients, theme), theme)}${h3('Instructions')}${para(spacedParagraphs(r.instructions), theme)}`
 }
 
 export function buildRenderInput(
@@ -526,7 +553,7 @@ export function renderNewsletterHtml(input: RenderInput, brand: RenderBrand): st
   if (fun?.triviaQuestion && fun?.triviaAnswer) {
     rows.push(band('Trivia Answer', pink, theme))
     rows.push(
-      `<tr><td style="background-color:#ffffff;padding:32px 28px 60px;">${para(`<p style="margin:0;font-size:22px;">${esc(fun.triviaAnswer)}</p>`, theme, 'center')}</td></tr>`,
+      `<tr><td style="background-color:#ffffff;padding:32px 28px 60px;">${para(`<p style="margin:0;">${esc(fun.triviaAnswer)}</p>`, theme, 'center')}</td></tr>`,
     )
   }
 

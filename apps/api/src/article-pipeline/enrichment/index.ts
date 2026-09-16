@@ -847,6 +847,8 @@ async function buildDiagramRestyleConfig(
     industry: brandStyle?.industry,
     specialization: specLabel,
     styleGuide: brandStyle?.diagramStyleGuide,
+    primaryColor: brandStyle?.diagramPrimaryColor,
+    secondaryColor: brandStyle?.diagramSecondaryColor,
   })
   let logoBuffer: Buffer | null = null
   const logoUrl = await resolveDiagramLogoUrl(jobId, brandStyle)

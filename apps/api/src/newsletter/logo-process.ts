@@ -22,6 +22,10 @@ export interface ProcessedLogo {
   colorUrl: string
   /** Avg WCAG luminance of the color cutout's opaque pixels (contrast input). */
   colorLuminance: number
+  /** Cropped content dimensions — aspect drives the default render width
+   *  (a slim-tall mark at full width renders enormous). */
+  contentWidth: number
+  contentHeight: number
 }
 
 export interface BBox { left: number; top: number; width: number; height: number }
@@ -244,5 +248,5 @@ export async function processLogo(
   await deleteOldVersions(`${base}-color-`, colorKey)
 
   logger.info({ userId, colorLuminance }, '[newsletter/logo-process] generated light + dark + colour variants')
-  return { lightUrl, darkUrl, colorUrl, colorLuminance }
+  return { lightUrl, darkUrl, colorUrl, colorLuminance, contentWidth: bbox.width, contentHeight: bbox.height }
 }

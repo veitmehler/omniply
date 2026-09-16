@@ -408,7 +408,7 @@ export function TemplateEditorView({ embedMode = false }: { embedMode?: boolean 
                     <label className="mb-1 block text-[11px] text-muted-foreground">
                       Width: {parseInt(template.nlLogoWidth || '0', 10) || 320}px
                     </label>
-                    <input type="range" min={120} max={600} step={10} value={parseInt(template.nlLogoWidth || '0', 10) || 320} onChange={(e) => setT('nlLogoWidth', e.target.value)} className="w-full" />
+                    <input type="range" min={40} max={600} step={10} value={parseInt(template.nlLogoWidth || '0', 10) || 320} onChange={(e) => setT('nlLogoWidth', e.target.value)} className="w-full" />
                   </div>
                   <div>
                     <label className="mb-1 block text-xs font-medium text-muted-foreground">Footer logo</label>

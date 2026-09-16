@@ -137,6 +137,11 @@ export async function commitLogoConfirm(ctx: StepContext, answer: unknown): Prom
     const dark = (processed as { darkUrl?: string }).darkUrl
     const color = (processed as { colorUrl?: string }).colorUrl
     const colorLum = (processed as { colorLuminance?: number }).colorLuminance
+    // Aspect-aware default width: a slim-tall mark (like a vertical icon) at
+    // 180px wide would render enormous in the header (run-5 finding).
+    const dims = processed as { contentWidth?: number; contentHeight?: number }
+    const aspect = dims.contentWidth && dims.contentHeight ? dims.contentWidth / dims.contentHeight : 1
+    const defaultWidth = aspect < 0.7 ? 100 : aspect < 1 ? 140 : 180
     await brandUpsert(ctx.userId, {
       // The client's REAL logo is the default; the reveal step's explicit
       // variant choice can still swap to a silhouette.
@@ -145,7 +150,7 @@ export async function commitLogoConfirm(ctx: StepContext, answer: unknown): Prom
       nlLogoDarkUrl: dark ?? null,
       nlLogoColorUrl: color ?? null,
       nlLogoColorLuminance: typeof colorLum === 'number' ? colorLum : null,
-      nlLogoWidth: 180,
+      nlLogoWidth: defaultWidth,
       // Schema publisher.logo: the real logo, not a silhouette.
       organizationLogoUrl: color ?? dark ?? light ?? source,
     })
