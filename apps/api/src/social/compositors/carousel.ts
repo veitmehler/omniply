@@ -802,9 +802,17 @@ export async function renderCarouselSlide(
     let logoTop = SLIDE_SIZE - Math.round(LOGO_W * 0.32) - MARGIN // aspect fallback when no logo loads
     if (input.tintLogoBuffer) {
       try {
-        const meta = await sharp(input.tintLogoBuffer).metadata()
-        const logoH = Math.round((LOGO_W * (meta.height ?? LOGO_W)) / (meta.width ?? LOGO_W))
-        const logoPng = await sharp(input.tintLogoBuffer).resize({ width: LOGO_W }).png().toBuffer()
+        // Bounding box, not width-normalized: a tall narrow logo (spine icons)
+        // width-fit to 140 blew up to ~1/3 of the slide (Veit 2026-09-17).
+        // fit:'inside' caps BOTH dimensions; wide logos render exactly as before.
+        const logoPng = await sharp(input.tintLogoBuffer)
+          .resize({ width: LOGO_W, height: LOGO_W, fit: 'inside' })
+          .png()
+          .toBuffer()
+        const meta = await sharp(logoPng).metadata()
+        const logoW = meta.width ?? LOGO_W
+        const logoH = meta.height ?? LOGO_W
+        logoLeft = SLIDE_SIZE - logoW - MARGIN
         logoTop = SLIDE_SIZE - logoH - MARGIN
         composites.push({ input: logoPng, left: logoLeft, top: logoTop })
       } catch (err) {

@@ -39,6 +39,63 @@ export async function socialAutomationRoutes(app: FastifyInstance) {
     },
   )
 
+  // POST /social-automation/spec-results/:id/caption — client caption edits
+  // (review UX, Veit 2026-09-17): { platform, caption, applyToAll? }. Updates
+  // the ready Post rows AND the preview payload together; no LLM, no media.
+  app.post<{ Params: { id: string }; Body: Record<string, unknown> }>(
+    '/social-automation/spec-results/:id/caption',
+    async (request, reply) => {
+      const account = await requireAccount(request, reply)
+      if (!account) return
+      const body = request.body ?? {}
+      const platform = typeof body.platform === 'string' ? body.platform : null
+      const rawCaption = typeof body.caption === 'string' ? body.caption : null
+      const applyToAll = body.applyToAll === true
+      if (!platform || rawCaption === null || !rawCaption.trim()) {
+        return reply.status(400).send({ error: 'platform and a non-empty caption are required' })
+      }
+      // Same dash-free scrub the caption generator applies — client edits
+      // must not reintroduce the banned em-dash tell.
+      const caption = rawCaption.slice(0, 5000).replace(/\s*—\s*/g, ', ')
+
+      const spec = await prisma.socialAutomationSpecResult.findFirst({
+        where: { id: request.params.id, run: { userId: account.userId } },
+        include: { run: { select: { userId: true } } },
+      })
+      if (!spec) return reply.status(404).send({ error: 'Post not found' })
+      if (spec.approvedAt) return reply.status(400).send({ error: 'Approved posts can no longer be edited' })
+
+      const preview = (spec.previewJson ?? null) as {
+        platforms?: { platform: string; caption?: string; postId?: string }[]
+      } | null
+      if (!preview?.platforms?.length) return reply.status(400).send({ error: 'No platform posts to edit' })
+
+      const targets = preview.platforms.filter((p) => applyToAll || p.platform === platform)
+      if (!targets.length) return reply.status(400).send({ error: `No ${platform} post on this slot` })
+
+      let updated = 0
+      for (const t of targets) {
+        if (t.postId) {
+          // Only rows still awaiting dispatch — a scheduled/sent post is immutable.
+          const res = await prisma.post.updateMany({
+            where: { id: t.postId, userId: spec.run.userId, status: 'ready' },
+            data: { content: caption },
+          })
+          if (res.count === 0) continue
+        }
+        t.caption = caption
+        updated++
+      }
+      if (!updated) return reply.status(400).send({ error: 'Posts are already scheduled and can no longer be edited' })
+
+      await prisma.socialAutomationSpecResult.update({
+        where: { id: spec.id },
+        data: { previewJson: preview as object },
+      })
+      return reply.send({ ok: true, updated })
+    },
+  )
+
   // GET /api/social-automation/:runId
   app.get<{ Params: { runId: string } }>('/social-automation/:runId', async (request, reply) => {
     const clerkId = await requireAuth(request, reply)

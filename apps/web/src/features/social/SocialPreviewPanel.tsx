@@ -224,8 +224,18 @@ function CarouselLightbox({
  * (no re-roll of the post). Story carousels additionally get the per-post
  * Light/Dark text toggle. Diagram-background carousels are not editable
  * (their overlay can't be reproduced by the recompose path).
+ * Editing opens a popover modal (Veit: the inline drawer was too cramped to
+ * edit a story in) with the slide thumbnails alongside the text fields.
  */
-function StorySlideEditor({ spec, onRefresh }: { spec: SocialSpecResultRow; onRefresh: () => Promise<void> }) {
+function StorySlideEditor({
+  spec,
+  preview,
+  onRefresh,
+}: {
+  spec: SocialSpecResultRow
+  preview: SpecPreviewPayload | null
+  onRefresh: () => Promise<void>
+}) {
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState<string | null>(null)
   const assets = spec.assetsJson
@@ -239,6 +249,10 @@ function StorySlideEditor({ spec, onRefresh }: { spec: SocialSpecResultRow; onRe
     : plans.map((pl) => ({ headline: pl.headlineText ?? '', body: pl.bodyText ?? '' }))
   const [drafts, setDrafts] = useState(initialDrafts)
   const mode = spec.overridesJson?.textMode ?? null
+  const thumbs =
+    preview?.assets.mediaUrls?.length
+      ? preview.assets.mediaUrls
+      : preview?.platforms.find((p) => p.mediaUrls?.length)?.mediaUrls ?? []
 
   if (!isStory && !isCarousel) return null
 
@@ -285,7 +299,7 @@ function StorySlideEditor({ spec, onRefresh }: { spec: SocialSpecResultRow; onRe
   const canNewImage = (i: number) => (isStory ? i > 0 : true)
 
   return (
-    <div className="space-y-2">
+    <>
       <div className="flex flex-wrap items-center gap-1.5">
         {isStory && (
           <>
@@ -304,53 +318,211 @@ function StorySlideEditor({ spec, onRefresh }: { spec: SocialSpecResultRow; onRe
           </>
         )}
         <button
-          onClick={() => { setDrafts(initialDrafts); setOpen((v) => !v) }}
+          onClick={() => { setDrafts(initialDrafts); setOpen(true) }}
           className="rounded border border-border px-2 py-0.5 text-[11px] text-muted-foreground hover:bg-muted"
         >
-          {open ? 'Close editor' : 'Edit slides'}
+          Edit slides
         </button>
       </div>
+
       {open && (
-        <div className="space-y-2 rounded-lg border border-primary/40 p-2">
-          {Array.from({ length: slideCount }, (_, i) => (
-            <div key={i}>
-              <div className="mb-0.5 flex items-center justify-between">
-                <label className="text-[11px] font-medium text-muted-foreground">Slide {i + 1}</label>
-                {canNewImage(i) && (
-                  <button
-                    onClick={() => void recompose({ regenerateImage: i }, `img-${i}`)}
-                    disabled={busy !== null}
-                    className="text-[11px] text-primary hover:underline disabled:opacity-50"
-                  >
-                    {busy === `img-${i}` ? 'Generating…' : 'New image'}
-                  </button>
-                )}
-              </div>
-              {isCarousel && (
-                <input
-                  value={drafts[i]?.headline ?? ''}
-                  onChange={(e) => setDrafts((prev) => prev.map((x, j) => (j === i ? { ...x, headline: e.target.value } : x)))}
-                  placeholder="Headline"
-                  className="mb-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs font-medium"
-                />
-              )}
-              <textarea
-                value={drafts[i]?.body ?? ''}
-                onChange={(e) => setDrafts((prev) => prev.map((x, j) => (j === i ? { ...x, body: e.target.value } : x)))}
-                rows={3}
-                className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs"
-              />
-            </div>
-          ))}
-          <button
-            onClick={saveTexts}
-            disabled={busy !== null}
-            className="w-full rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50"
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4" onClick={() => setOpen(false)}>
+          <div
+            className="flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-border bg-card shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
           >
-            {busy === 'save' ? 'Recomposing…' : 'Save & recompose'}
-          </button>
+            <div className="flex items-center justify-between border-b border-border px-5 py-3">
+              <span className="text-sm font-semibold text-card-foreground">Edit slides</span>
+              <button onClick={() => setOpen(false)} className="rounded p-1 text-muted-foreground hover:bg-muted" aria-label="Close">
+                ✕
+              </button>
+            </div>
+            <div className="flex-1 space-y-4 overflow-y-auto px-5 py-4">
+              {Array.from({ length: slideCount }, (_, i) => (
+                <div key={i} className="flex gap-3">
+                  <div className="w-28 flex-shrink-0">
+                    {thumbs[i] ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={thumbs[i]} alt={`Slide ${i + 1}`} className="aspect-square w-28 rounded-lg border border-border object-cover" />
+                    ) : (
+                      <div className="flex aspect-square w-28 items-center justify-center rounded-lg border border-border bg-muted text-xs text-muted-foreground">
+                        {i + 1}
+                      </div>
+                    )}
+                    {canNewImage(i) && (
+                      <button
+                        onClick={() => void recompose({ regenerateImage: i }, `img-${i}`)}
+                        disabled={busy !== null}
+                        className="mt-1 w-full text-center text-[11px] text-primary hover:underline disabled:opacity-50"
+                      >
+                        {busy === `img-${i}` ? 'Generating…' : 'New image'}
+                      </button>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <label className="mb-0.5 block text-[11px] font-medium text-muted-foreground">Slide {i + 1}</label>
+                    {isCarousel && (
+                      <input
+                        value={drafts[i]?.headline ?? ''}
+                        onChange={(e) => setDrafts((prev) => prev.map((x, j) => (j === i ? { ...x, headline: e.target.value } : x)))}
+                        placeholder="Headline"
+                        className="mb-1.5 w-full rounded-md border border-border bg-background px-2.5 py-1.5 text-sm font-medium"
+                      />
+                    )}
+                    <textarea
+                      value={drafts[i]?.body ?? ''}
+                      onChange={(e) => setDrafts((prev) => prev.map((x, j) => (j === i ? { ...x, body: e.target.value } : x)))}
+                      rows={isStory ? 4 : 3}
+                      className="w-full rounded-md border border-border bg-background px-2.5 py-1.5 text-sm"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center justify-end gap-2 border-t border-border px-5 py-3">
+              <button onClick={() => setOpen(false)} className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-muted">
+                Close
+              </button>
+              <button
+                onClick={saveTexts}
+                disabled={busy !== null}
+                className="rounded-md bg-primary px-4 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50"
+              >
+                {busy === 'save' ? 'Recomposing…' : 'Save & recompose'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
+    </>
+  )
+}
+
+/**
+ * Per-platform captions (review UX, Veit 2026-09-17): full text on demand
+ * (the old 4-line clamp hid most of it) + in-place editing before approval.
+ * Story captions are identical across platforms by design, so an edit offers
+ * "apply to all platforms" (pre-checked while they still match). Saving
+ * updates the ready Post rows and the preview payload together — no LLM.
+ */
+function PlatformCaptions({
+  spec,
+  preview,
+  editable,
+  onRefresh,
+}: {
+  spec: SocialSpecResultRow
+  preview: SpecPreviewPayload
+  editable: boolean
+  onRefresh: () => Promise<void>
+}) {
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({})
+  const [editing, setEditing] = useState<string | null>(null)
+  const [draft, setDraft] = useState('')
+  const [applyAll, setApplyAll] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const captions = preview.platforms.map((p) => p.caption)
+  const allIdentical = captions.length > 1 && captions.every((c) => c === captions[0])
+  const anyOpen = editing !== null || Object.values(expanded).some(Boolean)
+
+  const startEdit = (platform: string, caption: string) => {
+    setEditing(platform)
+    setDraft(caption)
+    setApplyAll(allIdentical)
+  }
+
+  const save = async () => {
+    if (!editing || !draft.trim()) return
+    setBusy(true)
+    try {
+      const res = await fetch(`/api/social-automation/spec-results/${spec.id}/caption`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ platform: editing, caption: draft, applyToAll: applyAll }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        toast.error(data.error ?? 'Saving the caption failed')
+        return
+      }
+      toast.success(applyAll ? 'Caption updated on all platforms.' : 'Caption updated.')
+      setEditing(null)
+      await onRefresh()
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className={`space-y-2 ${anyOpen ? '' : 'max-h-40 overflow-y-auto'}`}>
+      {preview.platforms.map((p) => {
+        const isOpen = !!expanded[p.platform]
+        const isEditing = editing === p.platform
+        return (
+          <div key={p.platform} className="text-xs">
+            <div className="flex items-center gap-2">
+              <span className="font-medium capitalize">{p.platform}</span>
+              {editable && !isEditing && (
+                <button
+                  onClick={() => startEdit(p.platform, p.caption)}
+                  className="text-[11px] text-primary hover:underline"
+                >
+                  Edit
+                </button>
+              )}
+            </div>
+            {isEditing ? (
+              <div className="mt-1 space-y-1.5">
+                <textarea
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  rows={6}
+                  autoFocus
+                  className="w-full rounded-md border border-border bg-background px-2.5 py-1.5 text-xs"
+                />
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  {preview.platforms.length > 1 ? (
+                    <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                      <input type="checkbox" checked={applyAll} onChange={(e) => setApplyAll(e.target.checked)} />
+                      Apply to all platforms
+                    </label>
+                  ) : (
+                    <span />
+                  )}
+                  <div className="flex gap-1.5">
+                    <button
+                      onClick={() => setEditing(null)}
+                      disabled={busy}
+                      className="rounded-md border border-border px-2.5 py-1 text-[11px] hover:bg-muted"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => void save()}
+                      disabled={busy || !draft.trim()}
+                      className="rounded-md bg-primary px-3 py-1 text-[11px] font-medium text-primary-foreground disabled:opacity-50"
+                    >
+                      {busy ? 'Saving…' : 'Save'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <>
+                <p className={`text-muted-foreground whitespace-pre-wrap mt-0.5 ${isOpen ? '' : 'line-clamp-4'}`}>
+                  {p.caption}
+                </p>
+                <button
+                  onClick={() => setExpanded((prev) => ({ ...prev, [p.platform]: !isOpen }))}
+                  className="mt-0.5 text-[11px] text-muted-foreground underline hover:text-foreground"
+                >
+                  {isOpen ? 'Show less' : 'Show full text'}
+                </button>
+              </>
+            )}
+          </div>
+        )
+      })}
     </div>
   )
 }
@@ -713,17 +885,13 @@ export function SocialPreviewPanel({
                       {preview && spec.status === 'completed' && (
                         <>
                           <SlotMedia preview={preview} />
-                          {!spec.approvedAt && <StorySlideEditor spec={spec} onRefresh={onRefresh} />}
-                          <div className="space-y-2 max-h-40 overflow-y-auto">
-                            {preview.platforms.map((p) => (
-                              <div key={p.platform} className="text-xs">
-                                <span className="font-medium capitalize">{p.platform}</span>
-                                <p className="text-muted-foreground whitespace-pre-wrap mt-0.5 line-clamp-4">
-                                  {p.caption}
-                                </p>
-                              </div>
-                            ))}
-                          </div>
+                          {!spec.approvedAt && <StorySlideEditor spec={spec} preview={preview} onRefresh={onRefresh} />}
+                          <PlatformCaptions
+                            spec={spec}
+                            preview={preview}
+                            editable={!spec.approvedAt}
+                            onRefresh={onRefresh}
+                          />
                         </>
                       )}
 
