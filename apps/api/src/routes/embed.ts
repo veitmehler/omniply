@@ -151,6 +151,17 @@ export async function embedRoutes(app: FastifyInstance) {
         }
       }
       if (!user) {
+        // NO silent auto-join (Veit 2026-09-16; also audit finding #15): a
+        // seat must exist BEFORE this person opens the app — created either
+        // via Settings → Team or automatically when they're sent an edit
+        // request. Roster membership (by email) is the gate.
+        const roster = ctx.email
+          ? await prisma.accountMember.findFirst({ where: { accountId, email: ctx.email.toLowerCase() } })
+          : null
+        if (!roster) {
+          logger.info({ accountId, ghlUserId: ctx.userId }, '[embed] SSO user has no seat — access denied')
+          return reply.status(200).send({ seatRequired: true })
+        }
         const email =
           ctx.email && !(await prisma.user.findUnique({ where: { email: ctx.email }, select: { id: true } }))
             ? ctx.email
@@ -160,11 +171,11 @@ export async function embedRoutes(app: FastifyInstance) {
             clerkId: await freeGhlClerkId(ctx.userId, accountId),
             ghlUserId: ctx.userId,
             email,
-            name: ctx.userName ?? null,
+            name: ctx.userName ?? roster.name ?? null,
             accountId,
           },
         })
-        logger.info({ userId: user.id, accountId }, '[embed] created user from SSO context')
+        logger.info({ userId: user.id, accountId }, '[embed] roster member activated seat via SSO')
       }
 
       // Auto-provisioned accounts have a placeholder owner until the buyer's

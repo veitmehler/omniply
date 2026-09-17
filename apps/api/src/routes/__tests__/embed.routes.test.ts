@@ -5,6 +5,8 @@ const ghlSettingsFindFirst = vi.fn()
 const userFindUnique = vi.fn()
 const userFindFirst = vi.fn()
 const userCreate = vi.fn()
+// Roster gate (no silent auto-join): default = the SSO user HAS a seat.
+const accountMemberFindFirst = vi.fn().mockResolvedValue({ id: 'am_1', email: 'dr@clinic.com', name: null })
 const userUpdate = vi.fn()
 const accountFindUnique = vi.fn()
 vi.mock('@omniply/shared', () => ({
@@ -17,6 +19,7 @@ vi.mock('@omniply/shared', () => ({
       update: (...a: unknown[]) => userUpdate(...a),
     },
     account: { findUnique: (...a: unknown[]) => accountFindUnique(...a) },
+    accountMember: { findFirst: (...a: unknown[]) => accountMemberFindFirst(...a) },
   },
 }))
 vi.mock('../../lib/logger', () => ({ logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() } }))
@@ -123,6 +126,16 @@ describe('POST /embed/session', () => {
       }),
     )
     expect(verifyEmbedToken(res.json().token)).toMatchObject({ sub: 'ghl:ghluser_1:acct_1', accountId: 'acct_1' })
+    await app.close()
+  })
+
+  it('denies a seat to an SSO user with no roster membership (no auto-join)', async () => {
+    accountMemberFindFirst.mockResolvedValueOnce(null)
+    const app = await build()
+    const res = await app.inject({ method: 'POST', url: '/embed/session', payload: { encryptedData: payload() } })
+    expect(res.statusCode).toBe(200)
+    expect(res.json().seatRequired).toBe(true)
+    expect(userCreate).not.toHaveBeenCalled()
     await app.close()
   })
 

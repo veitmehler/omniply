@@ -951,8 +951,11 @@ model SitePage {
 // overlay, never baked into bodyHtml.
 model ArticleEditRequest {
   id                String    @id @default(cuid())
-  sitePageId        String
-  sitePage          SitePage  @relation(fields: [sitePageId], references: [id], onDelete: Cascade)
+  // Exactly one of sitePageId / newsletterId is set (enforced in code).
+  sitePageId        String?
+  sitePage          SitePage? @relation(fields: [sitePageId], references: [id], onDelete: Cascade)
+  newsletterId      String?
+  newsletter        Newsletter? @relation(fields: [newsletterId], references: [id], onDelete: Cascade)
   reviewRoundId     String // groups one "send to teammate" action
   requestedByUserId String
   assigneeEmail     String
@@ -968,6 +971,7 @@ model ArticleEditRequest {
   updatedAt         DateTime  @updatedAt
 
   @@index([sitePageId])
+  @@index([newsletterId])
   @@index([reviewRoundId])
   @@map("article_edit_requests")
 }
@@ -1613,6 +1617,7 @@ model Newsletter {
   summaryImageUrl  String?         @db.Text // composited cover image URL
   renderedHtml     String?         @db.Text
   sectionsDisabled Json? // per-edition section-key overrides (review UI)
+  editRequests     ArticleEditRequest[]
   validation       Json? // completion score + issues
   // delivery
   ghlCampaignId    String?

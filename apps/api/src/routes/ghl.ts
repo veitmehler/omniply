@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify'
+import { requireAccount } from '../middleware/account'
 import { prisma, ghlSettingsForUser, canonicalAccountUserId } from '@omniply/shared'
 import { logger } from '../lib/logger'
 import { requireAuth } from '../middleware/auth'
@@ -6,8 +7,40 @@ import { decrypt, encrypt, maskApiKey } from '@omniply/shared'
 import { getGhlOAuthStartUrl, listGhlAccounts, listGhlTags } from '../lib/ghl/client'
 import type { GhlAccountIds } from '../lib/ghl/types'
 import { GHL_PLATFORMS } from '../lib/ghl/types'
+import { getGhlCredentials } from '../lib/ghl/settings'
 
 export async function ghlRoutes(app: FastifyInstance) {
+  // GET /ghl/location-users — ALL users of the client's GHL location (edit-
+  // request assignees; empirically verified with existing tokens 2026-09-16).
+  app.get('/ghl/location-users', async (request, reply) => {
+    const account = await requireAccount(request, reply)
+    if (!account) return
+    const owner = await prisma.account.findUnique({ where: { id: account.accountId }, select: { ownerUserId: true } })
+    const creds = await getGhlCredentials(owner?.ownerUserId ?? account.userId)
+    if (!creds) return reply.send({ users: [] })
+    try {
+      const res = await fetch(`https://services.leadconnectorhq.com/users/?locationId=${creds.locationId}`, {
+        headers: { Authorization: `Bearer ${creds.apiKey}`, Version: '2021-07-28' },
+      })
+      if (!res.ok) {
+        logger.warn({ status: res.status }, '[ghl] location-users fetch failed')
+        return reply.send({ users: [] })
+      }
+      const data = (await res.json()) as { users?: Array<{ name?: string; firstName?: string; lastName?: string; email?: string; roles?: { role?: string } }> }
+      const users = (data.users ?? [])
+        .filter((u) => u.email)
+        .map((u) => ({
+          name: u.name ?? [u.firstName, u.lastName].filter(Boolean).join(' ') ?? null,
+          email: String(u.email).toLowerCase(),
+          role: u.roles?.role ?? null,
+        }))
+      return reply.send({ users })
+    } catch (err) {
+      logger.warn({ err }, '[ghl] location-users fetch threw')
+      return reply.send({ users: [] })
+    }
+  })
+
   // GET /api/ghl/settings
   app.get('/ghl/settings', async (request, reply) => {
     const clerkId = await requireAuth(request, reply)

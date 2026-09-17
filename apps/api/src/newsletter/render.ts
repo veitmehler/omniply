@@ -129,6 +129,8 @@ interface Theme {
   fontColor: string
   headingWeight: string
   bandTextColor: string
+  /** Edit-mode render: stamp data-nl-section anchors on prose blocks. */
+  editAnchors?: boolean
   bodyWeight: string
   linkColor: string
   buttonColor: string // CTA/read-more buttons; falls back to linkColor
@@ -261,9 +263,9 @@ function esc(s: string | null | undefined): string {
 }
 
 /** A full-width colored heading band. */
-function band(title: string, bg: string, theme: Theme): string {
+function band(title: string, bg: string, theme: Theme, anchor?: string): string {
   return `<tr><td style="background-color:${bg};padding:22px 24px;text-align:center;">
-    <h1 style="margin:0;font-family:${HEADING_STACK};font-size:30px;font-weight:${theme.headingWeight};color:${theme.bandTextColor};letter-spacing:0.5px;line-height:1.2;">${esc(decodeEntities(title))}</h1>
+    <h1${anchorAttr(theme, anchor)} style="margin:0;font-family:${HEADING_STACK};font-size:30px;font-weight:${theme.headingWeight};color:${theme.bandTextColor};letter-spacing:0.5px;line-height:1.2;">${esc(decodeEntities(title))}</h1>
   </td></tr>`
 }
 
@@ -306,20 +308,26 @@ function plainHeading(title: string, theme: Theme): string {
   </td></tr>`
 }
 
-function para(html: string, theme: Theme, align: 'left' | 'center' = 'left'): string {
-  return `<div style="font-family:${theme.fontStack};font-size:16px;font-weight:${theme.bodyWeight};color:${theme.fontColor};line-height:1.6;text-align:${align};">${html}</div>`
+function para(html: string, theme: Theme, align: 'left' | 'center' = 'left', anchor?: string): string {
+  return `<div${anchorAttr(theme, anchor)} style="font-family:${theme.fontStack};font-size:16px;font-weight:${theme.bodyWeight};color:${theme.fontColor};line-height:1.6;text-align:${align};">${html}</div>`
 }
 
-function bulletList(items: string[], theme: Theme): string {
+/** data-nl-section stamp — only in edit-mode renders. */
+function anchorAttr(theme: Theme, anchor?: string): string {
+  return theme.editAnchors && anchor ? ` data-nl-section="${anchor}"` : ''
+}
+
+function bulletList(items: string[], theme: Theme, anchor?: string): string {
   // Explicit glyph bullets — native <ul> markers render inconsistently (or not
   // at all) across email clients (run-5 finding). Hanging indent keeps
   // wrapped lines aligned under the text, not the dot.
-  return items
+  const lines = items
     .map(
       (i) =>
-        `<div style="margin:0 0 12px;padding-left:20px;text-indent:-20px;font-family:${theme.fontStack};font-size:16px;font-weight:${theme.bodyWeight};color:${theme.fontColor};line-height:1.5;"><span style="color:${theme.linkColor};font-weight:700;">&bull;</span>&nbsp;&nbsp;${esc(i)}</div>`,
+        `<div data-nl-line style="margin:0 0 12px;padding-left:20px;text-indent:-20px;font-family:${theme.fontStack};font-size:16px;font-weight:${theme.bodyWeight};color:${theme.fontColor};line-height:1.5;"><span contenteditable="false" style="color:${theme.linkColor};font-weight:700;">&bull;</span>&nbsp;&nbsp;<span data-nl-line-text>${esc(i)}</span></div>`,
     )
     .join('')
+  return `<div${anchorAttr(theme, anchor)}>${lines}</div>`
 }
 
 /** Give unstyled <p> tags an explicit bottom margin — email clients strip
@@ -450,22 +458,23 @@ export function stylePlainLanguageBoxes(html: string, theme: Theme): string {
   )
 }
 
-function articleBlock(a: RenderArticle, theme: Theme, showTitle = true): string {
+function articleBlock(a: RenderArticle, theme: Theme, showTitle = true, anchor?: string): string {
   const img = a.imageUrl
     ? `<img src="${esc(a.imageUrl)}" width="624" alt="${esc(a.title)}" style="display:block;width:100%;max-width:624px;height:auto;border-radius:6px;margin:0 0 18px;" />`
     : ''
   // When the band already shows the article title (secondary), skip the inner h2.
   const h2 = showTitle
-    ? `<h2 style="margin:0 0 14px;font-family:${theme.fontStack};font-size:24px;font-weight:${theme.headingWeight};color:${theme.fontColor};line-height:1.3;">${esc(a.title)}</h2>`
+    ? `<h2${anchorAttr(theme, anchor ? `${anchor}.title` : undefined)} style="margin:0 0 14px;font-family:${theme.fontStack};font-size:24px;font-weight:${theme.headingWeight};color:${theme.fontColor};line-height:1.3;">${esc(a.title)}</h2>`
     : ''
   const tldr = a.tldr
-    ? `<p style="margin:0 0 14px;font-family:${theme.fontStack};font-size:15px;color:${theme.fontColor};"><u>TL;DR:</u> ${esc(a.tldr)}</p>`
+    ? `<p${anchorAttr(theme, anchor ? `${anchor}.tldr` : undefined)} style="margin:0 0 14px;font-family:${theme.fontStack};font-size:15px;color:${theme.fontColor};"><u>TL;DR:</u> ${esc(a.tldr)}</p>`
     : ''
-  return `${img}${h2}${tldr}${para(normalizeBody(stylePlainLanguageBoxes(a.body, theme), theme), theme)}`
+  return `${img}${h2}${tldr}${para(normalizeBody(stylePlainLanguageBoxes(a.body, theme), theme), theme, 'left', anchor ? `${anchor}.body` : undefined)}`
 }
 
-function teaserBlock(t: RenderTeaser, theme: Theme): string {
-  return `${para(normalizeBody(t.body, theme), theme)}<div style="margin-top:14px;">${para(t.cta, theme)}</div>${readMoreButton(t.link, theme)}`
+function teaserBlock(t: RenderTeaser, theme: Theme, index?: number): string {
+  const a = typeof index === 'number' ? `teasers.${index}.body` : undefined
+  return `${para(normalizeBody(t.body, theme), theme, 'left', a)}<div style="margin-top:14px;">${para(t.cta, theme)}</div>${readMoreButton(t.link, theme)}`
 }
 
 function videoCard(v: RenderVideo, theme: Theme): string {
@@ -478,7 +487,7 @@ function videoCard(v: RenderVideo, theme: Theme): string {
   return `<a href="${esc(v.url || '#')}" target="_blank" style="text-decoration:none;">${img}<div style="font-family:${theme.fontStack};font-size:18px;font-weight:${theme.headingWeight};color:${theme.linkColor};margin:12px 0 0;text-align:center;">${esc(title)}</div></a>`
 }
 
-function recipeBlock(r: RenderRecipe, theme: Theme): string {
+function recipeBlock(r: RenderRecipe, theme: Theme, anchor?: string): string {
   const img = r.imageUrl
     ? `<img src="${esc(r.imageUrl)}" width="624" alt="Recipe" style="display:block;width:100%;max-width:624px;height:auto;border-radius:6px;margin:0 0 18px;" />`
     : ''
@@ -487,7 +496,8 @@ function recipeBlock(r: RenderRecipe, theme: Theme): string {
   const intro = r.imageUrl ? r.intro.replace(/<h2[^>]*>[\s\S]*?<\/h2>/i, '').trim() : r.intro
   const h3 = (t: string) =>
     `<h3 style="margin:22px 0 10px;font-family:${theme.fontStack};font-size:18px;font-weight:${theme.headingWeight};color:${theme.fontColor};">${t}</h3>`
-  return `${img}${para(normalizeBody(intro, theme), theme)}${h3('Ingredients')}${para(bulletizeLines(r.ingredients, theme), theme)}${h3('Instructions')}${para(normalizeBody(r.instructions, theme), theme)}`
+  const a = (f: string) => (anchor ? `${anchor}.${f}` : undefined)
+  return `${img}${para(normalizeBody(intro, theme), theme, 'left', a('intro'))}${h3('Ingredients')}${para(bulletizeLines(r.ingredients, theme), theme, 'left', a('ingredients'))}${h3('Instructions')}${para(normalizeBody(r.instructions, theme), theme, 'left', a('instructions'))}`
 }
 
 export function buildRenderInput(
@@ -522,8 +532,13 @@ export function buildRenderInput(
   }
 }
 
-export function renderNewsletterHtml(input: RenderInput, brand: RenderBrand): string {
+export function renderNewsletterHtml(
+  input: RenderInput,
+  brand: RenderBrand,
+  opts?: { editMode?: boolean },
+): string {
   const theme = resolveTheme(brand)
+  if (opts?.editMode) theme.editAnchors = true
   const rows: string[] = []
   // Section toggles: template-level defaults (brand) ∪ per-edition overrides.
   const off = new Set<string>([
@@ -539,6 +554,12 @@ export function renderNewsletterHtml(input: RenderInput, brand: RenderBrand): st
     rows.push(content(inner))
     rows.push(spacer())
   }
+  // Band title itself editable (teaser headlines, secondary article title).
+  const sectionA = (title: string, inner: string, color: string, bandAnchor: string) => {
+    rows.push(band(title, color, theme, bandAnchor))
+    rows.push(content(inner))
+    rows.push(spacer())
+  }
 
   // Header (logo on header band)
   rows.push(headerBlock(brand, theme))
@@ -549,7 +570,7 @@ export function renderNewsletterHtml(input: RenderInput, brand: RenderBrand): st
   // Trivia question — plain heading (no band)
   if (fun?.triviaQuestion && !off.has('trivia')) {
     rows.push(plainHeading('Trivia Question', theme))
-    rows.push(content(para(`<p style="margin:0;font-size:20px;">${esc(fun.triviaQuestion)}</p>`, theme, 'center')))
+    rows.push(content(para(`<p style="margin:0;font-size:20px;">${esc(fun.triviaQuestion)}</p>`, theme, 'center', 'fun.triviaQuestion')))
     rows.push(spacer())
   }
 
@@ -582,51 +603,51 @@ export function renderNewsletterHtml(input: RenderInput, brand: RenderBrand): st
 
   // Facts (navy)
   if (input.quickHits && input.quickHits.facts.length > 0 && !off.has('didYouKnow')) {
-    section('Did You Know?', bulletList(input.quickHits.facts, theme), navy)
+    section('Did You Know?', bulletList(input.quickHits.facts, theme, 'quickHits.facts'), navy)
   }
 
   // Teaser 1 (curated → light blue)
-  if (teasers[0] && !off.has('teaser1')) section(teaserHeading(teasers[0]), teaserBlock(teasers[0], theme), lightBlue)
+  if (teasers[0] && !off.has('teaser1')) sectionA(teaserHeading(teasers[0]), teaserBlock(teasers[0], theme, 0), lightBlue, 'teasers.0.headline')
 
   // Tips (pink)
   if (input.quickHits && input.quickHits.tips.length > 0 && !off.has('tips')) {
-    section('Tips Of The Day', bulletList(input.quickHits.tips, theme), pink)
+    section('Tips Of The Day', bulletList(input.quickHits.tips, theme, 'quickHits.tips'), pink)
   }
 
   // Seasonal offer (after Tips) — green "Special Offer"
   if (input.seasonalOffer && !off.has('seasonalOffer')) rows.push(offerCard(input.seasonalOffer, theme, green, 'Special Offer'))
 
   // Teaser 2 (curated → light blue)
-  if (teasers[1] && !off.has('teaser2')) section(teaserHeading(teasers[1]), teaserBlock(teasers[1], theme), lightBlue)
+  if (teasers[1] && !off.has('teaser2')) sectionA(teaserHeading(teasers[1]), teaserBlock(teasers[1], theme, 1), lightBlue, 'teasers.1.headline')
 
   // Joke (pink)
-  if (fun?.joke && !off.has('joke')) section('Joke Of The Day', para(fun.joke, theme, 'center'), pink)
+  if (fun?.joke && !off.has('joke')) section('Joke Of The Day', para(fun.joke, theme, 'center', 'fun.joke'), pink)
 
   // Recipe 1 — mid-edition (green), deliberately separated from Recipe 2 near the
   // end so the two green bands don't stack back-to-back.
-  if (input.modules?.recipe && !off.has('recipe')) section('Recipe Of The Day', recipeBlock(input.modules.recipe, theme), green)
+  if (input.modules?.recipe && !off.has('recipe')) section('Recipe Of The Day', recipeBlock(input.modules.recipe, theme, 'modules.recipe'), green)
 
   // Feature article (navy)
-  if (input.featureArticle) section('Article Of The Day', articleBlock(input.featureArticle, theme), navy)
+  if (input.featureArticle) section('Article Of The Day', articleBlock(input.featureArticle, theme, true, 'featureArticle'), navy)
 
   // Evergreen offer (after the feature) — pink "Remember" call-to-action
   if (input.evergreenOffer && !off.has('evergreenOffer')) rows.push(offerCard(input.evergreenOffer, theme, pink, 'Remember'))
 
   // Teaser 3 (curated → light blue)
-  if (teasers[2] && !off.has('teaser3')) section(teaserHeading(teasers[2]), teaserBlock(teasers[2], theme), lightBlue)
+  if (teasers[2] && !off.has('teaser3')) sectionA(teaserHeading(teasers[2]), teaserBlock(teasers[2], theme, 2), lightBlue, 'teasers.2.headline')
 
   // Secondary (specialization) article — band shows its own headline (navy)
-  if (input.secondaryArticle && !off.has('secondaryArticle')) section(decodeEntities(input.secondaryArticle.title), articleBlock(input.secondaryArticle, theme, false), navy)
+  if (input.secondaryArticle && !off.has('secondaryArticle')) sectionA(decodeEntities(input.secondaryArticle.title), articleBlock(input.secondaryArticle, theme, false, 'secondaryArticle'), navy, 'secondaryArticle.title')
 
   // Recipe 2 — near the end (green); Recipe 1 renders mid-edition, before the feature.
-  if (input.modules?.recipe2 && !off.has('recipe2')) section('Another Recipe', recipeBlock(input.modules.recipe2, theme), green)
+  if (input.modules?.recipe2 && !off.has('recipe2')) section('Another Recipe', recipeBlock(input.modules.recipe2, theme, 'modules.recipe2'), green)
 
   // Trivia answer (payoff, last — pink). Extra 60px bottom padding for whitespace
   // before the footer (no trailing spacer — the padding is the gap).
   if (fun?.triviaQuestion && fun?.triviaAnswer && !off.has('trivia')) {
     rows.push(band('Trivia Answer', pink, theme))
     rows.push(
-      `<tr><td style="background-color:#ffffff;padding:32px 28px 60px;">${para(`<p style="margin:0;">${esc(fun.triviaAnswer)}</p>`, theme, 'center')}</td></tr>`,
+      `<tr><td style="background-color:#ffffff;padding:32px 28px 60px;">${para(`<p style="margin:0;">${esc(fun.triviaAnswer)}</p>`, theme, 'center', 'fun.triviaAnswer')}</td></tr>`,
     )
   }
 
@@ -763,9 +784,89 @@ ${preheader}
     </table>
   </td></tr>
 </table>
+${theme.editAnchors ? EDIT_BRIDGE_SCRIPT : ''}
 </body>
 </html>`
 }
+
+/**
+ * Edit-mode iframe bridge (review WYSIWYG): makes [data-nl-section] blocks
+ * contentEditable, streams {section, html} edits to the parent, captures
+ * selections while request-mode is armed, and highlights request pins.
+ * Plain inline JS — the preview iframe has no bundler.
+ */
+const EDIT_BRIDGE_SCRIPT = `<style>
+  [data-nl-section] { outline: 1px dashed transparent; transition: outline-color .15s; border-radius: 3px; }
+  [data-nl-section]:hover { outline-color: #7cb8c4; }
+  [data-nl-section]:focus { outline: 2px solid #2d808e; }
+  mark[data-nl-pin] { background: #fde68a; padding: 0 2px; }
+</style>
+<script>
+(function () {
+  var requestMode = false;
+  var els = document.querySelectorAll('[data-nl-section]');
+  function post(msg) { parent.postMessage(msg, '*'); }
+  els.forEach(function (el) {
+    el.setAttribute('contenteditable', 'true');
+    var t;
+    el.addEventListener('input', function () {
+      clearTimeout(t);
+      t = setTimeout(function () {
+        post({ type: 'nl-edit', section: el.getAttribute('data-nl-section'), html: el.innerHTML, text: el.innerText });
+      }, 250);
+    });
+  });
+  // Links must not navigate while reviewing.
+  document.addEventListener('click', function (e) {
+    var a = e.target && e.target.closest ? e.target.closest('a') : null;
+    if (a) e.preventDefault();
+  }, true);
+  document.addEventListener('mouseup', function () {
+    if (!requestMode) return;
+    var sel = window.getSelection();
+    if (!sel || sel.isCollapsed) return;
+    var text = sel.toString().trim();
+    if (!text) return;
+    var full = document.body.innerText || '';
+    var idx = full.indexOf(text);
+    post({
+      type: 'nl-selection',
+      quotedText: text,
+      prefixContext: idx > 0 ? full.slice(Math.max(0, idx - 40), idx) : '',
+      suffixContext: idx >= 0 ? full.slice(idx + text.length, idx + text.length + 40) : '',
+    });
+  });
+  window.addEventListener('message', function (e) {
+    var d = e.data || {};
+    if (d.type === 'nl-set-request-mode') {
+      requestMode = !!d.on;
+      els.forEach(function (el) { el.setAttribute('contenteditable', requestMode ? 'false' : 'true'); });
+    }
+    if (d.type === 'nl-highlight' && Array.isArray(d.quotes)) {
+      d.quotes.forEach(function (q) {
+        if (!q) return;
+        var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+        var node;
+        while ((node = walker.nextNode())) {
+          var i = node.nodeValue.indexOf(q);
+          if (i >= 0) {
+            try {
+              var range = document.createRange();
+              range.setStart(node, i);
+              range.setEnd(node, i + q.length);
+              var mark = document.createElement('mark');
+              mark.setAttribute('data-nl-pin', '');
+              range.surroundContents(mark);
+            } catch (err) { /* split-node quote — skip pin */ }
+            break;
+          }
+        }
+      });
+    }
+  });
+  post({ type: 'nl-ready' });
+})();
+</script>`
 
 /**
  * Render a promotional email in the SAME branded chrome as the newsletter:

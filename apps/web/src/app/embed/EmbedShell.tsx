@@ -8,6 +8,7 @@
  * access at launch is non-negotiable.
  */
 import { useEffect, useState } from 'react'
+import { EditRequestPickup } from './EditRequestPickup'
 import { embedFetch, installEmbedFetchBridge } from '@/lib/embedSession'
 import { ContentPlan } from '@/features/dashboard/ContentPlan'
 import { SettingsView } from '@/features/settings/SettingsView'
@@ -73,6 +74,7 @@ export function EmbedShell({ justCompletedOnboarding = false }: { justCompletedO
                 newsletters and social posts appear below for review as they finish.
               </div>
             )}
+            <EditRequestPickup />
             <IdeaCapturePanel onFleshOut={() => setTab('ideas')} />
             <ContentPlan />
           </>

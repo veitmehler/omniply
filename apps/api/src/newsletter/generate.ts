@@ -555,6 +555,19 @@ async function selectOffers(userId: string, editionDate: Date) {
  * and persist both. Idempotent — safe to call after a full generate or a
  * single-section regenerate.
  */
+/** Fresh EDIT-MODE render for the review WYSIWYG (anchors + bridge; not cached). */
+export async function renderEditPreview(newsletterId: string): Promise<string> {
+  const nl = await prisma.newsletter.findUnique({ where: { id: newsletterId }, include: { topic: true } })
+  if (!nl) throw new Error(`Newsletter ${newsletterId} not found`)
+  const brandRow = await brandSettingsForUser(nl.userId)
+  const research = (nl.topic.research as TopicResearch | null) ?? {}
+  const video = (research.video as RenderVideo | undefined) ?? null
+  const offers = await selectOffers(nl.userId, nl.topic.date)
+  const input = buildRenderInput(nl, video, nl.topic.date, offers)
+  input.disabledSections = Array.isArray(nl.sectionsDisabled) ? (nl.sectionsDisabled as string[]) : null
+  return renderNewsletterHtml(input, toRenderBrand(brandRow), { editMode: true })
+}
+
 export async function renderAndSave(newsletterId: string): Promise<string> {
   const nl = await prisma.newsletter.findUnique({
     where: { id: newsletterId },

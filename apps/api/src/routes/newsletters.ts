@@ -5,6 +5,7 @@ import { requireAuth } from '../middleware/auth'
 import { logger } from '../lib/logger'
 import {
   renderAndSave,
+  renderEditPreview,
   regenerateNewsletterSection,
   toRenderBrand,
   type NewsletterSection,
@@ -303,6 +304,22 @@ export async function newsletterRoutes(app: FastifyInstance) {
       }
     }
     return reply.send({ newsletter: nl })
+  })
+
+  // GET /newsletters/:id/edit-preview — fresh EDIT-MODE render (WYSIWYG):
+  // data-nl-section anchors + the iframe bridge script. Never cached.
+  app.get<{ Params: { id: string } }>('/newsletters/:id/edit-preview', async (request, reply) => {
+    const clerkId = await requireAuth(request, reply)
+    if (!clerkId) return
+    const userId = await resolveUserId(clerkId)
+    if (!userId) return reply.status(404).send({ error: 'User not found' })
+    const nl = await prisma.newsletter.findFirst({
+      where: { id: request.params.id, userId },
+      include: { topic: true },
+    })
+    if (!nl) return reply.status(404).send({ error: 'Newsletter not found' })
+    const html = await renderEditPreview(nl.id)
+    return reply.type('text/html').send(html)
   })
 
   // POST /newsletters/:id/video { url? } — review UX: "use my link" (url set)

@@ -16,6 +16,7 @@ type State =
   | { phase: 'connecting' }
   | { phase: 'error'; message: string }
   | { phase: 'provisioning' }
+  | { phase: 'seatRequired' }
   | { phase: 'ready'; session: EmbedSession }
 
 export default function EmbedEntry() {
@@ -29,6 +30,7 @@ export default function EmbedEntry() {
       .then((session) => {
         if (cancelled) return
         if (session.provisioningPending) setState({ phase: 'provisioning' })
+        else if ((session as { seatRequired?: boolean }).seatRequired) setState({ phase: 'seatRequired' })
         else setState({ phase: 'ready', session })
       })
       .catch((err: unknown) => {
@@ -47,6 +49,18 @@ export default function EmbedEntry() {
       </Centered>
     )
   }
+  if (state.phase === 'seatRequired') {
+    return (
+      <Centered>
+        <p className="text-base font-medium text-foreground">You don&apos;t have a seat yet</p>
+        <p className="mt-2 max-w-sm text-center text-sm text-muted-foreground">
+          Ask the account owner to add you in Settings → Team, or to send you an edit request —
+          that gives you access automatically. Accounts include 3 seats.
+        </p>
+      </Centered>
+    )
+  }
+
   if (state.phase === 'provisioning') {
     return (
       <Centered>

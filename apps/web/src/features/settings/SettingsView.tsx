@@ -48,7 +48,8 @@ export function SettingsView({ embedMode = false }: { embedMode?: boolean }) {
       <div className="space-y-6">
         <AppearanceSection />
 
-        {!embedMode && <TeamSection />}
+        {/* Team is IN the embed now (review UX: seats, edit-request assignees). */}
+        <TeamSection />
 
         <WritingStyleSection settings={settings} />
 

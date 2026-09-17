@@ -8,8 +8,13 @@ import {
   CheckCircle2,
   Save,
 } from 'lucide-react'
+import { useRef } from 'react'
+import { MessageSquarePlus } from 'lucide-react'
 import { NewsletterSocialPreview } from '@/features/social/NewsletterSocialPreview'
-import { NewsletterSectionEditors, type EditableSections } from './NewsletterSectionEditors'
+import { EditRequestPanel, type PendingEdit } from '@/features/review/EditRequestPanel'
+import { buildSectionPatch, type DirtyEdit } from './reverse-map'
+
+type EditableSections = Record<string, unknown>
 
 interface Newsletter extends EditableSections {
   id: string
@@ -174,6 +179,82 @@ export function NewsletterEditionContent({ newsletterId }: { newsletterId: strin
   const [savingSection, setSavingSection] = useState(false)
   const [videoBusy, setVideoBusy] = useState<'next' | 'link' | null>(null)
   const [videoLink, setVideoLink] = useState('')
+
+  // In-preview WYSIWYG (review UX): edit-mode HTML + dirty section map.
+  const [editHtml, setEditHtml] = useState<string | null>(null)
+  const [dirty, setDirty] = useState<Record<string, DirtyEdit>>({})
+  const [requestMode, setRequestMode] = useState(false)
+  const [selDraft, setSelDraft] = useState<Omit<PendingEdit, 'note'> | null>(null)
+  const [requests, setRequests] = useState<{ id: string; quotedText: string; note: string; status: string }[]>([])
+  const iframeRef = useRef<HTMLIFrameElement | null>(null)
+  const dirtyCount = Object.keys(dirty).length
+
+  async function loadEditPreview() {
+    try {
+      const res = await fetch(`/api/newsletters/${newsletterId}/edit-preview`, { cache: 'no-store' })
+      if (res.ok) setEditHtml(await res.text())
+    } catch {
+      /* preview falls back to renderedHtml */
+    }
+  }
+
+  async function loadRequests() {
+    try {
+      const res = await fetch(`/api/newsletters/${newsletterId}/edit-requests`, { cache: 'no-store' })
+      if (res.ok) setRequests((await res.json()).requests ?? [])
+    } catch {
+      /* panel simply stays empty */
+    }
+  }
+
+  useEffect(() => {
+    if (nl?.status === 'ready_for_review') {
+      void loadEditPreview()
+      void loadRequests()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nl?.status, newsletterId])
+
+  useEffect(() => {
+    function onMessage(e: MessageEvent) {
+      const d = e.data ?? {}
+      if (d.type === 'nl-edit' && typeof d.section === 'string') {
+        setDirty((prev) => ({ ...prev, [d.section]: { html: String(d.html ?? ''), text: String(d.text ?? '') } }))
+      } else if (d.type === 'nl-selection' && requestMode) {
+        setSelDraft({ quotedText: d.quotedText ?? '', prefixContext: d.prefixContext ?? '', suffixContext: d.suffixContext ?? '' })
+      } else if (d.type === 'nl-ready') {
+        const quotes = requests.filter((r) => r.status === 'open').map((r) => r.quotedText)
+        if (quotes.length) iframeRef.current?.contentWindow?.postMessage({ type: 'nl-highlight', quotes }, '*')
+        if (requestMode) iframeRef.current?.contentWindow?.postMessage({ type: 'nl-set-request-mode', on: true }, '*')
+      }
+    }
+    window.addEventListener('message', onMessage)
+    return () => window.removeEventListener('message', onMessage)
+  }, [requestMode, requests])
+
+  function toggleRequestMode() {
+    const next = !requestMode
+    setRequestMode(next)
+    setSelDraft(null)
+    iframeRef.current?.contentWindow?.postMessage({ type: 'nl-set-request-mode', on: next }, '*')
+  }
+
+  async function saveWysiwyg() {
+    if (!nl || dirtyCount === 0) return
+    const patch = buildSectionPatch(dirty, nl as unknown as Record<string, unknown>)
+    await patchEdition(patch, 'Saved — preview updated.')
+    setDirty({})
+    await loadEditPreview()
+  }
+
+  async function resolveRequest(id: string) {
+    await fetch(`/api/edit-requests/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'resolved' }),
+    }).catch(() => null)
+    await loadRequests()
+  }
 
   async function patchEdition(patch: Record<string, unknown>, doneNotice: string) {
     setSavingSection(true)
@@ -413,28 +494,100 @@ export function NewsletterEditionContent({ newsletterId }: { newsletterId: strin
             </div>
           )}
 
-          {editable && (
-            <NewsletterSectionEditors
-              sections={nl}
-              saving={savingSection}
-              onSave={(patch) => patchEdition(patch, 'Saved — preview updated.')}
-            />
+          {editable && requests.length > 0 && (
+            <div className="rounded-xl border border-border bg-card p-4">
+              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Edit requests</h3>
+              <div className="space-y-2">
+                {requests.map((r) => (
+                  <div key={r.id} className={`rounded-lg border p-2 ${r.status === 'open' ? 'border-amber-300' : 'border-border opacity-60'}`}>
+                    <div className="line-clamp-1 text-[11px] italic text-muted-foreground">“{r.quotedText}”</div>
+                    <div className="mt-0.5 flex items-start justify-between gap-2 text-xs">
+                      <span>{r.note}</span>
+                      {r.status === 'open' ? (
+                        <button onClick={() => void resolveRequest(r.id)} className="flex-shrink-0 rounded border border-border px-1.5 py-0.5 text-[11px] hover:bg-muted">Done</button>
+                      ) : (
+                        <span className="flex-shrink-0 text-[11px] text-green-700">✓</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {requests.some((r) => r.status !== 'open') && requests.every((r) => r.status !== 'open') && (
+                <button
+                  onClick={() => void fetch(`/api/newsletters/${newsletterId}/request-review`, { method: 'POST' }).then(() => setNotice('Sent back for review.'))}
+                  className="mt-2 w-full rounded-md border border-border px-3 py-1.5 text-xs hover:bg-muted"
+                >
+                  All done — notify the reviewer
+                </button>
+              )}
+            </div>
           )}
         </div>
 
-        {/* Preview */}
+        {/* Preview — editable in place when ready_for_review (review WYSIWYG) */}
         <div className="rounded-xl border border-border bg-card p-2">
-          {nl.renderedHtml ? (
-            <iframe
-              title="Newsletter preview"
-              srcDoc={nl.renderedHtml}
-              className="h-[800px] w-full rounded-lg border-0 bg-white"
-            />
-          ) : (
-            <div className="flex h-[400px] items-center justify-center text-sm text-muted-foreground">
-              No preview yet.
+          {editable && (
+            <div className="mb-2 flex items-center justify-between gap-2 px-1">
+              <span className="text-xs text-muted-foreground">
+                {requestMode
+                  ? 'Highlight text to request an edit from a teammate.'
+                  : 'Click into the email to edit it directly.'}
+                {dirtyCount > 0 && <span className="ml-2 text-amber-600">• {dirtyCount} unsaved section(s)</span>}
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={toggleRequestMode}
+                  className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium ${requestMode ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:bg-muted'}`}
+                >
+                  <MessageSquarePlus className="h-3.5 w-3.5" />
+                  {requestMode ? 'Done requesting' : 'Request edits'}
+                </button>
+                <button
+                  onClick={() => void saveWysiwyg()}
+                  disabled={dirtyCount === 0 || savingSection}
+                  className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50"
+                >
+                  {savingSection ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                  Save changes
+                </button>
+              </div>
             </div>
           )}
+          <div className="flex gap-0">
+            <div className="min-w-0 flex-1">
+              {editable && editHtml ? (
+                <iframe
+                  ref={iframeRef}
+                  title="Newsletter preview (editable)"
+                  srcDoc={editHtml}
+                  className="h-[800px] w-full rounded-lg border-0 bg-white"
+                />
+              ) : nl.renderedHtml ? (
+                <iframe
+                  title="Newsletter preview"
+                  srcDoc={nl.renderedHtml}
+                  className="h-[800px] w-full rounded-lg border-0 bg-white"
+                />
+              ) : (
+                <div className="flex h-[400px] items-center justify-center text-sm text-muted-foreground">
+                  No preview yet.
+                </div>
+              )}
+            </div>
+            {requestMode && (
+              <EditRequestPanel
+                what="email"
+                selDraft={selDraft}
+                onClearSelection={() => setSelDraft(null)}
+                sendUrl={`/api/newsletters/${newsletterId}/edit-requests`}
+                onSent={() => {
+                  setRequestMode(false)
+                  iframeRef.current?.contentWindow?.postMessage({ type: 'nl-set-request-mode', on: false }, '*')
+                  void loadRequests()
+                }}
+              />
+            )}
+          </div>
         </div>
       </div>
 
