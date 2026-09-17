@@ -42,6 +42,10 @@ export async function recomposeStorySlot(
     include: { run: { select: { id: true, userId: true } } },
   })
   if (!spec) return { error: 'Post not found', status: 404 }
+  // Same immutability rule as caption edits: once approved, the posts are
+  // (about to be) scheduled in GHL — a recompose would silently diverge the
+  // preview from what actually publishes.
+  if (spec.approvedAt) return { error: 'Approved posts can no longer be edited', status: 400 }
   const assets = (spec.assetsJson ?? {}) as EditableAssets
 
   if (assets.postType === 'story_text' && assets.storySlides?.length) {
@@ -53,7 +57,42 @@ export async function recomposeStorySlot(
   return { error: 'This post type does not support editing (for now)', status: 400 }
 }
 
-type SpecRow = { previewJson: unknown; overridesJson: unknown }
+type SpecRow = { previewJson: unknown; overridesJson: unknown; runId: string; slotKey: string }
+
+/** Pure remap of one Post row's media fields through an old→new URL map. */
+export function remapPostMedia(
+  post: { mediaUrls: string[]; imageUrl: string | null },
+  urlMap: Map<string, string>,
+): { mediaUrls: string[]; imageUrl: string | null; changed: boolean } {
+  const mediaUrls = post.mediaUrls.map((u) => urlMap.get(u) ?? u)
+  const imageUrl = post.imageUrl ? urlMap.get(post.imageUrl) ?? post.imageUrl : post.imageUrl
+  const changed = imageUrl !== post.imageUrl || mediaUrls.some((u, i) => u !== post.mediaUrls[i])
+  return { mediaUrls, imageUrl, changed }
+}
+
+/**
+ * Dual-write (bugfix 2026-09-17): the platform Post rows are what approval
+ * dispatches to GHL — recompose used to update only the spec preview, so
+ * tint/slide edits never reached the published posts (captions did, because
+ * the caption endpoint writes post.content). Guarded to rows still awaiting
+ * dispatch; text-only story posts carry no media and are untouched.
+ */
+async function syncPostMedia(runId: string, slotKey: string, urlMap: Map<string, string>): Promise<void> {
+  if (!urlMap.size) return
+  const posts = await prisma.post.findMany({
+    where: { automationRunId: runId, slotKey, status: 'ready' },
+    select: { id: true, mediaUrls: true, imageUrl: true },
+  })
+  for (const post of posts) {
+    const next = remapPostMedia(post, urlMap)
+    if (next.changed) {
+      await prisma.post.update({
+        where: { id: post.id },
+        data: { mediaUrls: next.mediaUrls, imageUrl: next.imageUrl },
+      })
+    }
+  }
+}
 
 async function recomposeStory(
   specId: string,
@@ -118,6 +157,11 @@ async function recomposeStory(
       overridesJson: merged as object,
     },
   })
+  const urlMap = new Map<string, string>()
+  oldUrls.forEach((oldUrl, i) => {
+    if (story.imageUrls[i] && story.imageUrls[i] !== oldUrl) urlMap.set(oldUrl, story.imageUrls[i])
+  })
+  await syncPostMedia(spec.runId, spec.slotKey, urlMap)
   logger.info({ specResultId: specId, textMode: merged.textMode }, '[recompose] story slot recomposited')
   return { mediaUrls: story.imageUrls }
 }
@@ -149,6 +193,7 @@ async function recomposeCarousel(
   const mediaUrls = [...(assets.mediaUrls ?? [])]
   const backgroundUrls = [...(assets.backgroundImageUrls ?? [])]
   const imageModel = await socialImageModel()
+  const urlMap = new Map<string, string>()
 
   for (const i of valid) {
     const ov = merged.slides?.[String(i)] ?? {}
@@ -172,6 +217,7 @@ async function recomposeCarousel(
     if (mediaUrls[i]) {
       const oldUrl = mediaUrls[i]
       mediaUrls[i] = slide.imageUrl
+      urlMap.set(oldUrl, slide.imageUrl)
       spec.previewJson = JSON.parse(
         JSON.stringify(spec.previewJson ?? null)
           .split(oldUrl)
@@ -197,6 +243,7 @@ async function recomposeCarousel(
       overridesJson: merged as object,
     },
   })
+  await syncPostMedia(spec.runId, spec.slotKey, urlMap)
   logger.info({ specResultId: specId, slides: valid }, '[recompose] carousel slides recomposited')
   return { mediaUrls }
 }
