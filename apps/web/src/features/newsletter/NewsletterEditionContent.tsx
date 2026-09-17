@@ -263,10 +263,7 @@ export function NewsletterEditionContent({ newsletterId }: { newsletterId: strin
 
   async function saveWysiwyg() {
     if (!nl || dirtyCount === 0) return
-    const patch = buildSectionPatch(dirty, nl as unknown as Record<string, unknown>)
-    await patchEdition(patch, 'Saved — preview updated.')
-    setDirty({})
-    await loadEditPreview()
+    await patchEdition({}, 'Saved — preview updated.')
   }
 
   async function setRequestStatus(id: string, status: 'resolved' | 'open') {
@@ -287,10 +284,16 @@ export function NewsletterEditionContent({ newsletterId }: { newsletterId: strin
     setNotice(null)
     setError(null)
     try {
+      // Unsaved in-preview edits ride along (option B, Veit 2026-09-17):
+      // every mutation refreshes the edit iframe, which would discard them.
+      let merged = patch
+      if (nl && Object.keys(dirty).length > 0) {
+        merged = { ...buildSectionPatch(dirty, nl as unknown as Record<string, unknown>), ...patch }
+      }
       const res = await fetch(`/api/newsletters/${newsletterId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(patch),
+        body: JSON.stringify(merged),
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
@@ -298,7 +301,11 @@ export function NewsletterEditionContent({ newsletterId }: { newsletterId: strin
         return
       }
       setNl(data.newsletter)
+      setDirty({})
       setNotice(doneNotice)
+      // The visible editable iframe must reflect the mutation (stale-preview
+      // bug: toggles saved but the edit-mode render never refreshed).
+      await loadEditPreview()
     } catch (err) {
       setError((err as Error).message ?? 'Save failed')
     } finally {
@@ -324,6 +331,7 @@ export function NewsletterEditionContent({ newsletterId }: { newsletterId: strin
       setNl(data.newsletter)
       setVideoLink('')
       setNotice(url ? 'Video replaced with your link.' : 'Found another video.')
+      await loadEditPreview()
     } catch (err) {
       setError((err as Error).message ?? 'Video change failed')
     } finally {
