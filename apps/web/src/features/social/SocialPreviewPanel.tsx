@@ -256,7 +256,7 @@ function StorySlideEditor({
 
   if (!isStory && !isCarousel) return null
 
-  async function recompose(body: Record<string, unknown>, busyKey: string) {
+  async function recompose(body: Record<string, unknown>, busyKey: string): Promise<boolean> {
     setBusy(busyKey)
     try {
       const res = await fetch(`/api/social-automation/spec-results/${spec.id}/recompose`, {
@@ -267,15 +267,20 @@ function StorySlideEditor({
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
         toast.error(data.error ?? 'Recompose failed')
-        return
+        return false
       }
       toast.success('Slides updated.')
       await onRefresh()
+      return true
     } finally {
       setBusy(null)
     }
   }
 
+  // Save is a FINISHING action: overlay while recomposing, auto-close on
+  // success (the refreshed card thumbnails are the visible outcome); a
+  // failure keeps the modal open so drafts aren't lost. "New image" is an
+  // ITERATIVE action and deliberately keeps the modal open (Veit 2026-09-17).
   const saveTexts = () => {
     const changed: Record<string, { text?: string; headline?: string; body?: string }> = {}
     drafts.forEach((d, i) => {
@@ -292,7 +297,9 @@ function StorySlideEditor({
       setOpen(false)
       return
     }
-    void recompose({ slides: changed }, 'save')
+    void recompose({ slides: changed }, 'save').then((ok) => {
+      if (ok) setOpen(false)
+    })
   }
 
   const slideCount = isStory ? storySlides.length : plans.length
@@ -326,14 +333,28 @@ function StorySlideEditor({
       </div>
 
       {open && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4" onClick={() => setOpen(false)}>
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4"
+          onClick={() => { if (busy === null) setOpen(false) }}
+        >
           <div
-            className="flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-border bg-card shadow-2xl"
+            className="relative flex max-h-[85vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl border border-border bg-card shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
+            {busy === 'save' && (
+              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-card/80">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                <span className="text-xs font-medium text-muted-foreground">Recomposing slides…</span>
+              </div>
+            )}
             <div className="flex items-center justify-between border-b border-border px-5 py-3">
               <span className="text-sm font-semibold text-card-foreground">Edit slides</span>
-              <button onClick={() => setOpen(false)} className="rounded p-1 text-muted-foreground hover:bg-muted" aria-label="Close">
+              <button
+                onClick={() => setOpen(false)}
+                disabled={busy !== null}
+                className="rounded p-1 text-muted-foreground hover:bg-muted disabled:opacity-40"
+                aria-label="Close"
+              >
                 ✕
               </button>
             </div>
@@ -341,14 +362,21 @@ function StorySlideEditor({
               {Array.from({ length: slideCount }, (_, i) => (
                 <div key={i} className="flex gap-3">
                   <div className="w-28 flex-shrink-0">
-                    {thumbs[i] ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={thumbs[i]} alt={`Slide ${i + 1}`} className="aspect-square w-28 rounded-lg border border-border object-cover" />
-                    ) : (
-                      <div className="flex aspect-square w-28 items-center justify-center rounded-lg border border-border bg-muted text-xs text-muted-foreground">
-                        {i + 1}
-                      </div>
-                    )}
+                    <div className="relative">
+                      {thumbs[i] ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={thumbs[i]} alt={`Slide ${i + 1}`} className="aspect-square w-28 rounded-lg border border-border object-cover" />
+                      ) : (
+                        <div className="flex aspect-square w-28 items-center justify-center rounded-lg border border-border bg-muted text-xs text-muted-foreground">
+                          {i + 1}
+                        </div>
+                      )}
+                      {busy === `img-${i}` && (
+                        <div className="absolute inset-0 flex items-center justify-center rounded-lg bg-card/70">
+                          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                        </div>
+                      )}
+                    </div>
                     {canNewImage(i) && (
                       <button
                         onClick={() => void recompose({ regenerateImage: i }, `img-${i}`)}
@@ -380,7 +408,11 @@ function StorySlideEditor({
               ))}
             </div>
             <div className="flex items-center justify-end gap-2 border-t border-border px-5 py-3">
-              <button onClick={() => setOpen(false)} className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-muted">
+              <button
+                onClick={() => setOpen(false)}
+                disabled={busy !== null}
+                className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-muted disabled:opacity-40"
+              >
                 Close
               </button>
               <button
