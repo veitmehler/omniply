@@ -363,7 +363,10 @@ export async function newsletterRoutes(app: FastifyInstance) {
         data: { research: J({ ...research, video: { ...video, rejectedUrls: rejected } }) },
       })
       await renderAndSave(nl.id)
-      const updated = await prisma.newsletter.findUnique({ where: { id: nl.id } })
+      const updated = await prisma.newsletter.findUnique({
+        where: { id: nl.id },
+        include: { topic: { select: { date: true, topic: true, secondaryTopic: true, calendar: { select: { name: true } } } } },
+      })
       return reply.send({ newsletter: updated })
     },
   )
@@ -397,7 +400,10 @@ export async function newsletterRoutes(app: FastifyInstance) {
         const message = err instanceof Error ? err.message : String(err)
         return reply.status(500).send({ error: message })
       }
-      const updated = await prisma.newsletter.findUnique({ where: { id: nl.id } })
+      const updated = await prisma.newsletter.findUnique({
+        where: { id: nl.id },
+        include: { topic: { select: { date: true, topic: true, secondaryTopic: true, calendar: { select: { name: true } } } } },
+      })
       return reply.send({ newsletter: updated })
     },
   )
@@ -440,7 +446,10 @@ export async function newsletterRoutes(app: FastifyInstance) {
 
       await prisma.newsletter.update({ where: { id: nl.id }, data })
       await renderAndSave(nl.id) // re-render + re-validate from the edited row
-      const updated = await prisma.newsletter.findUnique({ where: { id: nl.id } })
+      const updated = await prisma.newsletter.findUnique({
+        where: { id: nl.id },
+        include: { topic: { select: { date: true, topic: true, secondaryTopic: true, calendar: { select: { name: true } } } } },
+      })
       return reply.send({ newsletter: updated })
     },
   )

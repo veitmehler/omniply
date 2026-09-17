@@ -26,7 +26,7 @@ interface Newsletter extends EditableSections {
   scheduledFor: string | null
   sectionsDisabled: string[] | null
   validation: { completionPercentage?: number; missing?: string[] } | null
-  topic: { date: string; topic: string; secondaryTopic: string | null; calendar: { name: string } | null }
+  topic?: { date: string; topic: string; secondaryTopic: string | null; calendar: { name: string } | null }
 }
 
 // Render-section keys the client can switch off (review UX feature 2).
@@ -359,11 +359,11 @@ export function NewsletterEditionContent({ newsletterId }: { newsletterId: strin
       <div className="mb-4 flex items-start justify-between gap-4">
         <div className="min-w-0">
           <h1 className="truncate text-2xl font-semibold text-foreground">
-            {nl.subjectLine || nl.topic.topic}
+            {nl.subjectLine || nl.topic?.topic || 'Newsletter'}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {new Date(nl.topic.date).toLocaleDateString(undefined, { timeZone: 'UTC' })}
-            {nl.topic.calendar ? ` · ${nl.topic.calendar.name}` : ''} ·{' '}
+            {nl.topic?.date ? new Date(nl.topic.date).toLocaleDateString(undefined, { timeZone: 'UTC' }) : ''}
+            {nl.topic?.calendar ? ` · ${nl.topic.calendar.name}` : ''} ·{' '}
             <span className="capitalize">{nl.status.replace(/_/g, ' ')}</span>
             {typeof completion === 'number' ? ` · ${completion}% complete` : ''}
           </p>
@@ -458,7 +458,7 @@ export function NewsletterEditionContent({ newsletterId }: { newsletterId: strin
                 Regenerate a section
               </h3>
               <div className="space-y-1.5">
-                {SECTIONS.filter((s) => s.key !== 'secondary' || nl.topic.secondaryTopic).map((s) => (
+                {SECTIONS.filter((s) => s.key !== 'secondary' || nl.topic?.secondaryTopic).map((s) => (
                   <button
                     key={s.key}
                     onClick={() => regenerate(s.key)}

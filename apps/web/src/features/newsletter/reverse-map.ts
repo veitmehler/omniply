@@ -110,6 +110,7 @@ export function buildSectionPatch(
       if (!arr[i]) continue
       if (parts[2] === 'headline') arr[i].headline = edit.text.trim()
       else if (parts[2] === 'body') arr[i].body = unnormalizeBody(edit.html)
+      else if (parts[2] === 'cta') arr[i].cta = unnormalizeBody(edit.html)
     } else if (parts[0] === 'quickHits') {
       const t = top('quickHits')
       if (parts[1] === 'tips') t.tips = extractLines(edit.html)

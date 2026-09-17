@@ -478,7 +478,8 @@ function articleBlock(a: RenderArticle, theme: Theme, showTitle = true, anchor?:
 
 function teaserBlock(t: RenderTeaser, theme: Theme, index?: number): string {
   const a = typeof index === 'number' ? `teasers.${index}.body` : undefined
-  return `${para(normalizeBody(t.body, theme), theme, 'left', a)}<div style="margin-top:14px;">${para(t.cta, theme)}</div>${readMoreButton(t.link, theme)}`
+  const aCta = typeof index === 'number' ? `teasers.${index}.cta` : undefined
+  return `${para(normalizeBody(t.body, theme), theme, 'left', a)}<div style="margin-top:14px;">${para(t.cta, theme, 'left', aCta)}</div>${readMoreButton(t.link, theme)}`
 }
 
 function videoCard(v: RenderVideo, theme: Theme): string {
