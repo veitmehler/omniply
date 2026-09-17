@@ -118,12 +118,15 @@ export async function generateStorySlidesAsset(opts: {
   reuseBackgroundUrl?: string
   /** Per-slide photo backgrounds (story images / client swaps): index → URL. */
   slideImages?: Record<number, string>
+  /** Tint base override (second story tint, beat 1) — defaults to brand primary. */
+  tintColor?: string
 }): Promise<{ imageUrls: string[]; backgroundImageUrls: string[] }> {
   const brand = await loadSocialBrandTheme(opts.userId)
   const genId = generationId()
   const jobId = opts.jobId ?? genId
 
-  const tint = opts.forceTextMode ? forcedTintScheme(brand.primaryColor, opts.forceTextMode) : tintScheme(brand.primaryColor)
+  const tintBase = opts.tintColor ?? brand.primaryColor
+  const tint = opts.forceTextMode ? forcedTintScheme(tintBase, opts.forceTextMode) : tintScheme(tintBase)
   const tintLogoBuffer = await loadTintLogo(brand, tint.logoVariant)
   const arrowBuffer = await loadContinuationArrow(tint.logoVariant)
   const logoBuffer = await loadLogoBuffer(brand.logoUrl)

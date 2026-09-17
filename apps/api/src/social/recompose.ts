@@ -26,6 +26,7 @@ interface EditableAssets {
   imageUrl?: string
   backgroundImageUrls?: string[]
   storySlides?: string[]
+  tintColorHex?: string | null
   carouselSlides?: { type: string; headlineText: string | null; bodyText: string | null; imagePrompt: string }[]
   carouselVariant?: 'brand_tint' | 'brand_tint_accent' | null
   carouselDiagram?: boolean
@@ -133,6 +134,8 @@ async function recomposeStory(
     forceTextMode: merged.textMode ?? undefined,
     reuseBackgroundUrl: motifUrl,
     slideImages: Object.keys(slideImages).length ? slideImages : undefined,
+    // Beat-1 slots carry the second brand tint — reproduce it exactly.
+    tintColor: assets.tintColorHex ?? undefined,
   })
 
   // Swap media everywhere the old URLs appear (assets + per-platform preview).

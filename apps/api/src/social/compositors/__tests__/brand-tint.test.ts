@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { tintScheme } from '../brand-tint'
+import { tintScheme, pickAlternateTintColor } from '../brand-tint'
 
 describe('tintScheme', () => {
   it('brand navy → white text + light logo at the default opacity', () => {
@@ -71,5 +71,25 @@ describe('tintScheme', () => {
     for (const hex of ['#011328', '#222222', '#000000']) {
       expect(tintScheme(hex).overlayOpacity).toBe(0.85)
     }
+  })
+})
+
+describe('pickAlternateTintColor — second story tint (beat 1)', () => {
+  it('picks the most distant brand color from the primary (Simon Chiro ramp → deep teal)', () => {
+    expect(
+      pickAlternateTintColor('#3aa6b9', ['#2d808e', '#2d808e', '#2d808e', '#5baebc', '#3aa6b9', '#0e616f']),
+    ).toBe('#0E616F')
+  })
+
+  it('returns null when every candidate is too close to read as a different color', () => {
+    expect(pickAlternateTintColor('#3aa6b9', ['#3aa6b9', '#3ba7ba', '#39a5b8'])).toBeNull()
+  })
+
+  it('ignores invalid and empty candidates', () => {
+    expect(pickAlternateTintColor('#3aa6b9', [null, undefined, '', 'not-a-color', '#0e616f'])).toBe('#0E616F')
+  })
+
+  it('returns null for an empty candidate pool (one-color brand)', () => {
+    expect(pickAlternateTintColor('#3aa6b9', [])).toBeNull()
   })
 })

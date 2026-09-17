@@ -56,6 +56,8 @@ export interface SpecAssets {
   hookRawVideoUrl?: string
   /** Story-carousel source texts — persisted for the client recompose primitive. */
   storySlides?: string[]
+  /** Second-tint base hex (beat-1 story slots) — recompose must reuse it; null = primary. */
+  tintColorHex?: string | null
   /** Image-carousel slide plans (headline/body/imagePrompt) — persisted for the client recompose primitive. */
   carouselSlides?: { type: string; headlineText: string | null; bodyText: string | null; imagePrompt: string }[]
   /** Design variant the carousel was composited with — recompose must match it. */

@@ -8,6 +8,9 @@ export interface SocialBrandTheme {
   /** The brand accent (onboarding-approved nlLinkColor first) — the "secondary
    *  brand color" used by the non-EL accent-tinted carousels. */
   accentColor: string
+  /** The extracted newsletter section-band ramp — candidate pool for the
+   *  second story tint (pickAlternateTintColor). Empty when never extracted. */
+  sectionColors: string[]
   textColor: string
   fontFamily: string
   organizationName: string
@@ -116,6 +119,9 @@ export async function loadSocialBrandTheme(userId: string): Promise<SocialBrandT
     primaryColor: theme.primaryColor,
     secondaryColor: theme.secondaryColor,
     accentColor: brand?.nlLinkColor?.trim() || theme.secondaryColor,
+    sectionColors: [brand?.nlSectionColor1, brand?.nlSectionColor2, brand?.nlSectionColor3, brand?.nlSectionColor4]
+      .map((c) => c?.trim() ?? '')
+      .filter(Boolean),
     textColor: brand?.diagramTextColor?.trim() || '#1F2937',
     fontFamily,
     organizationName,

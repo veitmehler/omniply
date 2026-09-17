@@ -96,3 +96,39 @@ export function forcedTintScheme(brandHex: string | null | undefined, mode: 'lig
     logoVariant: mode === 'light' ? 'light' : 'dark',
   }
 }
+
+/**
+ * Second story tint (Veit 2026-09-17): pick the brand color most visually
+ * distant from the primary among the extracted palette (secondary + the
+ * newsletter section ramp). Returns null when nothing differs enough —
+ * callers then keep the primary, i.e. behavior identical to a one-color brand.
+ */
+export function pickAlternateTintColor(
+  primary: string | null | undefined,
+  candidates: (string | null | undefined)[],
+): string | null {
+  const base = normalizeHex(primary)
+  const rgb = (hex: string): [number, number, number] => [
+    parseInt(hex.slice(1, 3), 16),
+    parseInt(hex.slice(3, 5), 16),
+    parseInt(hex.slice(5, 7), 16),
+  ]
+  const [br, bg, bb] = rgb(base)
+  let best: string | null = null
+  let bestDist = 0
+  for (const raw of candidates) {
+    const t = (raw ?? '').trim()
+    if (!HEX_RE.test(t)) continue
+    const hex = normalizeHex(t)
+    if (hex === base) continue
+    const [r, g, b] = rgb(hex)
+    const dist = Math.sqrt((r - br) ** 2 + (g - bg) ** 2 + (b - bb) ** 2)
+    if (dist > bestDist) {
+      bestDist = dist
+      best = hex
+    }
+  }
+  // Below this the two tints read as the same color in a feed — not variety.
+  const MIN_DISTANCE = 40
+  return bestDist >= MIN_DISTANCE ? best : null
+}

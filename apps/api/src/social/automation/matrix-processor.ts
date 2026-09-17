@@ -16,6 +16,8 @@ import {
 } from './newsletter-content'
 import { generateQuoteCardAsset, generateCarouselAssets, generateStorySlidesAsset } from '../generate-assets'
 import { generateStoryPhoto } from '../story-photo'
+import { loadSocialBrandTheme } from '../brand-theme'
+import { pickAlternateTintColor } from '../compositors/brand-tint'
 import { generateVideoReelAsset, generateHookVideoAsset, generateKtMusicVideoAsset } from '../generate-video-assets'
 import { loadPromptTemplate } from '../../article-pipeline/enrichment/prompt-template'
 
@@ -54,6 +56,8 @@ export async function generateMatrixAsset(opts: {
   designVariant?: 'brand_tint' | 'brand_tint_accent'
   /** Azavea classic half-panel slots: per-slide themed AI backgrounds, no diagram mode. */
   perSlideBg?: boolean
+  /** Story-arc beat this slot posts (from the matrix DaySlot) — beat 1 gets the second tint. */
+  beatIndex?: number
 }): Promise<SpecAssets> {
   const { userId, assetJobId, postType, resolved, contextTitle, slideCount, diagramLogoVariant } = opts
   const { slot } = resolved
@@ -173,22 +177,40 @@ export async function generateMatrixAsset(opts: {
       // run-level pregen). No storySlides → the arc is missing: degrade to
       // a tinted section carousel so the slot still posts.
       if (resolved.slot.storySlides?.length) {
+        const acct = await prisma.user
+          .findUnique({ where: { id: userId }, select: { account: { select: { vertical: true } } } })
+          .catch(() => null)
+        const isAzavea = acct?.account?.vertical === 'azavea'
         // Story image (Veit 2026-09-17): a Nano-Banana photo behind the first
         // CONTENT slide that TELLS THE STORY of its text — client accounts
         // only; azavea's locked motif design is exempt. Best-effort.
         let slideImages: Record<number, string> | undefined
         try {
-          const acct = await prisma.user.findUnique({
-            where: { id: userId },
-            select: { account: { select: { vertical: true } } },
-          })
           const contentIdx = resolved.slot.storySlides.length > 1 ? 1 : 0
-          if (acct?.account?.vertical !== 'azavea') {
+          if (!isAzavea) {
             const url = await generateStoryPhoto(userId, assetJobId, resolved.slot.storySlides[contentIdx])
             if (url) slideImages = { [contentIdx]: url }
           }
         } catch {
           /* motif fallback */
+        }
+        // Second story tint (Veit 2026-09-17): the evening beat (beatIndex 1)
+        // tints with the brand color most distant from the primary, so the
+        // same-day P1/P3 pair isn't two near-identical washes. Persisted so
+        // recompose reproduces the exact color. Azavea's locked design exempt.
+        let tintColor: string | undefined
+        if (!isAzavea && opts.beatIndex === 1) {
+          try {
+            const theme = await loadSocialBrandTheme(userId)
+            tintColor =
+              pickAlternateTintColor(theme.primaryColor, [
+                theme.secondaryColor,
+                theme.accentColor,
+                ...theme.sectionColors,
+              ]) ?? undefined
+          } catch {
+            /* primary tint fallback */
+          }
         }
         const story = await generateStorySlidesAsset({
           userId,
@@ -196,6 +218,7 @@ export async function generateMatrixAsset(opts: {
           jobId: assetJobId,
           imageModel: await socialImageModel(),
           slideImages,
+          tintColor,
         })
         return {
           postType: 'story_text',
@@ -205,6 +228,7 @@ export async function generateMatrixAsset(opts: {
           title: resolved.slot.title ?? contextTitle,
           // Source texts persisted for the recompose primitive (client edits).
           storySlides: resolved.slot.storySlides,
+          tintColorHex: tintColor ?? null,
         }
       }
       logger.warn({ assetJobId }, '[matrix-processor] story slot without arc — tinted carousel fallback')
@@ -412,6 +436,7 @@ export async function processMatrixSlot(opts: {
           diagramLogoVariant,
           designVariant: daySlot.designVariant,
           perSlideBg: daySlot.perSlideBg,
+          beatIndex: daySlot.beatIndex,
         })
 
         const scheduledAt = ensureFutureScheduleDate(slotToUtc(run.scheduledDate, daySlot.hour, 0, timeZone))
