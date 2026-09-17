@@ -232,10 +232,14 @@ export function NewsletterEditionContent({ newsletterId }: { newsletterId: strin
     return () => window.removeEventListener('message', onMessage)
   }, [requestMode, requests])
 
+  const [controlsOpen, setControlsOpen] = useState(true)
+
   function toggleRequestMode() {
     const next = !requestMode
     setRequestMode(next)
     setSelDraft(null)
+    // The request panel needs the width — tuck the controls away (re-openable).
+    if (next) setControlsOpen(false)
     iframeRef.current?.contentWindow?.postMessage({ type: 'nl-set-request-mode', on: next }, '*')
   }
 
@@ -365,9 +369,26 @@ export function NewsletterEditionContent({ newsletterId }: { newsletterId: strin
         <div className="mb-3 text-xs text-amber-700">Incomplete sections: {missing.join(', ')}</div>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-[320px_1fr]">
-        {/* Controls */}
-        <div className="space-y-4">
+      <div className={`grid gap-6 ${controlsOpen ? 'lg:grid-cols-[320px_1fr]' : 'lg:grid-cols-[36px_1fr]'}`}>
+        {/* Controls (collapsible — the request panel needs the width) */}
+        {!controlsOpen && (
+          <button
+            onClick={() => setControlsOpen(true)}
+            title="Show controls"
+            className="hidden h-24 items-center justify-center self-start rounded-xl border border-border bg-card text-muted-foreground hover:bg-muted lg:flex"
+          >
+            »
+          </button>
+        )}
+        <div className={`space-y-4 ${controlsOpen ? '' : 'lg:hidden'}`}>
+          {editable && (
+            <button
+              onClick={() => setControlsOpen(false)}
+              className="hidden w-full items-center justify-center gap-1 rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:bg-muted lg:flex"
+            >
+              « Hide controls
+            </button>
+          )}
           <div className="rounded-xl border border-border bg-card p-4">
             <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Email metadata
@@ -525,7 +546,7 @@ export function NewsletterEditionContent({ newsletterId }: { newsletterId: strin
         </div>
 
         {/* Preview — editable in place when ready_for_review (review WYSIWYG) */}
-        <div className="rounded-xl border border-border bg-card p-2">
+        <div className="flex flex-col rounded-xl border border-border bg-card p-2">
           {editable && (
             <div className="mb-2 flex items-center justify-between gap-2 px-1">
               <span className="text-xs text-muted-foreground">
@@ -553,20 +574,20 @@ export function NewsletterEditionContent({ newsletterId }: { newsletterId: strin
               </div>
             </div>
           )}
-          <div className="flex gap-0">
-            <div className="min-w-0 flex-1">
+          <div className="flex flex-1 gap-0">
+            <div className="flex min-w-0 flex-1 flex-col">
               {editable && editHtml ? (
                 <iframe
                   ref={iframeRef}
                   title="Newsletter preview (editable)"
                   srcDoc={editHtml}
-                  className="h-[800px] w-full rounded-lg border-0 bg-white"
+                  className="min-h-[800px] w-full flex-1 rounded-lg border-0 bg-white"
                 />
               ) : nl.renderedHtml ? (
                 <iframe
                   title="Newsletter preview"
                   srcDoc={nl.renderedHtml}
-                  className="h-[800px] w-full rounded-lg border-0 bg-white"
+                  className="min-h-[800px] w-full flex-1 rounded-lg border-0 bg-white"
                 />
               ) : (
                 <div className="flex h-[400px] items-center justify-center text-sm text-muted-foreground">
