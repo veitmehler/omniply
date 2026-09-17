@@ -5,7 +5,8 @@ const llmUsageCreate = vi.fn()
 vi.mock('@omniply/shared', () => ({
   generateWithGeminiImage: (...a: unknown[]) => generateWithGeminiImage(...a),
   prisma: { lLMUsage: { create: (...a: unknown[]) => llmUsageCreate(...a) } },
-  DEFAULT_DIAGRAM_STYLE_GUIDE: 'DEFAULT-GUIDE-BODY',
+  buildDiagramStyleGuide: (primary?: string | null, secondary?: string | null) =>
+    primary ? `BRANDED-GUIDE(${primary},${secondary ?? ''})` : 'DEFAULT-GUIDE-BODY',
 }))
 vi.mock('../../../lib/logger', () => ({ logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() } }))
 
@@ -41,7 +42,7 @@ describe('buildRestylePrompt', () => {
     expect(p).toContain('for a business.')
   })
 
-  it('uses the default style guide when none provided', () => {
+  it('uses the default style guide when none provided and no brand colors', () => {
     const p = buildRestylePrompt({ industry: 'X' })
     expect(p).toContain('DEFAULT-GUIDE-BODY')
   })
@@ -49,6 +50,18 @@ describe('buildRestylePrompt', () => {
   it('treats blank/whitespace style guide as default', () => {
     const p = buildRestylePrompt({ industry: 'X', styleGuide: '   ' })
     expect(p).toContain('DEFAULT-GUIDE-BODY')
+  })
+
+  it('bakes the brand palette INTO the guide when brand colors exist (no override paragraph)', () => {
+    const p = buildRestylePrompt({ industry: 'X', primaryColor: '#3aa6b9', secondaryColor: '#2d808e' })
+    expect(p).toContain('BRANDED-GUIDE(#3aa6b9,#2d808e)')
+    expect(p).not.toContain('BRAND COLOR OVERRIDE')
+  })
+
+  it('a custom style guide wins over brand colors entirely', () => {
+    const p = buildRestylePrompt({ industry: 'X', styleGuide: 'MY-GUIDE', primaryColor: '#3aa6b9' })
+    expect(p).toContain('MY-GUIDE')
+    expect(p).not.toContain('BRANDED-GUIDE')
   })
 })
 

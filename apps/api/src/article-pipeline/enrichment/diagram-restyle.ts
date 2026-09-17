@@ -8,7 +8,7 @@
  */
 
 import sharp from 'sharp'
-import { generateWithGeminiImage, prisma, DEFAULT_DIAGRAM_STYLE_GUIDE } from '@omniply/shared'
+import { generateWithGeminiImage, prisma, buildDiagramStyleGuide } from '@omniply/shared'
 import { logger } from '../../lib/logger'
 
 export const RESTYLE_MODEL = 'gemini-3.1-flash-image'
@@ -38,24 +38,22 @@ export interface RestyleContext {
 export function buildRestylePrompt(ctx: RestyleContext): string {
   const industry = ctx.industry?.trim()
   const specialization = ctx.specialization?.trim()
-  const styleGuide = ctx.styleGuide?.trim() || DEFAULT_DIAGRAM_STYLE_GUIDE
+  // A custom guide is the author's complete word on style AND color. Otherwise
+  // the brand palette is baked directly into the default guide's PALETTE
+  // section — an appended "override" paragraph lost against the guide's own
+  // gold/violet vocabulary (2026-09-17 finding; the run-5 override attempt
+  // still produced gold+purple diagrams).
+  const styleGuide = ctx.styleGuide?.trim() || buildDiagramStyleGuide(ctx.primaryColor, ctx.secondaryColor)
 
   const audience = industry ? `${industry} business` : 'business'
   const specClause = specialization ? ` specializing in: ${specialization}` : ''
-  // Brand palette clause — only for the default guide; a custom guide is the
-  // author's complete word on color. Without this the restyle repainted every
-  // diagram in the guide's generic gold/plasma palette (run-5 finding).
-  const brandColors =
-    !ctx.styleGuide?.trim() && ctx.primaryColor
-      ? `\n\n## BRAND COLOR OVERRIDE (mandatory)\nUse the brand palette as the dominant hue family: primary ${ctx.primaryColor}${ctx.secondaryColor ? `, secondary ${ctx.secondaryColor}` : ''}. Capsule fills, flow currents, and accents must derive from these hues (tints/shades allowed for depth); keep neutrals neutral. Do NOT use the gold/amber palette when it conflicts with these brand hues.`
-      : ''
 
   return `# TASK:
 please redesign this diagram more stylish for a ${audience}${specClause}. Design appropriately for that audience WITHOUT any branding. Keep it professional, NOT cartoonish.
 
 Output a clean 1:1 SQUARE composition. You MAY rearrange the spatial layout — reflow long horizontal or vertical chains into a balanced arrangement (e.g. grid or radial) that fills the entire square canvas edge-to-edge, with generous, even use of space. For a long linear sequence (many steps in a row), do NOT leave it as one narrow column or row — wrap it into multiple side-by-side columns in reading order (a snake / serpentine flow, top-to-bottom then continuing in the next column) so the steps are large and legible and fill the square. But preserve the EXACT informational flow: every node, every label, every connection, the direction of each arrow, and the overall hierarchy/sequence must remain identical and clearly readable. Never add, remove, rename, or merge anything; reproduce all text verbatim.
 
-${styleGuide}${brandColors}`
+${styleGuide}`
 }
 
 export interface RestyleDiagramInput {

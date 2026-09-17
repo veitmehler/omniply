@@ -67,7 +67,7 @@ function isGeoExcluded(heading: string): boolean {
   return GEO_EXCLUDE.test(t)
 }
 
-function getCdnUrl(s3Key: string): string {
+export function getCdnUrl(s3Key: string): string {
   return `${CDN_BASE.replace(/\/$/, '')}/${s3Key}`
 }
 
@@ -832,7 +832,7 @@ interface DiagramRestyleConfig {
  * logo once. Returns null when restyling can't run (no key) so the pipeline
  * falls back to the plain Mermaid SVG.
  */
-async function buildDiagramRestyleConfig(
+export async function buildDiagramRestyleConfig(
   jobId: string,
   brandStyle: Awaited<ReturnType<typeof brandSettingsForUser>>,
 ): Promise<DiagramRestyleConfig | null> {
@@ -908,7 +908,7 @@ async function resolveDiagramLogoUrl(
 }
 
 /** Guarantee an exact 1:1 image (Gemini image-to-image returns ~square; this is the guard). */
-async function ensureSquare(buf: Buffer): Promise<Buffer> {
+export async function ensureSquare(buf: Buffer): Promise<Buffer> {
   const m = await sharp(buf).metadata()
   const w = m.width ?? 0
   const h = m.height ?? 0
