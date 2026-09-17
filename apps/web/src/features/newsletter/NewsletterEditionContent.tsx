@@ -185,7 +185,11 @@ export function NewsletterEditionContent({ newsletterId }: { newsletterId: strin
   const [dirty, setDirty] = useState<Record<string, DirtyEdit>>({})
   const [requestMode, setRequestMode] = useState(false)
   const [selDraft, setSelDraft] = useState<Omit<PendingEdit, 'note'> | null>(null)
-  const [requests, setRequests] = useState<{ id: string; quotedText: string; note: string; status: string }[]>([])
+  const [requests, setRequests] = useState<
+    { id: string; quotedText: string; prefixContext: string | null; suffixContext: string | null; note: string; status: string; createdAt: string }[]
+  >([])
+  const [requestsOpen, setRequestsOpen] = useState(false)
+  const [requestDetail, setRequestDetail] = useState<string | null>(null)
   const iframeRef = useRef<HTMLIFrameElement | null>(null)
   const dirtyCount = Object.keys(dirty).length
 
@@ -251,13 +255,17 @@ export function NewsletterEditionContent({ newsletterId }: { newsletterId: strin
     await loadEditPreview()
   }
 
-  async function resolveRequest(id: string) {
+  async function setRequestStatus(id: string, status: 'resolved' | 'open') {
     await fetch(`/api/edit-requests/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: 'resolved' }),
+      body: JSON.stringify({ status }),
     }).catch(() => null)
     await loadRequests()
+  }
+
+  function scrollToPin(quote: string) {
+    iframeRef.current?.contentWindow?.postMessage({ type: 'nl-scroll-to', quote }, '*')
   }
 
   async function patchEdition(patch: Record<string, unknown>, doneNotice: string) {
@@ -390,33 +398,95 @@ export function NewsletterEditionContent({ newsletterId }: { newsletterId: strin
             </button>
           )}
           {editable && requests.length > 0 && (
-            <div className="rounded-xl border border-border bg-card p-4">
-              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Edit requests</h3>
-              <div className="space-y-2">
-                {requests.map((r) => (
-                  <div key={r.id} className={`rounded-lg border p-2 ${r.status === 'open' ? 'border-amber-300' : 'border-border opacity-60'}`}>
-                    <div className="flex items-start justify-between gap-2">
-                      <span className="text-sm font-medium text-foreground">{r.note}</span>
-                      {r.status === 'open' ? (
-                        <button onClick={() => void resolveRequest(r.id)} className="flex-shrink-0 rounded border border-border px-1.5 py-0.5 text-[11px] hover:bg-muted">Done</button>
-                      ) : (
-                        <span className="flex-shrink-0 text-[11px] text-green-700">✓</span>
-                      )}
-                    </div>
-                    <div className="mt-1 line-clamp-2 text-[11px] italic text-muted-foreground">on: “{r.quotedText}”</div>
-                  </div>
-                ))}
-              </div>
-              {requests.some((r) => r.status !== 'open') && requests.every((r) => r.status !== 'open') && (
-                <button
-                  onClick={() => void fetch(`/api/newsletters/${newsletterId}/request-review`, { method: 'POST' }).then(() => setNotice('Sent back for review.'))}
-                  className="mt-2 w-full rounded-md border border-border px-3 py-1.5 text-xs hover:bg-muted"
-                >
-                  All done — notify the reviewer
-                </button>
+            <div className="rounded-xl border border-border bg-card">
+              <button
+                onClick={() => setRequestsOpen((v) => !v)}
+                className="flex w-full items-center justify-between p-4 text-left"
+              >
+                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Edit requests</span>
+                <span className="flex items-center gap-2">
+                  {requests.some((r) => r.status === 'open') && (
+                    <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[11px] font-medium text-amber-700">
+                      {requests.filter((r) => r.status === 'open').length} open
+                    </span>
+                  )}
+                  <span className="text-muted-foreground">{requestsOpen ? '▾' : '▸'}</span>
+                </span>
+              </button>
+              {requestsOpen && (
+                <div className="space-y-1.5 px-4 pb-4">
+                  {requests.map((r) => (
+                    <button
+                      key={r.id}
+                      onClick={() => setRequestDetail(r.id)}
+                      className="flex w-full items-center gap-2 rounded-lg border border-border px-2.5 py-2 text-left text-xs hover:bg-muted"
+                    >
+                      <span className={`h-2 w-2 flex-shrink-0 rounded-full ${r.status === 'open' ? 'bg-amber-500' : 'bg-green-600'}`} />
+                      <span className="min-w-0 truncate italic text-muted-foreground">“{r.quotedText}”</span>
+                    </button>
+                  ))}
+                  {requests.length > 0 && requests.every((r) => r.status !== 'open') && (
+                    <button
+                      onClick={() => void fetch(`/api/newsletters/${newsletterId}/request-review`, { method: 'POST' }).then(() => setNotice('Sent back for review.'))}
+                      className="mt-1 w-full rounded-md border border-border px-3 py-1.5 text-xs hover:bg-muted"
+                    >
+                      All done — notify the reviewer
+                    </button>
+                  )}
+                </div>
               )}
             </div>
           )}
+
+          {requestDetail && (() => {
+            const r = requests.find((x) => x.id === requestDetail)
+            if (!r) return null
+            return (
+              <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4" onClick={() => setRequestDetail(null)}>
+                <div className="w-full max-w-md rounded-xl border border-border bg-card p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
+                  <div className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">What to change</div>
+                  <p className="mb-4 text-sm font-medium text-foreground">{r.note}</p>
+                  <div className="mb-1 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Where</div>
+                  <p className="mb-4 rounded-lg bg-muted/50 p-2 text-xs italic text-muted-foreground">
+                    {r.prefixContext ? `…${r.prefixContext}` : ''}
+                    <mark className="bg-amber-200 not-italic text-foreground">{r.quotedText}</mark>
+                    {r.suffixContext ? `${r.suffixContext}…` : ''}
+                  </p>
+                  <div className="mb-4 text-[11px] text-muted-foreground">
+                    Requested {new Date(r.createdAt).toLocaleString()}
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <button
+                      onClick={() => { scrollToPin(r.quotedText); setRequestDetail(null) }}
+                      className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-muted"
+                    >
+                      Show in email
+                    </button>
+                    <div className="flex gap-2">
+                      {r.status === 'open' ? (
+                        <button
+                          onClick={() => { void setRequestStatus(r.id, 'resolved'); setRequestDetail(null) }}
+                          className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground"
+                        >
+                          Mark done
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => { void setRequestStatus(r.id, 'open'); setRequestDetail(null) }}
+                          className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-muted"
+                        >
+                          Reopen
+                        </button>
+                      )}
+                      <button onClick={() => setRequestDetail(null)} className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-muted">
+                        Close
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )
+          })()}
           {editable && (
             <div className="rounded-xl border border-border bg-card p-4">
               <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Video</h3>

@@ -842,6 +842,15 @@ const EDIT_BRIDGE_SCRIPT = `<style>
       requestMode = !!d.on;
       els.forEach(function (el) { el.setAttribute('contenteditable', requestMode ? 'false' : 'true'); });
     }
+    if (d.type === 'nl-scroll-to' && d.quote) {
+      var pins = document.querySelectorAll('mark[data-nl-pin]');
+      for (var i = 0; i < pins.length; i++) {
+        if ((pins[i].textContent || '').indexOf(d.quote.slice(0, 40)) >= 0) {
+          pins[i].scrollIntoView({ behavior: 'smooth', block: 'center' });
+          break;
+        }
+      }
+    }
     if (d.type === 'nl-highlight' && Array.isArray(d.quotes)) {
       d.quotes.forEach(function (q) {
         if (!q) return;
