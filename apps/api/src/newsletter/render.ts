@@ -457,8 +457,8 @@ export function stylePlainLanguageBoxes(html: string, theme: Theme): string {
     /<div data-pl-box data-pl-label="([^"]*)">\s*<p>([\s\S]*?)<\/p>\s*<\/div>/gi,
     (_m, label: string, text: string) =>
       `<div style="border-left:4px solid ${theme.linkColor};background-color:#f4f7f9;padding:14px 18px;margin:16px 0;border-radius:6px;">` +
-      `<p style="margin:0 0 6px;font-family:${theme.fontStack};font-size:14px;font-weight:700;color:${theme.fontColor};">${label}</p>` +
-      `<p style="margin:0;font-family:${theme.fontStack};font-size:16px;font-weight:${theme.bodyWeight};color:${theme.fontColor};line-height:1.6;">${text}</p></div>`,
+      `<p style="margin:0 0 6px;font-family:${theme.fontStack};font-size:${theme.bodyFontSize - 4}px;font-weight:700;color:${theme.fontColor};">${label}</p>` +
+      `<p style="margin:0;font-family:${theme.fontStack};font-size:${theme.bodyFontSize}px;font-weight:${theme.bodyWeight};color:${theme.fontColor};line-height:1.6;">${text}</p></div>`,
   )
 }
 
@@ -471,7 +471,7 @@ function articleBlock(a: RenderArticle, theme: Theme, showTitle = true, anchor?:
     ? `<h2${anchorAttr(theme, anchor ? `${anchor}.title` : undefined)} style="margin:0 0 14px;font-family:${theme.fontStack};font-size:24px;font-weight:${theme.headingWeight};color:${theme.fontColor};line-height:1.3;">${esc(a.title)}</h2>`
     : ''
   const tldr = a.tldr
-    ? `<p${anchorAttr(theme, anchor ? `${anchor}.tldr` : undefined)} style="margin:0 0 14px;font-family:${theme.fontStack};font-size:15px;color:${theme.fontColor};"><u>TL;DR:</u> ${esc(a.tldr)}</p>`
+    ? `<p${anchorAttr(theme, anchor ? `${anchor}.tldr` : undefined)} style="margin:0 0 14px;font-family:${theme.fontStack};font-size:${theme.bodyFontSize}px;color:${theme.fontColor};"><u>TL;DR:</u> ${esc(a.tldr)}</p>`
     : ''
   return `${img}${h2}${tldr}${para(normalizeBody(stylePlainLanguageBoxes(a.body, theme), theme), theme, 'left', anchor ? `${anchor}.body` : undefined)}`
 }
@@ -924,7 +924,7 @@ export function renderPromoEmail(bodyHtml: string, brand: RenderBrand, previewTe
   // The greeting leads — strip a leading headline from the body (the headline is
   // already the email subject), keeping the rest of the HTML as-is.
   const body = bodyHtml.replace(/^\s*<h[1-3][^>]*>[\s\S]*?<\/h[1-3]>\s*/i, '')
-  const card = `<tr><td style="background-color:#ffffff;padding:32px 28px 200px;font-family:${theme.fontStack};font-size:16px;font-weight:${theme.bodyWeight};color:${theme.fontColor};line-height:1.6;">${greeting}${body}${signoff}</td></tr>`
+  const card = `<tr><td style="background-color:#ffffff;padding:32px 28px 200px;font-family:${theme.fontStack};font-size:${theme.bodyFontSize}px;font-weight:${theme.bodyWeight};color:${theme.fontColor};line-height:1.6;">${greeting}${body}${signoff}</td></tr>`
   const rows = [headerBlock(brand, theme), card, footerBlock(brand, theme)]
   return emailShell(theme, previewText ?? null, rows.join('\n      '))
 }
