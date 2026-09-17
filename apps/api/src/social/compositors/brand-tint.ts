@@ -66,6 +66,12 @@ export function tintScheme(brandHex: string | null | undefined, alpha = DEFAULT_
   const pick = (a: number) => {
     const white = minContrast(WHITE_L, brandL, a)
     const dark = minContrast(NEAR_BLACK_L, brandL, a)
+    // WHITE BIAS (Veit 2026-09-17): white reads better on brand tints — keep
+    // it whenever its worst case clears AA, even if near-black scores higher
+    // (black-on-teal looked wrong despite winning the worst-case comparison).
+    if (white >= AA_CONTRAST) {
+      return { textColor: '#FFFFFF' as const, logoVariant: 'light' as const, contrast: white }
+    }
     return white >= dark
       ? { textColor: '#FFFFFF' as const, logoVariant: 'light' as const, contrast: white }
       : { textColor: '#111111' as const, logoVariant: 'dark' as const, contrast: dark }
@@ -79,4 +85,14 @@ export function tintScheme(brandHex: string | null | undefined, alpha = DEFAULT_
   }
 
   return { overlayColor, overlayOpacity, textColor: choice.textColor, logoVariant: choice.logoVariant }
+}
+
+/** Client override: force light/dark text (per-post toggle, Veit 2026-09-17). */
+export function forcedTintScheme(brandHex: string | null | undefined, mode: 'light' | 'dark'): TintScheme {
+  const auto = tintScheme(brandHex)
+  return {
+    ...auto,
+    textColor: mode === 'light' ? '#FFFFFF' : '#111111',
+    logoVariant: mode === 'light' ? 'light' : 'dark',
+  }
 }

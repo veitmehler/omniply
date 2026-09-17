@@ -51,11 +51,14 @@ export type SpecPreviewPayload = {
 }
 
 export type SocialSpecResultRow = {
+  id: string
   slotKey: string
   status: string
   error: string | null
   postsCreated: number
   previewJson?: SpecPreviewPayload | null
+  assetsJson?: { postType?: string; storySlides?: string[] } | null
+  overridesJson?: { textMode?: 'light' | 'dark' | null; slides?: Record<string, { text?: string; imageUrl?: string | null }> } | null
   approvedAt?: string | null
 }
 
@@ -206,6 +209,111 @@ function CarouselLightbox({
 }
 
 // ── Slot media ────────────────────────────────────────────────────────────────
+
+/**
+ * Story-carousel editor (review UX, Veit 2026-09-17): per-post Light/Dark
+ * text toggle, in-place slide text editing, and story-image regeneration —
+ * all through the deterministic recompose endpoint (no re-roll of the post).
+ */
+function StorySlideEditor({ spec, onRefresh }: { spec: SocialSpecResultRow; onRefresh: () => Promise<void> }) {
+  const [open, setOpen] = useState(false)
+  const [busy, setBusy] = useState<string | null>(null)
+  const slides = spec.assetsJson?.storySlides ?? []
+  const [drafts, setDrafts] = useState<string[]>(slides)
+  const mode = spec.overridesJson?.textMode ?? null
+
+  if (spec.assetsJson?.postType !== 'story_text' || slides.length === 0) return null
+
+  async function recompose(body: Record<string, unknown>, busyKey: string) {
+    setBusy(busyKey)
+    try {
+      const res = await fetch(`/api/social-automation/spec-results/${spec.id}/recompose`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        toast.error(data.error ?? 'Recompose failed')
+        return
+      }
+      toast.success('Slides updated.')
+      await onRefresh()
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  const saveTexts = () => {
+    const changed: Record<string, { text: string }> = {}
+    drafts.forEach((t, i) => {
+      if (t.trim() && t !== slides[i]) changed[String(i)] = { text: t }
+    })
+    if (Object.keys(changed).length === 0) {
+      setOpen(false)
+      return
+    }
+    void recompose({ slides: changed }, 'save')
+  }
+
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span className="text-[11px] text-muted-foreground">Text:</span>
+        {(['light', 'dark'] as const).map((m) => (
+          <button
+            key={m}
+            onClick={() => void recompose({ textMode: mode === m ? null : m }, `mode-${m}`)}
+            disabled={busy !== null}
+            className={`rounded border px-2 py-0.5 text-[11px] ${mode === m ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:bg-muted'}`}
+            title={mode === m ? 'Back to automatic' : `Force ${m} text`}
+          >
+            {busy === `mode-${m}` ? '…' : m === 'light' ? 'Light' : 'Dark'}
+          </button>
+        ))}
+        <button
+          onClick={() => { setDrafts(slides); setOpen((v) => !v) }}
+          className="rounded border border-border px-2 py-0.5 text-[11px] text-muted-foreground hover:bg-muted"
+        >
+          {open ? 'Close editor' : 'Edit slides'}
+        </button>
+      </div>
+      {open && (
+        <div className="space-y-2 rounded-lg border border-primary/40 p-2">
+          {slides.map((t, i) => (
+            <div key={i}>
+              <div className="mb-0.5 flex items-center justify-between">
+                <label className="text-[11px] font-medium text-muted-foreground">Slide {i + 1}</label>
+                {i > 0 && (
+                  <button
+                    onClick={() => void recompose({ regenerateImage: i }, `img-${i}`)}
+                    disabled={busy !== null}
+                    className="text-[11px] text-primary hover:underline disabled:opacity-50"
+                  >
+                    {busy === `img-${i}` ? 'Generating…' : 'New image'}
+                  </button>
+                )}
+              </div>
+              <textarea
+                value={drafts[i] ?? ''}
+                onChange={(e) => setDrafts((prev) => prev.map((x, j) => (j === i ? e.target.value : x)))}
+                rows={3}
+                className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs"
+              />
+            </div>
+          ))}
+          <button
+            onClick={saveTexts}
+            disabled={busy !== null}
+            className="w-full rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground disabled:opacity-50"
+          >
+            {busy === 'save' ? 'Recomposing…' : 'Save & recompose'}
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
 
 function SlotMedia({ preview }: { preview: SpecPreviewPayload }) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
@@ -565,6 +673,7 @@ export function SocialPreviewPanel({
                       {preview && spec.status === 'completed' && (
                         <>
                           <SlotMedia preview={preview} />
+                          {!spec.approvedAt && <StorySlideEditor spec={spec} onRefresh={onRefresh} />}
                           <div className="space-y-2 max-h-40 overflow-y-auto">
                             {preview.platforms.map((p) => (
                               <div key={p.platform} className="text-xs">

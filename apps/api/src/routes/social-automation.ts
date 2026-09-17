@@ -1,10 +1,39 @@
 import type { FastifyInstance } from 'fastify'
+import { recomposeStorySlot } from '../social/recompose'
+import { requireAccount } from '../middleware/account'
 import { prisma } from '@omniply/shared'
 import { requireAuth } from '../middleware/auth'
 import { retryAutomationSpec } from '../social/automation/run'
 import { enqueueSocialDispatch, enqueueSocialRegenerate } from '../social/automation/enqueue-dispatch'
 
 export async function socialAutomationRoutes(app: FastifyInstance) {
+  // POST /social-automation/spec-results/:id/recompose — client slide edits:
+  // { textMode?, slides?: { [i]: { text?, imageUrl? } }, regenerateImage?: i }
+  app.post<{ Params: { id: string }; Body: Record<string, unknown> }>(
+    '/social-automation/spec-results/:id/recompose',
+    async (request, reply) => {
+      const account = await requireAccount(request, reply)
+      if (!account) return
+      const body = request.body ?? {}
+      const patch: Parameters<typeof recomposeStorySlot>[2] = {}
+      if (body.textMode === 'light' || body.textMode === 'dark' || body.textMode === null) patch.textMode = body.textMode as never
+      if (body.slides && typeof body.slides === 'object') {
+        patch.slides = {}
+        for (const [i, o] of Object.entries(body.slides as Record<string, { text?: unknown; imageUrl?: unknown }>)) {
+          if (!/^\d+$/.test(i)) continue
+          patch.slides[i] = {
+            ...(typeof o?.text === 'string' ? { text: o.text.slice(0, 600) } : {}),
+            ...(typeof o?.imageUrl === 'string' || o?.imageUrl === null ? { imageUrl: o.imageUrl as never } : {}),
+          }
+        }
+      }
+      if (typeof body.regenerateImage === 'number') patch.regenerateImage = body.regenerateImage
+      const result = await recomposeStorySlot(request.params.id, account.userId, patch)
+      if ('error' in result) return reply.status(result.status).send({ error: result.error })
+      return reply.send(result)
+    },
+  )
+
   // GET /api/social-automation/:runId
   app.get<{ Params: { runId: string } }>('/social-automation/:runId', async (request, reply) => {
     const clerkId = await requireAuth(request, reply)

@@ -414,6 +414,8 @@ model SocialAutomationSpecResult {
   postsCreated Int                 @default(0)
   assetsJson   Json?
   previewJson  Json? // per-platform captions + media for workflow preview (pre-GHL)
+  // Client recompose overrides: { textMode?, slides?: { [i]: { text?, imageUrl? } } }
+  overridesJson Json?
   approvedAt   DateTime?
   createdAt    DateTime            @default(now())
   updatedAt    DateTime            @updatedAt

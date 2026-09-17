@@ -54,6 +54,8 @@ export interface SpecAssets {
   backgroundImageUrls?: string[]
   /** F6's raw Seedance hook clip (1:1, no title) — stored so S6 can reuse it at 9:16. */
   hookRawVideoUrl?: string
+  /** Story-carousel source texts — persisted for the client recompose primitive. */
+  storySlides?: string[]
 }
 
 export async function generateSpecAssets(opts: {

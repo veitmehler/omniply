@@ -1,6 +1,7 @@
 import sharp from 'sharp'
+import { downloadImageFromUrl } from '@omniply/shared'
 import { loadSocialBrandTheme, loadLogoBuffer, loadTintLogo } from './brand-theme'
-import { tintScheme, type TintScheme } from './compositors/brand-tint'
+import { tintScheme, forcedTintScheme, type TintScheme } from './compositors/brand-tint'
 import { registerSocialMedia } from './media-register'
 import { renderQuoteCard } from './compositors/quote-card'
 import { selectQuoteForCard } from './generators/quote-selection'
@@ -111,22 +112,30 @@ export async function generateStorySlidesAsset(opts: {
   slides: string[]
   jobId?: string
   imageModel?: string
+  /** Client override: force light/dark text + matching logo (per-post). */
+  forceTextMode?: 'light' | 'dark'
+  /** Recompose: reuse the existing motif background instead of generating. */
+  reuseBackgroundUrl?: string
+  /** Per-slide photo backgrounds (story images / client swaps): index → URL. */
+  slideImages?: Record<number, string>
 }): Promise<{ imageUrls: string[]; backgroundImageUrls: string[] }> {
   const brand = await loadSocialBrandTheme(opts.userId)
   const genId = generationId()
   const jobId = opts.jobId ?? genId
 
-  const tint = tintScheme(brand.primaryColor)
+  const tint = opts.forceTextMode ? forcedTintScheme(brand.primaryColor, opts.forceTextMode) : tintScheme(brand.primaryColor)
   const tintLogoBuffer = await loadTintLogo(brand, tint.logoVariant)
   const arrowBuffer = await loadContinuationArrow(tint.logoVariant)
   const logoBuffer = await loadLogoBuffer(brand.logoUrl)
 
-  const rawMotif = await generateCarouselBackground(
-    themedBackgroundPrompt(brand.industry, genId),
-    jobId,
-    MOTIF_IMAGE_MODEL,
-    opts.userId,
-  )
+  const rawMotif = opts.reuseBackgroundUrl
+    ? await downloadImageFromUrl(opts.reuseBackgroundUrl)
+    : await generateCarouselBackground(
+        themedBackgroundPrompt(brand.industry, genId),
+        jobId,
+        MOTIF_IMAGE_MODEL,
+        opts.userId,
+      )
 
   // Soften: flat brand canvas + motif at ~70% alpha (0.45 read too faint —
   // dialed up 2026-09-03 evening). Under the slide's 0.85 wash the motif
@@ -149,17 +158,20 @@ export async function generateStorySlidesAsset(opts: {
     .png()
     .toBuffer()
 
-  const bgReg = await registerSocialMedia({
-    userId: opts.userId,
-    buffer: bg,
-    s3Key: `social/${opts.userId}/${jobId}/story-bg-${genId}.png`,
-    title: 'Story background',
-    altText: 'Story background',
-    source: 'carousel_slide',
-    jobId,
-  })
+  const bgReg = opts.reuseBackgroundUrl
+    ? { url: opts.reuseBackgroundUrl }
+    : await registerSocialMedia({
+        userId: opts.userId,
+        buffer: bg,
+        s3Key: `social/${opts.userId}/${jobId}/story-bg-${genId}.png`,
+        title: 'Story background',
+        altText: 'Story background',
+        source: 'carousel_slide',
+        jobId,
+      })
 
   const imageUrls: string[] = []
+  const perSlideBgUrls: string[] = []
   for (let i = 0; i < opts.slides.length; i++) {
     const isHook = i === 0
     const plan = {
@@ -168,7 +180,21 @@ export async function generateStorySlidesAsset(opts: {
       bodyText: isHook ? null : opts.slides[i],
       imagePrompt: '',
     }
-    const buffer = await renderCarouselSlide(bg, {
+    // Story image (Veit 2026-09-17): a photo backdrop for this slide — the
+    // half-panel design was built for exactly this. Falls back to the motif.
+    let slideBg = bg
+    let slideBgUrl = bgReg.url
+    const photoUrl = opts.slideImages?.[i]
+    if (photoUrl) {
+      try {
+        const photo = await downloadImageFromUrl(photoUrl)
+        slideBg = await sharp(photo).resize(1080, 1080, { fit: 'cover', position: 'centre' }).png().toBuffer()
+        slideBgUrl = photoUrl
+      } catch {
+        /* keep motif */
+      }
+    }
+    const buffer = await renderCarouselSlide(slideBg, {
       slide: plan,
       slideIndex: i,
       totalSlides: opts.slides.length,
@@ -189,10 +215,10 @@ export async function generateStorySlidesAsset(opts: {
       jobId,
     })
     imageUrls.push(reg.url)
+    perSlideBgUrls.push(slideBgUrl)
   }
-  // Parallel background array (single shared motif) — the S-slot pitch
-  // builder reads backgrounds per slide.
-  return { imageUrls, backgroundImageUrls: imageUrls.map(() => bgReg.url) }
+  // Parallel background array — per-slide (photo slides carry their own).
+  return { imageUrls, backgroundImageUrls: perSlideBgUrls }
 }
 
 export async function generateQuoteCardAsset(opts: {

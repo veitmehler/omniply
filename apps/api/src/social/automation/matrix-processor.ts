@@ -15,6 +15,7 @@ import {
   type NewsletterContentContext,
 } from './newsletter-content'
 import { generateQuoteCardAsset, generateCarouselAssets, generateStorySlidesAsset } from '../generate-assets'
+import { generateStoryPhoto } from '../story-photo'
 import { generateVideoReelAsset, generateHookVideoAsset, generateKtMusicVideoAsset } from '../generate-video-assets'
 import { loadPromptTemplate } from '../../article-pipeline/enrichment/prompt-template'
 
@@ -170,11 +171,29 @@ export async function generateMatrixAsset(opts: {
       // run-level pregen). No storySlides → the arc is missing: degrade to
       // a tinted section carousel so the slot still posts.
       if (resolved.slot.storySlides?.length) {
+        // Story image (Veit 2026-09-17): a Nano-Banana photo behind the first
+        // CONTENT slide that TELLS THE STORY of its text — client accounts
+        // only; azavea's locked motif design is exempt. Best-effort.
+        let slideImages: Record<number, string> | undefined
+        try {
+          const acct = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { account: { select: { vertical: true } } },
+          })
+          const contentIdx = resolved.slot.storySlides.length > 1 ? 1 : 0
+          if (acct?.account?.vertical !== 'azavea') {
+            const url = await generateStoryPhoto(userId, assetJobId, resolved.slot.storySlides[contentIdx])
+            if (url) slideImages = { [contentIdx]: url }
+          }
+        } catch {
+          /* motif fallback */
+        }
         const story = await generateStorySlidesAsset({
           userId,
           slides: resolved.slot.storySlides,
           jobId: assetJobId,
           imageModel: await socialImageModel(),
+          slideImages,
         })
         return {
           postType: 'story_text',
@@ -182,6 +201,8 @@ export async function generateMatrixAsset(opts: {
           imageUrl: story.imageUrls[0],
           backgroundImageUrls: story.backgroundImageUrls,
           title: resolved.slot.title ?? contextTitle,
+          // Source texts persisted for the recompose primitive (client edits).
+          storySlides: resolved.slot.storySlides,
         }
       }
       logger.warn({ assetJobId }, '[matrix-processor] story slot without arc — tinted carousel fallback')
