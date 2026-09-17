@@ -5,6 +5,7 @@
  * either to a clerkId. State is per-account and resumable.
  */
 import type { FastifyInstance } from 'fastify'
+import { configureNewsletterDelivery } from '../lib/ghl/settings'
 import { prisma, resolveAccountForClerkId } from '@omniply/shared'
 import { requireAuth } from '../middleware/auth'
 import { logger } from '../lib/logger'
@@ -136,6 +137,13 @@ export async function onboardingRoutes(app: FastifyInstance) {
     })
     await prisma.onboardingSession.update({ where: { id: r.session.id }, data: { status: 'completed' } })
     logger.info({ accountId: r.account.accountId }, '[onboarding] completed — starting first burst')
+
+    // Newsletter delivery auto-config (Veit 2026-09-17): audience tags
+    // (find-or-create) + From identity from captured business details —
+    // approval must never dead-end on unconfigured delivery. Best-effort.
+    void configureNewsletterDelivery(r.account.ownerUserId).catch((err) =>
+      logger.warn({ err }, '[onboarding] newsletter delivery auto-config failed'),
+    )
 
     // Website installs, gated by the onboarding consents (§4b-3): quiz page
     // (cta step), linktree + chat widget (install_consent step). Missing

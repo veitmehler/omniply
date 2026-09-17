@@ -126,6 +126,8 @@ export interface NewsletterEmailConfig {
   apiKey: string
   locationId: string
   ghlUserId: string
+  /** Audience = union of these tags (multi-tag, Veit 2026-09-17). */
+  tagIds: string[]
   tagId: string
   tagName: string | null
   sendTime: string // "HH:mm"
@@ -141,13 +143,11 @@ export interface NewsletterEmailConfig {
  */
 export async function getNewsletterEmailConfig(userId: string): Promise<NewsletterEmailConfig | null> {
   const row = await ghlSettingsForUser(userId)
-  if (
-    !row?.ghlApiKey ||
-    !row.ghlLocationId ||
-    !row.ghlUserId ||
-    !row.newsletterTagId ||
-    !row.newsletterFromEmail
-  ) {
+  const multi = Array.isArray(row?.newsletterTagIds)
+    ? (row!.newsletterTagIds as { id?: string; name?: string }[]).filter((t) => t.id)
+    : []
+  const tagIds = multi.length ? multi.map((t) => t.id!) : row?.newsletterTagId ? [row.newsletterTagId] : []
+  if (!row?.ghlApiKey || !row.ghlLocationId || !row.ghlUserId || tagIds.length === 0 || !row.newsletterFromEmail) {
     return null
   }
   const apiKey = await freshApiKey(row)
@@ -157,11 +157,61 @@ export async function getNewsletterEmailConfig(userId: string): Promise<Newslett
     apiKey,
     locationId: row.ghlLocationId,
     ghlUserId: row.ghlUserId,
-    tagId: row.newsletterTagId,
-    tagName: row.newsletterTagName,
+    tagIds,
+    tagId: tagIds[0],
+    tagName: multi[0]?.name ?? row.newsletterTagName,
     sendTime: row.newsletterSendTime ?? '09:00',
     timezone: row.newsletterTimezone ?? 'America/New_York',
     fromName: row.newsletterFromName,
     fromEmail: row.newsletterFromEmail,
   }
+}
+
+/** Canonical newsletter audience tags (Veit 2026-09-17). */
+export const NEWSLETTER_AUDIENCE_TAGS = ['newsletter-subscriber', 'spine-check-lead']
+
+/**
+ * Auto-configure newsletter delivery at onboarding (finale, best-effort):
+ * find-or-create the canonical audience tags in the client's GHL location and
+ * default the From identity from the captured business details. Never
+ * overwrites values the client already set.
+ */
+export async function configureNewsletterDelivery(userId: string): Promise<void> {
+  const { listGhlTags, createGhlTag } = await import('./client')
+  const { prisma } = await import('@omniply/shared')
+  const row = await ghlSettingsForUser(userId)
+  if (!row?.ghlApiKey || !row.ghlLocationId) return
+  const apiKey = await freshApiKey(row)
+  if (!apiKey) return
+
+  const existing = await listGhlTags(apiKey, row.ghlLocationId).catch(() => [])
+  const byName = new Map(existing.map((t) => [t.name.toLowerCase(), t]))
+  const tags: { id: string; name: string }[] = []
+  for (const name of NEWSLETTER_AUDIENCE_TAGS) {
+    let tag = byName.get(name)
+    if (!tag) {
+      try {
+        tag = await createGhlTag(apiKey, row.ghlLocationId, name)
+      } catch {
+        continue // best-effort; Settings can fix later
+      }
+    }
+    if (tag?.id) tags.push({ id: tag.id, name: tag.name })
+  }
+
+  const brand = await prisma.brandSettings.findFirst({
+    where: { userId },
+    select: { organizationEmail: true, organizationName: true },
+  })
+  const userSettings = await prisma.settings.findUnique({ where: { userId }, select: { socialTimezone: true } })
+
+  await prisma.ghlSettings.update({
+    where: { id: row.id },
+    data: {
+      ...(tags.length ? { newsletterTagIds: tags } : {}),
+      ...(row.newsletterFromEmail ? {} : brand?.organizationEmail ? { newsletterFromEmail: brand.organizationEmail } : {}),
+      ...(row.newsletterFromName ? {} : brand?.organizationName ? { newsletterFromName: brand.organizationName } : {}),
+      ...(row.newsletterTimezone ? {} : userSettings?.socialTimezone ? { newsletterTimezone: userSettings.socialTimezone } : {}),
+    },
+  })
 }

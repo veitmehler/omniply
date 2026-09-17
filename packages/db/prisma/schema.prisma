@@ -463,8 +463,10 @@ model GhlSettings {
   promoEmailFromName  String?
   promoEmailFromEmail String?
   // Magazine newsletter delivery (one GHL email campaign per approved edition)
-  newsletterTagId     String?
+  newsletterTagId     String? // legacy single tag (fallback)
   newsletterTagName   String?
+  // Audience tags [{id,name}] — campaign sends to the union (OR).
+  newsletterTagIds    Json?
   newsletterSendTime  String?   @default("09:00") // "HH:mm" 24h, in newsletterTimezone
   newsletterTimezone  String?   @default("America/New_York")
   newsletterFromName  String?

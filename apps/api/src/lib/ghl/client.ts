@@ -321,6 +321,17 @@ export function getGhlOAuthStartUrl(platform: string): string {
  * picker. Endpoint is the documented Locations API:
  *   GET /locations/{locationId}/tags  →  { tags: [{ id, name, locationId }] }
  */
+/** Create a location tag (idempotence is the caller's job via listGhlTags). */
+export async function createGhlTag(apiKey: string, locationId: string, name: string): Promise<GhlTag> {
+  const data = await ghlRequest<{ tag?: GhlTag } | GhlTag>(apiKey, `/locations/${locationId}/tags`, {
+    method: 'POST',
+    body: { name },
+  })
+  const tag = (data as { tag?: GhlTag }).tag ?? (data as GhlTag)
+  logger.info({ locationId, name, id: tag.id }, '[ghl] tag created')
+  return tag
+}
+
 export async function listGhlTags(apiKey: string, locationId: string): Promise<GhlTag[]> {
   const data = await ghlRequest<{ tags?: GhlTag[] } | GhlTag[]>(
     apiKey,

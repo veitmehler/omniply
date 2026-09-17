@@ -203,7 +203,7 @@ async function approveOne(
       locationId: config.locationId,
       campaignId,
       meta,
-      tagIds: [config.tagId],
+      tagIds: config.tagIds,
       timeZone: config.timezone,
       userId: config.ghlUserId,
       sendAt: sendAtLocal,
@@ -554,9 +554,13 @@ export async function newsletterRoutes(app: FastifyInstance) {
     for (const k of DELIVERY_FIELDS) {
       delivery[k] = g?.[k] ?? g?.[PROMO_FALLBACK[k]] ?? null
     }
+    const audienceTags = Array.isArray(g?.newsletterTagIds)
+      ? (g!.newsletterTagIds as { name?: string }[]).map((t) => t.name).filter(Boolean)
+      : []
     return reply.send({
       template,
       delivery,
+      audienceTags,
       ghlConnected: !!(ghl?.ghlApiKey && ghl?.ghlLocationId && ghl?.ghlUserId),
     })
   })

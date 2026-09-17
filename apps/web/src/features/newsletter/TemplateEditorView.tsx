@@ -30,6 +30,7 @@ const FONT_OPTIONS = [
 export function TemplateEditorView({ embedMode = false }: { embedMode?: boolean } = {}) {
   const [template, setTemplate] = useState<Template>({})
   const [sectionsDisabled, setSectionsDisabled] = useState<string[]>([])
+  const [audienceTags, setAudienceTags] = useState<string[]>([])
   const [delivery, setDelivery] = useState<Delivery>({})
   const [ghlConnected, setGhlConnected] = useState(false)
   const [previewHtml, setPreviewHtml] = useState('')
@@ -74,6 +75,7 @@ export function TemplateEditorView({ embedMode = false }: { embedMode?: boolean 
           t[k] = (v as string) ?? ''
         }
         setSectionsDisabled(Array.isArray(data.template?.nlSectionsDisabled) ? data.template.nlSectionsDisabled : [])
+        setAudienceTags(Array.isArray(data.audienceTags) ? data.audienceTags : [])
         const d: Delivery = {}
         for (const [k, v] of Object.entries(data.delivery ?? {})) d[k] = (v as string) ?? ''
         setTemplate(t)
@@ -530,6 +532,31 @@ export function TemplateEditorView({ embedMode = false }: { embedMode?: boolean 
                   />
                 </div>
               </div>
+              <div className="mb-3 grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-muted-foreground">From name</label>
+                  <input
+                    value={delivery.newsletterFromName || ''}
+                    onChange={(e) => setD('newsletterFromName', e.target.value)}
+                    placeholder="Your practice name"
+                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-muted-foreground">From email</label>
+                  <input
+                    value={delivery.newsletterFromEmail || ''}
+                    onChange={(e) => setD('newsletterFromEmail', e.target.value)}
+                    placeholder="you@yourpractice.com"
+                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+                  />
+                </div>
+              </div>
+              {audienceTags.length > 0 && (
+                <p className="mb-3 text-xs text-muted-foreground">
+                  Sends to contacts tagged: <b>{audienceTags.join(', ')}</b> (managed automatically)
+                </p>
+              )}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="mb-1 block text-xs font-medium text-muted-foreground">Send time</label>
