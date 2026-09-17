@@ -735,7 +735,11 @@ function footerBlock(brand: RenderBrand, theme: Theme): string {
   const disclaimer =
     brand.nlFooterDisclaimer?.trim() ||
     'If you follow a link in this email and make a purchase, we may earn a small commission at no extra cost to you; it helps support our work.'
-  const nameLine = footerLogo ? '' : `<div style="font-weight:600;">${esc(brand.organizationName ?? '')}</div>`
+  // ALWAYS text — the legal identity must survive images-off rendering
+  // (CAN-SPAM: sender identification next to the postal address).
+  const nameLine = brand.organizationName
+    ? `<div style="font-size:16px;font-weight:600;margin-bottom:2px;">${esc(brand.organizationName)}</div>`
+    : ''
 
   return `<tr><td style="background-color:${theme.footerBg};padding:60px 24px 32px;">
       <div style="font-family:${theme.fontStack};font-size:13px;color:${footerText};text-align:center;line-height:1.6;">
