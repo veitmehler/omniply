@@ -555,7 +555,7 @@ export async function newsletterRoutes(app: FastifyInstance) {
       delivery[k] = g?.[k] ?? g?.[PROMO_FALLBACK[k]] ?? null
     }
     const audienceTags = Array.isArray(g?.newsletterTagIds)
-      ? (g!.newsletterTagIds as { name?: string }[]).map((t) => t.name).filter(Boolean)
+      ? (g!.newsletterTagIds as { id?: string; name?: string }[]).filter((t) => t.id && t.name)
       : []
     return reply.send({
       template,
@@ -605,9 +605,15 @@ export async function newsletterRoutes(app: FastifyInstance) {
       }
 
       if (delivery) {
-        const data: Record<string, string | null> = {}
+        const data: Record<string, string | null | { id: string; name: string }[]> = {}
         for (const k of DELIVERY_FIELDS) {
           if (delivery[k] !== undefined) data[k] = (delivery[k] as string) || null
+        }
+        if (Array.isArray(delivery.newsletterTagIds)) {
+          data.newsletterTagIds = (delivery.newsletterTagIds as { id?: unknown; name?: unknown }[])
+            .filter((t) => typeof t?.id === 'string' && typeof t?.name === 'string')
+            .map((t) => ({ id: t.id as string, name: t.name as string }))
+            .slice(0, 20)
         }
         if (Object.keys(data).length > 0) {
           await prisma.ghlSettings.upsert({

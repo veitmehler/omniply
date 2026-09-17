@@ -14,7 +14,7 @@ interface AccountData {
   seatLimit: number
 }
 
-export function TeamSection() {
+export function TeamSection({ embedMode = false }: { embedMode?: boolean } = {}) {
   const [data, setData] = useState<AccountData | null>(null)
   const [loading, setLoading] = useState(true)
   const [name, setName] = useState('')
@@ -36,6 +36,38 @@ export function TeamSection() {
   useEffect(() => { load() }, [])
 
   const seatsFull = data ? data.seatsUsed >= data.seatLimit : false
+  const [ghlUsers, setGhlUsers] = useState<{ email: string; name: string | null }[]>([])
+  const [pickEmail, setPickEmail] = useState('')
+
+  useEffect(() => {
+    if (!embedMode) return
+    fetch('/api/ghl/location-users', { cache: 'no-store' })
+      .then(async (r) => (r.ok ? (await r.json()).users ?? [] : []))
+      .then(setGhlUsers)
+      .catch(() => setGhlUsers([]))
+  }, [embedMode])
+
+  async function addFromGhl() {
+    const u = ghlUsers.find((x) => x.email === pickEmail)
+    if (!u) return
+    setBusy(true)
+    try {
+      const res = await fetch('/api/account/members', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: u.email, name: u.name ?? undefined, skipInvite: true }),
+      })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        toast.error(body.error ?? 'Failed to add')
+        return
+      }
+      setPickEmail('')
+      await load()
+    } finally {
+      setBusy(false)
+    }
+  }
 
   async function addMember() {
     if (!email.trim()) return
@@ -94,11 +126,18 @@ export function TeamSection() {
         <Users className="h-5 w-5 text-muted-foreground" />
         <h2 className="text-xl font-semibold text-card-foreground">Team</h2>
       </div>
-      <p className="mb-6 text-sm text-muted-foreground">
-        Add up to {data ? data.seatLimit - 1 : 2} teammates by email. They get an invitation email with a link to set
-        their own password (use the <span className="inline-flex"><Link2 className="h-3.5 w-3.5" /></span> copy-link to
-        share it directly too). Once they accept, they share this account with equal access.
-      </p>
+      {embedMode ? (
+        <p className="mb-6 text-sm text-muted-foreground">
+          Add up to {data ? data.seatLimit - 1 : 2} teammates from your CRM users — they open Omniply from the CRM
+          sidebar and share this account with equal access. No separate passwords needed.
+        </p>
+      ) : (
+        <p className="mb-6 text-sm text-muted-foreground">
+          Add up to {data ? data.seatLimit - 1 : 2} teammates by email. They get an invitation email with a link to set
+          their own password (use the <span className="inline-flex"><Link2 className="h-3.5 w-3.5" /></span> copy-link to
+          share it directly too). Once they accept, they share this account with equal access.
+        </p>
+      )}
 
       {loading ? (
         <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Loading…</div>
@@ -157,6 +196,28 @@ export function TeamSection() {
 
           {seatsFull ? (
             <p className="text-xs text-amber-600">All {data.seatLimit} seats are in use. Remove a member to add someone new.</p>
+          ) : embedMode ? (
+            <div className="flex gap-2">
+              <select
+                value={pickEmail}
+                onChange={(e) => setPickEmail(e.target.value)}
+                className="min-w-0 flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm"
+              >
+                <option value="">Add a teammate from your CRM…</option>
+                {ghlUsers
+                  .filter(
+                    (u) =>
+                      u.email !== data.owner?.email?.toLowerCase() &&
+                      !data.members.some((m) => m.email.toLowerCase() === u.email),
+                  )
+                  .map((u) => (
+                    <option key={u.email} value={u.email}>{u.name ? `${u.name} — ${u.email}` : u.email}</option>
+                  ))}
+              </select>
+              <Button onClick={addFromGhl} disabled={busy || !pickEmail}>
+                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />} Add
+              </Button>
+            </div>
           ) : (
             <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
               <div className="flex-1">

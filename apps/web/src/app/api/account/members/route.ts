@@ -20,6 +20,9 @@ export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => ({}))
   const email = body?.email ? String(body.email).trim().toLowerCase() : ''
   const name = body?.name ? String(body.name).trim() : null
+  // GHL-sourced teammates sign in via CRM SSO — a Clerk set-password invite
+  // would lead them somewhere they can't use (review UX, Veit 2026-09-17).
+  const skipInvite = body?.skipInvite === true
   if (!EMAIL_RE.test(email)) return NextResponse.json({ error: 'A valid email is required' }, { status: 400 })
   if (email === me.email.toLowerCase()) return NextResponse.json({ error: "That's your own email." }, { status: 400 })
 
@@ -40,7 +43,7 @@ export async function POST(request: NextRequest) {
   let clerkInvitationId: string | null = null
   let inviteUrl: string | null = null
   // Only invite people who don't already have an account.
-  if (!existingUser) {
+  if (!existingUser && !skipInvite) {
     const origin = new URL(request.url).origin
     try {
       const inv = await (await clerkClient()).invitations.createInvitation({

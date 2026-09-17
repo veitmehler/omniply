@@ -30,7 +30,9 @@ const FONT_OPTIONS = [
 export function TemplateEditorView({ embedMode = false }: { embedMode?: boolean } = {}) {
   const [template, setTemplate] = useState<Template>({})
   const [sectionsDisabled, setSectionsDisabled] = useState<string[]>([])
-  const [audienceTags, setAudienceTags] = useState<string[]>([])
+  const [audienceTags, setAudienceTags] = useState<{ id: string; name: string }[]>([])
+  const [locationTags, setLocationTags] = useState<{ id: string; name: string }[]>([])
+  const [addTagId, setAddTagId] = useState('')
   const [delivery, setDelivery] = useState<Delivery>({})
   const [ghlConnected, setGhlConnected] = useState(false)
   const [previewHtml, setPreviewHtml] = useState('')
@@ -76,6 +78,10 @@ export function TemplateEditorView({ embedMode = false }: { embedMode?: boolean 
         }
         setSectionsDisabled(Array.isArray(data.template?.nlSectionsDisabled) ? data.template.nlSectionsDisabled : [])
         setAudienceTags(Array.isArray(data.audienceTags) ? data.audienceTags : [])
+        fetch('/api/ghl/tags', { cache: 'no-store' })
+          .then(async (r) => (r.ok ? (await r.json()).tags ?? [] : []))
+          .then(setLocationTags)
+          .catch(() => setLocationTags([]))
         const d: Delivery = {}
         for (const [k, v] of Object.entries(data.delivery ?? {})) d[k] = (v as string) ?? ''
         setTemplate(t)
@@ -185,7 +191,10 @@ export function TemplateEditorView({ embedMode = false }: { embedMode?: boolean 
       const res = await fetch('/api/newsletters/settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ template: { ...template, nlSectionsDisabled: sectionsDisabled }, delivery }),
+        body: JSON.stringify({
+          template: { ...template, nlSectionsDisabled: sectionsDisabled },
+          delivery: { ...delivery, newsletterTagIds: audienceTags },
+        }),
       })
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
@@ -495,43 +504,6 @@ export function TemplateEditorView({ embedMode = false }: { embedMode?: boolean 
               </p>
             )}
             <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-muted-foreground">From name</label>
-                  <input
-                    value={delivery.newsletterFromName || ''}
-                    onChange={(e) => setD('newsletterFromName', e.target.value)}
-                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-muted-foreground">From email</label>
-                  <input
-                    type="email"
-                    value={delivery.newsletterFromEmail || ''}
-                    onChange={(e) => setD('newsletterFromEmail', e.target.value)}
-                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-muted-foreground">Tag ID</label>
-                  <input
-                    value={delivery.newsletterTagId || ''}
-                    onChange={(e) => setD('newsletterTagId', e.target.value)}
-                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-muted-foreground">Tag name</label>
-                  <input
-                    value={delivery.newsletterTagName || ''}
-                    onChange={(e) => setD('newsletterTagName', e.target.value)}
-                    className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-                  />
-                </div>
-              </div>
               <div className="mb-3 grid grid-cols-2 gap-3">
                 <div>
                   <label className="mb-1 block text-xs font-medium text-muted-foreground">From name</label>
@@ -552,11 +524,51 @@ export function TemplateEditorView({ embedMode = false }: { embedMode?: boolean 
                   />
                 </div>
               </div>
-              {audienceTags.length > 0 && (
-                <p className="mb-3 text-xs text-muted-foreground">
-                  Sends to contacts tagged: <b>{audienceTags.join(', ')}</b> (managed automatically)
-                </p>
-              )}
+              <div className="mb-3">
+                <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                  Audience — sends to contacts with any of these tags
+                </label>
+                <div className="mb-2 flex flex-wrap gap-1.5">
+                  {audienceTags.map((t) => (
+                    <span key={t.id} className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-xs">
+                      {t.name}
+                      <button
+                        onClick={() => setAudienceTags((prev) => prev.filter((x) => x.id !== t.id))}
+                        className="text-muted-foreground hover:text-red-600"
+                        title="Remove tag"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                  {audienceTags.length === 0 && <span className="text-xs text-amber-600">No audience tags — sending is disabled.</span>}
+                </div>
+                <div className="flex gap-2">
+                  <select
+                    value={addTagId}
+                    onChange={(e) => setAddTagId(e.target.value)}
+                    className="min-w-0 flex-1 rounded-md border border-border bg-background px-2 py-1.5 text-sm"
+                  >
+                    <option value="">Add a tag from your CRM…</option>
+                    {locationTags
+                      .filter((t) => !audienceTags.some((a) => a.id === t.id))
+                      .map((t) => (
+                        <option key={t.id} value={t.id}>{t.name}</option>
+                      ))}
+                  </select>
+                  <button
+                    onClick={() => {
+                      const t = locationTags.find((x) => x.id === addTagId)
+                      if (t) setAudienceTags((prev) => [...prev, { id: t.id, name: t.name }])
+                      setAddTagId('')
+                    }}
+                    disabled={!addTagId}
+                    className="rounded-md border border-border px-3 py-1.5 text-sm hover:bg-muted disabled:opacity-50"
+                  >
+                    Add
+                  </button>
+                </div>
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="mb-1 block text-xs font-medium text-muted-foreground">Send time</label>

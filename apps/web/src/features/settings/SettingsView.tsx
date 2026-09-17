@@ -49,7 +49,7 @@ export function SettingsView({ embedMode = false }: { embedMode?: boolean }) {
         <AppearanceSection />
 
         {/* Team is IN the embed now (review UX: seats, edit-request assignees). */}
-        <TeamSection />
+        <TeamSection embedMode={embedMode} />
 
         <WritingStyleSection settings={settings} />
 
