@@ -1322,6 +1322,8 @@ model BrandSettings {
   nlSectionColor4     String?
   // One text color for ALL heading bands (render default: white)
   nlBandTextColor          String?
+  // Body text px (default 20 — phone-readable); Settings-adjustable.
+  nlBodyFontSize           Int?
   nlLogoUrl           String? // legacy single newsletter logo (read fallback)
   nlLogoWidth         Int? // header logo width (px)
   // Auto-generated light/dark logo variants (one upload → white + navy transparent)

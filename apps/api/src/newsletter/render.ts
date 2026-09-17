@@ -86,6 +86,7 @@ export interface RenderBrand {
   nlSectionColor3?: string | null
   nlSectionColor4?: string | null
   nlBandTextColor?: string | null
+  nlBodyFontSize?: number | null
   nlFontFamily?: string | null
   nlFontColor?: string | null
   nlHeadingFontWeight?: string | null
@@ -129,6 +130,8 @@ interface Theme {
   fontColor: string
   headingWeight: string
   bandTextColor: string
+  /** Body text px — default 20 (phone readability); Settings-adjustable. */
+  bodyFontSize: number
   /** Edit-mode render: stamp data-nl-section anchors on prose blocks. */
   editAnchors?: boolean
   bodyWeight: string
@@ -236,6 +239,7 @@ function resolveTheme(brand: RenderBrand): Theme {
     fontColor: brand.nlFontColor?.trim() || '#00142b',
     headingWeight: brand.nlHeadingFontWeight?.trim() || '700',
     bandTextColor: brand.nlBandTextColor?.trim() || '#ffffff',
+    bodyFontSize: brand.nlBodyFontSize && brand.nlBodyFontSize >= 12 && brand.nlBodyFontSize <= 28 ? brand.nlBodyFontSize : 20,
     bodyWeight: brand.nlBodyFontWeight?.trim() || '400',
     linkColor: brand.nlLinkColor?.trim() || '#fa00bb',
     buttonColor,
@@ -309,7 +313,7 @@ function plainHeading(title: string, theme: Theme): string {
 }
 
 function para(html: string, theme: Theme, align: 'left' | 'center' = 'left', anchor?: string): string {
-  return `<div${anchorAttr(theme, anchor)} style="font-family:${theme.fontStack};font-size:16px;font-weight:${theme.bodyWeight};color:${theme.fontColor};line-height:1.6;text-align:${align};">${html}</div>`
+  return `<div${anchorAttr(theme, anchor)} style="font-family:${theme.fontStack};font-size:${theme.bodyFontSize}px;font-weight:${theme.bodyWeight};color:${theme.fontColor};line-height:1.6;text-align:${align};">${html}</div>`
 }
 
 /** data-nl-section stamp — only in edit-mode renders. */
@@ -324,7 +328,7 @@ function bulletList(items: string[], theme: Theme, anchor?: string): string {
   const lines = items
     .map(
       (i) =>
-        `<div data-nl-line style="margin:0 0 12px;padding-left:20px;text-indent:-20px;font-family:${theme.fontStack};font-size:16px;font-weight:${theme.bodyWeight};color:${theme.fontColor};line-height:1.5;"><span contenteditable="false" style="color:${theme.linkColor};font-weight:700;">&bull;</span>&nbsp;&nbsp;<span data-nl-line-text>${esc(i)}</span></div>`,
+        `<div data-nl-line style="margin:0 0 12px;padding-left:20px;text-indent:-20px;font-family:${theme.fontStack};font-size:${theme.bodyFontSize}px;font-weight:${theme.bodyWeight};color:${theme.fontColor};line-height:1.5;"><span contenteditable="false" style="color:${theme.linkColor};font-weight:700;">&bull;</span>&nbsp;&nbsp;<span data-nl-line-text>${esc(i)}</span></div>`,
     )
     .join('')
   return `<div${anchorAttr(theme, anchor)}>${lines}</div>`
@@ -358,11 +362,11 @@ function styleInlineHeadings(html: string, theme: Theme): string {
   return html
     .replace(
       /<h2(?![^>]*style=)/gi,
-      `<h2 style="margin:26px 0 12px;font-family:${HEADING_STACK};font-size:21px;font-weight:${theme.headingWeight};color:${theme.fontColor};line-height:1.3;"`,
+      `<h2 style="margin:26px 0 12px;font-family:${HEADING_STACK};font-size:22px;font-weight:${theme.headingWeight};color:${theme.fontColor};line-height:1.3;"`,
     )
     .replace(
       /<h3(?![^>]*style=)/gi,
-      `<h3 style="margin:22px 0 10px;font-family:${HEADING_STACK};font-size:18px;font-weight:${theme.headingWeight};color:${theme.fontColor};line-height:1.3;"`,
+      `<h3 style="margin:22px 0 10px;font-family:${HEADING_STACK};font-size:22px;font-weight:${theme.headingWeight};color:${theme.fontColor};line-height:1.3;"`,
     )
 }
 
@@ -495,7 +499,7 @@ function recipeBlock(r: RenderRecipe, theme: Theme, anchor?: string): string {
   // intro when an image is present (avoid duplicating the title).
   const intro = r.imageUrl ? r.intro.replace(/<h2[^>]*>[\s\S]*?<\/h2>/i, '').trim() : r.intro
   const h3 = (t: string) =>
-    `<h3 style="margin:22px 0 10px;font-family:${theme.fontStack};font-size:18px;font-weight:${theme.headingWeight};color:${theme.fontColor};">${t}</h3>`
+    `<h3 style="margin:22px 0 10px;font-family:${theme.fontStack};font-size:22px;font-weight:${theme.headingWeight};color:${theme.fontColor};">${t}</h3>`
   const a = (f: string) => (anchor ? `${anchor}.${f}` : undefined)
   return `${img}${para(normalizeBody(intro, theme), theme, 'left', a('intro'))}${h3('Ingredients')}${para(bulletizeLines(r.ingredients, theme), theme, 'left', a('ingredients'))}${h3('Instructions')}${para(normalizeBody(r.instructions, theme), theme, 'left', a('instructions'))}`
 }
@@ -570,7 +574,7 @@ export function renderNewsletterHtml(
   // Trivia question — plain heading (no band)
   if (fun?.triviaQuestion && !off.has('trivia')) {
     rows.push(plainHeading('Trivia Question', theme))
-    rows.push(content(para(`<p style="margin:0;font-size:20px;">${esc(fun.triviaQuestion)}</p>`, theme, 'center', 'fun.triviaQuestion')))
+    rows.push(content(para(`<p style="margin:0;">${esc(fun.triviaQuestion)}</p>`, theme, 'center', 'fun.triviaQuestion')))
     rows.push(spacer())
   }
 

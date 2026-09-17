@@ -397,6 +397,13 @@ export function TemplateEditorView({ embedMode = false }: { embedMode?: boolean 
                   </div>
                 )}
 
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-muted-foreground">
+                    Body text size: {parseInt(template.nlBodyFontSize || '0', 10) || 20}px
+                  </label>
+                  <input type="range" min={16} max={26} step={1} value={parseInt(template.nlBodyFontSize || '0', 10) || 20} onChange={(e) => setT('nlBodyFontSize', e.target.value)} className="w-full" />
+                </div>
+
                 {/* Default sections (template-level; per-edition overrides live
                     on each edition's review page) */}
                 <div className="border-t border-border pt-3">

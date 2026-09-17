@@ -89,6 +89,7 @@ const TEMPLATE_FIELDS = [
   'nlSectionColor3',
   'nlSectionColor4',
   'nlBandTextColor',
+  'nlBodyFontSize',
   'nlFooterTextColor',
   'nlSectionsDisabled',
   'nlFontFamily',
@@ -575,7 +576,7 @@ export async function newsletterRoutes(app: FastifyInstance) {
             (k): k is string => typeof k === 'string',
           )
         }
-        for (const wk of ['nlLogoWidth', 'nlFooterLogoWidth'] as const) {
+        for (const wk of ['nlLogoWidth', 'nlFooterLogoWidth', 'nlBodyFontSize'] as const) {
           if (template[wk] !== undefined) {
             const w = parseInt(String(template[wk]), 10)
             data[wk] = Number.isFinite(w) && w > 0 ? w : null

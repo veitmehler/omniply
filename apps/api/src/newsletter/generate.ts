@@ -503,6 +503,7 @@ export function toRenderBrand(
     nlSectionColor3: b.nlSectionColor3,
     nlSectionColor4: b.nlSectionColor4,
     nlBandTextColor: b.nlBandTextColor,
+    nlBodyFontSize: b.nlBodyFontSize,
     nlFooterTextColor: b.nlFooterTextColor,
     nlSectionsDisabled: b.nlSectionsDisabled,
     nlFontFamily: b.nlFontFamily,
