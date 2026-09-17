@@ -3,7 +3,7 @@ import { logger } from './logger'
 import { Prisma } from '@prisma/client'
 import { getSystemApiKey } from './system-keys'
 
-const DEFAULT_FROM = 'hello@omniply.com'
+const DEFAULT_FROM = 'notifications@omniply.io' // omniply.io is the Resend-verified domain
 
 /** Resend API key — env (RESEND_API_KEY) first, else the admin-managed DB key. */
 async function getResendApiKey(): Promise<string | null> {
@@ -51,7 +51,7 @@ export async function sendFailureAlert(input: FailureAlertInput): Promise<void> 
     })
 
   const resendKey = await getResendApiKey()
-  const from = process.env.ALERT_EMAIL_FROM ?? 'alerts@omniply.com'
+  const from = process.env.ALERT_EMAIL_FROM ?? 'alerts@omniply.io'
   const adminTo = process.env.ALERT_EMAIL_TO
 
   const recipients = new Set<string>()
