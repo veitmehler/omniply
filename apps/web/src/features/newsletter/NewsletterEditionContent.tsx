@@ -389,35 +389,62 @@ export function NewsletterEditionContent({ newsletterId }: { newsletterId: strin
               « Hide controls
             </button>
           )}
-          <div className="rounded-xl border border-border bg-card p-4">
-            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Email metadata
-            </h3>
-            <label className="mb-1 block text-xs font-medium text-muted-foreground">Subject line</label>
-            <input
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              disabled={!editable}
-              className="mb-3 w-full rounded-md border border-border bg-background px-3 py-2 text-sm disabled:opacity-60"
-            />
-            <label className="mb-1 block text-xs font-medium text-muted-foreground">Preview text</label>
-            <input
-              value={preview}
-              onChange={(e) => setPreview(e.target.value)}
-              disabled={!editable}
-              className="mb-3 w-full rounded-md border border-border bg-background px-3 py-2 text-sm disabled:opacity-60"
-            />
-            {editable && (
+          {editable && requests.length > 0 && (
+            <div className="rounded-xl border border-border bg-card p-4">
+              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Edit requests</h3>
+              <div className="space-y-2">
+                {requests.map((r) => (
+                  <div key={r.id} className={`rounded-lg border p-2 ${r.status === 'open' ? 'border-amber-300' : 'border-border opacity-60'}`}>
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="text-sm font-medium text-foreground">{r.note}</span>
+                      {r.status === 'open' ? (
+                        <button onClick={() => void resolveRequest(r.id)} className="flex-shrink-0 rounded border border-border px-1.5 py-0.5 text-[11px] hover:bg-muted">Done</button>
+                      ) : (
+                        <span className="flex-shrink-0 text-[11px] text-green-700">✓</span>
+                      )}
+                    </div>
+                    <div className="mt-1 line-clamp-2 text-[11px] italic text-muted-foreground">on: “{r.quotedText}”</div>
+                  </div>
+                ))}
+              </div>
+              {requests.some((r) => r.status !== 'open') && requests.every((r) => r.status !== 'open') && (
+                <button
+                  onClick={() => void fetch(`/api/newsletters/${newsletterId}/request-review`, { method: 'POST' }).then(() => setNotice('Sent back for review.'))}
+                  className="mt-2 w-full rounded-md border border-border px-3 py-1.5 text-xs hover:bg-muted"
+                >
+                  All done — notify the reviewer
+                </button>
+              )}
+            </div>
+          )}
+          {editable && (
+            <div className="rounded-xl border border-border bg-card p-4">
+              <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Video</h3>
               <button
-                onClick={saveMeta}
-                disabled={savingMeta}
-                className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium disabled:opacity-50"
+                onClick={() => void changeVideo()}
+                disabled={videoBusy !== null}
+                className="mb-2 flex w-full items-center justify-between rounded-md border border-border bg-background px-3 py-2 text-left text-sm hover:bg-muted disabled:opacity-50"
               >
-                {savingMeta ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-                Save
+                Find another video
+                {videoBusy === 'next' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" />}
               </button>
-            )}
-          </div>
+              <div className="flex gap-2">
+                <input
+                  value={videoLink}
+                  onChange={(e) => setVideoLink(e.target.value)}
+                  placeholder="Paste a YouTube link…"
+                  className="min-w-0 flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm"
+                />
+                <button
+                  onClick={() => videoLink.trim() && void changeVideo(videoLink.trim())}
+                  disabled={videoBusy !== null || !videoLink.trim()}
+                  className="rounded-md border border-border px-3 py-2 text-sm hover:bg-muted disabled:opacity-50"
+                >
+                  {videoBusy === 'link' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Use'}
+                </button>
+              </div>
+            </div>
+          )}
 
           {editable && (
             <div className="rounded-xl border border-border bg-card p-4">
@@ -486,63 +513,36 @@ export function NewsletterEditionContent({ newsletterId }: { newsletterId: strin
             </div>
           )}
 
-          {editable && (
-            <div className="rounded-xl border border-border bg-card p-4">
-              <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Video</h3>
+          <div className="rounded-xl border border-border bg-card p-4">
+            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Email metadata
+            </h3>
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">Subject line</label>
+            <input
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              disabled={!editable}
+              className="mb-3 w-full rounded-md border border-border bg-background px-3 py-2 text-sm disabled:opacity-60"
+            />
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">Preview text</label>
+            <input
+              value={preview}
+              onChange={(e) => setPreview(e.target.value)}
+              disabled={!editable}
+              className="mb-3 w-full rounded-md border border-border bg-background px-3 py-2 text-sm disabled:opacity-60"
+            />
+            {editable && (
               <button
-                onClick={() => void changeVideo()}
-                disabled={videoBusy !== null}
-                className="mb-2 flex w-full items-center justify-between rounded-md border border-border bg-background px-3 py-2 text-left text-sm hover:bg-muted disabled:opacity-50"
+                onClick={saveMeta}
+                disabled={savingMeta}
+                className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium disabled:opacity-50"
               >
-                Find another video
-                {videoBusy === 'next' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" />}
+                {savingMeta ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                Save
               </button>
-              <div className="flex gap-2">
-                <input
-                  value={videoLink}
-                  onChange={(e) => setVideoLink(e.target.value)}
-                  placeholder="Paste a YouTube link…"
-                  className="min-w-0 flex-1 rounded-md border border-border bg-background px-3 py-2 text-sm"
-                />
-                <button
-                  onClick={() => videoLink.trim() && void changeVideo(videoLink.trim())}
-                  disabled={videoBusy !== null || !videoLink.trim()}
-                  className="rounded-md border border-border px-3 py-2 text-sm hover:bg-muted disabled:opacity-50"
-                >
-                  {videoBusy === 'link' ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Use'}
-                </button>
-              </div>
-            </div>
-          )}
+            )}
+          </div>
 
-          {editable && requests.length > 0 && (
-            <div className="rounded-xl border border-border bg-card p-4">
-              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Edit requests</h3>
-              <div className="space-y-2">
-                {requests.map((r) => (
-                  <div key={r.id} className={`rounded-lg border p-2 ${r.status === 'open' ? 'border-amber-300' : 'border-border opacity-60'}`}>
-                    <div className="line-clamp-1 text-[11px] italic text-muted-foreground">“{r.quotedText}”</div>
-                    <div className="mt-0.5 flex items-start justify-between gap-2 text-xs">
-                      <span>{r.note}</span>
-                      {r.status === 'open' ? (
-                        <button onClick={() => void resolveRequest(r.id)} className="flex-shrink-0 rounded border border-border px-1.5 py-0.5 text-[11px] hover:bg-muted">Done</button>
-                      ) : (
-                        <span className="flex-shrink-0 text-[11px] text-green-700">✓</span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-              {requests.some((r) => r.status !== 'open') && requests.every((r) => r.status !== 'open') && (
-                <button
-                  onClick={() => void fetch(`/api/newsletters/${newsletterId}/request-review`, { method: 'POST' }).then(() => setNotice('Sent back for review.'))}
-                  className="mt-2 w-full rounded-md border border-border px-3 py-1.5 text-xs hover:bg-muted"
-                >
-                  All done — notify the reviewer
-                </button>
-              )}
-            </div>
-          )}
         </div>
 
         {/* Preview — editable in place when ready_for_review (review WYSIWYG) */}
