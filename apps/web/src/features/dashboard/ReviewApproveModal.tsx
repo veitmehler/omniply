@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import '@/app/article-typography.css'
 import { EditRequestPanel, type PendingEdit } from '@/features/review/EditRequestPanel'
+import { EditRequestList, jumpToQuote, type EditRequest } from '@/features/review/EditRequestList'
 
 export interface ReviewItem {
   kind: 'article' | 'newsletter'
@@ -48,6 +49,26 @@ export function ReviewApproveModal({
   const [approving, setApproving] = useState(false)
   const [reachedEnd, setReachedEnd] = useState(false)
   const [openRequests, setOpenRequests] = useState(0)
+  const [requestList, setRequestList] = useState<EditRequest[]>([])
+  const [requestListOpen, setRequestListOpen] = useState(false)
+
+  async function refreshRequests() {
+    const res = await fetch(`/api/articles/${item.id}/edit-requests`, { cache: 'no-store' }).catch(() => null)
+    if (res?.ok) {
+      const data = await res.json()
+      setRequestList(data.requests ?? [])
+      setOpenRequests(data.openCount ?? 0)
+    }
+  }
+
+  async function setRequestStatus(id: string, status: 'resolved' | 'open') {
+    await fetch(`/api/edit-requests/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    }).catch(() => null)
+    await refreshRequests()
+  }
 
   // request-edits mode
   const [requestMode, setRequestMode] = useState(false)
@@ -90,7 +111,11 @@ export function ReviewApproveModal({
             const { job } = await aRes.json()
             setHtml(job?.sitePage?.bodyHtml ?? '<p>(No content found.)</p>')
           }
-          if (erRes.ok && !cancelled) setOpenRequests((await erRes.json()).openCount ?? 0)
+          if (erRes.ok && !cancelled) {
+            const er = await erRes.json()
+            setOpenRequests(er.openCount ?? 0)
+            setRequestList(er.requests ?? [])
+          }
         } else {
           const res = await fetch(`/api/newsletters/${item.id}`, { cache: 'no-store' })
           if (res.ok && !cancelled) setHtml((await res.json()).newsletter?.renderedHtml ?? '<p>(No content found.)</p>')
@@ -170,7 +195,10 @@ export function ReviewApproveModal({
 
         {approveBlocked && (
           <div className="border-b border-amber-200 bg-amber-50 px-5 py-2 text-xs text-amber-800">
-            {openRequests} edit request(s) are open with a teammate — publishing is paused until they&apos;re resolved.
+            <button onClick={() => setRequestListOpen(true)} className="underline decoration-dotted underline-offset-2">
+              {openRequests} edit request(s) are open with a teammate
+            </button>{' '}
+            — publishing is paused until they&apos;re resolved.
           </div>
         )}
 
@@ -209,6 +237,23 @@ export function ReviewApproveModal({
             {loading ? (
               <div className="flex items-center gap-2 py-12 text-sm text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin" /> Loading…</div>
             ) : isArticle ? (
+              <>
+              {requestList.length > 0 && (
+                <div className="mb-3">
+                  <EditRequestList
+                    requests={requestList}
+                    onStatus={(id, st) => void setRequestStatus(id, st)}
+                    onJump={(q) => bodyRef.current && jumpToQuote(bodyRef.current, q)}
+                    onNotify={() =>
+                      void fetch(`/api/articles/${item.id}/request-review`, { method: 'POST' }).then(() =>
+                        toast.success('Sent back for review.'),
+                      )
+                    }
+                    open={requestListOpen}
+                    onOpenChange={setRequestListOpen}
+                  />
+                </div>
+              )}
               <div
                 ref={bodyRef}
                 contentEditable={!requestMode}
@@ -218,6 +263,7 @@ export function ReviewApproveModal({
                 className="article-body max-w-none rounded-lg bg-card p-6 text-foreground focus:outline-none"
                 dangerouslySetInnerHTML={{ __html: html ?? '' }}
               />
+              </>
             ) : (
               <div className="mx-auto max-w-2xl rounded-lg bg-white p-2 shadow-sm" dangerouslySetInnerHTML={{ __html: html ?? '' }} />
             )}
