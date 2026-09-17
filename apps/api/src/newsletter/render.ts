@@ -842,18 +842,38 @@ const EDIT_BRIDGE_SCRIPT = `<style>
       requestMode = !!d.on;
       els.forEach(function (el) { el.setAttribute('contenteditable', requestMode ? 'false' : 'true'); });
     }
+    function findTextEl(probe) {
+      var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+      var node;
+      while ((node = walker.nextNode())) {
+        if ((node.nodeValue || '').indexOf(probe) >= 0) return node.parentElement;
+      }
+      return null;
+    }
     if (d.type === 'nl-scroll-to' && d.quote) {
+      var probe = d.quote.slice(0, 40);
+      var target = null;
       var pins = document.querySelectorAll('mark[data-nl-pin]');
       for (var i = 0; i < pins.length; i++) {
-        if ((pins[i].textContent || '').indexOf(d.quote.slice(0, 40)) >= 0) {
-          pins[i].scrollIntoView({ behavior: 'smooth', block: 'center' });
-          break;
-        }
+        if ((pins[i].textContent || '').indexOf(probe) >= 0) { target = pins[i]; break; }
+      }
+      // Pin may not exist (quote spans styled nodes) — fall back to raw text.
+      if (!target) target = findTextEl(probe) || findTextEl(d.quote.slice(0, 20));
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        var prev = target.style.outline;
+        target.style.outline = '3px solid #f59e0b';
+        setTimeout(function () { target.style.outline = prev; }, 2000);
       }
     }
     if (d.type === 'nl-highlight' && Array.isArray(d.quotes)) {
       d.quotes.forEach(function (q) {
         if (!q) return;
+        // Idempotent: skip quotes that already carry a pin (re-sends are safe).
+        var existing = document.querySelectorAll('mark[data-nl-pin]');
+        for (var k = 0; k < existing.length; k++) {
+          if ((existing[k].textContent || '').indexOf(q.slice(0, 40)) >= 0) return;
+        }
         var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
         var node;
         while ((node = walker.nextNode())) {

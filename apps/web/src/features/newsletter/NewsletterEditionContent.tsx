@@ -190,6 +190,7 @@ export function NewsletterEditionContent({ newsletterId }: { newsletterId: strin
     { id: string; quotedText: string; prefixContext: string | null; suffixContext: string | null; note: string; status: string; createdAt: string }[]
   >([])
   const iframeRef = useRef<HTMLIFrameElement | null>(null)
+  const [bridgeReady, setBridgeReady] = useState(false)
   const dirtyCount = Object.keys(dirty).length
 
   async function loadEditPreview() {
@@ -226,8 +227,9 @@ export function NewsletterEditionContent({ newsletterId }: { newsletterId: strin
       } else if (d.type === 'nl-selection' && requestMode) {
         setSelDraft({ quotedText: d.quotedText ?? '', prefixContext: d.prefixContext ?? '', suffixContext: d.suffixContext ?? '' })
       } else if (d.type === 'nl-ready') {
-        const quotes = requests.filter((r) => r.status === 'open').map((r) => r.quotedText)
-        if (quotes.length) iframeRef.current?.contentWindow?.postMessage({ type: 'nl-highlight', quotes }, '*')
+        // Highlighting happens in the ready+requests effect below (the request
+        // fetch races this message — sending here shipped an empty list).
+        setBridgeReady(true)
         if (requestMode) iframeRef.current?.contentWindow?.postMessage({ type: 'nl-set-request-mode', on: true }, '*')
       }
     }
@@ -236,6 +238,19 @@ export function NewsletterEditionContent({ newsletterId }: { newsletterId: strin
   }, [requestMode, requests])
 
   const [controlsOpen, setControlsOpen] = useState(true)
+
+  // Pins: send whenever the bridge is up AND requests are known (re-sent on
+  // resolve/reopen; the bridge dedupes).
+  useEffect(() => {
+    if (!bridgeReady) return
+    const quotes = requests.filter((r) => r.status === 'open').map((r) => r.quotedText)
+    if (quotes.length) iframeRef.current?.contentWindow?.postMessage({ type: 'nl-highlight', quotes }, '*')
+  }, [bridgeReady, requests])
+
+  useEffect(() => {
+    // A fresh edit-preview (after save) resets the bridge.
+    setBridgeReady(false)
+  }, [editHtml])
 
   function toggleRequestMode() {
     const next = !requestMode
