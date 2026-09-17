@@ -57,8 +57,16 @@ export type SocialSpecResultRow = {
   error: string | null
   postsCreated: number
   previewJson?: SpecPreviewPayload | null
-  assetsJson?: { postType?: string; storySlides?: string[] } | null
-  overridesJson?: { textMode?: 'light' | 'dark' | null; slides?: Record<string, { text?: string; imageUrl?: string | null }> } | null
+  assetsJson?: {
+    postType?: string
+    storySlides?: string[]
+    carouselSlides?: { type: string; headlineText: string | null; bodyText: string | null }[]
+    carouselDiagram?: boolean
+  } | null
+  overridesJson?: {
+    textMode?: 'light' | 'dark' | null
+    slides?: Record<string, { text?: string; headline?: string; body?: string; imageUrl?: string | null }>
+  } | null
   approvedAt?: string | null
 }
 
@@ -211,18 +219,28 @@ function CarouselLightbox({
 // ── Slot media ────────────────────────────────────────────────────────────────
 
 /**
- * Story-carousel editor (review UX, Veit 2026-09-17): per-post Light/Dark
- * text toggle, in-place slide text editing, and story-image regeneration —
- * all through the deterministic recompose endpoint (no re-roll of the post).
+ * Slide editor (review UX, Veit 2026-09-17): in-place slide text editing and
+ * per-slide image regeneration through the deterministic recompose endpoint
+ * (no re-roll of the post). Story carousels additionally get the per-post
+ * Light/Dark text toggle. Diagram-background carousels are not editable
+ * (their overlay can't be reproduced by the recompose path).
  */
 function StorySlideEditor({ spec, onRefresh }: { spec: SocialSpecResultRow; onRefresh: () => Promise<void> }) {
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState<string | null>(null)
-  const slides = spec.assetsJson?.storySlides ?? []
-  const [drafts, setDrafts] = useState<string[]>(slides)
+  const assets = spec.assetsJson
+  const isStory = assets?.postType === 'story_text' && (assets.storySlides?.length ?? 0) > 0
+  const isCarousel =
+    assets?.postType === 'carousel' && (assets.carouselSlides?.length ?? 0) > 0 && !assets.carouselDiagram
+  const storySlides = assets?.storySlides ?? []
+  const plans = assets?.carouselSlides ?? []
+  const initialDrafts = isStory
+    ? storySlides.map((t) => ({ headline: '', body: t }))
+    : plans.map((pl) => ({ headline: pl.headlineText ?? '', body: pl.bodyText ?? '' }))
+  const [drafts, setDrafts] = useState(initialDrafts)
   const mode = spec.overridesJson?.textMode ?? null
 
-  if (spec.assetsJson?.postType !== 'story_text' || slides.length === 0) return null
+  if (!isStory && !isCarousel) return null
 
   async function recompose(body: Record<string, unknown>, busyKey: string) {
     setBusy(busyKey)
@@ -245,9 +263,16 @@ function StorySlideEditor({ spec, onRefresh }: { spec: SocialSpecResultRow; onRe
   }
 
   const saveTexts = () => {
-    const changed: Record<string, { text: string }> = {}
-    drafts.forEach((t, i) => {
-      if (t.trim() && t !== slides[i]) changed[String(i)] = { text: t }
+    const changed: Record<string, { text?: string; headline?: string; body?: string }> = {}
+    drafts.forEach((d, i) => {
+      if (isStory) {
+        if (d.body.trim() && d.body !== storySlides[i]) changed[String(i)] = { text: d.body }
+      } else {
+        const patch: { headline?: string; body?: string } = {}
+        if (d.headline !== (plans[i]?.headlineText ?? '')) patch.headline = d.headline
+        if (d.body !== (plans[i]?.bodyText ?? '')) patch.body = d.body
+        if (Object.keys(patch).length) changed[String(i)] = patch
+      }
     })
     if (Object.keys(changed).length === 0) {
       setOpen(false)
@@ -256,23 +281,30 @@ function StorySlideEditor({ spec, onRefresh }: { spec: SocialSpecResultRow; onRe
     void recompose({ slides: changed }, 'save')
   }
 
+  const slideCount = isStory ? storySlides.length : plans.length
+  const canNewImage = (i: number) => (isStory ? i > 0 : true)
+
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-center gap-1.5">
-        <span className="text-[11px] text-muted-foreground">Text:</span>
-        {(['light', 'dark'] as const).map((m) => (
-          <button
-            key={m}
-            onClick={() => void recompose({ textMode: mode === m ? null : m }, `mode-${m}`)}
-            disabled={busy !== null}
-            className={`rounded border px-2 py-0.5 text-[11px] ${mode === m ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:bg-muted'}`}
-            title={mode === m ? 'Back to automatic' : `Force ${m} text`}
-          >
-            {busy === `mode-${m}` ? '…' : m === 'light' ? 'Light' : 'Dark'}
-          </button>
-        ))}
+        {isStory && (
+          <>
+            <span className="text-[11px] text-muted-foreground">Text:</span>
+            {(['light', 'dark'] as const).map((m) => (
+              <button
+                key={m}
+                onClick={() => void recompose({ textMode: mode === m ? null : m }, `mode-${m}`)}
+                disabled={busy !== null}
+                className={`rounded border px-2 py-0.5 text-[11px] ${mode === m ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:bg-muted'}`}
+                title={mode === m ? 'Back to automatic' : `Force ${m} text`}
+              >
+                {busy === `mode-${m}` ? '…' : m === 'light' ? 'Light' : 'Dark'}
+              </button>
+            ))}
+          </>
+        )}
         <button
-          onClick={() => { setDrafts(slides); setOpen((v) => !v) }}
+          onClick={() => { setDrafts(initialDrafts); setOpen((v) => !v) }}
           className="rounded border border-border px-2 py-0.5 text-[11px] text-muted-foreground hover:bg-muted"
         >
           {open ? 'Close editor' : 'Edit slides'}
@@ -280,11 +312,11 @@ function StorySlideEditor({ spec, onRefresh }: { spec: SocialSpecResultRow; onRe
       </div>
       {open && (
         <div className="space-y-2 rounded-lg border border-primary/40 p-2">
-          {slides.map((t, i) => (
+          {Array.from({ length: slideCount }, (_, i) => (
             <div key={i}>
               <div className="mb-0.5 flex items-center justify-between">
                 <label className="text-[11px] font-medium text-muted-foreground">Slide {i + 1}</label>
-                {i > 0 && (
+                {canNewImage(i) && (
                   <button
                     onClick={() => void recompose({ regenerateImage: i }, `img-${i}`)}
                     disabled={busy !== null}
@@ -294,9 +326,17 @@ function StorySlideEditor({ spec, onRefresh }: { spec: SocialSpecResultRow; onRe
                   </button>
                 )}
               </div>
+              {isCarousel && (
+                <input
+                  value={drafts[i]?.headline ?? ''}
+                  onChange={(e) => setDrafts((prev) => prev.map((x, j) => (j === i ? { ...x, headline: e.target.value } : x)))}
+                  placeholder="Headline"
+                  className="mb-1 w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs font-medium"
+                />
+              )}
               <textarea
-                value={drafts[i] ?? ''}
-                onChange={(e) => setDrafts((prev) => prev.map((x, j) => (j === i ? e.target.value : x)))}
+                value={drafts[i]?.body ?? ''}
+                onChange={(e) => setDrafts((prev) => prev.map((x, j) => (j === i ? { ...x, body: e.target.value } : x)))}
                 rows={3}
                 className="w-full rounded-md border border-border bg-background px-2 py-1.5 text-xs"
               />

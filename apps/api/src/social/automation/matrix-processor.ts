@@ -20,7 +20,7 @@ import { generateVideoReelAsset, generateHookVideoAsset, generateKtMusicVideoAss
 import { loadPromptTemplate } from '../../article-pipeline/enrichment/prompt-template'
 
 /** Shared admin-configurable Fal.ai image model for social carousels/slideshows (Step 218). */
-async function socialImageModel(): Promise<string | undefined> {
+export async function socialImageModel(): Promise<string | undefined> {
   return (await loadPromptTemplate(218))?.defaultModel
 }
 import type { AutomationLogContext } from './log-context'
@@ -155,6 +155,8 @@ export async function generateMatrixAsset(opts: {
             imageUrl: carousel.imageUrls[0],
             title: carousel.slides[0]?.headline ?? topic,
             backgroundImageUrls: carousel.backgroundImageUrls,
+            carouselSlides: carousel.slidePlans,
+            carouselVariant: null,
           }
         } catch (fallbackErr) {
           const combined = new Error(
@@ -222,6 +224,8 @@ export async function generateMatrixAsset(opts: {
         imageUrl: fallback.imageUrls[0],
         title: fallback.slides[0]?.headline ?? topic,
         backgroundImageUrls: fallback.backgroundImageUrls,
+        carouselSlides: fallback.slidePlans,
+        carouselVariant: 'brand_tint_accent',
       }
     }
     case 'kt_music_video': {
@@ -275,6 +279,8 @@ export async function generateMatrixAsset(opts: {
           imageUrl: carousel.imageUrls[0],
           title: carousel.slides[0]?.headline ?? topic,
           backgroundImageUrls: carousel.backgroundImageUrls,
+          carouselSlides: carousel.slidePlans,
+          carouselVariant: 'brand_tint',
         }
       }
     }
@@ -305,6 +311,9 @@ export async function generateMatrixAsset(opts: {
         imageUrl: carousel.imageUrls[0],
         title: carousel.slides[0]?.headline ?? topic,
         backgroundImageUrls: carousel.backgroundImageUrls,
+        carouselSlides: carousel.slidePlans,
+        carouselVariant: opts.perSlideBg ? null : opts.designVariant ?? null,
+        carouselDiagram: !opts.perSlideBg && !!resolved.diagramBackground,
       }
     }
   }

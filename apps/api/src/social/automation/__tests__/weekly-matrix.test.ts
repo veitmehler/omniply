@@ -38,14 +38,17 @@ describe('DEFAULT_WEEKLY_SOCIAL_MATRIX', () => {
     }
   })
 
-  it('newsletter days = nl story beats around the brand-tint feature carousel (P3)', () => {
+  it('newsletter days = nl story beats around the per-slide-photo feature carousel (P3)', () => {
     for (const day of [1, 3, 5, 6] as const) {
       expect(DEFAULT_WEEKLY_SOCIAL_MATRIX[day].map((s) => [s.postType, s.source])).toEqual([
         ['story_text', 'nl_story'],
         ['carousel', 'nl_feature'],
         ['story_text', 'nl_story'],
       ])
-      expect(DEFAULT_WEEKLY_SOCIAL_MATRIX[day][1].designVariant).toBe('brand_tint')
+      // Veit 2026-09-17: middays carry a real photographic image per slide
+      // (Nano Banana) instead of the tinted motif design.
+      expect(DEFAULT_WEEKLY_SOCIAL_MATRIX[day][1].perSlideBg).toBe(true)
+      expect(DEFAULT_WEEKLY_SOCIAL_MATRIX[day][1].designVariant).toBeUndefined()
       expect(DEFAULT_WEEKLY_SOCIAL_MATRIX[day].map((s) => s.beatIndex)).toEqual([0, undefined, 1])
     }
   })

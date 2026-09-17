@@ -83,10 +83,12 @@ describe('generateMatrixAsset — hook_video graceful degradation (Phase 5)', ()
 
   it('falls back to a plain image carousel when hook_video generation fails', async () => {
     generateHookVideoAsset.mockRejectedValue(new Error('seedance timed out after 480000ms'))
+    const slidePlans = [{ type: 'hook', headlineText: 'Slide 1 headline', bodyText: null, imagePrompt: 'p' }]
     generateCarouselAssets.mockResolvedValue({
       imageUrls: ['s1.png', 's2.png'],
       slides: [{ headline: 'Slide 1 headline' }],
       backgroundImageUrls: ['s1-bg.png', 's2-bg.png'],
+      slidePlans,
     })
 
     const result = await generateMatrixAsset({ ...baseOpts, postType: 'hook_video' })
@@ -97,6 +99,8 @@ describe('generateMatrixAsset — hook_video graceful degradation (Phase 5)', ()
       imageUrl: 's1.png',
       title: 'Slide 1 headline',
       backgroundImageUrls: ['s1-bg.png', 's2-bg.png'],
+      carouselSlides: slidePlans,
+      carouselVariant: null,
     })
     // No diagramBackground passed on the fallback path — it's a plain carousel, not diagram mode.
     expect(generateCarouselAssets).toHaveBeenCalledWith(

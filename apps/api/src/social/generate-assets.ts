@@ -510,7 +510,11 @@ export async function regenerateCarouselSlide(opts: {
   jobId?: string
   /** Pass 'brand_tint' when regenerating a slide of a Wed/Sat tinted carousel. */
   designVariant?: 'brand_tint' | 'brand_tint_accent'
-}): Promise<{ imageUrl: string; mediaId: string }> {
+  /** Reuse this background (text-only edits) instead of generating a fresh one. */
+  backgroundUrl?: string
+  /** Image model for fresh backgrounds (shared social image model). */
+  imageModel?: string
+}): Promise<{ imageUrl: string; mediaId: string; backgroundUrl: string }> {
   const brand = await loadSocialBrandTheme(opts.userId)
   const logoBuffer = await loadLogoBuffer(brand.logoUrl)
   const genId = generationId()
@@ -526,7 +530,29 @@ export async function regenerateCarouselSlide(opts: {
     tintArrowBuffer = await loadContinuationArrow(tint.logoVariant)
   }
 
-  const bg = await generateCarouselBackground(plan.imagePrompt || plan.headlineText || '', jobId)
+  let bg: Buffer
+  let bgUrl: string
+  if (opts.backgroundUrl) {
+    bg = await downloadImageFromUrl(opts.backgroundUrl)
+    bgUrl = opts.backgroundUrl
+  } else {
+    bg = await generateCarouselBackground(
+      plan.imagePrompt || plan.headlineText || '',
+      jobId,
+      opts.imageModel,
+      opts.userId,
+    )
+    const bgReg = await registerSocialMedia({
+      userId: opts.userId,
+      buffer: bg,
+      s3Key: `social/${opts.userId}/${jobId}/carousel-bg-${opts.slideIndex + 1}-${genId}.png`,
+      title: `Carousel background ${opts.slideIndex + 1}`,
+      altText: `Background for slide ${opts.slideIndex + 1}`,
+      source: 'carousel_slide',
+      jobId,
+    })
+    bgUrl = bgReg.url
+  }
 
   const buffer = await renderCarouselSlide(bg, {
     slide: plan,
@@ -549,7 +575,7 @@ export async function regenerateCarouselSlide(opts: {
     jobId,
   })
 
-  return { imageUrl: registered.url, mediaId: registered.mediaId }
+  return { imageUrl: registered.url, mediaId: registered.mediaId, backgroundUrl: bgUrl }
 }
 
 export interface GeneratedTipsBulletStory {

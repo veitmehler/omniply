@@ -53,9 +53,10 @@ export interface DaySlot {
    */
   designVariant?: CarouselDesignVariant
   /**
-   * Classic half-panel carousels only (azavea, user decision 2026-08-24):
-   * a fresh themed AI background per slide (design variety) instead of the
-   * shared single image, and NO diagram mode. Ignored by tinted/diagram slots.
+   * Classic half-panel carousels (azavea 2026-08-24; client newsletter
+   * middays 2026-09-17): a fresh AI image per slide (each telling that
+   * slide's story) instead of the shared single image, and NO diagram mode.
+   * Ignored by tinted/diagram slots.
    */
   perSlideBg?: boolean
   /** art_story slots: which beat of the article's story arc this slot posts. */
@@ -70,13 +71,15 @@ export type Weekday = 1 | 2 | 3 | 4 | 5 | 6
 // P3 main-app rollout (user decisions 2026-09-08): every day = story-beat AM →
 // midday visual anchor → story-beat PM, 2-beat mini-arc per content piece.
 // Hours 9/12/17 (user choice). Article middays = KT loop-bait music video;
-// newsletter middays = the EXISTING newsletter visual carousel (locked design —
-// promotes the edition). No voiced post types: ElevenLabs dropped for clients.
+// newsletter middays = feature-article carousel with a REAL photographic image
+// per slide (Veit 2026-09-17: images that tell the story, Nano Banana via the
+// shared model — replaces the tinted motif design). No voiced post types:
+// ElevenLabs dropped for clients.
 export const DEFAULT_WEEKLY_SOCIAL_MATRIX: Record<Weekday, DaySlot[]> = {
   // Mon — newsletter
   1: [
     { hour: 9, postType: 'story_text', source: 'nl_story', beatIndex: 0 },
-    { hour: 12, postType: 'carousel', source: 'nl_feature', designVariant: 'brand_tint' },
+    { hour: 12, postType: 'carousel', source: 'nl_feature', perSlideBg: true },
     { hour: 17, postType: 'story_text', source: 'nl_story', beatIndex: 1 },
   ],
   // Tue — article
@@ -88,7 +91,7 @@ export const DEFAULT_WEEKLY_SOCIAL_MATRIX: Record<Weekday, DaySlot[]> = {
   // Wed — newsletter
   3: [
     { hour: 9, postType: 'story_text', source: 'nl_story', beatIndex: 0 },
-    { hour: 12, postType: 'carousel', source: 'nl_feature', designVariant: 'brand_tint' },
+    { hour: 12, postType: 'carousel', source: 'nl_feature', perSlideBg: true },
     { hour: 17, postType: 'story_text', source: 'nl_story', beatIndex: 1 },
   ],
   // Thu — article
@@ -100,13 +103,13 @@ export const DEFAULT_WEEKLY_SOCIAL_MATRIX: Record<Weekday, DaySlot[]> = {
   // Fri — newsletter
   5: [
     { hour: 9, postType: 'story_text', source: 'nl_story', beatIndex: 0 },
-    { hour: 12, postType: 'carousel', source: 'nl_feature', designVariant: 'brand_tint' },
+    { hour: 12, postType: 'carousel', source: 'nl_feature', perSlideBg: true },
     { hour: 17, postType: 'story_text', source: 'nl_story', beatIndex: 1 },
   ],
   // Sat — newsletter
   6: [
     { hour: 9, postType: 'story_text', source: 'nl_story', beatIndex: 0 },
-    { hour: 12, postType: 'carousel', source: 'nl_feature', designVariant: 'brand_tint' },
+    { hour: 12, postType: 'carousel', source: 'nl_feature', perSlideBg: true },
     { hour: 17, postType: 'story_text', source: 'nl_story', beatIndex: 1 },
   ],
 }

@@ -74,3 +74,27 @@ live check on the just-approved edition's carousel.
 - Per-slide text modes (per-post only, per Veit).
 - Article carousel image changes (already image-backed); the toggle +
   text editing DO apply to article carousels via the same primitive.
+
+## Correction (2026-09-17, same day)
+
+The first build landed the photo + editor on the STORY slots (P1/P3,
+`story_text`) — but the user's target "P2" is the newsletter-day NOON
+feature carousel (`postType: 'carousel'`, `nl_feature`, was brand_tint).
+Completed per the original intent + user pick "per-slide images":
+
+- Newsletter middays (Mon/Wed/Fri/Sat matrix): `perSlideBg: true` replaces
+  `designVariant: 'brand_tint'` — classic half-panel design, one Nano
+  Banana photo PER SLIDE from the slide planner's own imagePrompt (shared
+  social image model, step 218 = gemini-3.1-flash-image). Azavea unaffected
+  (own slot list AZAVEA_ARTICLE_DAY1_SLOTS).
+- Recompose extended to `carousel` posts: assets persist `carouselSlides`
+  (slide plans) + `carouselVariant` + `carouselDiagram`; text edits
+  (headline/body) re-render ONLY touched slides reusing their exact
+  background; "New image" regenerates one slide's photo. Diagram-mode
+  carousels are blocked from editing (overlay not reproducible).
+- `regenerateCarouselSlide` gained backgroundUrl reuse + imageModel +
+  cost logging; returns backgroundUrl.
+- UI: StorySlideEditor handles both families — carousels get headline+body
+  fields and per-slide "New image"; Light/Dark stays story-only.
+- Old spec results (composited pre-deploy) lack carouselSlides/storySlides
+  → not editable; a slot RETRY regenerates them onto the new pipeline.

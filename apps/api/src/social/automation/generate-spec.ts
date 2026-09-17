@@ -56,6 +56,12 @@ export interface SpecAssets {
   hookRawVideoUrl?: string
   /** Story-carousel source texts — persisted for the client recompose primitive. */
   storySlides?: string[]
+  /** Image-carousel slide plans (headline/body/imagePrompt) — persisted for the client recompose primitive. */
+  carouselSlides?: { type: string; headlineText: string | null; bodyText: string | null; imagePrompt: string }[]
+  /** Design variant the carousel was composited with — recompose must match it. */
+  carouselVariant?: 'brand_tint' | 'brand_tint_accent' | null
+  /** True when the carousel uses the F4 diagram background — recompose can't reproduce that overlay, so editing is blocked. */
+  carouselDiagram?: boolean
 }
 
 export async function generateSpecAssets(opts: {
