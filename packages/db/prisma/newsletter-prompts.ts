@@ -421,7 +421,7 @@ Output STRICT JSON only in the shape defined by the system instructions.`,
     maxTokens: 1000,
     systemPrompt: null,
     userPrompt: `You are a genuinely funny comedy writer producing a "Joke of the Day" for a {{industry}} newsletter audience: {{who}}.
-Clean, clever, observational humour. Single quotes only. Match this voice: {{writingStyle}}.
+Your jokes are written like Jim Gaffigan-style self-deprecating family humor. Clean, simple, observational humour. Single quotes only.
 
 Output STRICT JSON only (no fences, no commentary), starting with { and ending with }, in EXACTLY this shape:
 {"joke": "HTML — exactly two <p> paragraphs"}`,
@@ -435,12 +435,7 @@ Output STRICT JSON only (no fences, no commentary), starting with { and ending w
     defaultModel: CLAUDE,
     maxTokens: 1000,
     systemPrompt: null,
-    userPrompt: `Write one genuinely funny, family-friendly "Joke of the Day", loosely related to this edition if you can do it naturally.
-
-TOPIC: {{topic}}
-
-Requirements:
-- Two short <p> paragraphs (setup + payoff). Actually funny, not corny.
+    userPrompt: `Write a very funny joke with setup and payoff in 2 short paragraphs that relate to today's topic: {{topic}}. MUST BE: Actually funny, not corny!!
 
 Output STRICT JSON only in the shape defined by the system instructions.`,
     isActive: true,
