@@ -434,6 +434,13 @@ async function buildAndSaveCover(
   const items = coverItems(featureArticle, secondaryArticle, teasers, ctx.research)
   if (items.length === 0) return
   try {
+    // Brand-character mood line for the cover, borrowed from the stored
+    // website-derived diagram guide (null-safe: absent guide → no line).
+    const bs = await prisma.brandSettings
+      .findFirst({ where: { userId: ctx.userId }, select: { diagramStyleGuide: true } })
+      .catch(() => null)
+    const brandCharacter = bs?.diagramStyleGuide?.match(/A "[^"]+" look[^\n]*/)?.[0] ?? null
+
     const { summaryTitle, summaryImageUrl } = await generateCoverImage({
       keyPrefix: `${ctx.topic.id}/${ctx.userId}`,
       industry: ctx.voice.industry,
@@ -442,6 +449,7 @@ async function buildAndSaveCover(
       items,
       colors: coverColors(ctx.brand),
       usage: ctx.usage,
+      brandCharacter,
     })
     const data: Prisma.NewsletterUpdateInput = {}
     if (summaryTitle) data.summaryTitle = summaryTitle

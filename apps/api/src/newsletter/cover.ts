@@ -73,6 +73,84 @@ export interface CoverColors {
   sections: string[] // tile accent colors, cycled
 }
 
+// ── Brand-accented cover style (Veit 2026-09-18, experiment-validated) ────────
+// The house cover guide hardcoded a copper accent for every clinic; now the
+// brand color with the MOST WCAG contrast against the cover's navy ground is
+// injected instead, lightened stepwise if even the best candidate sits too
+// close to navy. Copper remains the fallback for brands with no usable color.
+
+/** The cover guide's deep navy ground (also the house fallback navy). */
+const COVER_NAVY = '#011328'
+const MIN_ACCENT_CONTRAST = 3.0
+
+function coverRelLum(hex: string): number {
+  const c = [1, 3, 5].map((i) => {
+    const v = parseInt(hex.slice(i, i + 2), 16) / 255
+    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)
+  })
+  return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+}
+
+function coverContrast(a: string, b: string): number {
+  const [hi, lo] = [coverRelLum(a), coverRelLum(b)].sort((x, y) => y - x)
+  return (hi + 0.05) / (lo + 0.05)
+}
+
+function lightenToward(hex: string, amt: number): string {
+  const ch = (i: number) =>
+    Math.round(parseInt(hex.slice(i, i + 2), 16) * (1 - amt) + 255 * amt)
+      .toString(16)
+      .padStart(2, '0')
+  return `#${ch(1)}${ch(3)}${ch(5)}`.toUpperCase()
+}
+
+const COVER_HEX_RE = /^#[0-9a-f]{6}$/i
+
+/**
+ * Pick the brand color with the highest contrast against the navy ground;
+ * lighten it stepwise until it clears MIN_ACCENT_CONTRAST. Null when the
+ * brand offers no valid color at all (→ keep the copper default).
+ */
+export function pickCoverAccent(colors: CoverColors): string | null {
+  const candidates = colors.sections.map((c) => c?.trim()).filter((c): c is string => !!c && COVER_HEX_RE.test(c))
+  if (!candidates.length) return null
+  let best = candidates[0]
+  for (const c of candidates) {
+    if (coverContrast(c, COVER_NAVY) > coverContrast(best, COVER_NAVY)) best = c
+  }
+  let accent = best.toUpperCase()
+  for (let amt = 0.1; coverContrast(accent, COVER_NAVY) < MIN_ACCENT_CONTRAST && amt <= 0.7; amt += 0.1) {
+    accent = lightenToward(best, amt)
+  }
+  return coverContrast(accent, COVER_NAVY) >= MIN_ACCENT_CONTRAST ? accent : null
+}
+
+/**
+ * Rewrite the house style guide's copper accent to the brand accent, and
+ * append the brand-character mood line borrowed from the stored diagram
+ * style guide. Pure text transform — unchanged guide when accent is null.
+ */
+export function applyBrandToCoverGuide(
+  guide: string,
+  accent: string | null,
+  brandCharacter?: string | null,
+): string {
+  let out = guide
+  if (accent) {
+    out = out
+      .replace('Warm, burnished copper / brown-gold', `The brand's accent — a rich ${accent}`)
+      .replace('copper/brown-gold color', `brand accent ${accent}`)
+      .replace(
+        'This is the ONLY non-white color in the artwork.',
+        `This brand accent ${accent} is the ONLY non-white color in the artwork.`,
+      )
+  }
+  if (brandCharacter?.trim()) {
+    out += `\n\nBrand Character: the clinic's visual identity is: ${brandCharacter.trim()} Let that mood guide the illustration's personality.`
+  }
+  return out
+}
+
 interface Tile {
   headline: string
   iconDataUri: string | null
@@ -153,6 +231,8 @@ export interface GenerateCoverParams {
   items: CoverItem[] // already capped/ordered (max 6)
   colors: CoverColors
   usage: UsageRecorder
+  /** Mood line borrowed from the stored diagram style guide (optional). */
+  brandCharacter?: string | null
 }
 
 /**
@@ -168,7 +248,12 @@ export async function generateCoverImage(
   if (items.length === 0) return { summaryTitle: null, summaryImageUrl: null }
 
   const cfg = await resolvePromptByKey('nl_summary_style_guide')
-  const styleGuide = cfg?.userPrompt?.trim() || FALLBACK_STYLE_GUIDE
+  const accent = pickCoverAccent(params.colors)
+  const styleGuide = applyBrandToCoverGuide(
+    cfg?.userPrompt?.trim() || FALLBACK_STYLE_GUIDE,
+    accent,
+    params.brandCharacter,
+  )
   const model = cfg?.defaultModel || FALLBACK_COVER_MODEL
   const geminiKey = await getSystemApiKey('gemini')
 
