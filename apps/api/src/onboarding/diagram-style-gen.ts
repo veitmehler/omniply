@@ -52,7 +52,15 @@ export function connectionsBlock(primary: string, light: string): string {
 - On a LIGHT canvas the current is a SATURATED gradient ribbon of those two
   hues with a subtle halo of the same hue family — never pale, never grey,
   never washed out.
-- On a DARK canvas the current glows softly against the background.`
+- On a DARK canvas the current glows softly against the background.
+
+## BACKGROUND DECORATION (house rule)
+- Decorative icons and motifs drawn directly on the background canvas render
+  GHOSTED at roughly 65% opacity — softly faded into the canvas,
+  watermark-like, never competing with nodes, labels, or the connector
+  currents for attention.
+- Icons INSIDE nodes stay full strength. Never fade the connector currents
+  themselves, and never fade any text.`
 }
 
 const FIXED_TAIL = `## STRUCTURAL ELEMENTS
