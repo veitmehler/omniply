@@ -112,3 +112,92 @@ export function repairBareLabels(syntax: string): string {
     return syntax
   }
 }
+
+// ── Label inventory (Veit 2026-09-18) ────────────────────────────────────────
+// Deterministic extraction of every display label from the mermaid source,
+// with expected counts — the authoritative text ground truth handed to BOTH
+// the restyle prompt (exact checklist) and the verify pass (compare against
+// strings, not OCR of the source render).
+
+export interface LabelCount {
+  label: string
+  count: number
+}
+
+function cleanLabel(raw: string): string {
+  return raw
+    .replace(/<br\s*\/?\s*>/gi, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/^["'\s]+|["'\s]+$/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function tally(map: Map<string, number>, label: string): void {
+  const l = cleanLabel(label)
+  if (!l) return
+  map.set(l, (map.get(l) ?? 0) + 1)
+}
+
+/**
+ * Extract every display label with its expected occurrence count.
+ * Node labels count once per node; edge/transition labels once per edge.
+ * Unknown diagram types return an empty inventory (callers then skip the
+ * inventory block — behavior identical to before this feature).
+ */
+export function extractLabelInventory(syntax: string): LabelCount[] {
+  try {
+    const head = syntax
+      .split('\n')
+      .map((l) => l.trim())
+      .find((l) => l && !l.startsWith('%%'))
+    if (!head) return []
+    const counts = new Map<string, number>()
+
+    if (/^stateDiagram/.test(head)) {
+      const declared = new Map<string, string>()
+      for (const m of syntax.matchAll(new RegExp(String.raw`state\s+"([^"]+)"\s+as\s+(${ID})`, 'g'))) {
+        declared.set(m[2], m[1])
+      }
+      const stateIds = new Set<string>()
+      for (const m of syntax.matchAll(new RegExp(String.raw`(?:^|\s)(${ID})\s*-->`, 'gm'))) stateIds.add(m[1])
+      for (const m of syntax.matchAll(new RegExp(String.raw`-->\s*(${ID})`, 'g'))) stateIds.add(m[1])
+      stateIds.delete('state')
+      for (const id of stateIds) tally(counts, declared.get(id) ?? id)
+      // Transition labels: `A --> B: label`
+      for (const m of syntax.matchAll(/-->\s*[A-Za-z[\]*][^:\n]*:\s*([^\n]+)/g)) tally(counts, m[1])
+    } else if (/^(flowchart|graph)\b/.test(head)) {
+      // Node shape labels — first definition wins per node id.
+      const seen = new Set<string>()
+      const shapeRe = new RegExp(
+        String.raw`(${ID})\s*(\(\(|\(\[|\[\[|\[\(|\{\{|\[|\(|\{|>)\s*"?([^\])}"]+?)"?\s*(\)\)|\]\)|\]\]|\)\]|\}\}|\]|\)|\})`,
+        'g',
+      )
+      for (const m of syntax.matchAll(shapeRe)) {
+        if (seen.has(m[1])) continue
+        seen.add(m[1])
+        tally(counts, m[3])
+      }
+      // Bare camelCase nodes that never got a shape label display their id.
+      const referenced = new Set<string>()
+      for (const m of syntax.matchAll(new RegExp(String.raw`(?:^|[\s&])(${ID})\s*(?:-->|---|-\.|==)`, 'gm'))) {
+        referenced.add(m[1])
+      }
+      for (const m of syntax.matchAll(new RegExp(String.raw`(?:-->|---|\.->|==>|\|)\s*(${ID})(?=\s|$|;)`, 'gm'))) {
+        referenced.add(m[1])
+      }
+      for (const id of referenced) if (!seen.has(id)) tally(counts, id)
+      // Edge labels: `-->|text|` and `-- text -->`
+      for (const m of syntax.matchAll(/\|\s*([^|\n]+?)\s*\|/g)) tally(counts, m[1])
+      for (const m of syntax.matchAll(/--\s+([^-|>\n][^->\n]*?)\s+-->/g)) tally(counts, m[1])
+    } else {
+      return []
+    }
+
+    return [...counts.entries()].map(([label, count]) => ({ label, count }))
+  } catch {
+    return []
+  }
+}

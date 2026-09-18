@@ -55,6 +55,8 @@ import { mapWithConcurrency } from '../../lib/concurrency'
 const DIAGRAM_TAIL_CONCURRENCY = 3
 import { buildRestylePrompt, restyleDiagram } from './diagram-restyle'
 import { verifyRestyledDiagram } from './diagram-verify'
+import { extractLabelInventory } from './mermaid-label-lint'
+import { buildInventoryBlock, buildRetryFeedbackBlock } from './diagram-restyle'
 import { overlayLogo } from './diagram-logo'
 import { processLogo } from '../../newsletter/logo-process'
 
@@ -983,28 +985,39 @@ async function saveDiagramAndInsert(opts: SaveDiagramOpts): Promise<void> {
   let stylizedW: number | null = null
   let stylizedH: number | null = null
   if (restyle?.geminiKey) {
-    for (let attempt = 1; attempt <= 2 && !stylizedKey; attempt++) {
+    // Per-diagram authoritative text inventory (parsed from the mermaid
+    // source) rides in BOTH the restyle prompt and the verify pass; retry
+    // attempts additionally carry the previous verdict's issues as positive
+    // exactly-once corrections. 3 attempts (Veit 2026-09-18); a model
+    // REFUSAL consumes an attempt like any other failure (refusals proved
+    // transient in benching).
+    const inventory = extractLabelInventory(mermaidSyntax)
+    const inventoryBlock = buildInventoryBlock(inventory)
+    let lastIssues: string[] = []
+    for (let attempt = 1; attempt <= 3 && !stylizedKey; attempt++) {
       const restyled = await restyleDiagram({
         squarePng: light.png,
-        prompt: restyle.prompt,
+        prompt: restyle.prompt + inventoryBlock + buildRetryFeedbackBlock(lastIssues),
         geminiKey: restyle.geminiKey,
         userId: sitePage.userId,
         jobId,
       })
-      if (!restyled) break // model refusal — restyleDiagram already logged; Mermaid fallback
+      if (!restyled) continue // refusal/error — logged inside; burn the attempt
 
       const check = await verifyRestyledDiagram({
         geminiKey: restyle.geminiKey,
         sourcePng: light.png,
         restyledPng: restyled.png,
         jobId,
+        expectedLabels: inventory.length ? inventory : undefined,
       })
       if (check.verdict === 'fail') {
+        lastIssues = check.issues
         logger.warn(
           { jobId, position: section.position, attempt, issues: check.issues },
-          attempt === 1
+          attempt < 3
             ? '[enrichment] restyle failed fidelity verify — retrying'
-            : '[enrichment] restyle failed fidelity verify twice — keeping Mermaid render',
+            : '[enrichment] restyle failed fidelity verify on final attempt — keeping Mermaid render',
         )
         continue
       }

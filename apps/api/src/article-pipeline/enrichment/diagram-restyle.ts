@@ -8,6 +8,7 @@
  */
 
 import sharp from 'sharp'
+import type { LabelCount } from './mermaid-label-lint'
 import { generateWithGeminiImage, prisma, buildDiagramStyleGuide } from '@omniply/shared'
 import { logger } from '../../lib/logger'
 
@@ -54,6 +55,36 @@ please redesign this diagram more stylish for a ${audience}${specClause}. Design
 Output a clean 1:1 SQUARE composition. You MAY rearrange the spatial layout — reflow long horizontal or vertical chains into a balanced arrangement (e.g. grid or radial) that fills the entire square canvas edge-to-edge, with generous, even use of space. For a long linear sequence (many steps in a row), do NOT leave it as one narrow column or row — wrap it into multiple side-by-side columns in reading order (a snake / serpentine flow, top-to-bottom then continuing in the next column) so the steps are large and legible and fill the square. But preserve the EXACT informational flow: every node, every label, every connection, the direction of each arrow, and the overall hierarchy/sequence must remain identical and clearly readable. Never add, remove, rename, or merge anything; reproduce all text verbatim.
 
 ${styleGuide}`
+}
+
+/**
+ * Per-diagram EXACT TEXT INVENTORY block (Veit 2026-09-18): the labels are
+ * parsed deterministically from the mermaid source, so the image model gets
+ * an authoritative checklist instead of only reading text off the pixels.
+ * Count-anchored phrasing — the form this model obeys best.
+ */
+export function buildInventoryBlock(inventory: LabelCount[]): string {
+  if (!inventory.length) return ''
+  const lines = inventory
+    .map((i) => `- "${i.label}"${i.count > 1 ? ` (appears exactly ${i.count} times)` : ' (appears exactly once)'}`)
+    .join('\n')
+  return `\n\n## EXACT TEXT INVENTORY (mandatory)
+The image contains EXACTLY the following text labels — each appearing exactly the number of times stated, no more, no fewer, spelled exactly as written. The image contains NO other text of any kind.
+${lines}`
+}
+
+/**
+ * Retry feedback, phrased as positive exactly-once assertions — never as
+ * negations (image models raise the salience of concretely-named content in
+ * negative prompts).
+ */
+export function buildRetryFeedbackBlock(issues: string[]): string {
+  if (!issues.length) return ''
+  const lines = issues.map((i) => `- ${i}`).join('\n')
+  return `\n\n## PREVIOUS ATTEMPT CORRECTION
+A previous attempt violated the text inventory in these ways:
+${lines}
+Follow the EXACT TEXT INVENTORY above precisely — every label appears exactly the stated number of times, and nothing else is written.`
 }
 
 export interface RestyleDiagramInput {

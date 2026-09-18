@@ -41,13 +41,21 @@ export async function verifyRestyledDiagram(opts: {
   sourcePng: Buffer
   restyledPng: Buffer
   jobId?: string
+  /** Authoritative labels parsed from the mermaid source — stronger truth than OCR of image A. */
+  expectedLabels?: { label: string; count: number }[]
 }): Promise<VerifyResult> {
   try {
     const [srcJpg, outJpg] = await Promise.all([toCheckJpeg(opts.sourcePng), toCheckJpeg(opts.restyledPng)])
 
-    const prompt = `Image A is the SOURCE diagram (ground truth). Image B is an artistic redesign of it.
+    const inventoryBlock = opts.expectedLabels?.length
+      ? `\n\nAUTHORITATIVE LABEL INVENTORY (parsed from the diagram source — this list, not your reading of image A, is the truth for TEXT comparison; use image A for structure and flow):\n${opts.expectedLabels
+          .map((l) => `- "${l.label}" (expected exactly ${l.count}x)`)
+          .join('\n')}`
+      : ''
 
-Compare ONLY the TEXT content and node structure — visual styling, colors, icons, layout rearrangement, and letter case are all irrelevant and allowed.
+    const prompt = `Image A is the SOURCE diagram (ground truth). Image B is an artistic redesign of it.${inventoryBlock}
+
+Compare ONLY the TEXT content and node structure — visual styling, colors, icons, layout rearrangement, and letter case are all irrelevant and allowed. Minor punctuation differences (a slash, comma, or hyphen) are also fine — only whole words matter.
 
 Image B FAILS if ANY of these is true:
 - a text label from A is missing or truncated in B (words dropped),
