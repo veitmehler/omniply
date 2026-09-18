@@ -68,6 +68,28 @@ describe('buildStyleGuideVisionPrompt', () => {
 })
 
 
+describe('buildStyleGuideVisionPrompt — measured canvas anchor', () => {
+  it('mandates a LIGHT canvas in the measured ground family for light sites', () => {
+    const p = buildStyleGuideVisionPrompt(PAL, { groundHex: '#F7F2E8', dark: false })
+    expect(p).toContain('CANVAS COLOR (measured, mandatory)')
+    expect(p).toContain('#F7F2E8')
+    expect(p).toContain('MUST be a flat LIGHT color')
+    expect(p).toContain('never a dark canvas')
+  })
+
+  it('mandates a DEEP canvas for predominantly dark sites', () => {
+    const p = buildStyleGuideVisionPrompt(PAL, { groundHex: '#1A1A2E', dark: true })
+    expect(p).toContain('predominantly DARK')
+    expect(p).toContain('MUST be a flat DEEP color')
+  })
+
+  it('purpose-tags every hex — the deep tone is fenced off large surfaces', () => {
+    const p = buildStyleGuideVisionPrompt(PAL)
+    expect(p).toContain('deep tone #22636E (text and small grounding accents ONLY')
+    expect(p).not.toContain('CANVAS COLOR') // no anchor when unmeasured
+  })
+})
+
 describe('connectionsBlock — house-signature plasma currents', () => {
   it('re-hues the jewel current language with the brand pair', () => {
     const b = connectionsBlock('#3AA6B9', '#89CAD5')

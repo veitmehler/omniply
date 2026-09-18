@@ -16,7 +16,7 @@
  * untouched → branded jewel guide fallback (Veit 2026-09-18).
  */
 import { prisma, brandSettingsForUser, buildDiagramStyleGuide } from '@omniply/shared'
-import { screenshotHomepage } from './site-analysis'
+import { screenshotHomepage, pixelClusters } from './site-analysis'
 import { getSystemApiKey } from '../lib/system-keys'
 import { logger } from '../lib/logger'
 import { instrumentCall } from '../lib/net/instrument'
@@ -71,6 +71,26 @@ export function connectionsBlock(primary: string, light: string): string {
   type, wider spacing, more generous currents — never by adding elements.`
 }
 
+function relLum(hex: string): number {
+  const c = [1, 3, 5].map((i) => {
+    const v = parseInt(hex.slice(i, i + 2), 16) / 255
+    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)
+  })
+  return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]
+}
+
+/** Measured page ground + dark-share from the screenshot's pixel clusters. */
+async function measureCanvasAnchor(shot: Buffer): Promise<CanvasAnchor | undefined> {
+  try {
+    const clusters = await pixelClusters(shot)
+    if (!clusters.length) return undefined
+    const darkShare = clusters.reduce((a, c) => a + (relLum(c.hex) < 0.35 ? c.coverage : 0), 0)
+    return { groundHex: clusters[0].hex.toUpperCase(), dark: darkShare > 0.5 }
+  } catch {
+    return undefined
+  }
+}
+
 const FIXED_TAIL = `## STRUCTURAL ELEMENTS
 - Preserve the informational structure exactly: keep EVERY node, EVERY label, and
   EVERY connection, and the direction of every arrow / the overall flow. Do not
@@ -87,17 +107,37 @@ const FIXED_TAIL = `## STRUCTURAL ELEMENTS
 - No global hard outline, no harsh drop-shadow box, no flat default arrows.
 - Every text label must remain perfectly legible and high-contrast.`
 
-export function buildStyleGuideVisionPrompt(palette: {
-  primary: string
-  secondary: string
-  light: string
-  deep: string
-}): string {
+export interface CanvasAnchor {
+  /** Measured dominant page-ground color (top pixel cluster of the screenshot). */
+  groundHex: string
+  /** True when >50% of the page's pixels are dark — the site reads as dark. */
+  dark: boolean
+}
+
+export function buildStyleGuideVisionPrompt(
+  palette: {
+    primary: string
+    secondary: string
+    light: string
+    deep: string
+  },
+  canvas?: CanvasAnchor,
+): string {
   const example = buildDiagramStyleGuide('#3aa6b9', '#2d808e')
     .split('## STRUCTURAL ELEMENTS')[0]
     .replace('# STYLE GUIDE', '')
     .trim()
-  const PALETTE = `primary ${palette.primary}, secondary ${palette.secondary}, light tint ${palette.light}, deep tone ${palette.deep}`
+  // Every hex carries a purpose — a dangling color is an invitation (2026-09-18:
+  // an untagged "deep tone" became a dark canvas on a cream-bodied site).
+  const PALETTE = `primary ${palette.primary} (node fills and key surfaces), secondary ${palette.secondary} (accents and emphasis), light tint ${palette.light} (light fills and gradient endpoints), deep tone ${palette.deep} (text and small grounding accents ONLY — never large surfaces unless the canvas rule below says so)`
+
+  // Canvas is MEASURED, not guessed: the vision model kept re-deciding the
+  // site's ground per run (temp variance flipped Coast dark).
+  const canvasRule = canvas
+    ? canvas.dark
+      ? `\n- CANVAS COLOR (measured, mandatory): this website reads predominantly DARK (most of its page pixels are dark; measured ground ${canvas.groundHex}). The diagram canvas MUST be a flat DEEP color drawn from the brand family.`
+      : `\n- CANVAS COLOR (measured, mandatory): this website's measured page ground is ${canvas.groundHex} (a light ground). The diagram canvas MUST be a flat LIGHT color in that family — never a dark canvas.`
+    : ''
 
   return `You are an art director writing instructions for Google's gemini-3.1-flash-image model ("Nano Banana"), which will redesign informational flow diagrams image-to-image. Know your reader: it is EXTREMELY literal — anything phrased like content gets drawn as content. It will render color names, hex codes, and role words as visible text inside the diagram if your wording allows it, so describe colors as materials applied to visual parts (borders, fills, connector lines, backgrounds), NEVER as roles attached to "labels" or "headings".
 
@@ -111,7 +151,7 @@ ${example}
 
 Now study THIS website's visual CHARACTER — minimal or rich, warm or clinical, organic or geometric, flat or dimensional — and write the same three sections (## CORE AESTHETIC, ## PALETTE, ## ICONOGRAPHY & ILLUSTRATION) with the SAME rigor and discipline, but with an aesthetic derived from this website instead.
 
-Hard rules:
+Hard rules:${canvasRule}
 - Like the example, describe ONLY the treatment of existing nodes, connections, and labels ("each node is…", "connections are…"). NEVER instruct the model to add headers, titles, categories, panels, or any text/structure that is not already in the diagram.
 - BORDER COMMITMENT (mandatory): state EXPLICITLY whether nodes are borderless cards or outlined boxes — choose exactly ONE treatment; every diagram in the series will use it identically.
 - The aesthetic must support filling the square canvas edge-to-edge with large, legible elements. Never prescribe "spaciousness", "generous whitespace", or empty margins — density and fill are handled elsewhere.
@@ -220,7 +260,8 @@ async function attemptGeneration(
       light: mixHex(primary, 0.45, 'w'),
       deep: mixHex(primary, 0.4, 'b'),
     }
-    const prompt = buildStyleGuideVisionPrompt(palette)
+    const canvas = await measureCanvasAnchor(shot)
+    const prompt = buildStyleGuideVisionPrompt(palette, canvas)
 
     const sections = await instrumentCall({ provider: 'gemini', op: 'diagram-style-gen' }, () =>
       withTimeout(
@@ -239,7 +280,7 @@ async function attemptGeneration(
                     ],
                   },
                 ],
-                generationConfig: { temperature: 0.4 },
+                generationConfig: { temperature: 0.2 },
               }),
               signal,
             },
