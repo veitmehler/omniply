@@ -1013,8 +1013,18 @@ async function saveDiagramAndInsert(opts: SaveDiagramOpts): Promise<void> {
       })
       if (check.verdict === 'fail') {
         lastIssues = check.issues
+        // Forensics (2026-09-18): keep the rejected image so a human can
+        // audit the verifier without reproduction rolls. Best-effort.
+        let rejectedUrl: string | null = null
+        try {
+          const rejKey = `articles/${sitePage.userId}/${jobId}/diagrams/${section.position}-rejected-a${attempt}.png`
+          await uploadBufferWithKey(rejKey, restyled.png, 'image/png')
+          rejectedUrl = getCdnUrl(rejKey)
+        } catch {
+          /* forensics never block the pipeline */
+        }
         logger.warn(
-          { jobId, position: section.position, attempt, issues: check.issues },
+          { jobId, position: section.position, attempt, issues: check.issues, rejectedUrl },
           attempt < 3
             ? '[enrichment] restyle failed fidelity verify — retrying'
             : '[enrichment] restyle failed fidelity verify on final attempt — keeping Mermaid render',

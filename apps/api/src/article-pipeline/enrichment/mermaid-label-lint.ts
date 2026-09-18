@@ -38,6 +38,17 @@ function isBareCamel(id: string): boolean {
 const ID = String.raw`[A-Za-z][A-Za-z\d_]*`
 
 /**
+ * Remove `|edge label|` spans before scanning for node references — the
+ * target-side regex otherwise reads the first word INSIDE an edge label as a
+ * node id (phantom "No" from `-->|No - Hip tight|`, found 2026-09-18 while
+ * auditing a verify verdict). Edge-label TEXT is tallied separately from the
+ * original string.
+ */
+function stripEdgeLabels(syntax: string): string {
+  return syntax.replace(/\|[^|\n]*\|/g, ' ')
+}
+
+/**
  * Repair a stateDiagram: any camelCase state referenced in transitions without
  * a `state "..." as X` display declaration gets one injected after the header.
  */
@@ -73,11 +84,12 @@ function repairFlowchart(syntax: string): string {
   for (const m of syntax.matchAll(new RegExp(String.raw`(${ID})\s*(?:\[|\(|\{|>)`, 'g'))) {
     labeled.add(m[1])
   }
+  const scan = stripEdgeLabels(syntax)
   const referenced = new Set<string>()
-  for (const m of syntax.matchAll(new RegExp(String.raw`(?:^|[\s&])(${ID})\s*(?:-->|---|-\.|==)`, 'gm'))) {
+  for (const m of scan.matchAll(new RegExp(String.raw`(?:^|[\s&])(${ID})\s*(?:-->|---|-\.|==)`, 'gm'))) {
     referenced.add(m[1])
   }
-  for (const m of syntax.matchAll(new RegExp(String.raw`(?:-->|---|\.->|==>|\|)\s*(${ID})(?=\s|$|;)`, 'gm'))) {
+  for (const m of scan.matchAll(new RegExp(String.raw`(?:-->|---|\.->|==>)\s*(${ID})(?=\s|$|;)`, 'gm'))) {
     referenced.add(m[1])
   }
 
@@ -181,11 +193,14 @@ export function extractLabelInventory(syntax: string): LabelCount[] {
         tally(counts, m[3])
       }
       // Bare camelCase nodes that never got a shape label display their id.
+      // Scan a copy with |edge labels| stripped — otherwise the first word of
+      // an edge label becomes a phantom node (the "No" false positive).
+      const scan = stripEdgeLabels(syntax)
       const referenced = new Set<string>()
-      for (const m of syntax.matchAll(new RegExp(String.raw`(?:^|[\s&])(${ID})\s*(?:-->|---|-\.|==)`, 'gm'))) {
+      for (const m of scan.matchAll(new RegExp(String.raw`(?:^|[\s&])(${ID})\s*(?:-->|---|-\.|==)`, 'gm'))) {
         referenced.add(m[1])
       }
-      for (const m of syntax.matchAll(new RegExp(String.raw`(?:-->|---|\.->|==>|\|)\s*(${ID})(?=\s|$|;)`, 'gm'))) {
+      for (const m of scan.matchAll(new RegExp(String.raw`(?:-->|---|\.->|==>)\s*(${ID})(?=\s|$|;)`, 'gm'))) {
         referenced.add(m[1])
       }
       for (const id of referenced) if (!seen.has(id)) tally(counts, id)

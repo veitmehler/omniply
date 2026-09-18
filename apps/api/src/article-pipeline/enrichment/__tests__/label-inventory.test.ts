@@ -58,6 +58,19 @@ describe('extractLabelInventory — stateDiagram (live diagram-3 shape)', () => 
   })
 })
 
+describe('extractLabelInventory — phantom edge-label ids (d11 false positive)', () => {
+  it('does not invent a node from the first word of an edge label', () => {
+    const src = `flowchart TD
+    B{Does hip hinge open freely?} -->|Yes| C[Hip lengthens]
+    B -->|No - Hip tight| D[Lumbar compensates]`
+    const i = inv(src)
+    // Edge labels tallied as themselves; NO phantom "No" node entry beyond them.
+    expect(i['Yes']).toBe(1)
+    expect(i['No - Hip tight']).toBe(1)
+    expect(i['No']).toBeUndefined()
+  })
+})
+
 describe('extractLabelInventory — safety', () => {
   it('returns empty for unknown types and garbage', () => {
     expect(extractLabelInventory('sequenceDiagram\n A->>B: hi')).toEqual([])

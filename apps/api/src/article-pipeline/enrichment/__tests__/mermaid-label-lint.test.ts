@@ -75,6 +75,12 @@ describe('repairBareLabels — flowchart', () => {
     A[Start] -->|CamelCaseEdge| B[End]`
     expect(repairBareLabels(src)).toBe(src)
   })
+
+  it('never attaches a label to a camelCase word INSIDE an edge label', () => {
+    const src = `flowchart TD
+    A[Go] -->|NotNow maybe| B[Stop]`
+    expect(repairBareLabels(src)).toBe(src)
+  })
 })
 
 describe('repairBareLabels — other types / safety', () => {
