@@ -62,6 +62,11 @@ export function connectionsBlock(primary: string, light: string): string {
   diagram's actual nodes.
 - The background canvas stays CLEAN: a flat color with nothing on it — no
   decorative icons, motifs, patterns, illustrations, shapes, or textures.
+- Node cards are CLEAN too: a card contains ONLY its label text and
+  (optionally) its one support icon. No decorative shapes, corner accents,
+  semicircles, cut-outs, patterns, or abstract geometry inside or on any
+  card. Node styling is limited to fill color, border or shadow, corner
+  radius, and typography.
 - Fill the square by enlarging the actual diagram — bigger nodes, larger
   type, wider spacing, more generous currents — never by adding elements.`
 }
@@ -113,6 +118,7 @@ Hard rules:
 - Do NOT define the connector/line treatment between nodes — connections are handled by a fixed house block appended separately. Your sections cover nodes, canvas, icons, and typography ONLY, and your ## PALETTE must NOT assign any hex to connector lines or arrows.
 - ## PALETTE must use ONLY the brand hexes given above plus neutrals. Assign each hex to a VISUAL PART (e.g. "node borders", "node fills", "canvas") — never to labels, headings, or text roles, and never to connectors. End with: "These brand hues (plus neutrals) are the ENTIRE palette. Never render color names, hex codes, or role words as text in the image."
 - ## ICONOGRAPHY & ILLUSTRATION may style ONLY node-support icons (stroke weight, character) — icons live inside or directly attached to their node. Do NOT prescribe background motifs, canvas patterns, textures, or free-floating illustrations; the canvas is a flat color.
+- Node styling is LIMITED to: fill color, border/shadow treatment, corner radius, and typography. Do NOT prescribe decorative shapes, geometric accents, patterns, or "internal shapes" on or inside cards.
 - No mascots, no emoji, no cartoon faces. Sophisticated and professional, NOT cartoonish.
 - Output ONLY the three markdown sections, no preamble, no code fences. Under 320 words.`
 }

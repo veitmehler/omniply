@@ -86,6 +86,8 @@ describe('connectionsBlock — house-signature plasma currents', () => {
     expect(b.replace(/\s+/g, ' ')).toContain('at most ONE icon per node')
     expect(b).toContain('No icon-only cards or panels')
     expect(b).toContain('canvas stays CLEAN')
+    expect(b).toContain('Node cards are CLEAN too')
+    expect(b.replace(/\s+/g, ' ')).toContain('No decorative shapes, corner accents, semicircles')
     expect(b.replace(/\s+/g, ' ')).toContain('never by adding elements')
   })
 })
