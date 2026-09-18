@@ -79,11 +79,13 @@ describe('connectionsBlock — house-signature plasma currents', () => {
     expect(b).toContain('DARK canvas')
   })
 
-  it('carries the background-decoration house rule (ghosted ~65%, text and currents exempt)', () => {
+  it('carries the icons-and-canvas house rule (Veit: clean canvas, node-support icons only)', () => {
     const b = connectionsBlock('#3AA6B9', '#89CAD5')
-    expect(b).toContain('## BACKGROUND DECORATION (house rule)')
-    expect(b).toContain('GHOSTED at roughly 65% opacity')
-    expect(b).toContain('Icons INSIDE nodes stay full strength')
-    expect(b).toContain('never fade any text')
+    expect(b).toContain('## ICONS & CANVAS (house rule)')
+    expect(b).toContain('ONLY to support a specific node')
+    expect(b.replace(/\s+/g, ' ')).toContain('at most ONE icon per node')
+    expect(b).toContain('No icon-only cards or panels')
+    expect(b).toContain('canvas stays CLEAN')
+    expect(b.replace(/\s+/g, ' ')).toContain('never by adding elements')
   })
 })

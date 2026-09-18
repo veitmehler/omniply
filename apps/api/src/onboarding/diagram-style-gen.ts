@@ -54,13 +54,16 @@ export function connectionsBlock(primary: string, light: string): string {
   never washed out.
 - On a DARK canvas the current glows softly against the background.
 
-## BACKGROUND DECORATION (house rule)
-- Decorative icons and motifs drawn directly on the background canvas render
-  GHOSTED at roughly 65% opacity — softly faded into the canvas,
-  watermark-like, never competing with nodes, labels, or the connector
-  currents for attention.
-- Icons INSIDE nodes stay full strength. Never fade the connector currents
-  themselves, and never fade any text.`
+## ICONS & CANVAS (house rule)
+- Icons exist ONLY to support a specific node's meaning — and each one sits
+  INSIDE or directly attached to the node it supports, at most ONE icon per
+  node. An icon that cannot be tied to one specific node is not drawn.
+- No icon-only cards or panels — every card in the image must be one of the
+  diagram's actual nodes.
+- The background canvas stays CLEAN: a flat color with nothing on it — no
+  decorative icons, motifs, patterns, illustrations, shapes, or textures.
+- Fill the square by enlarging the actual diagram — bigger nodes, larger
+  type, wider spacing, more generous currents — never by adding elements.`
 }
 
 const FIXED_TAIL = `## STRUCTURAL ELEMENTS
@@ -109,6 +112,7 @@ Hard rules:
 - The aesthetic must support filling the square canvas edge-to-edge with large, legible elements. Never prescribe "spaciousness", "generous whitespace", or empty margins — density and fill are handled elsewhere.
 - Do NOT define the connector/line treatment between nodes — connections are handled by a fixed house block appended separately. Your sections cover nodes, canvas, icons, and typography ONLY, and your ## PALETTE must NOT assign any hex to connector lines or arrows.
 - ## PALETTE must use ONLY the brand hexes given above plus neutrals. Assign each hex to a VISUAL PART (e.g. "node borders", "node fills", "canvas") — never to labels, headings, or text roles, and never to connectors. End with: "These brand hues (plus neutrals) are the ENTIRE palette. Never render color names, hex codes, or role words as text in the image."
+- ## ICONOGRAPHY & ILLUSTRATION may style ONLY node-support icons (stroke weight, character) — icons live inside or directly attached to their node. Do NOT prescribe background motifs, canvas patterns, textures, or free-floating illustrations; the canvas is a flat color.
 - No mascots, no emoji, no cartoon faces. Sophisticated and professional, NOT cartoonish.
 - Output ONLY the three markdown sections, no preamble, no code fences. Under 320 words.`
 }

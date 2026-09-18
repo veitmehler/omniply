@@ -53,7 +53,8 @@ Image B FAILS if ANY of these is true:
 - a text label from A is missing or truncated in B (words dropped),
 - a node/label appears MORE times in B than in A (duplicated into extra nodes),
 - B contains invented text that is not in A (new labels, headings, category titles, color names, hex codes),
-- a label's wording was changed beyond case/line-break differences.
+- a label's wording was changed beyond case/line-break differences,
+- B contains card-like panels or boxes holding ONLY icons with no text (decorative icon panels that are not nodes from A).
 
 Decorative icons without text are fine. Minor rendering artifacts in single characters are fine.
 
