@@ -12,8 +12,8 @@
  * Guardrail sections (STRUCTURAL ELEMENTS / CRUCIAL EXCLUSIONS) are NEVER
  * LLM-authored — they are the fixed tail below.
  *
- * Any failure (no website, screenshot, vision, validation) → returns null
- * and leaves the field untouched → branded jewel guide fallback.
+ * Failures retry 3x, then alert the admin immediately and leave the field
+ * untouched → branded jewel guide fallback (Veit 2026-09-18).
  */
 import { prisma, brandSettingsForUser, buildDiagramStyleGuide } from '@omniply/shared'
 import { screenshotHomepage } from './site-analysis'
@@ -21,6 +21,7 @@ import { getSystemApiKey } from '../lib/system-keys'
 import { logger } from '../lib/logger'
 import { instrumentCall } from '../lib/net/instrument'
 import { withTimeout } from '../lib/net/with-timeout'
+import { sendFailureAlert } from '../lib/alerts'
 
 export const STYLE_GUIDE_VISION_MODEL = 'gemini-3-flash-preview'
 
@@ -109,45 +110,76 @@ export interface StyleGuideGenResult {
 
 /**
  * Generate + validate + STORE the website-derived guide for a user.
- * Returns null (and logs why) on any failure — field stays untouched.
+ * Retries the FULL attempt (screenshot → vision → validation) up to 3 times
+ * (Veit 2026-09-18); on final failure it fires an admin failure alert
+ * IMMEDIATELY (email via ALERT_EMAIL_TO + ErrorLog row — deliberately no
+ * userId so the clinic is never emailed about an internal miss) and returns
+ * null — the field stays untouched → branded jewel fallback.
  */
 export async function generateDiagramStyleGuideFromWebsite(
   userId: string,
   opts: { screenshot?: Buffer } = {},
 ): Promise<StyleGuideGenResult | null> {
-  try {
-    const acct = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { account: { select: { vertical: true } } },
-    })
-    if (acct?.account?.vertical === 'azavea') return null // locked design
+  const acct = await prisma.user
+    .findUnique({ where: { id: userId }, select: { account: { select: { vertical: true } } } })
+    .catch(() => null)
+  if (acct?.account?.vertical === 'azavea') return null // locked design
 
-    const brand = await brandSettingsForUser(userId)
-    const website = brand?.organizationWebsite?.trim()
-    const primary = brand?.diagramPrimaryColor?.trim()?.toUpperCase()
-    const secondary = brand?.diagramSecondaryColor?.trim()?.toUpperCase()
-    if (!website || !/^#[0-9A-F]{6}$/.test(primary ?? '') || !/^#[0-9A-F]{6}$/.test(secondary ?? '')) {
-      logger.info({ userId, website: !!website }, '[diagram-style-gen] missing website or diagram colors — skip')
-      return null
-    }
+  const brand = await brandSettingsForUser(userId).catch(() => null)
+  const website = brand?.organizationWebsite?.trim()
+  const primary = brand?.diagramPrimaryColor?.trim()?.toUpperCase()
+  const secondary = brand?.diagramSecondaryColor?.trim()?.toUpperCase()
+  if (!website || !/^#[0-9A-F]{6}$/.test(primary ?? '') || !/^#[0-9A-F]{6}$/.test(secondary ?? '')) {
+    logger.info({ userId, website: !!website }, '[diagram-style-gen] missing website or diagram colors — skip')
+    return null
+  }
+  const geminiKey = await getSystemApiKey('gemini')
+  if (!geminiKey) {
+    logger.warn({ userId }, '[diagram-style-gen] no gemini key — skip')
+    return null
+  }
 
-    const geminiKey = await getSystemApiKey('gemini')
-    if (!geminiKey) {
-      logger.warn({ userId }, '[diagram-style-gen] no gemini key — skip')
-      return null
+  const ATTEMPTS = 3
+  let lastReason = 'unknown'
+  for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
+    try {
+      // A caller-provided screenshot is only trusted on attempt 1 — retries recapture.
+      const result = await attemptGeneration(userId, website, primary!, secondary!, geminiKey, attempt === 1 ? opts.screenshot : undefined)
+      logger.info({ userId, attempt, chars: result.guide.length }, '[diagram-style-gen] website-derived guide stored')
+      return result
+    } catch (err) {
+      lastReason = err instanceof Error ? err.message : String(err)
+      logger.warn({ userId, attempt, lastReason }, '[diagram-style-gen] attempt failed')
     }
+  }
 
-    const shot = opts.screenshot ?? (await screenshotHomepage(website)) ?? (await screenshotHomepage(website))
-    if (!shot) {
-      logger.warn({ userId, website }, '[diagram-style-gen] screenshot failed — skip')
-      return null
-    }
+  // All attempts exhausted — alert Veit immediately; jewel fallback stays.
+  await sendFailureAlert({
+    errorType: 'diagram_style_generation_failed',
+    message: `Website-derived diagram style guide failed after ${ATTEMPTS} attempts — the account keeps the default jewel style. Fix and use Settings → Diagram style → "Generate from my website" to retry.`,
+    context: { userId, website, lastReason },
+  }).catch((err) => logger.error({ userId, err }, '[diagram-style-gen] failure alert send failed'))
+  return null
+}
+
+/** One full attempt: screenshot → vision → validate → assemble → store. Throws with a reason. */
+async function attemptGeneration(
+  userId: string,
+  website: string,
+  primary: string,
+  secondary: string,
+  geminiKey: string,
+  providedScreenshot?: Buffer,
+): Promise<StyleGuideGenResult> {
+  {
+    const shot = providedScreenshot ?? (await screenshotHomepage(website))
+    if (!shot) throw new Error('screenshot failed')
 
     const palette = {
-      primary: primary!,
-      secondary: secondary!,
-      light: mixHex(primary!, 0.45, 'w'),
-      deep: mixHex(primary!, 0.4, 'b'),
+      primary,
+      secondary,
+      light: mixHex(primary, 0.45, 'w'),
+      deep: mixHex(primary, 0.4, 'b'),
     }
     const prompt = buildStyleGuideVisionPrompt(palette)
 
@@ -189,17 +221,10 @@ export async function generateDiagramStyleGuideFromWebsite(
     )
 
     const invalid = validateGuideSections(sections, palette)
-    if (invalid) {
-      logger.warn({ userId, invalid, head: sections.slice(0, 120) }, '[diagram-style-gen] validation failed — jewel fallback stays')
-      return null
-    }
+    if (invalid) throw new Error(`validation: ${invalid} (head: ${sections.slice(0, 80)})`)
 
     const guide = `# STYLE GUIDE\n\n${sections}\n\n${FIXED_TAIL}`
     await prisma.brandSettings.updateMany({ where: { userId }, data: { diagramStyleGuide: guide } })
-    logger.info({ userId, chars: guide.length }, '[diagram-style-gen] website-derived guide stored')
     return { guide, sections }
-  } catch (err) {
-    logger.warn({ userId, err }, '[diagram-style-gen] failed — jewel fallback stays')
-    return null
   }
 }
