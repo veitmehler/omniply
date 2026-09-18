@@ -1,11 +1,14 @@
 'use client'
 
-import { Save, Loader2 } from 'lucide-react'
+import { useState } from 'react'
+import { Save, Loader2, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { toast } from 'sonner'
 import type { SettingsData } from './useSettingsData'
 
 // Mermaid diagram styling (article enrichment)
 export function DiagramStyleSection({ settings }: { settings: SettingsData }) {
+  const [generating, setGenerating] = useState(false)
   const {
     diagramPrimaryColor, setDiagramPrimaryColor,
     diagramSecondaryColor, setDiagramSecondaryColor,
@@ -112,15 +115,40 @@ export function DiagramStyleSection({ settings }: { settings: SettingsData }) {
         <div className="border-t border-border pt-5">
           <div className="mb-1 flex items-center justify-between gap-2">
             <label className="block text-sm font-medium text-card-foreground">AI diagram style guide</label>
-            {diagramStyleGuideDefault && diagramStyleGuide.trim() !== diagramStyleGuideDefault.trim() && (
+            <span className="flex items-center gap-3">
               <button
                 type="button"
-                onClick={() => setDiagramStyleGuide(diagramStyleGuideDefault)}
-                className="text-xs font-medium text-primary hover:underline"
+                disabled={generating}
+                onClick={async () => {
+                  setGenerating(true)
+                  try {
+                    const res = await fetch('/api/brand-settings/generate-diagram-style', { method: 'POST' })
+                    const data = await res.json().catch(() => ({}))
+                    if (!res.ok) {
+                      toast.error(data.error ?? 'Style generation failed')
+                      return
+                    }
+                    setDiagramStyleGuide(data.guide)
+                    toast.success('Style derived from your website — review below, then save.')
+                  } finally {
+                    setGenerating(false)
+                  }
+                }}
+                className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline disabled:opacity-50"
               >
-                Reset to default
+                <Sparkles className="h-3 w-3" />
+                {generating ? 'Reading your website…' : 'Generate from my website'}
               </button>
-            )}
+              {diagramStyleGuideDefault && diagramStyleGuide.trim() !== diagramStyleGuideDefault.trim() && (
+                <button
+                  type="button"
+                  onClick={() => setDiagramStyleGuide(diagramStyleGuideDefault)}
+                  className="text-xs font-medium text-primary hover:underline"
+                >
+                  Reset to default
+                </button>
+              )}
+            </span>
           </div>
           <p className="text-sm text-muted-foreground mb-2">
             After each diagram is generated, it&apos;s redesigned into a polished, on-brand image for your

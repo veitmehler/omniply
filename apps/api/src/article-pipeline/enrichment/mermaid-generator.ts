@@ -5,6 +5,7 @@
 
 import { getLLMAdapter } from '../llm/factory'
 import { cleanTextOutput } from '../output-cleaner'
+import { repairBareLabels } from './mermaid-label-lint'
 import { logger } from '../../lib/logger'
 
 const PROVIDER = 'anthropic'
@@ -201,7 +202,9 @@ export async function generateMermaidDiagram(opts: {
   }
 
   return {
-    mermaidSyntax: raw,
+    // Label lint (2026-09-18): bare camelCase IDs get display labels injected
+    // deterministically — see mermaid-label-lint.ts.
+    mermaidSyntax: repairBareLabels(raw),
     inputTokens: response.tokens.input,
     outputTokens: response.tokens.output,
     cost: response.cost,

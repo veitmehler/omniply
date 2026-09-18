@@ -54,6 +54,7 @@ import { mapWithConcurrency } from '../../lib/concurrency'
  * Bounded further downstream by the mmdc + Chromium-page semaphores. */
 const DIAGRAM_TAIL_CONCURRENCY = 3
 import { buildRestylePrompt, restyleDiagram } from './diagram-restyle'
+import { verifyRestyledDiagram } from './diagram-verify'
 import { overlayLogo } from './diagram-logo'
 import { processLogo } from '../../newsletter/logo-process'
 
@@ -974,19 +975,40 @@ async function saveDiagramAndInsert(opts: SaveDiagramOpts): Promise<void> {
   await uploadBufferWithKey(pngKey, light.png, 'image/png')
 
   // AI restyle → branded, exact-1:1 image. On any failure we keep null and fall
-  // back to the Mermaid SVG below.
+  // back to the Mermaid SVG below. Fidelity verify pass (2026-09-18, 4-site
+  // bench finding): the image model occasionally truncates/duplicates labels
+  // on complex diagrams — verify each restyle against the source, retry once,
+  // then fall back to the Mermaid render rather than ship corrupted text.
   let stylizedKey: string | null = null
   let stylizedW: number | null = null
   let stylizedH: number | null = null
   if (restyle?.geminiKey) {
-    const restyled = await restyleDiagram({
-      squarePng: light.png,
-      prompt: restyle.prompt,
-      geminiKey: restyle.geminiKey,
-      userId: sitePage.userId,
-      jobId,
-    })
-    if (restyled) {
+    for (let attempt = 1; attempt <= 2 && !stylizedKey; attempt++) {
+      const restyled = await restyleDiagram({
+        squarePng: light.png,
+        prompt: restyle.prompt,
+        geminiKey: restyle.geminiKey,
+        userId: sitePage.userId,
+        jobId,
+      })
+      if (!restyled) break // model refusal — restyleDiagram already logged; Mermaid fallback
+
+      const check = await verifyRestyledDiagram({
+        geminiKey: restyle.geminiKey,
+        sourcePng: light.png,
+        restyledPng: restyled.png,
+        jobId,
+      })
+      if (check.verdict === 'fail') {
+        logger.warn(
+          { jobId, position: section.position, attempt, issues: check.issues },
+          attempt === 1
+            ? '[enrichment] restyle failed fidelity verify — retrying'
+            : '[enrichment] restyle failed fidelity verify twice — keeping Mermaid render',
+        )
+        continue
+      }
+
       const square = await ensureSquare(restyled.png)
       const branded = await overlayLogo(square, restyle.logoBuffer)
       const sdims = await sharp(branded).metadata()

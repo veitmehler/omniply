@@ -2,6 +2,7 @@ import type { FastifyInstance } from 'fastify'
 import { prisma, resolveAccountForClerkId, brandSettingsForUser } from '@omniply/shared'
 import { requireAuth } from '../middleware/auth'
 import { searchBusinessKnowledgePanel } from '../newsletter/oxylabs'
+import { generateDiagramStyleGuideFromWebsite } from '../onboarding/diagram-style-gen'
 
 /**
  * Onboarding discovery: auto-find a client's Google Business Profile from their
@@ -24,6 +25,26 @@ function registrableDomain(url: string | null): string | null {
 }
 
 export async function brandSettingsDiscoveryRoutes(app: FastifyInstance) {
+  // POST /api/brand-settings/generate-diagram-style — (re)generate the
+  // website-derived AI diagram style guide (Veit 2026-09-18, pre-launch).
+  // Synchronous (~10-20s: screenshot + one vision call); stores the guide on
+  // success and returns it so the settings textarea can show it immediately.
+  app.post('/brand-settings/generate-diagram-style', async (request, reply) => {
+    const clerkId = await requireAuth(request, reply)
+    if (!clerkId) return
+    const account = await resolveAccountForClerkId(clerkId)
+    if (!account) return reply.status(404).send({ error: 'User not found' })
+
+    const result = await generateDiagramStyleGuideFromWebsite(account.ownerUserId)
+    if (!result) {
+      return reply.status(422).send({
+        error:
+          'Could not derive a style from the website — check the website URL and diagram colors in settings, then try again. The default style stays active.',
+      })
+    }
+    return reply.send({ guide: result.guide })
+  })
+
   // POST /api/brand-settings/discover-gbp — resolve a Google Business Profile
   // candidate from the account's organizationName + geolocation (or an explicit
   // override), for the onboarding "Is this your business?" confirmation step.

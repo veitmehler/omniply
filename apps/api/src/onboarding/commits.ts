@@ -8,6 +8,7 @@ import { prisma, encrypt, ghlSettingsForUser, brandSettingsForUser } from '@omni
 import { logger } from '../lib/logger'
 import { getBoss, QUEUES } from '../queues/index'
 import { getSystemApiKey } from '../lib/system-keys'
+import { generateDiagramStyleGuideFromWebsite } from './diagram-style-gen'
 import { getGhlCredentials } from '../lib/ghl/settings'
 import { listGhlAccounts } from '../lib/ghl/client'
 import { assertSafeWpUrl } from '../lib/ssrf'
@@ -368,6 +369,14 @@ export async function commitTemplateReveal(ctx: StepContext, answer: unknown): P
     ctx.stepData.offerDrafts = []
   }
   ctx.stepData.offersReady = true
+
+  // Website-derived diagram style guide (Veit 2026-09-18, pre-launch): the
+  // diagram colors are committed above, so the vision generator can run now.
+  // Fire-and-forget: any failure leaves the field empty → branded jewel
+  // fallback. Azavea is guarded inside the generator.
+  void generateDiagramStyleGuideFromWebsite(ctx.userId).catch((err) =>
+    logger.warn({ userId: ctx.userId, err }, '[onboarding] diagram style-guide generation failed'),
+  )
   return null
 }
 
