@@ -54,9 +54,7 @@ import { mapWithConcurrency } from '../../lib/concurrency'
  * Bounded further downstream by the mmdc + Chromium-page semaphores. */
 const DIAGRAM_TAIL_CONCURRENCY = 3
 import { buildRestylePrompt, restyleDiagram } from './diagram-restyle'
-import { verifyRestyledDiagram } from './diagram-verify'
-import { extractLabelInventory } from './mermaid-label-lint'
-import { buildInventoryBlock, buildRetryFeedbackBlock } from './diagram-restyle'
+import { runRestyleLadder } from './diagram-ladder'
 import { overlayLogo } from './diagram-logo'
 import { processLogo } from '../../newsletter/logo-process'
 
@@ -985,54 +983,19 @@ async function saveDiagramAndInsert(opts: SaveDiagramOpts): Promise<void> {
   let stylizedW: number | null = null
   let stylizedH: number | null = null
   if (restyle?.geminiKey) {
-    // Per-diagram authoritative text inventory (parsed from the mermaid
-    // source) rides in BOTH the restyle prompt and the verify pass; retry
-    // attempts additionally carry the previous verdict's issues as positive
-    // exactly-once corrections. 3 attempts (Veit 2026-09-18); a model
-    // REFUSAL consumes an attempt like any other failure (refusals proved
-    // transient in benching).
-    const inventory = extractLabelInventory(mermaidSyntax)
-    const inventoryBlock = buildInventoryBlock(inventory)
-    let lastIssues: string[] = []
-    for (let attempt = 1; attempt <= 3 && !stylizedKey; attempt++) {
-      const restyled = await restyleDiagram({
-        squarePng: light.png,
-        prompt: restyle.prompt + inventoryBlock + buildRetryFeedbackBlock(lastIssues),
-        geminiKey: restyle.geminiKey,
-        userId: sitePage.userId,
-        jobId,
-      })
-      if (!restyled) continue // refusal/error — logged inside; burn the attempt
-
-      const check = await verifyRestyledDiagram({
-        geminiKey: restyle.geminiKey,
-        sourcePng: light.png,
-        restyledPng: restyled.png,
-        jobId,
-        expectedLabels: inventory.length ? inventory : undefined,
-      })
-      if (check.verdict === 'fail') {
-        lastIssues = check.issues
-        // Forensics (2026-09-18): keep the rejected image so a human can
-        // audit the verifier without reproduction rolls. Best-effort.
-        let rejectedUrl: string | null = null
-        try {
-          const rejKey = `articles/${sitePage.userId}/${jobId}/diagrams/${section.position}-rejected-a${attempt}.png`
-          await uploadBufferWithKey(rejKey, restyled.png, 'image/png')
-          rejectedUrl = getCdnUrl(rejKey)
-        } catch {
-          /* forensics never block the pipeline */
-        }
-        logger.warn(
-          { jobId, position: section.position, attempt, issues: check.issues, rejectedUrl },
-          attempt < 3
-            ? '[enrichment] restyle failed fidelity verify — retrying'
-            : '[enrichment] restyle failed fidelity verify on final attempt — keeping Mermaid render',
-        )
-        continue
-      }
-
-      const square = await ensureSquare(restyled.png)
+    // Escalation ladder (flash → flash rescue → pro) with fidelity verify —
+    // shared logic in diagram-ladder.ts so targeted re-runs are identical.
+    const winner = await runRestyleLadder({
+      squarePng: light.png,
+      basePrompt: restyle.prompt,
+      mermaidSyntax,
+      geminiKey: restyle.geminiKey,
+      userId: sitePage.userId,
+      jobId,
+      position: section.position,
+    })
+    if (winner) {
+      const square = await ensureSquare(winner)
       const branded = await overlayLogo(square, restyle.logoBuffer)
       const sdims = await sharp(branded).metadata()
       stylizedKey = `articles/${sitePage.userId}/${jobId}/diagrams/${section.position}-stylized.png`

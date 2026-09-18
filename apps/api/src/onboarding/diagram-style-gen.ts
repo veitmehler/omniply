@@ -159,6 +159,7 @@ Hard rules:${canvasRule}
 - ## PALETTE must use ONLY the brand hexes given above plus neutrals. Assign each hex to a VISUAL PART (e.g. "node borders", "node fills", "canvas") — never to labels, headings, or text roles, and never to connectors. End with: "These brand hues (plus neutrals) are the ENTIRE palette. Never render color names, hex codes, or role words as text in the image."
 - ## ICONOGRAPHY & ILLUSTRATION may style ONLY node-support icons (stroke weight, character) — icons live inside or directly attached to their node. Do NOT prescribe background motifs, canvas patterns, textures, or free-floating illustrations; the canvas is a flat color.
 - Node styling is LIMITED to: fill color, border/shadow treatment, corner radius, and typography. Do NOT prescribe decorative shapes, geometric accents, patterns, or "internal shapes" on or inside cards.
+- Do NOT prescribe typography WEIGHT contrasts (no "bold primary / light secondary") — label weight is fixed by a house rule (one consistent medium weight); you may only style the typeface character (e.g. modern sans-serif).
 - No mascots, no emoji, no cartoon faces. Sophisticated and professional, NOT cartoonish.
 - Output ONLY the three markdown sections, no preamble, no code fences. Under 320 words.`
 }

@@ -11,7 +11,7 @@ vi.mock('@omniply/shared', () => ({
 vi.mock('../../../lib/logger', () => ({ logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() } }))
 
 import sharp from 'sharp'
-import { buildRestylePrompt, restyleDiagram, RESTYLE_MODEL, RESTYLE_COST_USD } from '../diagram-restyle'
+import { buildRestylePrompt, restyleDiagram, RESTYLE_MODEL, RESTYLE_COST_USD, PRO_RESTYLE_MODEL, LADDER_MODELS, RENDITION_RULES } from '../diagram-restyle'
 
 // A tiny valid PNG so sharp can decode the "result".
 async function tinyPng(): Promise<Buffer> {
@@ -109,5 +109,21 @@ describe('restyleDiagram', () => {
     llmUsageCreate.mockRejectedValue(new Error('db down'))
     const res = await restyleDiagram(base)
     expect(res).not.toBeNull()
+  })
+})
+
+
+describe('rendition rules + ladder', () => {
+  it('every restyle prompt carries the rendition house rules (override clause included)', () => {
+    const p = buildRestylePrompt({ industry: 'X', styleGuide: 'MY-GUIDE' })
+    expect(p).toContain('## RENDITION RULES (house')
+    expect(p).toContain('PALETTE FIDELITY')
+    expect(p).toContain('ONE consistent medium')
+    expect(p).toContain('override')
+    expect(RENDITION_RULES).toContain('override anything above')
+  })
+
+  it('ladder = flash, flash, pro', () => {
+    expect(LADDER_MODELS).toEqual([RESTYLE_MODEL, RESTYLE_MODEL, PRO_RESTYLE_MODEL])
   })
 })

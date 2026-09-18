@@ -62,6 +62,7 @@ describe('buildStyleGuideVisionPrompt', () => {
     expect(p).toContain('Never prescribe "spaciousness"')
     // Connectors are the house signature — never the vision model's remit.
     expect(p).toContain('Do NOT define the connector/line treatment')
+    expect(p).toContain('Do NOT prescribe typography WEIGHT contrasts')
     // Guardrail tail is NEVER requested from the LLM.
     expect(p).not.toContain('## STRUCTURAL ELEMENTS')
   })

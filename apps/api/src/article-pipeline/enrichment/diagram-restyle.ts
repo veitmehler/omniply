@@ -13,11 +13,21 @@ import { generateWithGeminiImage, prisma, buildDiagramStyleGuide } from '@omnipl
 import { logger } from '../../lib/logger'
 
 export const RESTYLE_MODEL = 'gemini-3.1-flash-image'
+export const PRO_RESTYLE_MODEL = 'gemini-3-pro-image-preview'
 
-// Gemini image models bill per generated image (~1290 output tokens). We log a
-// flat per-image estimate to LLMUsage so diagram restyling shows up in cost
-// rollups; it is an estimate, not a metered token count.
-export const RESTYLE_COST_USD = 0.039
+// Per-image flat cost estimates logged to LLMUsage (published 1K-output
+// pricing, corrected 2026-09-18 - the old $0.039 was the retired 2.5 rate).
+export const RESTYLE_COST_USD = 0.067
+export const PRO_RESTYLE_COST_USD = 0.134
+
+/**
+ * The escalation ladder (Veit 2026-09-18, bench-proven 11/13 @ $2.06):
+ * attempt 1 = flash, attempt 2 = flash + verify-feedback rescue,
+ * attempt 3 = Nano Banana Pro. Complementary failure profiles: pro rescued
+ * every chronic flash failure in benching, flash first-tries the diagrams
+ * pro fumbles.
+ */
+export const LADDER_MODELS = [RESTYLE_MODEL, RESTYLE_MODEL, PRO_RESTYLE_MODEL]
 
 export interface RestyleContext {
   industry?: string | null
@@ -54,8 +64,26 @@ please redesign this diagram more stylish for a ${audience}${specClause}. Design
 
 Output a clean 1:1 SQUARE composition. You MAY rearrange the spatial layout — reflow long horizontal or vertical chains into a balanced arrangement (e.g. grid or radial) that fills the entire square canvas edge-to-edge, with generous, even use of space. For a long linear sequence (many steps in a row), do NOT leave it as one narrow column or row — wrap it into multiple side-by-side columns in reading order (a snake / serpentine flow, top-to-bottom then continuing in the next column) so the steps are large and legible and fill the square. But preserve the EXACT informational flow: every node, every label, every connection, the direction of each arrow, and the overall hierarchy/sequence must remain identical and clearly readable. Never add, remove, rename, or merge anything; reproduce all text verbatim.
 
-${styleGuide}`
+${styleGuide}${RENDITION_RULES}`
 }
+
+/**
+ * Rendition consistency rules (Veit 2026-09-18): appended at RESTYLE time so
+ * they reach stored/legacy guides too, and they OVERRIDE any conflicting
+ * styling above. Root causes: Pro re-graded the brand teal on one diagram
+ * of a set, and a generated guide's "primary text is bold" line produced
+ * one all-bold diagram beside its medium-weight siblings.
+ */
+export const RENDITION_RULES = `
+
+## RENDITION RULES (house — these override anything above)
+- PALETTE FIDELITY: render every stated brand hex EXACTLY as written — no hue
+  shifts, no saturation boosts, no re-grading toward tones you find prettier.
+- TYPOGRAPHY: every text label in the image uses ONE consistent medium
+  (semibold) sans-serif weight — never heavy black, never light-vs-bold
+  mixes. This overrides any bold or weight-contrast instruction stated
+  above. This diagram is one of a series: identical text weight across the
+  series.`
 
 /**
  * Per-diagram EXACT TEXT INVENTORY block (Veit 2026-09-18): the labels are
@@ -135,7 +163,7 @@ export async function restyleDiagram(input: RestyleDiagramInput): Promise<{ png:
           model,
           inputTokens: 0,
           outputTokens: 0,
-          cost: RESTYLE_COST_USD,
+          cost: model === PRO_RESTYLE_MODEL ? PRO_RESTYLE_COST_USD : RESTYLE_COST_USD,
         },
       })
     } catch (usageErr) {
