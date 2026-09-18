@@ -7,7 +7,7 @@ vi.mock('@omniply/shared', () => ({
 }))
 vi.mock('../../lib/logger', () => ({ logger: { info: vi.fn(), warn: vi.fn() } }))
 
-import { validateGuideSections, buildStyleGuideVisionPrompt } from '../diagram-style-gen'
+import { validateGuideSections, buildStyleGuideVisionPrompt, connectionsBlock } from '../diagram-style-gen'
 
 const PAL = { primary: '#3AA6B9', secondary: '#2D808E', light: '#89CAD5', deep: '#22636E' }
 
@@ -60,7 +60,22 @@ describe('buildStyleGuideVisionPrompt', () => {
     expect(p).toContain('VISUAL PART')
     expect(p).toContain('primary #3AA6B9')
     expect(p).toContain('Never prescribe "spaciousness"')
+    // Connectors are the house signature — never the vision model's remit.
+    expect(p).toContain('Do NOT define the connector/line treatment')
     // Guardrail tail is NEVER requested from the LLM.
     expect(p).not.toContain('## STRUCTURAL ELEMENTS')
+  })
+})
+
+
+describe('connectionsBlock — house-signature plasma currents', () => {
+  it('re-hues the jewel current language with the brand pair', () => {
+    const b = connectionsBlock('#3AA6B9', '#89CAD5')
+    expect(b).toContain('## CONNECTIONS (house signature')
+    expect(b).toContain('#3AA6B9 → #89CAD5')
+    expect(b).toContain('luminous gradient CURRENTS')
+    expect(b).toContain('NEVER flat')
+    expect(b).toContain('LIGHT canvas')
+    expect(b).toContain('DARK canvas')
   })
 })

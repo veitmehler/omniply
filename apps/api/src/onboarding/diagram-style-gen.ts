@@ -35,6 +35,26 @@ function mixHex(hex: string, amt: number, to: 'w' | 'b'): string {
   return `#${ch(1)}${ch(3)}${ch(5)}`.toUpperCase()
 }
 
+/**
+ * House-signature connectors (Veit 2026-09-18, bench3-proven): the jewel
+ * look's plasma currents, re-hued per brand, injected into EVERY generated
+ * guide as a fixed block the vision model can't water down. This is the
+ * product's recognizable thread across otherwise website-native styles.
+ */
+export function connectionsBlock(primary: string, light: string): string {
+  return `## CONNECTIONS (house signature — this section wins over anything above)
+- Connections between nodes are smooth, luminous gradient CURRENTS that flow
+  from node to node — like gentle streams of light or energy. NEVER flat
+  single-color lines, NEVER default arrows, NEVER plain thin strokes.
+- Every current blends ${primary} → ${light} along its length, with a soft
+  directional glow. Direction stays obvious: the current tapers or ends in an
+  integrated arrowhead at its destination.
+- On a LIGHT canvas the current is a SATURATED gradient ribbon of those two
+  hues with a subtle halo of the same hue family — never pale, never grey,
+  never washed out.
+- On a DARK canvas the current glows softly against the background.`
+}
+
 const FIXED_TAIL = `## STRUCTURAL ELEMENTS
 - Preserve the informational structure exactly: keep EVERY node, EVERY label, and
   EVERY connection, and the direction of every arrow / the overall flow. Do not
@@ -79,7 +99,8 @@ Hard rules:
 - Like the example, describe ONLY the treatment of existing nodes, connections, and labels ("each node is…", "connections are…"). NEVER instruct the model to add headers, titles, categories, panels, or any text/structure that is not already in the diagram.
 - BORDER COMMITMENT (mandatory): state EXPLICITLY whether nodes are borderless cards or outlined boxes — choose exactly ONE treatment; every diagram in the series will use it identically.
 - The aesthetic must support filling the square canvas edge-to-edge with large, legible elements. Never prescribe "spaciousness", "generous whitespace", or empty margins — density and fill are handled elsewhere.
-- ## PALETTE must use ONLY the brand hexes given above plus neutrals. Assign each hex to a VISUAL PART (e.g. "node borders", "connector lines", "canvas") — never to labels, headings, or text roles. End with: "These brand hues (plus neutrals) are the ENTIRE palette. Never render color names, hex codes, or role words as text in the image."
+- Do NOT define the connector/line treatment between nodes — connections are handled by a fixed house block appended separately. Your sections cover nodes, canvas, icons, and typography ONLY, and your ## PALETTE must NOT assign any hex to connector lines or arrows.
+- ## PALETTE must use ONLY the brand hexes given above plus neutrals. Assign each hex to a VISUAL PART (e.g. "node borders", "node fills", "canvas") — never to labels, headings, or text roles, and never to connectors. End with: "These brand hues (plus neutrals) are the ENTIRE palette. Never render color names, hex codes, or role words as text in the image."
 - No mascots, no emoji, no cartoon faces. Sophisticated and professional, NOT cartoonish.
 - Output ONLY the three markdown sections, no preamble, no code fences. Under 320 words.`
 }
@@ -223,7 +244,7 @@ async function attemptGeneration(
     const invalid = validateGuideSections(sections, palette)
     if (invalid) throw new Error(`validation: ${invalid} (head: ${sections.slice(0, 80)})`)
 
-    const guide = `# STYLE GUIDE\n\n${sections}\n\n${FIXED_TAIL}`
+    const guide = `# STYLE GUIDE\n\n${sections}\n\n${connectionsBlock(palette.primary, palette.light)}\n\n${FIXED_TAIL}`
     await prisma.brandSettings.updateMany({ where: { userId }, data: { diagramStyleGuide: guide } })
     return { guide, sections }
   }
