@@ -121,3 +121,31 @@ Estimated ~2 working days after bench passes; fits before Tue 2026-09-22.
 - Apply generated guide + regenerate demo article diagrams pre-filming? (proposed)
 - Which bench sites (Veit may name real prospect clinics, else Claude picks a
   diverse public set).
+
+## BENCH RESULTS (2026-09-18, 4 sites Veit picked)
+
+Sites: coastchiropractic.com.au, shpaus.com/astoria, medical.hudson.health,
+bcwnyc.com. Full production path per site (screenshot → palette extraction →
+production color mapping primary=header/secondary=accent → recipe+border/fill
+rules → same 4 test diagrams). All results on the artifact page.
+
+- Aesthetics: every site got a native look; generator correctly goes dark
+  ONLY when the site is dark (Hudson violet). Coast slate-teal, SHP mint
+  card grid, BCW blue cards — all plausible.
+- Border consistency: SOLVED — 4/4 guides committed to one treatment
+  (all chose borderless), applied consistently within each set.
+- Content fidelity: **14/16.** Both failures on source diagram 1 (9-node
+  snake, hardest reflow): Hudson truncated two labels; BCW duplicated
+  nodes into an invented 3-column layout (same diagram also drew the only
+  Gemini refusal in an earlier run).
+- Secondary finding: palette extraction varies run-to-run on rotating-hero
+  sites (SHP grey vs green) — onboarding's human color-reveal step covers.
+
+**Conclusion → new REQUIRED Workstream D: fidelity verify pass.** Prompt
+tuning alone won't reach 100% on complex diagrams. After each restyle, a
+cheap vision call compares restyled label text against the mermaid source
+labels; mismatch → one retry → fall back to the plain branded/Mermaid render
+for that diagram. Converts ~87% first-try to effectively 100% shipped-clean.
+Also protects the EXISTING jewel pipeline (12/12 was one sample). Bench
+gate status: PASSED for aesthetics+consistency; fidelity gate passes only
+WITH Workstream D in scope.
