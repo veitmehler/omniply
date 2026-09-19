@@ -192,10 +192,18 @@ export const MAX_VISITOR_TURNS = 30
  * prompt rule catches ~95%; this guarantees the rest.
  */
 export function stripPunctuationDashes(text: string): string {
-  return text
-    .replace(/\s*[—–]\s*/g, ', ')      // em/en dashes, any spacing
-    .replace(/\s+-\s+/g, ', ')          // spaced hyphen used as punctuation
-    .replace(/,\s*,/g, ', ')             // collapse accidental double commas
-    .replace(/([.!?:])\s*,\s*/g, '$1 ') // comma right after terminal punctuation
-    .replace(/\s{2,}/g, ' ')
+  return (
+    text
+      // Numeric/time RANGES first (Veit 2026-09-19): "2–6 PM" must never
+      // become "2, 6 PM" (live chat mangled the opening hours). A dash
+      // between digits — en, em, or bare hyphen — reads as "to", which is
+      // also the more natural conversational rendering. Times like "1:30"
+      // and trailing meridiems ride along untouched.
+      .replace(/(\d(?::\d{2})?\s*(?:[AaPp]\.?[Mm]\.?)?)\s*[—–-]\s*(?=\d)/g, '$1 to ')
+      .replace(/\s*[—–]\s*/g, ', ') // remaining em/en dashes, any spacing
+      .replace(/\s+-\s+/g, ', ') // spaced hyphen used as punctuation
+      .replace(/,\s*,/g, ', ') // collapse accidental double commas
+      .replace(/([.!?:])\s*,\s*/g, '$1 ') // comma right after terminal punctuation
+      .replace(/\s{2,}/g, ' ')
+  )
 }

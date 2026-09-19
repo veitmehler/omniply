@@ -318,4 +318,22 @@ describe('stripPunctuationDashes', () => {
     expect(stripPunctuationDashes('Sure! — the front desk can help')).toBe('Sure! the front desk can help')
     expect(stripPunctuationDashes('open now, — until 6pm')).toBe('open now, until 6pm')
   })
+
+  // Live E2E finding 2026-09-19: the backstop mangled opening hours
+  // ("Monday 2–6 PM" → "Monday 2, 6 PM"). Numeric ranges become "to".
+  it('renders numeric/time ranges as "to" instead of mangling them', () => {
+    expect(stripPunctuationDashes('Monday 2–6 PM and Friday 9 AM–4 PM')).toBe(
+      'Monday 2 to 6 PM and Friday 9 AM to 4 PM',
+    )
+    expect(stripPunctuationDashes('Thursday 1:30–6 PM')).toBe('Thursday 1:30 to 6 PM')
+    expect(stripPunctuationDashes('Tuesday 9—6')).toBe('Tuesday 9 to 6')
+    expect(stripPunctuationDashes('sessions run 45-60 minutes')).toBe('sessions run 45 to 60 minutes')
+  })
+
+  it('range handling never weakens the prose dash elimination', () => {
+    expect(stripPunctuationDashes('We open at 8 — closed Sundays')).toBe('We open at 8, closed Sundays')
+    expect(stripPunctuationDashes('X-ray results in 2-3 days — call us')).toBe(
+      'X-ray results in 2 to 3 days, call us',
+    )
+  })
 })
