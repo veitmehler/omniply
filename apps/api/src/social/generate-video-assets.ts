@@ -631,7 +631,7 @@ export async function generateStoryCarouselVideo(opts: {
   title: string
   /** imageUrls[0] = pre-baked F4 hook slide (unused for title, only for fallback). */
   imageUrls: string[]
-  /** backgroundImageUrls[0] = raw hook background; [1] = raw background for content slide 1. */
+  /** backgroundImageUrls[0] = raw hook background (motif for story feeds, photo for photo-carousels) — used for BOTH title and pitch slides; [1] may be a per-slide story photo and must not back the pitch slide. */
   backgroundImageUrls: string[]
   /** S4's own article section text — used to generate the pitch copy. */
   content: string
@@ -643,7 +643,12 @@ export async function generateStoryCarouselVideo(opts: {
 
   // Raw background for the title slide (slide 0) and the pitch slide (slide 1)
   const titleBgUrl = opts.backgroundImageUrls[0] ?? opts.imageUrls[0]
-  const pitchBgUrl = opts.backgroundImageUrls[1] ?? opts.backgroundImageUrls[0]
+  // Pitch slide matches the PROMOTED post's ground (Veit 2026-09-19): index 0
+  // is the motif for story feeds and the hook photo for photo-carousels. The
+  // old [1]-preference silently inherited the story-photo feature's per-slide
+  // photo (backgroundImageUrls[1] became the Nano Banana image), putting a
+  // photorealistic frame on brand-overlay story sets.
+  const pitchBgUrl = opts.backgroundImageUrls[0] ?? opts.backgroundImageUrls[1]
   if (!titleBgUrl) throw new Error('generateStoryCarouselVideo: no backgroundImageUrls provided')
   if (!pitchBgUrl) throw new Error('generateStoryCarouselVideo: no backgroundImageUrls provided')
 

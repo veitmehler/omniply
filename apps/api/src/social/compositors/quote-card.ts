@@ -65,7 +65,10 @@ function buildQuoteCardSvg(
 
   const fontSize   = isStory ? QUOTE_FONT_STORY : QUOTE_FONT_FEED
   const lineHeight = Math.round(fontSize * 1.22)
-  const maxChars   = isStory ? 22 : 26
+  // Story wrap widened 22 → 27 (Veit 2026-09-19): long quotes rendered as a
+  // skinny ribbon. 27 chars ≈ 890px at the 60px story font — clears the
+  // 80px margins on the 1080 canvas.
+  const maxChars   = isStory ? 27 : 26
   const maxLines   = isStory ? 16 : 10
 
   const lines = wrapText(input.quoteText, maxChars, maxLines)
