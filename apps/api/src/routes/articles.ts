@@ -547,7 +547,18 @@ export async function articleRoutes(app: FastifyInstance) {
             data: { jobId, userId: user.id, target: 'wordpress', status: 'pending', payloadHash: 'dashboard-auto' },
           })
           const boss = await getBoss()
-          await boss.send(QUEUES.ARTICLE_OUTPUT, { jobId, target: 'wordpress', attemptId: attempt.id, config: {} })
+          // The wordpress target REQUIRES connectionId (no implicit fallback
+          // to the user's only connection — learned from a failed attempt on
+          // the live E2E). Topic-pinned connection wins, else the user's.
+          const topicConn = await prisma.topic
+            .findFirst({ where: { articleJobs: { some: { id: jobId } } }, select: { wordPressConnectionId: true } })
+            .catch(() => null)
+          await boss.send(QUEUES.ARTICLE_OUTPUT, {
+            jobId,
+            target: 'wordpress',
+            attemptId: attempt.id,
+            config: { connectionId: topicConn?.wordPressConnectionId ?? conn.id },
+          })
           logger.info({ jobId }, '[publish] dashboard auto-enqueued WordPress export (connection defaults)')
         })().catch((err) => logger.error({ jobId, err }, '[publish] WP auto-export enqueue failed'))
       }
