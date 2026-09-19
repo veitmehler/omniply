@@ -301,8 +301,8 @@ export async function contentPlanRoutes(app: FastifyInstance) {
       // currently has no visibility into this at all; surfaced here so it can offer a
       // second "Review Social Posts" action alongside content approval.
       prisma.socialAutomationRun.findMany({
-        where: { userId: account.userId, status: 'ready' }, // extension → account members
-        select: { jobId: true, newsletterId: true, updatedAt: true },
+        where: { userId: account.userId, status: { in: ['ready', 'pending', 'processing', 'scheduling'] } }, // extension → account members
+        select: { jobId: true, newsletterId: true, status: true, updatedAt: true },
         orderBy: { updatedAt: 'desc' },
         take: 100,
       }),
@@ -310,11 +310,21 @@ export async function contentPlanRoutes(app: FastifyInstance) {
 
     // Dedupe — a run only ever has one of jobId/newsletterId set, but multiple runs
     // could theoretically exist per article/newsletter over time.
+    const readyRuns = socialReadyRuns.filter((r) => r.status === 'ready')
+    const generatingRuns = socialReadyRuns.filter((r) => r.status !== 'ready')
     const socialReadyArticleJobIds = [...new Set(
-      socialReadyRuns.map((r) => r.jobId).filter((id): id is string => !!id),
+      readyRuns.map((r) => r.jobId).filter((id): id is string => !!id),
     )]
     const socialReadyNewsletterIds = [...new Set(
-      socialReadyRuns.map((r) => r.newsletterId).filter((id): id is string => !!id),
+      readyRuns.map((r) => r.newsletterId).filter((id): id is string => !!id),
+    )]
+    // In-flight runs: the dashboard shows "generating…" so an approval never
+    // looks like a no-op during the ~15min an article set takes (Veit finding).
+    const socialGeneratingArticleJobIds = [...new Set(
+      generatingRuns.map((r) => r.jobId).filter((id): id is string => !!id),
+    )]
+    const socialGeneratingNewsletterIds = [...new Set(
+      generatingRuns.map((r) => r.newsletterId).filter((id): id is string => !!id),
     )]
 
     // Articles with an open edit request assigned to the CURRENT user (the teammate).
@@ -356,6 +366,10 @@ export async function contentPlanRoutes(app: FastifyInstance) {
         at: a.createdAt,
       })),
       assignedToMe,
+      socialGenerating: {
+        articleJobIds: socialGeneratingArticleJobIds,
+        newsletterIds: socialGeneratingNewsletterIds,
+      },
       socialReady: {
         articleJobIds: socialReadyArticleJobIds,
         newsletterIds: socialReadyNewsletterIds,

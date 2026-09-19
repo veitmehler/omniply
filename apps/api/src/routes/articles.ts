@@ -526,6 +526,32 @@ export async function articleRoutes(app: FastifyInstance) {
       // see social/automation/weekly-matrix.ts) for "Article only" jobs, in
       // addition to the global socialAutomationEnabled setting. Syndication
       // (LinkedIn/Medium article) still runs — that's article distribution.
+      // Dashboard→WP hand-off (Veit 2026-09-18): the client dashboard's
+      // approve calls only /publish — the WordPress export used to require
+      // the workflow page's explicit output call, so clinic articles never
+      // reached their site from the dashboard flow. Auto-enqueue with
+      // connection defaults (typically 'draft') when a connection exists.
+      // Azavea publishes internally above; idempotent on existing attempts.
+      if ((await verticalForUser(user.id)) !== 'azavea') {
+        void (async () => {
+          const conn = await prisma.wordPressConnection.findFirst({
+            where: { userId: user.id },
+            select: { id: true },
+          })
+          if (!conn) return
+          const existing = await prisma.outputAttempt.findFirst({
+            where: { jobId, target: 'wordpress', status: { in: ['pending', 'success'] } },
+          })
+          if (existing) return
+          const attempt = await prisma.outputAttempt.create({
+            data: { jobId, userId: user.id, target: 'wordpress', status: 'pending', payloadHash: 'dashboard-auto' },
+          })
+          const boss = await getBoss()
+          await boss.send(QUEUES.ARTICLE_OUTPUT, { jobId, target: 'wordpress', attemptId: attempt.id, config: {} })
+          logger.info({ jobId }, '[publish] dashboard auto-enqueued WordPress export (connection defaults)')
+        })().catch((err) => logger.error({ jobId, err }, '[publish] WP auto-export enqueue failed'))
+      }
+
       if (settings?.socialAutomationEnabled !== false && job.topic.mode !== 'article_only') {
         enqueueSocialAutomation({
           userId: user.id,

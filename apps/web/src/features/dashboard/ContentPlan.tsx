@@ -39,6 +39,7 @@ interface Inbox {
   flagged: { jobId: string; title: string; reasons: string[] }[]
   assignedToMe?: { jobId: string; title: string }[]
   socialReady?: { articleJobIds: string[]; newsletterIds: string[] }
+  socialGenerating?: { articleJobIds: string[]; newsletterIds: string[] }
 }
 
 // Cadence: articles Tue/Thu, newsletters Mon/Wed/Fri/Sat, Sunday nothing.
@@ -94,6 +95,18 @@ export function ContentPlan() {
   const assignedToMeIds = new Set((inbox?.assignedToMe ?? []).map((a) => a.jobId))
   const socialReadyArticleIds = new Set(inbox?.socialReady?.articleJobIds ?? [])
   const socialReadyNewsletterIds = new Set(inbox?.socialReady?.newsletterIds ?? [])
+  const socialGenArticleIds = new Set(inbox?.socialGenerating?.articleJobIds ?? [])
+  const socialGenNewsletterIds = new Set(inbox?.socialGenerating?.newsletterIds ?? [])
+  const anySocialGenerating = socialGenArticleIds.size > 0 || socialGenNewsletterIds.size > 0
+
+  // While any social set is generating (~15min for an article), poll so the
+  // "generating…" chip flips to the Review button without a manual reload.
+  useEffect(() => {
+    if (!anySocialGenerating) return
+    const t = setInterval(() => void load(), 30_000)
+    return () => clearInterval(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [anySocialGenerating])
   const readyQueue: ReviewItem[] = [
     ...(inbox?.articles ?? []).map((a) => ({ kind: 'article' as const, id: a.jobId, title: a.title, finalQuality: a.finalQuality ?? null })),
     ...(inbox?.newsletters ?? []).map((n) => ({ kind: 'newsletter' as const, id: n.newsletterId, title: n.title })),
@@ -188,6 +201,16 @@ export function ContentPlan() {
     setSelected((prev) => { const n = new Set(prev); if (n.has(date)) n.delete(date); else n.add(date); return n })
   const fmt = (date: string) => format(new Date(date + 'T00:00:00'), 'EEE, MMM d')
 
+  // Approval → social generation takes ~5-15 min; without this chip the
+  // approval looked like a no-op (Veit 2026-09-18). Polls via the inbox.
+  function SocialGeneratingChip() {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-md border border-border bg-muted/50 px-2.5 py-1 text-xs text-muted-foreground">
+        <Loader2 className="h-3.5 w-3.5 animate-spin" /> Social posts generating…
+      </span>
+    )
+  }
+
   function ReviewBtn({ kind, id }: { kind: 'article' | 'newsletter'; id: string }) {
     const idx = queueIndexFor(kind, id)
     return (
@@ -243,6 +266,8 @@ export function ContentPlan() {
     const nlReady = nl?.newsletterId && readyNewsletterIds.has(nl.newsletterId)
     const articleSocialReady = a?.jobId && socialReadyArticleIds.has(a.jobId)
     const nlSocialReady = nl?.newsletterId && socialReadyNewsletterIds.has(nl.newsletterId)
+    const articleSocialGen = a?.jobId && socialGenArticleIds.has(a.jobId)
+    const nlSocialGen = nl?.newsletterId && socialGenNewsletterIds.has(nl.newsletterId)
     if (!assignedToMe && !articleReady && !articleFlagged && !nlReady && !articleSocialReady && !nlSocialReady) {
       return <span className="text-xs text-muted-foreground">—</span>
     }
@@ -260,8 +285,10 @@ export function ContentPlan() {
           </Link>
         ) : null}
         {articleSocialReady && <SocialReviewBtn kind="article" id={a!.jobId!} title={a!.topic} />}
+        {articleSocialGen && <SocialGeneratingChip />}
         {nlReady && <ReviewBtn kind="newsletter" id={nl!.newsletterId!} />}
         {nlSocialReady && <SocialReviewBtn kind="newsletter" id={nl!.newsletterId!} title={nl!.topic} />}
+        {nlSocialGen && <SocialGeneratingChip />}
       </div>
     )
   }
