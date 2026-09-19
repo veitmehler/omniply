@@ -1296,6 +1296,10 @@ model BrandSettings {
   diagramFontFamily       String?
   // AI diagram restyle (Nano Banana): per-business style guide. Empty → server default.
   diagramStyleGuide       String? @db.Text
+  // Once-per-clinic article footer disclaimer (Veit 2026-09-19): generated +
+  // validated at onboarding, client-editable in Settings, used verbatim on
+  // every article publish (azavea keeps its per-article variant).
+  articleDisclaimer       String? @db.Text
   // Watermark logo variant for restyled diagrams: 'light' (dark bg, default) | 'dark'.
   diagramLogoVariant      String?
   // Cached light/dark transparent variants auto-generated from organizationLogoUrl

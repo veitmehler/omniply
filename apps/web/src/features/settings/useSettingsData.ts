@@ -93,6 +93,7 @@ export function useSettingsData() {
   const [isSavingDiagramStyle, setIsSavingDiagramStyle]     = useState(false)
 
   const [articleFontFamily, setArticleFontFamily] = useState('')
+  const [articleDisclaimer, setArticleDisclaimer] = useState('')
   const [articleFontWeight, setArticleFontWeight] = useState('400')
   const [articleFontSizeBase, setArticleFontSizeBase] = useState('16px')
   const [isSavingArticleFonts, setIsSavingArticleFonts] = useState(false)
@@ -184,6 +185,7 @@ export function useSettingsData() {
           )
           setDiagramLogoVariant(brand.diagramLogoVariant === 'dark' ? 'dark' : 'light')
           setArticleFontFamily(brand.articleFontFamily ?? '')
+          setArticleDisclaimer(brand.articleDisclaimer ?? '')
           setArticleFontWeight(brand.articleFontWeight ?? '400')
           setArticleFontSizeBase(brand.articleFontSizeBase ?? '16px')
         }
@@ -481,6 +483,7 @@ export function useSettingsData() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           articleFontFamily: articleFontFamily.trim() || null,
+          articleDisclaimer: articleDisclaimer.trim() || null,
           articleFontWeight: articleFontWeight.trim() || null,
           articleFontSizeBase: articleFontSizeBase.trim() || null,
         }),
@@ -583,6 +586,7 @@ export function useSettingsData() {
     handleSaveDiagramStyle,
     // Article typography
     articleFontFamily, setArticleFontFamily,
+    articleDisclaimer, setArticleDisclaimer,
     articleFontWeight, setArticleFontWeight,
     articleFontSizeBase, setArticleFontSizeBase,
     isSavingArticleFonts,

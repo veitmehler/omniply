@@ -9,6 +9,7 @@ import { logger } from '../lib/logger'
 import { getBoss, QUEUES } from '../queues/index'
 import { getSystemApiKey } from '../lib/system-keys'
 import { generateDiagramStyleGuideFromWebsite } from './diagram-style-gen'
+import { generateArticleDisclaimer } from './article-disclaimer'
 import { getGhlCredentials } from '../lib/ghl/settings'
 import { listGhlAccounts } from '../lib/ghl/client'
 import { assertSafeWpUrl } from '../lib/ssrf'
@@ -376,6 +377,13 @@ export async function commitTemplateReveal(ctx: StepContext, answer: unknown): P
   // fallback. Azavea is guarded inside the generator.
   void generateDiagramStyleGuideFromWebsite(ctx.userId).catch((err) =>
     logger.warn({ userId: ctx.userId, err }, '[onboarding] diagram style-guide generation failed'),
+  )
+  // Once-per-clinic article disclaimer (Veit 2026-09-19): generated +
+  // validated here, stored on brandSettings, reused verbatim on every
+  // publish. Deterministic house fallback inside — the field is always
+  // populated after this step.
+  void generateArticleDisclaimer(ctx.userId).catch((err) =>
+    logger.warn({ userId: ctx.userId, err }, '[onboarding] article disclaimer generation failed'),
   )
   return null
 }

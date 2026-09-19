@@ -1,6 +1,8 @@
 'use client'
 
-import { Save, Loader2 } from 'lucide-react'
+import { Save, Loader2, Sparkles } from 'lucide-react'
+import { useState } from 'react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import type { SettingsData } from './useSettingsData'
 
@@ -8,11 +10,13 @@ import type { SettingsData } from './useSettingsData'
 export function ArticleTypographySection({ settings }: { settings: SettingsData }) {
   const {
     articleFontFamily, setArticleFontFamily,
+    articleDisclaimer, setArticleDisclaimer,
     articleFontWeight, setArticleFontWeight,
     articleFontSizeBase, setArticleFontSizeBase,
     isSavingArticleFonts,
     handleSaveArticleTypography,
   } = settings
+  const [regeneratingDisclaimer, setRegeneratingDisclaimer] = useState(false)
 
   return (
     <div className="rounded-lg border border-border bg-card p-6">
@@ -78,6 +82,48 @@ export function ArticleTypographySection({ settings }: { settings: SettingsData 
           />
           <p className="text-xs text-muted-foreground mt-1">Use a CSS length (e.g. 16px, 1rem, 112.5%).</p>
         </div>
+        {/* Article footer disclaimer — once per clinic, used verbatim on every
+            article (Veit 2026-09-19). Generated + validated at onboarding;
+            editable here; per-article LLM generation retired for clinics. */}
+        <div className="border-t border-border pt-5">
+          <div className="mb-1 flex items-center justify-between gap-2">
+            <label className="block text-sm font-medium text-card-foreground">Article footer disclaimer</label>
+            <button
+              type="button"
+              disabled={regeneratingDisclaimer}
+              onClick={async () => {
+                setRegeneratingDisclaimer(true)
+                try {
+                  const res = await fetch('/api/brand-settings/generate-article-disclaimer', { method: 'POST' })
+                  const data = await res.json().catch(() => ({}))
+                  if (!res.ok) {
+                    toast.error(data.error ?? 'Disclaimer generation failed')
+                    return
+                  }
+                  setArticleDisclaimer(data.disclaimer)
+                  toast.success('Disclaimer regenerated — review below, then save.')
+                } finally {
+                  setRegeneratingDisclaimer(false)
+                }
+              }}
+              className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline disabled:opacity-50"
+            >
+              <Sparkles className="h-3 w-3" />
+              {regeneratingDisclaimer ? 'Regenerating…' : 'Regenerate'}
+            </button>
+          </div>
+          <p className="text-sm text-muted-foreground mb-2">
+            Shown at the bottom of every published article. Edit freely — for example to match wording your
+            legal counsel prefers.
+          </p>
+          <textarea
+            value={articleDisclaimer}
+            onChange={(e) => setArticleDisclaimer(e.target.value)}
+            rows={7}
+            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm leading-relaxed text-foreground"
+          />
+        </div>
+
         <Button onClick={() => void handleSaveArticleTypography()} disabled={isSavingArticleFonts}>
           {isSavingArticleFonts ? (
             <>

@@ -3,6 +3,7 @@ import { prisma, resolveAccountForClerkId, brandSettingsForUser } from '@omniply
 import { requireAuth } from '../middleware/auth'
 import { searchBusinessKnowledgePanel } from '../newsletter/oxylabs'
 import { generateDiagramStyleGuideFromWebsite } from '../onboarding/diagram-style-gen'
+import { generateArticleDisclaimer } from '../onboarding/article-disclaimer'
 
 /**
  * Onboarding discovery: auto-find a client's Google Business Profile from their
@@ -25,6 +26,19 @@ function registrableDomain(url: string | null): string | null {
 }
 
 export async function brandSettingsDiscoveryRoutes(app: FastifyInstance) {
+  // POST /api/brand-settings/generate-article-disclaimer — (re)generate the
+  // once-per-clinic article footer disclaimer (Veit 2026-09-19). Always
+  // stores something (validated LLM text or the deterministic house text).
+  app.post('/brand-settings/generate-article-disclaimer', async (request, reply) => {
+    const clerkId = await requireAuth(request, reply)
+    if (!clerkId) return
+    const account = await resolveAccountForClerkId(clerkId)
+    if (!account) return reply.status(404).send({ error: 'User not found' })
+    const text = await generateArticleDisclaimer(account.ownerUserId)
+    if (!text) return reply.status(422).send({ error: 'Disclaimer generation is not available for this account.' })
+    return reply.send({ disclaimer: text })
+  })
+
   // POST /api/brand-settings/generate-diagram-style — (re)generate the
   // website-derived AI diagram style guide (Veit 2026-09-18, pre-launch).
   // Synchronous (~10-20s: screenshot + one vision call); stores the guide on

@@ -18,6 +18,7 @@
  */
 
 import type { Prisma } from '@prisma/client'
+import { verticalForUser } from '../lib/prompt-resolver'
 import { prisma, brandSettingsForUser } from '@omniply/shared'
 import { logger } from '../lib/logger'
 import { Sentry } from '../lib/sentry'
@@ -421,14 +422,31 @@ export async function approveArticleJob(jobId: string): Promise<void> {
     data: { excerpt },
   })
 
-  // ── Step 18: generate_legal_disclaimer ────────────────────────────────────
-  logger.info({ jobId }, '[approval] step 18 — generate_legal_disclaimer')
+  // ── Step 18: article disclaimer ───────────────────────────────────────────
+  // Clinics use the ONCE-generated, validated, client-editable disclaimer from
+  // brandSettings (Veit 2026-09-19 — per-article LLM generation shipped a
+  // truncated YMYL disclaimer to WordPress on the live E2E). The LLM step
+  // remains only for azavea (its own per-article variant) and as a legacy
+  // fallback when the stored field is empty.
+  logger.info({ jobId }, '[approval] step 18 — article disclaimer')
   await prisma.articleJob.update({ where: { id: jobId }, data: { currentStep: 18 } })
 
-  const runner18 = new StepRunner(jobId, 18, ctx)
-  const result18 = await runner18.execute()
-  ctx.completedSteps.set(18, result18.output)
-  const disclaimer = (await sanitizeDashesText(result18.output, { jobId, stepNumber: 18 })).trim()
+  const storedDisclaimer =
+    (await verticalForUser(ctx.userId)) === 'azavea'
+      ? null
+      : (await prisma.brandSettings.findFirst({ where: { userId: ctx.userId }, select: { articleDisclaimer: true } }))
+          ?.articleDisclaimer?.trim() || null
+
+  let disclaimer: string
+  if (storedDisclaimer) {
+    disclaimer = (await sanitizeDashesText(storedDisclaimer, { jobId, stepNumber: 18 })).trim()
+    logger.info({ jobId, chars: disclaimer.length }, '[approval] step 18 — using stored brand disclaimer')
+  } else {
+    const runner18 = new StepRunner(jobId, 18, ctx)
+    const result18 = await runner18.execute()
+    ctx.completedSteps.set(18, result18.output)
+    disclaimer = (await sanitizeDashesText(result18.output, { jobId, stepNumber: 18 })).trim()
+  }
 
   await prisma.sitePage.update({
     where: { jobId },
