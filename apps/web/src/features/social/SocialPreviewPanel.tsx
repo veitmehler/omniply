@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { useAuth } from '@clerk/nextjs'
+import { useAppToken } from '@/lib/use-app-token'
 import {
   Loader2,
   CheckCircle2,
@@ -683,7 +683,7 @@ export function SocialPreviewPanel({
   onRetryFailed,
   retryingSpec,
 }: SocialPreviewPanelProps) {
-  const { getToken } = useAuth()
+  const getToken = useAppToken()
   const [approvingAllRunId, setApprovingAllRunId] = useState<string | null>(null)
   const [approvingSlot, setApprovingSlot] = useState<string | null>(null)
   const [regeneratingSlot, setRegeneratingSlot] = useState<string | null>(null)

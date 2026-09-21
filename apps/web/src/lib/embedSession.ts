@@ -98,6 +98,17 @@ export async function embedFetch(path: string, init: RequestInit = {}): Promise<
  * Authorization header (Clerk-minted) are left untouched.
  */
 let bridgeInstalled = false
+
+/**
+ * True when running inside the GHL embed shell (the fetch bridge is installed
+ * only there). Shared components use this to keep Clerk COMPLETELY out of the
+ * embed path — calling clerk-js getToken() inside the iframe can trigger its
+ * interactive session-recovery UI when stale admin cookies are present.
+ */
+export function isEmbedMode(): boolean {
+  return bridgeInstalled
+}
+
 export function installEmbedFetchBridge(): void {
   if (bridgeInstalled || typeof window === 'undefined') return
   bridgeInstalled = true

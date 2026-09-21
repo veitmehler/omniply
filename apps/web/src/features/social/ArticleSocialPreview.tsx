@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { useAuth } from '@clerk/nextjs'
+import { useAppToken } from '@/lib/use-app-token'
 import { Loader2 } from 'lucide-react'
 import { SocialPreviewPanel, type SocialAutomationRunRow } from './SocialPreviewPanel'
 
@@ -13,7 +13,7 @@ import { SocialPreviewPanel, type SocialAutomationRunRow } from './SocialPreview
  * that hosts this owns the title (see dashboard/SocialReviewModal.tsx).
  */
 export function ArticleSocialPreview({ jobId }: { jobId: string }) {
-  const { getToken } = useAuth()
+  const getToken = useAppToken()
   const [runs, setRuns] = useState<SocialAutomationRunRow[]>([])
   const [retryingSpec, setRetryingSpec] = useState<string | null>(null)
   const [loaded, setLoaded] = useState(false)

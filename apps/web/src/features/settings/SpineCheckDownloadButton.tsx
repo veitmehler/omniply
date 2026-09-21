@@ -6,12 +6,12 @@
  * automatically instead — this button is the manual path for everyone else.
  */
 import { useState } from 'react'
-import { useAuth } from '@clerk/nextjs'
+import { useAppToken } from '@/lib/use-app-token'
 import { Activity } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 export function SpineCheckDownloadButton() {
-  const { getToken } = useAuth()
+  const getToken = useAppToken()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 

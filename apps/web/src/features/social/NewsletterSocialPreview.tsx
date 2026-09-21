@@ -1,13 +1,13 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { useAuth } from '@clerk/nextjs'
+import { useAppToken } from '@/lib/use-app-token'
 import { CalendarClock } from 'lucide-react'
 import { SocialPreviewPanel, type SocialAutomationRunRow } from './SocialPreviewPanel'
 
 /** Preview + approve the newsletter-day social posts (weekly cadence). */
 export function NewsletterSocialPreview({ newsletterId }: { newsletterId: string }) {
-  const { getToken } = useAuth()
+  const getToken = useAppToken()
   const [runs, setRuns] = useState<SocialAutomationRunRow[]>([])
   const [retryingSpec, setRetryingSpec] = useState<string | null>(null)
   const [loaded, setLoaded] = useState(false)

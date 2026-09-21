@@ -7,14 +7,14 @@
  * WordPress and any site builder that accepts a script tag.
  */
 import { useState } from 'react'
-import { useAuth } from '@clerk/nextjs'
+import { useAppToken } from '@/lib/use-app-token'
 import { MessageCircle, Copy, Check, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 const API_BASE = process.env.NEXT_PUBLIC_AGENT_API_BASE ?? 'https://svc.omniply.io'
 
 export function ChatAssistantSection() {
-  const { getToken } = useAuth()
+  const getToken = useAppToken()
   const [snippet, setSnippet] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [copied, setCopied] = useState(false)

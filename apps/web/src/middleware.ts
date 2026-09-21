@@ -125,6 +125,13 @@ const withClerk = clerkMiddleware(async (auth, request) => {
 export default function middleware(request: Parameters<typeof withClerk>[0], event: Parameters<typeof withClerk>[1]) {
   const host = request.headers.get('host') ?? ''
   if (MARKETING_HOSTS.has(host)) return marketingResponse(request)
+  // GHL iframe surface: authenticated by the SSO-derived embed bearer, never
+  // Clerk. Skipping clerkMiddleware entirely prevents its cookie "handshake"
+  // redirect from ever bouncing the iframe document to a sign-in page (seen
+  // 2026-09-21 when an expired ADMIN Clerk session lingered in the browser).
+  if (request.nextUrl.pathname.startsWith('/embed')) {
+    return NextResponse.next()
+  }
   // Embed-bearer API calls (GHL client shell): Clerk's middleware chokes on
   // the non-Clerk JWT in the Authorization header (MIDDLEWARE_INVOCATION_
   // FAILED) — and has nothing to add: these requests authenticate in the
