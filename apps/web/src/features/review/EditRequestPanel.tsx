@@ -76,7 +76,12 @@ export function EditRequestPanel({
       }
       if (!cancelled) {
         setAssignees(list)
-        if (list.length) setAssignee(list[0].email)
+        // NO silent default (2026-09-21: preselecting the owner sent a round
+        // of edits to the wrong person). Only restore the user's own
+        // last-used choice — otherwise force an explicit pick.
+        let last: string | null = null
+        try { last = window.localStorage.getItem('omniply:lastAssignee') } catch { /* blocked storage */ }
+        if (last && list.some((a) => a.email === last)) setAssignee(last)
       }
     })()
     return () => {
@@ -109,7 +114,8 @@ export function EditRequestPanel({
         toast.error(body.error ?? 'Could not send the edit requests')
         return
       }
-      toast.success(`Sent ${pending.length} edit request(s) to ${assignee}.`)
+      try { window.localStorage.setItem('omniply:lastAssignee', assignee) } catch { /* blocked storage */ }
+      toast.success(`Sent ${pending.length} edit request(s) to ${chosen?.name ?? assignee}.`)
       onSent(pending.length)
       setPending([])
     } finally {
@@ -165,6 +171,9 @@ export function EditRequestPanel({
             onChange={(e) => setAssignee(e.target.value)}
             className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-xs"
           >
+            <option value="" disabled>
+              Pick a teammate…
+            </option>
             {assignees.map((a) => (
               <option key={a.email} value={a.email}>
                 {(a.name ? `${a.name} — ${a.email}` : a.email) + (a.source === 'ghl' ? ' (from your CRM)' : '')}
@@ -172,9 +181,11 @@ export function EditRequestPanel({
             ))}
           </select>
         )}
-        <Button onClick={sendEdits} disabled={pending.length === 0 || sending || assignees.length === 0} className="w-full">
+        <Button onClick={sendEdits} disabled={pending.length === 0 || sending || !assignee} className="w-full">
           {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-          Send {pending.length || ''} to teammate
+          {assignee
+            ? `Send ${pending.length || ''} to ${assignees.find((a) => a.email === assignee)?.name ?? assignee}`
+            : 'Pick a teammate to send'}
         </Button>
       </div>
     </div>

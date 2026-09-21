@@ -62,6 +62,9 @@ export function ReviewApproveModal({
   }
 
   async function setRequestStatus(id: string, status: 'resolved' | 'open') {
+    // Marking a request done is a natural checkpoint — flush any unsaved
+    // content edits so resolving never races a lost edit.
+    if (dirtyRef.current) await saveEdits()
     await fetch(`/api/edit-requests/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -93,12 +96,41 @@ export function ReviewApproveModal({
 
   const scrollRef = useRef<HTMLDivElement>(null)
   const bodyRef = useRef<HTMLDivElement>(null)
+  // Autosave: mirror `dirty` in a ref (async handlers read the latest value)
+  // and debounce a background save while the user edits.
+  const dirtyRef = useRef(false)
+  const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Floating navigator through open edit requests.
+  const [navIdx, setNavIdx] = useState(0)
 
   const isArticle = item.kind === 'article'
 
+  function markDirty() {
+    dirtyRef.current = true
+    setDirty(true)
+    if (autosaveTimer.current) clearTimeout(autosaveTimer.current)
+    autosaveTimer.current = setTimeout(() => {
+      autosaveTimer.current = null
+      if (dirtyRef.current) void saveEdits()
+    }, 2000)
+  }
+
+  useEffect(() => () => {
+    if (autosaveTimer.current) clearTimeout(autosaveTimer.current)
+  }, [])
+
+  async function handleClose() {
+    if (autosaveTimer.current) clearTimeout(autosaveTimer.current)
+    if (isArticle && dirtyRef.current) {
+      const ok = await saveEdits()
+      if (!ok && !window.confirm('Saving your edits failed. Close anyway and lose them?')) return
+    }
+    onClose()
+  }
+
   useEffect(() => {
     let cancelled = false
-    setLoading(true); setHtml(null); setDirty(false); setReachedEnd(false)
+    setLoading(true); setHtml(null); setDirty(false); dirtyRef.current = false; setReachedEnd(false); setNavIdx(0)
     setRequestMode(false); setSelDraft(null); setOpenRequests(0)
     ;(async () => {
       try {
@@ -149,6 +181,7 @@ export function ReviewApproveModal({
         body: JSON.stringify({ bodyHtml: bodyRef.current.innerHTML }),
       })
       if (!res.ok) { toast.error('Failed to save edits'); return false }
+      dirtyRef.current = false
       setDirty(false)
       return true
     } finally {
@@ -180,6 +213,28 @@ export function ReviewApproveModal({
 
   const approveBlocked = openRequests > 0
 
+  // Floating navigator through the open requests: jump/resolve without ever
+  // scrolling back to the list at the top.
+  const openList = requestList.filter((r) => r.status === 'open')
+  const navCurrent = openList.length > 0 ? openList[Math.min(navIdx, openList.length - 1)] : null
+
+  function navJump(offset: number) {
+    if (openList.length === 0) return
+    const next = (Math.min(navIdx, openList.length - 1) + offset + openList.length) % openList.length
+    setNavIdx(next)
+    if (bodyRef.current) jumpToQuote(bodyRef.current, openList[next].quotedText)
+  }
+
+  async function navMarkDone() {
+    if (!navCurrent) return
+    await setRequestStatus(navCurrent.id, 'resolved')
+    // The list shrinks; the same index now points at the next open request.
+    if (bodyRef.current && openList.length > 1) {
+      const next = openList.filter((r) => r.id !== navCurrent.id)[Math.min(navIdx, openList.length - 2)]
+      if (next) jumpToQuote(bodyRef.current, next.quotedText)
+    }
+  }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="flex h-[90vh] w-full max-w-7xl flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xl">
@@ -190,7 +245,7 @@ export function ReviewApproveModal({
             <span className="truncate text-sm font-semibold text-card-foreground">{item.title}</span>
             <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">{isArticle ? 'Article' : 'Newsletter'}</span>
           </div>
-          <button onClick={onClose} className="rounded p-1 text-muted-foreground hover:bg-muted"><X className="h-5 w-5" /></button>
+          <button onClick={() => void handleClose()} className="rounded p-1 text-muted-foreground hover:bg-muted"><X className="h-5 w-5" /></button>
         </div>
 
         {approveBlocked && (
@@ -202,7 +257,46 @@ export function ReviewApproveModal({
           </div>
         )}
 
-        <div className="flex min-h-0 flex-1">
+        <div className="relative flex min-h-0 flex-1">
+          {/* Floating edit-request navigator: work through requests in place. */}
+          {isArticle && !requestMode && !loading && navCurrent && (
+            <div className="pointer-events-none absolute inset-x-0 bottom-4 z-10 flex justify-center px-6">
+              <div className="pointer-events-auto flex max-w-full items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 shadow-lg">
+                <button
+                  onClick={() => navJump(-1)}
+                  disabled={openList.length < 2}
+                  className="rounded-full px-1.5 py-0.5 text-sm text-muted-foreground hover:bg-muted disabled:opacity-40"
+                  aria-label="Previous edit request"
+                >
+                  ←
+                </button>
+                <span className="whitespace-nowrap text-xs font-medium text-muted-foreground">
+                  Edit {Math.min(navIdx, openList.length - 1) + 1}/{openList.length}
+                </span>
+                <button
+                  onClick={() => { if (bodyRef.current) jumpToQuote(bodyRef.current, navCurrent.quotedText) }}
+                  className="max-w-[16rem] truncate text-xs italic text-foreground underline decoration-dotted underline-offset-2 hover:text-primary"
+                  title={`${navCurrent.note} — “${navCurrent.quotedText}”`}
+                >
+                  “{navCurrent.quotedText}”
+                </button>
+                <button
+                  onClick={() => void navMarkDone()}
+                  className="rounded-full bg-primary px-2.5 py-0.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+                >
+                  Mark done
+                </button>
+                <button
+                  onClick={() => navJump(1)}
+                  disabled={openList.length < 2}
+                  className="rounded-full px-1.5 py-0.5 text-sm text-muted-foreground hover:bg-muted disabled:opacity-40"
+                  aria-label="Next edit request"
+                >
+                  →
+                </button>
+              </div>
+            </div>
+          )}
           {/* Content */}
           <div ref={scrollRef} onScroll={onScroll} className="flex-1 overflow-y-auto bg-background px-6 py-5">
             {isArticle && item.finalQuality && !loading && (
@@ -258,7 +352,7 @@ export function ReviewApproveModal({
                 ref={bodyRef}
                 contentEditable={!requestMode}
                 suppressContentEditableWarning
-                onInput={() => setDirty(true)}
+                onInput={markDirty}
                 onMouseUp={() => { if (requestMode && bodyRef.current) setSelDraft(captureSelection(bodyRef.current)) }}
                 className="article-body max-w-none rounded-lg bg-card p-6 text-foreground focus:outline-none"
                 dangerouslySetInnerHTML={{ __html: html ?? '' }}
@@ -278,7 +372,7 @@ export function ReviewApproveModal({
               sendUrl={`/api/articles/${item.id}/edit-requests`}
               onSent={() => {
                 setRequestMode(false)
-                onClose()
+                void handleClose()
               }}
             />
           )}

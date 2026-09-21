@@ -150,6 +150,46 @@ function buildWordPressCitationsHtml(payload: OutputPayload): string {
 
 // ── WordPressTarget ────────────────────────────────────────────────────────
 
+/** Parse "HH:mm" (Settings.wpPublishTime), falling back to 9:00 on anything malformed. */
+export function parsePublishTime(raw: string | null | undefined): [number, number] {
+  const m = /^([01]?\d|2[0-3]):([0-5]\d)$/.exec((raw ?? '').trim())
+  if (!m) return [9, 0]
+  return [Number.parseInt(m[1], 10), Number.parseInt(m[2], 10)]
+}
+
+/**
+ * UTC instant for a wall-clock date+time in an IANA timezone, without a tz
+ * library: start from the UTC guess, measure the zone's offset at that
+ * instant via Intl, correct once (a second pass handles the rare case where
+ * the correction crosses a DST boundary).
+ */
+export function zonedDateTimeToUtc(
+  year: number, month: number, day: number, hour: number, minute: number, timeZone: string,
+): Date {
+  const wallUtc = Date.UTC(year, month - 1, day, hour, minute, 0)
+  let guess = wallUtc
+  for (let i = 0; i < 2; i++) {
+    guess = wallUtc - tzOffsetMs(new Date(guess), timeZone)
+  }
+  return new Date(guess)
+}
+
+function tzOffsetMs(at: Date, timeZone: string): number {
+  const dtf = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+    hour12: false,
+  })
+  const p: Record<string, number> = {}
+  for (const part of dtf.formatToParts(at)) {
+    if (part.type !== 'literal') p[part.type] = Number.parseInt(part.value, 10)
+  }
+  // Intl uses hour "24" for midnight in some environments.
+  const asUtc = Date.UTC(p.year, p.month - 1, p.day, p.hour % 24, p.minute, p.second)
+  return asUtc - at.getTime()
+}
+
 interface WpConfig {
   connectionId: string
   status?: string
@@ -196,7 +236,12 @@ export class WordPressTarget implements OutputTarget {
     // Resolve topic row for category/tag IDs — select at publish time if not already set
     const jobRow = await prisma.articleJob.findFirst({
       where: { id: payload.jobId },
-      select: { topicId: true, topic: { select: { id: true, topic: true, wpCategoryId: true, wpTagIds: true } } },
+      select: {
+        topicId: true,
+        topic: {
+          select: { id: true, topic: true, wpCategoryId: true, wpTagIds: true, publishingDate: true, scheduledDate: true },
+        },
+      },
     })
     const topicRow = jobRow?.topic ?? null
     let topicCategory = topicRow?.wpCategoryId ?? null
@@ -333,8 +378,32 @@ export class WordPressTarget implements OutputTarget {
       wpReadyHtml += `\n<script type="application/ld+json">\n${payload.schemaJson.trim()}\n</script>`
     }
 
-    // 3. Create the WP post
-    const postStatus = status ?? conn.defaultStatus ?? 'draft'
+    // 3. Create the WP post — schedule by the article's NOMINAL date.
+    // Precedence: explicit config.status > nominal-date scheduling >
+    // conn.defaultStatus (legacy) > 'draft'. Scheduling: the topic's
+    // publishing/scheduled date at Settings.wpPublishTime in the clinic's
+    // socialTimezone — future dates become WP 'future' (auto-publish on the
+    // day), today/past publish immediately with the nominal date preserved.
+    const nominalDate = topicRow?.publishingDate ?? topicRow?.scheduledDate ?? null
+    let postStatus = status ?? conn.defaultStatus ?? 'draft'
+    let postDateGmt: string | undefined
+    if (!status && nominalDate) {
+      const userSettings = await prisma.settings.findUnique({
+        where: { userId: payload.userId },
+        select: { socialTimezone: true, wpPublishTime: true },
+      })
+      const tz = userSettings?.socialTimezone?.trim() || 'America/New_York'
+      const [hh, mm] = parsePublishTime(userSettings?.wpPublishTime)
+      const publishAt = zonedDateTimeToUtc(
+        nominalDate.getUTCFullYear(), nominalDate.getUTCMonth() + 1, nominalDate.getUTCDate(), hh, mm, tz,
+      )
+      postStatus = publishAt.getTime() > Date.now() ? 'future' : 'publish'
+      postDateGmt = publishAt.toISOString().replace(/\.\d{3}Z$/, '')
+      logger.info(
+        { jobId: payload.jobId, postStatus, postDateGmt, tz },
+        '[wordpress] scheduling post by nominal article date',
+      )
+    }
     const categories = categoryId
       ? [categoryId]
       : topicCategory != null
@@ -359,6 +428,7 @@ export class WordPressTarget implements OutputTarget {
       content: wpReadyHtml,
       excerpt: payload.excerpt,
       status: postStatus,
+      ...(postDateGmt ? { date_gmt: postDateGmt } : {}),
       ...(categories.length > 0 ? { categories } : {}),
       ...(topicTags.length > 0 ? { tags: topicTags } : {}),
       ...(author ? { author } : {}),

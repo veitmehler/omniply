@@ -548,6 +548,9 @@ model Settings {
   voiceoverSpeed                Float    @default(1.0)
   socialTimezone                String?  @default("America/New_York")
   socialAutomationEnabled       Boolean  @default(true)
+  // Time of day (HH:mm, clinic timezone = socialTimezone) WordPress posts go
+  // live when an approved article is scheduled by its nominal date.
+  wpPublishTime                 String   @default("09:00")
   // Standing preference (see .plans/client-story-review-mining.implementation-plan.md): when true,
   // a new billing cycle's content generates automatically once review-spidering completes for it.
   autoGenerateNextCycle         Boolean  @default(false)

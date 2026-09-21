@@ -96,7 +96,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { theme, sidebarState, defaultProvider, defaultModel, defaultImageProvider, defaultImageModel, defaultImageStyle, defaultImagePromptLlmProvider, defaultImagePromptLlmModel, writingStyle, telegramChatId, autoGenerateNextCycle } = body
+    const { theme, sidebarState, defaultProvider, defaultModel, defaultImageProvider, defaultImageModel, defaultImageStyle, defaultImagePromptLlmProvider, defaultImagePromptLlmModel, writingStyle, telegramChatId, autoGenerateNextCycle, wpPublishTime } = body
 
     console.log('Updating settings with:', {
       theme,
@@ -136,6 +136,9 @@ export async function PATCH(request: NextRequest) {
           writingStyle: writingStyle || null,
           telegramChatId: telegramChatId || null,
           autoGenerateNextCycle: Boolean(autoGenerateNextCycle),
+          ...(typeof wpPublishTime === 'string' && /^([01]?\d|2[0-3]):[0-5]\d$/.test(wpPublishTime)
+            ? { wpPublishTime }
+            : {}),
         },
       })
     } else {
@@ -155,6 +158,7 @@ export async function PATCH(request: NextRequest) {
         writingStyle?: string | null
         telegramChatId?: string | null
         autoGenerateNextCycle?: boolean
+        wpPublishTime?: string
       } = {
         lastLogin: new Date(),
       }
@@ -190,6 +194,9 @@ export async function PATCH(request: NextRequest) {
       }
       if (autoGenerateNextCycle !== undefined) {
         updateData.autoGenerateNextCycle = Boolean(autoGenerateNextCycle)
+      }
+      if (typeof wpPublishTime === 'string' && /^([01]?\d|2[0-3]):[0-5]\d$/.test(wpPublishTime)) {
+        updateData.wpPublishTime = wpPublishTime
       }
 
       console.log('Update data:', updateData)
