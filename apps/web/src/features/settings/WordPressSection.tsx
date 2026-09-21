@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { LinktreeDownloadButton } from './LinktreeDownloadButton'
 import { SpineCheckDownloadButton } from './SpineCheckDownloadButton'
 
-export function WordPressSection() {
+export function WordPressSection({ embedMode = false }: { embedMode?: boolean }) {
   return (
     <div className="rounded-lg border border-border bg-card p-6">
       <h2 className="text-xl font-semibold text-card-foreground mb-2">WordPress</h2>
@@ -15,12 +15,17 @@ export function WordPressSection() {
         link-in-bio page published automatically at <code className="text-xs">/linktree</code>.
       </p>
       <div className="flex flex-wrap gap-3">
-        <Button variant="outline" asChild>
-          <Link href="/settings/wordpress" className="inline-flex items-center gap-2">
-            <Globe className="h-4 w-4" />
-            Manage WordPress connections
-          </Link>
-        </Button>
+        {/* /settings/wordpress is a Clerk web page — never navigate the GHL
+            iframe there. Embedded clients get WP connected during onboarding;
+            changes go through support for now. */}
+        {!embedMode && (
+          <Button variant="outline" asChild>
+            <Link href="/settings/wordpress" className="inline-flex items-center gap-2">
+              <Globe className="h-4 w-4" />
+              Manage WordPress connections
+            </Link>
+          </Button>
+        )}
         <LinktreeDownloadButton />
         <SpineCheckDownloadButton />
       </div>

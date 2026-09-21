@@ -10,6 +10,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { ReviewApproveModal, type ReviewItem } from './ReviewApproveModal'
+import { isEmbedMode } from '@/lib/embedSession'
 import { TopicEditModal, type EditableTopic } from './TopicEditModal'
 import { SocialReviewModal } from './SocialReviewModal'
 import { NewsletterReviewModal } from './NewsletterReviewModal'
@@ -274,15 +275,30 @@ export function ContentPlan() {
     return (
       <div className="flex flex-col items-end gap-1">
         {assignedToMe ? (
-          <Link href={`/review/${a!.jobId}`} className="inline-flex items-center gap-1 rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground hover:bg-primary/90">
-            <Pencil className="h-3.5 w-3.5" /> Edit requested
-          </Link>
+          // In the GHL embed, /review is a Clerk web page the iframe must
+          // never navigate to — the EditRequestPickup banner above the plan
+          // is the embed's pickup surface for the same requests.
+          isEmbedMode() ? (
+            <span className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+              <Pencil className="h-3.5 w-3.5" /> Edit requested — see banner above
+            </span>
+          ) : (
+            <Link href={`/review/${a!.jobId}`} className="inline-flex items-center gap-1 rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground hover:bg-primary/90">
+              <Pencil className="h-3.5 w-3.5" /> Edit requested
+            </Link>
+          )
         ) : articleReady ? (
           <ReviewBtn kind="article" id={a!.jobId!} />
         ) : articleFlagged ? (
-          <Link href={`/workflow/${a!.jobId}/preview`} className="inline-flex items-center gap-1 text-xs font-medium text-amber-700 hover:underline">
-            <AlertTriangle className="h-3.5 w-3.5" /> Needs review
-          </Link>
+          isEmbedMode() ? (
+            <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700">
+              <AlertTriangle className="h-3.5 w-3.5" /> Being reviewed
+            </span>
+          ) : (
+            <Link href={`/workflow/${a!.jobId}/preview`} className="inline-flex items-center gap-1 text-xs font-medium text-amber-700 hover:underline">
+              <AlertTriangle className="h-3.5 w-3.5" /> Needs review
+            </Link>
+          )
         ) : null}
         {articleSocialReady && <SocialReviewBtn kind="article" id={a!.jobId!} title={a!.topic} />}
         {articleSocialGen && <SocialGeneratingChip />}
@@ -516,9 +532,15 @@ export function ContentPlan() {
               <div key={a.jobId} className="flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2">
                 <FileText className="h-4 w-4 text-muted-foreground" />
                 <span className="min-w-0 flex-1 truncate text-sm text-foreground">{a.title}</span>
-                <Link href={`/review/${a.jobId}`} className="inline-flex items-center gap-1 rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground hover:bg-primary/90">
-                  <Pencil className="h-3.5 w-3.5" /> Edit
-                </Link>
+                {isEmbedMode() ? (
+                  <span className="inline-flex items-center gap-1 text-xs font-medium text-primary">
+                    <Pencil className="h-3.5 w-3.5" /> See banner above
+                  </span>
+                ) : (
+                  <Link href={`/review/${a.jobId}`} className="inline-flex items-center gap-1 rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground hover:bg-primary/90">
+                    <Pencil className="h-3.5 w-3.5" /> Edit
+                  </Link>
+                )}
               </div>
             ))}
           </div>
@@ -533,7 +555,9 @@ export function ContentPlan() {
               <div key={f.jobId} className="flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2">
                 <AlertTriangle className="h-4 w-4 text-amber-600" />
                 <span className="min-w-0 flex-1 truncate text-sm text-foreground">{f.title}</span>
-                <Link href={`/workflow/${f.jobId}/preview`} className="text-xs font-medium text-amber-800 hover:underline">Review →</Link>
+                {!isEmbedMode() && (
+                  <Link href={`/workflow/${f.jobId}/preview`} className="text-xs font-medium text-amber-800 hover:underline">Review →</Link>
+                )}
               </div>
             ))}
           </div>

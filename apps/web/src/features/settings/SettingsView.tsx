@@ -63,7 +63,7 @@ export function SettingsView({ embedMode = false }: { embedMode?: boolean }) {
 
         <ArticleTypographySection settings={settings} />
 
-        <WordPressSection />
+        <WordPressSection embedMode={embedMode} />
 
         <ChatAssistantSection />
 
