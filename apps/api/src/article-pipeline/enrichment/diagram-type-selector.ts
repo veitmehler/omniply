@@ -13,7 +13,6 @@ const MAX_TOKENS = 40
 
 export const DIAGRAM_VALID_TYPES = [
   'flowchart',
-  'sequenceDiagram',
   'mindmap',
   'pie',
   'stateDiagram-v2',
@@ -23,8 +22,7 @@ export const DIAGRAM_VALID_TYPES = [
 export type MermaidDiagramType = typeof DIAGRAM_VALID_TYPES[number]
 
 const TYPE_GUIDANCE = `Available diagram types and when to use each:
-- flowchart: Processes, decision logic, cause-and-effect chains, step-by-step workflows
-- sequenceDiagram: Interactions between actors/entities, communication protocols, request/response flows
+- flowchart: Processes, decision logic, cause-and-effect chains, step-by-step workflows, interactions or handoffs between people/entities (ordered left-to-right)
 - mindmap: Concept relationships, topic breakdowns, brainstorming maps, category overviews
 - pie: Proportions, distributions, percentage breakdowns (only when section contains clear numeric data)
 - stateDiagram-v2: State transitions, lifecycle stages, condition changes, status workflows
@@ -128,7 +126,9 @@ function pickMatchingType(token: string): MermaidDiagramType | null {
     const tn = t.toLowerCase().replace(/[^a-z0-9]/g, '')
     if (compact === tn || token.toLowerCase() === t.toLowerCase()) return t
   }
-  if (token.includes('sequence')) return 'sequenceDiagram'
+  // sequenceDiagram was retired 2026-09-21 (restyles unreliably; content fit
+  // is really a process) — coerce any stray selection to flowchart.
+  if (token.includes('sequence')) return 'flowchart'
   if (token.includes('mindmap')) return 'mindmap'
   if (token.includes('pie')) return 'pie'
   if (token.includes('state')) return 'stateDiagram-v2'

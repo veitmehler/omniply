@@ -24,8 +24,6 @@ const MAX_SECTION_HTML = 3_000
 
 function typeInstructions(diagramType: string): string {
   switch (diagramType) {
-    case 'sequenceDiagram':
-      return 'Use `sequenceDiagram`. Include participant lines and arrows between actors.'
     case 'mindmap':
       return 'Use `mindmap`. Keep depth shallow (two levels preferred).'
     case 'timeline':
