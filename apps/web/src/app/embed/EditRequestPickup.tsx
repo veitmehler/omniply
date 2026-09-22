@@ -31,10 +31,13 @@ export function EditRequestPickup() {
   useEffect(loadTargets, [])
 
   // Re-check on modal close so the banner disappears the moment the last
-  // request is resolved — no page reload needed.
+  // request is resolved — no page reload needed. Also nudge the sibling
+  // ContentPlan to refetch its inbox (its "Edit requested" badge and the
+  // social-review state come from there).
   function closeAndRefresh() {
     setOpen(null)
     loadTargets()
+    window.dispatchEvent(new CustomEvent('omniply:refresh-inbox'))
   }
 
   if (targets.length === 0) return null

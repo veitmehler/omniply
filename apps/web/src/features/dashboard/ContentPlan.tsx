@@ -86,6 +86,14 @@ export function ContentPlan() {
   }, [])
   useEffect(() => { load() }, [load])
 
+  // Sibling surfaces (the embed's EditRequestPickup) signal here when their
+  // modal closes, so badges/buttons update without a page reload.
+  useEffect(() => {
+    const onRefresh = () => void load()
+    window.addEventListener('omniply:refresh-inbox', onRefresh)
+    return () => window.removeEventListener('omniply:refresh-inbox', onRefresh)
+  }, [load])
+
   async function loadIdeas() {
     const res = await fetch('/api/topics/ideas', { cache: 'no-store' })
     if (res.ok) setIdeas((await res.json()).ideas ?? [])
@@ -222,10 +230,9 @@ export function ContentPlan() {
     )
   }
 
-  // Same label/styling as ReviewBtn for visual consistency — a separate button
-  // (not folded into the same queue) only because it opens a different modal
-  // and unlocks on a separate timeline (after content approval), not because
-  // it should look different.
+  // Distinct label from ReviewBtn (user request 2026-09-22): after the
+  // article/newsletter itself is approved, the next step must READ as the
+  // next step — "Approve social posts" — not repeat "Review & Approve".
   function SocialReviewBtn({ kind, id, title }: { kind: 'article' | 'newsletter'; id: string; title: string }) {
     return (
       <button
@@ -233,7 +240,7 @@ export function ContentPlan() {
           ? setSocialReviewArticle({ jobId: id, title })
           : setSocialReviewNewsletter({ newsletterId: id, title })}
         className="inline-flex items-center gap-1 rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground hover:bg-primary/90">
-        <CheckCircle2 className="h-3.5 w-3.5" /> Review &amp; Approve
+        <CheckCircle2 className="h-3.5 w-3.5" /> Approve social posts
       </button>
     )
   }
