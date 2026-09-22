@@ -15,6 +15,7 @@ import { prisma, type ResolvedAccount } from '@omniply/shared'
 import { getBoss, QUEUES } from '../queues/index'
 import { logger } from '../lib/logger'
 import { sendTransactionalEmail } from '../lib/alerts'
+import { omniplyTabLink } from '../lib/omniply-link'
 import { resolveNewsletterTopicForDate } from '../newsletter/resolve'
 
 /** A generating item older than this (no completion) is presumed dead → failed. */
@@ -296,15 +297,18 @@ async function sendBatchReadyEmail(userId: string, ready: number, flagged: numbe
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true, name: true } })
   if (!user?.email) return
 
-  const base = process.env.APP_BASE_URL ?? 'https://chiro.omniply.io'
   const lines = [`${ready} item(s) are ready for you to review and approve.`]
   if (flagged) lines.push(`${flagged} need a closer look (flagged by the quality check).`)
   if (failed) lines.push(`${failed} failed to generate.`)
 
+  // One-click into the Omniply tab (GHL clients have no login on our app —
+  // the old /dashboard link was a dead end for them).
+  const { href, label } = await omniplyTabLink(userId)
+
   await sendTransactionalEmail({
     to: user.email,
     subject: `Your content is ready to review (${ready} ready${flagged ? `, ${flagged} flagged` : ''})`,
-    html: `<p>Hi ${user.name ?? 'there'},</p><p>${lines.join('<br/>')}</p><p><a href="${base}/dashboard">Review &amp; approve on your dashboard →</a></p>`,
-    text: `Hi ${user.name ?? 'there'},\n\n${lines.join('\n')}\n\nReview & approve on your dashboard: ${base}/dashboard`,
+    html: `<p>Hi ${user.name ?? 'there'},</p><p>${lines.join('<br/>')}</p><p><a href="${href}">${label} — review &amp; approve →</a></p>`,
+    text: `Hi ${user.name ?? 'there'},\n\n${lines.join('\n')}\n\n${label} — review & approve: ${href}`,
   }).catch(() => {})
 }

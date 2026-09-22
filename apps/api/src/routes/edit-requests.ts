@@ -4,6 +4,7 @@ import { prisma } from '@omniply/shared'
 import { requireAccount } from '../middleware/account'
 import { sendTransactionalEmail } from '../lib/alerts'
 import { logger } from '../lib/logger'
+import { omniplyTabLink } from '../lib/omniply-link'
 
 interface NewRequest {
   quotedText: string
@@ -12,28 +13,12 @@ interface NewRequest {
   note: string
 }
 
-function baseUrl(): string {
-  return process.env.APP_BASE_URL ?? 'https://chiro.omniply.io'
-}
-
 /**
- * Where a notification should send the person: GHL-embedded accounts live in
- * their CRM (white-label domain), never on our app (they have no Clerk login
- * there). Fallback = the app for open-web accounts.
+ * Where a notification should send the person: GHL-embedded accounts deep-
+ * link straight to the Omniply tab in their CRM (shared helper); fallback =
+ * the app dashboard for open-web accounts.
  */
-async function notificationLink(accountOwnerUserId: string): Promise<{ href: string; label: string }> {
-  const gs = await prisma.ghlSettings.findFirst({
-    where: { userId: accountOwnerUserId },
-    select: { ghlLocationId: true },
-  })
-  if (gs?.ghlLocationId) {
-    return {
-      href: `https://crm.omniply.io/v2/location/${gs.ghlLocationId}/`,
-      label: 'Open your CRM, then open Omniply from the sidebar',
-    }
-  }
-  return { href: `${baseUrl()}/dashboard`, label: 'Open your dashboard' }
-}
+const notificationLink = omniplyTabLink
 
 /** Resolve an edit-request target (article or newsletter) scoped to the account. */
 async function resolveTarget(
