@@ -10,7 +10,9 @@
 import { useEffect, useState } from 'react'
 import { TOKENS } from './Marketing'
 
-const LAUNCH_TS = Date.parse('2026-09-22T14:00:00Z')
+// Gate held closed until the demo video is ready (launch extended past
+// 2026-09-22) — set the real opening timestamp here when it's locked in.
+const LAUNCH_TS = Date.parse('2099-01-01T00:00:00Z')
 const JOINED_KEY = 'omniply-founding-joined'
 const LEAD_KEY = 'omniply-xray-v1'
 
@@ -72,7 +74,7 @@ export function FoundingNotify() {
       style={{ background: `linear-gradient(180deg, ${TOKENS.ink}, ${TOKENS.inkDeep})`, color: '#fff' }}
     >
       <div className="text-center text-3xl font-bold md:text-4xl" style={{ color: TOKENS.lime }}>
-        Omniply opens September&nbsp;22
+        Omniply is opening soon
       </div>
       <p className="text-center text-[18px] leading-relaxed md:text-[20px]" style={{ padding: '30px 0', color: '#fff' }}>
         {PITCH}
