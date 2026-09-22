@@ -150,6 +150,23 @@ function buildWordPressCitationsHtml(payload: OutputPayload): string {
 
 // ── WordPressTarget ────────────────────────────────────────────────────────
 
+/**
+ * Disclaimer footer as per-paragraph styled <p> tags. A single <p> holding
+ * multi-paragraph text gets split apart by WordPress's wpautop filter — the
+ * first chunk kept our inline style, the rest rendered at theme default
+ * (seen live 2026-09-22). Wrapping every paragraph ourselves leaves wpautop
+ * nothing to rewrite.
+ */
+export function wpDisclaimerHtml(text: string): string {
+  const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  return text
+    .split(/\n{2,}/)
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .map((p) => `<p style="font-size:0.85em;color:#64748b;margin:0 0 0.75em;"><em>${esc(p).replace(/\n/g, '<br />')}</em></p>`)
+    .join('\n')
+}
+
 /** Parse "HH:mm" (Settings.wpPublishTime), falling back to 9:00 on anything malformed. */
 export function parsePublishTime(raw: string | null | undefined): [number, number] {
   const m = /^([01]?\d|2[0-3]):([0-5]\d)$/.exec((raw ?? '').trim())
@@ -366,12 +383,15 @@ export class WordPressTarget implements OutputTarget {
     // health content; publisher disclosure for B2B) but previously rendered
     // only by the html target, never on WordPress. Escaped as text.
     if (payload.disclaimer?.trim()) {
-      const esc = payload.disclaimer
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-      wpReadyHtml += `\n<hr />\n<p style="font-size:0.85em;color:#64748b;"><em>${esc}</em></p>`
+      wpReadyHtml += `\n<hr />\n${wpDisclaimerHtml(payload.disclaimer)}`
     }
+
+    // Clinic themes know nothing about our .article-toc class — carry the
+    // spacing inline so the ToC never sits flush against the first section.
+    wpReadyHtml = wpReadyHtml.replace(
+      '<nav class="article-toc"',
+      '<nav class="article-toc" style="margin:0 0 1.5em;"',
+    )
 
     // Append JSON-LD schema markup so it is published with the post regardless of plugin.
     if (payload.schemaJson?.trim()) {

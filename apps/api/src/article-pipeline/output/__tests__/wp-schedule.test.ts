@@ -44,3 +44,20 @@ describe('zonedDateTimeToUtc', () => {
     expect(d.toISOString()).toBe('2026-09-22T09:00:00.000Z')
   })
 })
+
+describe('wpDisclaimerHtml', () => {
+  it('wraps each paragraph in its own styled <p> so wpautop cannot split styling', async () => {
+    const { wpDisclaimerHtml } = await import('../wordpress-target')
+    const html = wpDisclaimerHtml('First paragraph.\n\nSecond paragraph.\n\nThird paragraph.')
+    const paras = html.match(/<p style="font-size:0\.85em/g) ?? []
+    expect(paras).toHaveLength(3)
+    expect(html).not.toMatch(/\n\n/)
+    expect(html).toContain('<em>First paragraph.</em>')
+  })
+
+  it('escapes HTML and converts single newlines to <br />', async () => {
+    const { wpDisclaimerHtml } = await import('../wordpress-target')
+    const html = wpDisclaimerHtml('a <b> & c\nnext line')
+    expect(html).toContain('a &lt;b&gt; &amp; c<br />next line')
+  })
+})

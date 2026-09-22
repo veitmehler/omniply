@@ -4,6 +4,9 @@ import { requireAuth } from '../middleware/auth'
 import { encrypt, decrypt } from '@omniply/shared'
 import { assertSafeWpUrl } from '../lib/ssrf'
 import { installOmniplyConnect } from '../lib/omniply-connect'
+import { bootstrapWpTaxonomy } from '../lib/wp-taxonomy'
+import { verticalForUser } from '../lib/prompt-resolver'
+import { logger } from '../lib/logger'
 
 // ── WP REST helpers ────────────────────────────────────────────────────────
 
@@ -202,6 +205,12 @@ export async function wpConnectionRoutes(app: FastifyInstance) {
     // Omniply Connect plugin install + widget/head config — best-effort in
     // the background, logs its own failures, never delays the response.
     void installOmniplyConnect(user.id).catch(() => {})
+
+    // Seed categories/tags so publish-time selection has real choices
+    // (fire-and-forget — a taxonomy hiccup must not fail the connect).
+    void verticalForUser(user.id)
+      .then((vertical) => bootstrapWpTaxonomy({ siteUrl: conn.siteUrl, authHeader: auth, vertical }))
+      .catch((err) => logger.warn({ err, siteUrl: conn.siteUrl }, '[wp-connections] taxonomy bootstrap failed'))
 
     return reply.status(201).send({
       connection: conn,

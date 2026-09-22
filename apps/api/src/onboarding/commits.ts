@@ -6,6 +6,8 @@ import { relativeLuminance, darkenHex, lightenHex } from '../article-pipeline/en
 import { pickBrandLogoForBackground } from '../newsletter/logo-process'
 import { prisma, encrypt, ghlSettingsForUser, brandSettingsForUser } from '@omniply/shared'
 import { logger } from '../lib/logger'
+import { bootstrapWpTaxonomy } from '../lib/wp-taxonomy'
+import { verticalForUser } from '../lib/prompt-resolver'
 import { getBoss, QUEUES } from '../queues/index'
 import { getSystemApiKey } from '../lib/system-keys'
 import { generateDiagramStyleGuideFromWebsite } from './diagram-style-gen'
@@ -571,6 +573,12 @@ export async function commitWordpress(ctx: StepContext, answer: unknown): Promis
     update: { username, appPassword: encrypt(appPassword) },
   })
   ctx.stepData.wordpressConnected = true
+  // Seed the site's categories/tags so publish-time selection has real
+  // choices (fire-and-forget — a taxonomy hiccup must not fail onboarding).
+  const taxonomyAuth = `Basic ${Buffer.from(`${username}:${appPassword}`).toString('base64')}`
+  void verticalForUser(ctx.userId)
+    .then((vertical) => bootstrapWpTaxonomy({ siteUrl: base, authHeader: taxonomyAuth, vertical }))
+    .catch((err) => logger.warn({ err, siteUrl: base }, '[onboarding] WP taxonomy bootstrap failed'))
   return null
 }
 
