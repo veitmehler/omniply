@@ -34,7 +34,9 @@ export async function fetchWpCategories(
     return []
   }
   const rows = (await catRes.json()) as Array<{ id: number; name: string; slug: string }>
-  return rows.map((c) => ({ id: c.id, name: c.name, slug: c.slug }))
+  // "Uncategorized" (WP default, id 1) is a non-choice — offering it lets the
+  // LLM pick it over real categories on ambiguous topics.
+  return rows.filter((c) => c.id !== 1).map((c) => ({ id: c.id, name: c.name, slug: c.slug }))
 }
 
 export async function selectWordPressCategory(opts: {

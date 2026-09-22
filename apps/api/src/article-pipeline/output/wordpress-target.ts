@@ -261,7 +261,10 @@ export class WordPressTarget implements OutputTarget {
       },
     })
     const topicRow = jobRow?.topic ?? null
-    let topicCategory = topicRow?.wpCategoryId ?? null
+    // A cached "Uncategorized" (WP's default, id 1) is NOT a real selection —
+    // it just means the site had no categories at the earlier export (found
+    // live 2026-09-23 after the taxonomy bootstrap). Re-select in that case.
+    let topicCategory = topicRow?.wpCategoryId && topicRow.wpCategoryId !== 1 ? topicRow.wpCategoryId : null
     let topicTags = topicRow?.wpTagIds ?? []
 
     const sitePage = await prisma.sitePage.findUnique({
