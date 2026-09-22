@@ -13,7 +13,13 @@ async function dispatchReadyPost(post: Post, logCtx: AutomationLogContext): Prom
   const videoUrl = post.videoUrl ?? undefined
   const scheduledAt = post.scheduledAt ?? new Date()
 
-  if (!videoUrl && !imageUrl && !mediaUrls?.length) {
+  // Story beats (engagement v2) are text-only ON PURPOSE off-Instagram:
+  // IG gets the slide carousel, LinkedIn/Facebook publish the story as a
+  // pure text post (mirror of the creation rule in schedule-posts.ts).
+  // The old unconditional media guard failed every one of them with
+  // "No media attached" (found live 2026-09-23).
+  const textOnlyStory = post.postType === 'story_text' && post.platform !== 'instagram'
+  if (!videoUrl && !imageUrl && !mediaUrls?.length && !textOnlyStory) {
     await prisma.post.update({
       where: { id: post.id },
       data: { status: 'failed', errorMsg: 'No media attached' },
