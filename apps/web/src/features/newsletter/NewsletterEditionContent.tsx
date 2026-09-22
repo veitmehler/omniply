@@ -193,6 +193,17 @@ export function NewsletterEditionContent({ newsletterId }: { newsletterId: strin
   const [bridgeReady, setBridgeReady] = useState(false)
   const dirtyCount = Object.keys(dirty).length
 
+  // Autosave (parity with the article modal, 2026-09-22): refs mirror the
+  // latest dirty map + edition so debounced/unmount flushes read fresh state.
+  const dirtyRef = useRef<Record<string, DirtyEdit>>({})
+  const nlRef = useRef<Newsletter | null>(null)
+  const savingRef = useRef(false)
+  const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => { dirtyRef.current = dirty }, [dirty])
+  useEffect(() => { nlRef.current = nl }, [nl])
+  // Floating navigator through open edit requests.
+  const [navIdx, setNavIdx] = useState(0)
+
   async function loadEditPreview() {
     try {
       const res = await fetch(`/api/newsletters/${newsletterId}/edit-preview`, { cache: 'no-store' })
@@ -224,6 +235,7 @@ export function NewsletterEditionContent({ newsletterId }: { newsletterId: strin
       const d = e.data ?? {}
       if (d.type === 'nl-edit' && typeof d.section === 'string') {
         setDirty((prev) => ({ ...prev, [d.section]: { html: String(d.html ?? ''), text: String(d.text ?? '') } }))
+        scheduleAutosave()
       } else if (d.type === 'nl-selection' && requestMode) {
         setSelDraft({ quotedText: d.quotedText ?? '', prefixContext: d.prefixContext ?? '', suffixContext: d.suffixContext ?? '' })
       } else if (d.type === 'nl-ready') {
@@ -235,6 +247,8 @@ export function NewsletterEditionContent({ newsletterId }: { newsletterId: strin
     }
     window.addEventListener('message', onMessage)
     return () => window.removeEventListener('message', onMessage)
+    // scheduleAutosave only touches refs — stable across renders.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [requestMode, requests])
 
   const [controlsOpen, setControlsOpen] = useState(true)
@@ -266,7 +280,71 @@ export function NewsletterEditionContent({ newsletterId }: { newsletterId: strin
     await patchEdition({}, 'Saved — preview updated.')
   }
 
+  function scheduleAutosave() {
+    if (autosaveTimer.current) clearTimeout(autosaveTimer.current)
+    autosaveTimer.current = setTimeout(() => {
+      autosaveTimer.current = null
+      void autosaveFlush()
+    }, 2000)
+  }
+
+  /**
+   * Background flush of dirty WYSIWYG sections. Unlike a manual save it does
+   * NOT reload the edit iframe (that re-render would steal the caret while
+   * the user is typing — and the iframe already shows exactly what was
+   * saved), and it only clears dirty entries unchanged since the snapshot so
+   * keystrokes landing mid-request are never lost.
+   */
+  async function autosaveFlush() {
+    const edition = nlRef.current
+    const snap = dirtyRef.current
+    if (!edition || Object.keys(snap).length === 0) return
+    if (savingRef.current) { scheduleAutosave(); return }
+    savingRef.current = true
+    try {
+      const merged = buildSectionPatch(snap, edition as unknown as Record<string, unknown>)
+      const res = await fetch(`/api/newsletters/${newsletterId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(merged),
+      })
+      if (!res.ok) return // stays dirty; the visible hint and manual Save remain
+      const data = await res.json().catch(() => ({}))
+      if (data.newsletter) setNl(data.newsletter)
+      setDirty((prev) => {
+        const next = { ...prev }
+        for (const k of Object.keys(snap)) if (prev[k] === snap[k]) delete next[k]
+        return next
+      })
+      setNotice('Saved automatically.')
+    } catch {
+      /* stays dirty — retried on the next edit or manual Save */
+    } finally {
+      savingRef.current = false
+    }
+  }
+
+  // Flush on unmount (modal close / navigation): keepalive lets the PATCH
+  // finish even as the page goes away.
+  useEffect(() => () => {
+    if (autosaveTimer.current) clearTimeout(autosaveTimer.current)
+    const snap = dirtyRef.current
+    const edition = nlRef.current
+    if (edition && Object.keys(snap).length > 0) {
+      const merged = buildSectionPatch(snap, edition as unknown as Record<string, unknown>)
+      void fetch(`/api/newsletters/${newsletterId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(merged),
+        keepalive: true,
+      }).catch(() => null)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   async function setRequestStatus(id: string, status: 'resolved' | 'open') {
+    // Resolving a request is a natural checkpoint — flush content edits first.
+    if (Object.keys(dirtyRef.current).length > 0) await autosaveFlush()
     await fetch(`/api/edit-requests/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -361,6 +439,27 @@ export function NewsletterEditionContent({ newsletterId }: { newsletterId: strin
 
   const completion = nl.validation?.completionPercentage
   const missing = nl.validation?.missing ?? []
+
+  // Floating navigator: jump/resolve open requests without scrolling back to
+  // the list in the controls column (parity with the article modal).
+  const openList = requests.filter((r) => r.status === 'open')
+  const navCurrent = openList.length > 0 ? openList[Math.min(navIdx, openList.length - 1)] : null
+
+  function navJump(offset: number) {
+    if (openList.length === 0) return
+    const next = (Math.min(navIdx, openList.length - 1) + offset + openList.length) % openList.length
+    setNavIdx(next)
+    scrollToPin(openList[next].quotedText)
+  }
+
+  async function navMarkDone() {
+    if (!navCurrent) return
+    await setRequestStatus(navCurrent.id, 'resolved')
+    if (openList.length > 1) {
+      const next = openList.filter((r) => r.id !== navCurrent.id)[Math.min(navIdx, openList.length - 2)]
+      if (next) scrollToPin(next.quotedText)
+    }
+  }
 
   return (
     <div>
@@ -560,7 +659,45 @@ export function NewsletterEditionContent({ newsletterId }: { newsletterId: strin
         </div>
 
         {/* Preview — editable in place when ready_for_review (review WYSIWYG) */}
-        <div className="flex flex-col rounded-xl border border-border bg-card p-2">
+        <div className="relative flex flex-col rounded-xl border border-border bg-card p-2">
+          {editable && !requestMode && navCurrent && (
+            <div className="pointer-events-none absolute inset-x-0 bottom-4 z-10 flex justify-center px-6">
+              <div className="pointer-events-auto flex max-w-full items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 shadow-lg">
+                <button
+                  onClick={() => navJump(-1)}
+                  disabled={openList.length < 2}
+                  className="rounded-full px-1.5 py-0.5 text-sm text-muted-foreground hover:bg-muted disabled:opacity-40"
+                  aria-label="Previous edit request"
+                >
+                  ←
+                </button>
+                <span className="whitespace-nowrap text-xs font-medium text-muted-foreground">
+                  Edit {Math.min(navIdx, openList.length - 1) + 1}/{openList.length}
+                </span>
+                <button
+                  onClick={() => scrollToPin(navCurrent.quotedText)}
+                  className="max-w-[16rem] truncate text-xs italic text-foreground underline decoration-dotted underline-offset-2 hover:text-primary"
+                  title={`${navCurrent.note} — “${navCurrent.quotedText}”`}
+                >
+                  “{navCurrent.quotedText}”
+                </button>
+                <button
+                  onClick={() => void navMarkDone()}
+                  className="rounded-full bg-primary px-2.5 py-0.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+                >
+                  Mark done
+                </button>
+                <button
+                  onClick={() => navJump(1)}
+                  disabled={openList.length < 2}
+                  className="rounded-full px-1.5 py-0.5 text-sm text-muted-foreground hover:bg-muted disabled:opacity-40"
+                  aria-label="Next edit request"
+                >
+                  →
+                </button>
+              </div>
+            </div>
+          )}
           {editable && (
             <div className="mb-2 flex items-center justify-between gap-2 px-1">
               <span className="text-xs text-muted-foreground">
