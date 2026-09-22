@@ -60,3 +60,32 @@ describe('buildDarkDiagramInitDirective', () => {
     expect(init.themeVariables.background).toBe(DIAGRAM_DARK_BACKGROUND)
   })
 })
+
+describe('brand section scales (mindmap cScale / pie palettes)', () => {
+  it('seeds cScale0/1 with the exact brand primary/secondary', () => {
+    const theme = themeFromBrand({ diagramPrimaryColor: '#3AA6B9', diagramSecondaryColor: '#238191' })
+    const { themeVariables } = parseInit(buildDiagramInitDirective(theme))
+    expect(themeVariables.cScale0).toBe('#3AA6B9')
+    expect(themeVariables.cScale1).toBe('#238191')
+    expect(themeVariables.pie1).toBe('#3AA6B9')
+    expect(themeVariables.pie2).toBe('#238191')
+  })
+
+  it('fills all 12 slots with WCAG-paired labels', () => {
+    const theme = themeFromBrand({ diagramPrimaryColor: '#3AA6B9', diagramSecondaryColor: '#238191' })
+    const { themeVariables } = parseInit(buildDiagramInitDirective(theme))
+    for (let i = 0; i < 12; i++) {
+      expect(themeVariables[`cScale${i}`]).toMatch(/^#[0-9A-F]{6}$/i)
+      expect(['#000000', '#FFFFFF']).toContain(themeVariables[`cScaleLabel${i}`])
+      expect(themeVariables[`pie${i + 1}`]).toBe(themeVariables[`cScale${i}`])
+    }
+  })
+
+  it('dark directive builds the ramp from the lightened brand fills', () => {
+    const theme = themeFromBrand({ diagramPrimaryColor: '#3AA6B9', diagramSecondaryColor: '#238191' })
+    const { themeVariables } = parseInit(buildDarkDiagramInitDirective(theme))
+    // cScale0 = lightened primary — must equal the dark variant's primaryColor.
+    expect(themeVariables.cScale0).toBe(themeVariables.primaryColor)
+    expect(themeVariables.cScale1).toBe(themeVariables.secondaryColor)
+  })
+})

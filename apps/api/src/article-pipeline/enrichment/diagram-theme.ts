@@ -71,6 +71,10 @@ export function buildDiagramInitDirective(theme: DiagramTheme): string {
       textColor: LIGHT_AMBIENT_TEXT,
       classText: primaryTextColor,
       fontFamily: theme.fontFamily,
+      // Mindmap branches (cScale0-11) and pie slices (pie1-12) theme from
+      // their OWN palettes — without these, `theme: base` hue-rotates the
+      // primary into off-brand navy/purple sections (seen live 2026-09-22).
+      ...brandSectionScales(theme.primaryColor, theme.secondaryColor),
     },
     flowchart: { htmlLabels: false },
     sequence: { htmlLabels: false },
@@ -107,6 +111,9 @@ export function buildDarkDiagramInitDirective(theme: DiagramTheme): string {
       classText: primaryTextColor,
       background: DIAGRAM_DARK_BACKGROUND,
       fontFamily: theme.fontFamily,
+      // Brand section palette for mindmap/pie — built from the lightened
+      // fills so sections stay legible on the dark canvas.
+      ...brandSectionScales(lightPrimary, lightSecondary),
     },
     flowchart: { htmlLabels: false },
     sequence: { htmlLabels: false },
@@ -115,6 +122,31 @@ export function buildDarkDiagramInitDirective(theme: DiagramTheme): string {
   }
 
   return `%%{init: ${JSON.stringify(initObj)}}%%`
+}
+
+/**
+ * 12-slot section palette (mindmap `cScale0-11` + labels, pie `pie1-12`) as a
+ * brand ramp: alternate the two brand colors at increasing tonal steps so
+ * adjacent branches stay distinguishable but everything reads as the brand.
+ * Labels are WCAG-paired per fill, same rule as the node text colors.
+ */
+function brandSectionScales(c1: string, c2: string): Record<string, string> {
+  const steps: Array<(h: string) => string> = [
+    (h) => h,
+    (h) => lightenHex(h, 15),
+    (h) => darkenHex(h, 15),
+    (h) => lightenHex(h, 30),
+    (h) => darkenHex(h, 30),
+    (h) => lightenHex(h, 45),
+  ]
+  const vars: Record<string, string> = {}
+  for (let i = 0; i < 12; i++) {
+    const fill = steps[Math.floor(i / 2)](i % 2 === 0 ? c1 : c2)
+    vars[`cScale${i}`] = fill
+    vars[`cScaleLabel${i}`] = pickContrastingText(fill)
+    vars[`pie${i + 1}`] = fill
+  }
+  return vars
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
