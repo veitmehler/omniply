@@ -126,7 +126,11 @@ export async function generateStorySlidesAsset(opts: {
   const jobId = opts.jobId ?? genId
 
   const tintBase = opts.tintColor ?? brand.primaryColor
-  const tint = opts.forceTextMode ? forcedTintScheme(tintBase, opts.forceTextMode) : tintScheme(tintBase)
+  // Text mode: per-post override > brand preset (Settings / "use for all
+  // future posts") > luminance auto-pick.
+  const presetMode = brand.storyTextMode !== 'auto' ? brand.storyTextMode : undefined
+  const textMode = opts.forceTextMode ?? presetMode
+  const tint = textMode ? forcedTintScheme(tintBase, textMode) : tintScheme(tintBase)
   const tintLogoBuffer = await loadTintLogo(brand, tint.logoVariant)
   const arrowBuffer = await loadContinuationArrow(tint.logoVariant)
   const logoBuffer = await loadLogoBuffer(brand.logoUrl)

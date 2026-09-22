@@ -230,6 +230,12 @@ export async function PATCH(request: NextRequest) {
       data.organizationCountryCode = code.length === 2 ? code : null
     }
 
+    // storyTextMode must be 'auto' | 'light' | 'dark' (non-nullable, default auto)
+    if ('storyTextMode' in body) {
+      const m = String(body.storyTextMode ?? '')
+      data.storyTextMode = m === 'light' || m === 'dark' ? m : 'auto'
+    }
+
     // hemisphereOverride must be 'north' | 'south' | null
     if (data.hemisphereOverride != null && typeof data.hemisphereOverride === 'string') {
       data.hemisphereOverride =

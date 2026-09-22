@@ -27,6 +27,8 @@ export interface SocialBrandTheme {
    */
   logoLightUrl: string | null
   logoDarkUrl: string | null
+  /** Brand-wide story-slide text preset: 'auto' = luminance pick per post. */
+  storyTextMode: 'auto' | 'light' | 'dark'
   /** Client-specific instructions injected into the Fal.ai video reel prompt (e.g. style, restrictions). */
   videoSpecialInstructions: string
   /**
@@ -130,6 +132,8 @@ export async function loadSocialBrandTheme(userId: string): Promise<SocialBrandT
     logoUrl: brand?.socialLogoUrl ?? brand?.organizationLogoUrl ?? null,
     logoLightUrl: brand?.nlLogoLightUrl ?? brand?.diagramLogoLightUrl ?? null,
     logoDarkUrl: brand?.nlLogoDarkUrl ?? brand?.diagramLogoDarkUrl ?? null,
+    storyTextMode:
+      brand?.storyTextMode === 'light' || brand?.storyTextMode === 'dark' ? brand.storyTextMode : 'auto',
     videoSpecialInstructions: brand?.videoSpecialInstructions?.trim() ?? '',
     socialCallToAction: resolveSocialCta(brand?.socialPrimaryGoal, brand?.socialCallToAction?.trim() ?? ''),
     socialBioUrl: brand?.socialBioUrl?.trim() ?? '',

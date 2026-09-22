@@ -322,6 +322,28 @@ function StorySlideEditor({
                 {busy === `mode-${m}` ? '…' : m === 'light' ? 'Light' : 'Dark'}
               </button>
             ))}
+            {mode && (
+              <button
+                onClick={() => {
+                  setBusy('preset')
+                  void fetch('/api/brand-settings', {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ storyTextMode: mode }),
+                  })
+                    .then((res) => {
+                      if (res.ok) toast.success(`${mode === 'light' ? 'Light' : 'Dark'} text is now the default for future posts.`)
+                      else toast.error('Could not save the preset')
+                    })
+                    .finally(() => setBusy(null))
+                }}
+                disabled={busy !== null}
+                className="rounded border border-dashed border-primary/50 px-2 py-0.5 text-[11px] text-primary hover:bg-primary/10"
+                title="Every future story post starts with this text color (change in Settings → Social posts)"
+              >
+                {busy === 'preset' ? '…' : 'Use for all future posts'}
+              </button>
+            )}
           </>
         )}
         <button

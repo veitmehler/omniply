@@ -1,8 +1,79 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { Save, Loader2, X, Upload, Building2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { toast } from 'sonner'
 import type { SettingsData } from './useSettingsData'
+
+/** Self-contained story text-color preset (auto/light/dark) — saves on change. */
+function StoryTextModeControl() {
+  const [mode, setMode] = useState<'auto' | 'light' | 'dark'>('auto')
+  const [busy, setBusy] = useState(false)
+
+  useEffect(() => {
+    fetch('/api/brand-settings', { cache: 'no-store' })
+      .then(async (res) => {
+        if (!res.ok) return
+        const b = await res.json()
+        const m = b?.brandSettings?.storyTextMode ?? b?.storyTextMode
+        if (m === 'light' || m === 'dark') setMode(m)
+      })
+      .catch(() => {})
+  }, [])
+
+  async function save(next: 'auto' | 'light' | 'dark') {
+    const prev = mode
+    setMode(next)
+    setBusy(true)
+    try {
+      const res = await fetch('/api/brand-settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ storyTextMode: next }),
+      })
+      if (!res.ok) {
+        setMode(prev)
+        toast.error('Could not save the text color preset')
+        return
+      }
+      toast.success(
+        next === 'auto'
+          ? 'Story text color picked automatically per post.'
+          : `Future story posts start with ${next} text.`,
+      )
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div>
+      <label className="block text-sm font-medium text-card-foreground mb-1">Story slide text color</label>
+      <p className="text-xs text-muted-foreground mb-2">
+        The default text color on tinted story slides. Auto picks per post based on your brand color;
+        you can still change any single post while reviewing it.
+      </p>
+      <div className="flex gap-1.5">
+        {(['auto', 'light', 'dark'] as const).map((m) => (
+          <button
+            key={m}
+            type="button"
+            onClick={() => m !== mode && void save(m)}
+            disabled={busy}
+            className={`rounded-md border px-3 py-1.5 text-sm capitalize ${
+              mode === m
+                ? 'border-primary bg-primary/10 text-primary'
+                : 'border-border text-muted-foreground hover:bg-muted'
+            }`}
+          >
+            {m === 'light' ? 'Light (white)' : m === 'dark' ? 'Dark' : 'Auto'}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
 
 // Social-post branding (quote-card avatar, account name, CTA, video
 // instructions). Saves through the same brand-settings payload as the
@@ -264,6 +335,8 @@ export function SocialPostsSection({ settings }: { settings: SettingsData }) {
             className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 resize-y"
           />
         </div>
+
+        <StoryTextModeControl />
 
         {/* Save */}
         <div className="flex justify-end pt-2">
