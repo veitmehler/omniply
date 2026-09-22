@@ -35,11 +35,14 @@ interface EditableAssets {
 
 export async function recomposeStorySlot(
   specResultId: string,
-  userId: string,
+  memberUserIds: string[],
   patch: RecomposeOverrides & { regenerateImage?: number },
 ): Promise<{ mediaUrls: string[] } | { error: string; status: number }> {
+  // Explicit member scoping: the account extension broadens only TOP-LEVEL
+  // where.userId — a nested run.userId filter is never rewritten, which
+  // 404'd every teammate edit (found live 2026-09-22).
   const spec = await prisma.socialAutomationSpecResult.findFirst({
-    where: { id: specResultId, run: { userId } }, // account extension broadens
+    where: { id: specResultId, run: { userId: { in: memberUserIds } } },
     include: { run: { select: { id: true, userId: true } } },
   })
   if (!spec) return { error: 'Post not found', status: 404 }

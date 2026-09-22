@@ -33,7 +33,7 @@ export async function socialAutomationRoutes(app: FastifyInstance) {
         }
       }
       if (typeof body.regenerateImage === 'number') patch.regenerateImage = body.regenerateImage
-      const result = await recomposeStorySlot(request.params.id, account.userId, patch)
+      const result = await recomposeStorySlot(request.params.id, account.memberUserIds, patch)
       if ('error' in result) return reply.status(result.status).send({ error: result.error })
       return reply.send(result)
     },
@@ -58,8 +58,10 @@ export async function socialAutomationRoutes(app: FastifyInstance) {
       // must not reintroduce the banned em-dash tell.
       const caption = rawCaption.slice(0, 5000).replace(/\s*—\s*/g, ', ')
 
+      // Nested run.userId is NOT broadened by the account extension (it only
+      // rewrites top-level where.userId) — scope members explicitly.
       const spec = await prisma.socialAutomationSpecResult.findFirst({
-        where: { id: request.params.id, run: { userId: account.userId } },
+        where: { id: request.params.id, run: { userId: { in: account.memberUserIds } } },
         include: { run: { select: { userId: true } } },
       })
       if (!spec) return reply.status(404).send({ error: 'Post not found' })
