@@ -838,19 +838,59 @@ const EDIT_BRIDGE_SCRIPT = `<style>
     var a = e.target && e.target.closest ? e.target.closest('a') : null;
     if (a) e.preventDefault();
   }, true);
+  // Full text + node map from the SAME textContent walk used everywhere —
+  // offsets from innerText never lined up with node positions.
+  function collectText() {
+    var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    var full = '', nodes = [], n;
+    while ((n = walker.nextNode())) { nodes.push({ node: n, start: full.length }); full += (n.nodeValue || ''); }
+    return { full: full, nodes: nodes };
+  }
+  // Context-aware occurrence search (fix 2026-09-23: a bare word matched its
+  // FIRST occurrence — three one-word requests all pinned the trivia line).
+  function locateIdx(full, q, p, s) {
+    p = p || ''; s = s || '';
+    var i;
+    if (p && s) { i = full.indexOf(p + q + s); if (i >= 0) return { idx: i + p.length, len: q.length }; }
+    if (p) { i = full.indexOf(p + q); if (i >= 0) return { idx: i + p.length, len: q.length }; }
+    if (s) { i = full.indexOf(q + s); if (i >= 0) return { idx: i, len: q.length }; }
+    i = full.indexOf(q); if (i >= 0) return { idx: i, len: q.length };
+    var probe = q.slice(0, 40);
+    if (probe && probe.length < q.length) { i = full.indexOf(probe); if (i >= 0) return { idx: i, len: probe.length }; }
+    return null;
+  }
+  function nodeAt(tx, pos) {
+    for (var i = tx.nodes.length - 1; i >= 0; i--) {
+      if (tx.nodes[i].start <= pos) return { node: tx.nodes[i].node, offset: pos - tx.nodes[i].start };
+    }
+    return { node: tx.nodes[0].node, offset: 0 };
+  }
   document.addEventListener('mouseup', function () {
     if (!requestMode) return;
     var sel = window.getSelection();
-    if (!sel || sel.isCollapsed) return;
-    var text = sel.toString().trim();
+    if (!sel || sel.isCollapsed || !sel.rangeCount) return;
+    var raw = sel.toString();
+    var text = raw.trim();
     if (!text) return;
-    var full = document.body.innerText || '';
-    var idx = full.indexOf(text);
+    var tx = collectText();
+    // Context from the selection's REAL position (via the Range) — indexOf
+    // used to capture the FIRST occurrence's surroundings for repeated words.
+    var pos = -1;
+    var range = sel.getRangeAt(0);
+    if (range.startContainer.nodeType === 3) {
+      for (var i = 0; i < tx.nodes.length; i++) {
+        if (tx.nodes[i].node === range.startContainer) {
+          pos = tx.nodes[i].start + range.startOffset + (raw.length - raw.trimStart().length);
+          break;
+        }
+      }
+    }
+    if (pos < 0 || tx.full.slice(pos, pos + text.length) !== text) pos = tx.full.indexOf(text);
     post({
       type: 'nl-selection',
       quotedText: text,
-      prefixContext: idx > 0 ? full.slice(Math.max(0, idx - 40), idx) : '',
-      suffixContext: idx >= 0 ? full.slice(idx + text.length, idx + text.length + 40) : '',
+      prefixContext: pos > 0 ? tx.full.slice(Math.max(0, pos - 40), pos) : '',
+      suffixContext: pos >= 0 ? tx.full.slice(pos + text.length, pos + text.length + 40) : '',
     });
   });
   window.addEventListener('message', function (e) {
@@ -874,7 +914,12 @@ const EDIT_BRIDGE_SCRIPT = `<style>
       for (var i = 0; i < pins.length; i++) {
         if ((pins[i].textContent || '').indexOf(probe) >= 0) { target = pins[i]; break; }
       }
-      // Pin may not exist (quote spans styled nodes) — fall back to raw text.
+      // Pin may not exist (quote spans styled nodes) — locate by context.
+      if (!target) {
+        var tx2 = collectText();
+        var loc2 = locateIdx(tx2.full, d.quote, d.prefix || '', d.suffix || '');
+        if (loc2) target = nodeAt(tx2, loc2.idx).node.parentElement;
+      }
       if (!target) target = findTextEl(probe) || findTextEl(d.quote.slice(0, 20));
       if (target) {
         target.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -884,29 +929,30 @@ const EDIT_BRIDGE_SCRIPT = `<style>
       }
     }
     if (d.type === 'nl-highlight' && Array.isArray(d.quotes)) {
-      d.quotes.forEach(function (q) {
+      // Accepts both bare quote strings (legacy) and {q, p, s} context objects.
+      d.quotes.forEach(function (item) {
+        var q = typeof item === 'string' ? item : item && item.q;
         if (!q) return;
+        var p = typeof item === 'string' ? '' : item.p || '';
+        var s = typeof item === 'string' ? '' : item.s || '';
         // Idempotent: skip quotes that already carry a pin (re-sends are safe).
         var existing = document.querySelectorAll('mark[data-nl-pin]');
         for (var k = 0; k < existing.length; k++) {
           if ((existing[k].textContent || '').indexOf(q.slice(0, 40)) >= 0) return;
         }
-        var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-        var node;
-        while ((node = walker.nextNode())) {
-          var i = node.nodeValue.indexOf(q);
-          if (i >= 0) {
-            try {
-              var range = document.createRange();
-              range.setStart(node, i);
-              range.setEnd(node, i + q.length);
-              var mark = document.createElement('mark');
-              mark.setAttribute('data-nl-pin', '');
-              range.surroundContents(mark);
-            } catch (err) { /* split-node quote — skip pin */ }
-            break;
-          }
-        }
+        var tx = collectText();
+        var loc = locateIdx(tx.full, q, p, s);
+        if (!loc) return;
+        var st = nodeAt(tx, loc.idx);
+        var en = nodeAt(tx, loc.idx + loc.len);
+        try {
+          var range = document.createRange();
+          range.setStart(st.node, Math.min(st.offset, st.node.length));
+          range.setEnd(en.node, Math.min(en.offset, en.node.length));
+          var mark = document.createElement('mark');
+          mark.setAttribute('data-nl-pin', '');
+          range.surroundContents(mark);
+        } catch (err) { /* cross-element quote — skip pin */ }
       });
     }
   });

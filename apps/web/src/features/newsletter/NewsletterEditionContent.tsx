@@ -13,7 +13,7 @@ import { MessageSquarePlus } from 'lucide-react'
 import { NewsletterSocialPreview } from '@/features/social/NewsletterSocialPreview'
 import { EditRequestPanel, type PendingEdit } from '@/features/review/EditRequestPanel'
 import { buildSectionPatch, type DirtyEdit } from './reverse-map'
-import { EditRequestList } from '@/features/review/EditRequestList'
+import { EditRequestList, quoteAnchorMissing } from '@/features/review/EditRequestList'
 
 type EditableSections = Record<string, unknown>
 
@@ -266,7 +266,9 @@ export function NewsletterEditionContent({ newsletterId }: { newsletterId: strin
   // resolve/reopen; the bridge dedupes).
   useEffect(() => {
     if (!bridgeReady) return
-    const quotes = requests.filter((r) => r.status === 'open').map((r) => r.quotedText)
+    const quotes = requests
+      .filter((r) => r.status === 'open')
+      .map((r) => ({ q: r.quotedText, p: r.prefixContext ?? '', s: r.suffixContext ?? '' }))
     if (quotes.length) iframeRef.current?.contentWindow?.postMessage({ type: 'nl-highlight', quotes }, '*')
   }, [bridgeReady, requests])
 
@@ -330,7 +332,7 @@ export function NewsletterEditionContent({ newsletterId }: { newsletterId: strin
         const missing = new Set<string>()
         for (const r of requestsRef.current) {
           if (r.status !== 'open') continue
-          if (!full.includes(r.quotedText) && !full.includes(r.quotedText.slice(0, 60))) missing.add(r.id)
+          if (quoteAnchorMissing(full, r.quotedText, r.prefixContext, r.suffixContext)) missing.add(r.id)
         }
         setNudgeIds(missing)
       }
@@ -375,8 +377,11 @@ export function NewsletterEditionContent({ newsletterId }: { newsletterId: strin
     await loadRequests()
   }
 
-  function scrollToPin(quote: string) {
-    iframeRef.current?.contentWindow?.postMessage({ type: 'nl-scroll-to', quote }, '*')
+  function scrollToPin(quote: string, prefix?: string | null, suffix?: string | null) {
+    iframeRef.current?.contentWindow?.postMessage(
+      { type: 'nl-scroll-to', quote, prefix: prefix ?? '', suffix: suffix ?? '' },
+      '*',
+    )
   }
 
   async function patchEdition(patch: Record<string, unknown>, doneNotice: string) {
@@ -471,7 +476,7 @@ export function NewsletterEditionContent({ newsletterId }: { newsletterId: strin
     if (openList.length === 0) return
     const next = (Math.min(navIdx, openList.length - 1) + offset + openList.length) % openList.length
     setNavIdx(next)
-    scrollToPin(openList[next].quotedText)
+    scrollToPin(openList[next].quotedText, openList[next].prefixContext, openList[next].suffixContext)
   }
 
   async function navMarkDone() {
@@ -479,7 +484,7 @@ export function NewsletterEditionContent({ newsletterId }: { newsletterId: strin
     await setRequestStatus(navCurrent.id, 'resolved')
     if (openList.length > 1) {
       const next = openList.filter((r) => r.id !== navCurrent.id)[Math.min(navIdx, openList.length - 2)]
-      if (next) scrollToPin(next.quotedText)
+      if (next) scrollToPin(next.quotedText, next.prefixContext, next.suffixContext)
     }
   }
 
@@ -544,7 +549,7 @@ export function NewsletterEditionContent({ newsletterId }: { newsletterId: strin
             <EditRequestList
               requests={requests}
               onStatus={(id, st) => void setRequestStatus(id, st)}
-              onJump={(q) => scrollToPin(q)}
+              onJump={(q, p2, s2) => scrollToPin(q, p2, s2)}
               onNotify={() =>
                 void fetch(`/api/newsletters/${newsletterId}/request-review`, { method: 'POST' }).then(() =>
                   setNotice('Sent back for review.'),
@@ -719,7 +724,7 @@ export function NewsletterEditionContent({ newsletterId }: { newsletterId: strin
                       Edit {Math.min(navIdx, openList.length - 1) + 1}/{openList.length}
                     </span>
                     <button
-                      onClick={() => scrollToPin(navCurrent.quotedText)}
+                      onClick={() => scrollToPin(navCurrent.quotedText, navCurrent.prefixContext, navCurrent.suffixContext)}
                       className="max-w-[14rem] truncate text-xs italic text-foreground underline decoration-dotted underline-offset-2 hover:text-primary"
                       title={`${navCurrent.note} — “${navCurrent.quotedText}”`}
                     >

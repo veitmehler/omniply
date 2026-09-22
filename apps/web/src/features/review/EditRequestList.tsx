@@ -27,7 +27,7 @@ export function EditRequestList({
 }: {
   requests: EditRequest[]
   onStatus: (id: string, status: 'resolved' | 'open') => void
-  onJump?: (quote: string) => void
+  onJump?: (quote: string, prefix?: string | null, suffix?: string | null) => void
   onNotify?: () => void
   /** Optional controlled expansion (e.g. a "publishing paused" banner toggles it). */
   open?: boolean
@@ -99,7 +99,7 @@ export function EditRequestList({
                   {onJump ? (
                     <button
                       onClick={() => {
-                        onJump(r.quotedText)
+                        onJump(r.quotedText, r.prefixContext, r.suffixContext)
                         setDetail(null)
                       }}
                       className="rounded-md border border-border px-3 py-1.5 text-xs hover:bg-muted"
@@ -144,8 +144,74 @@ export function EditRequestList({
   )
 }
 
-/** Locate a quote inside a live container (tolerant of edited tails). */
-export function findQuoteRange(container: HTMLElement, quote: string): Range | null {
+/**
+ * Locate a quote in a document's full text, using its captured surrounding
+ * context to pick the RIGHT occurrence (a bare word can appear many times —
+ * live bug 2026-09-23: three separate one-word requests all pinned to the
+ * trivia question). Fallback ladder degrades gracefully as edits erode the
+ * context: prefix+quote+suffix → prefix+quote → quote+suffix → bare quote →
+ * 60-char probe.
+ */
+export function locateQuoteIndex(
+  full: string,
+  quote: string,
+  prefix?: string | null,
+  suffix?: string | null,
+): { idx: number; len: number } | null {
+  const p = prefix ?? ''
+  const s = suffix ?? ''
+  const attempt = (needle: string, quoteOffset: number, len: number): { idx: number; len: number } | null => {
+    const i = full.indexOf(needle)
+    return i >= 0 ? { idx: i + quoteOffset, len } : null
+  }
+  if (p && s) {
+    const r = attempt(p + quote + s, p.length, quote.length)
+    if (r) return r
+  }
+  if (p) {
+    const r = attempt(p + quote, p.length, quote.length)
+    if (r) return r
+  }
+  if (s) {
+    const r = attempt(quote + s, 0, quote.length)
+    if (r) return r
+  }
+  const bare = attempt(quote, 0, quote.length)
+  if (bare) return bare
+  const probe = quote.slice(0, 60)
+  return probe.length < quote.length ? attempt(probe, 0, probe.length) : null
+}
+
+/**
+ * "Is this request's anchored text gone?" — for the looks-done nudge. Uses
+ * ONLY context-bound forms when context exists, so a single common word
+ * (which always exists SOMEWHERE) still nudges once its anchored spot was
+ * edited away.
+ */
+export function quoteAnchorMissing(
+  full: string,
+  quote: string,
+  prefix?: string | null,
+  suffix?: string | null,
+): boolean {
+  const p = prefix ?? ''
+  const s = suffix ?? ''
+  if (p || s) {
+    if (p && s && full.includes(p + quote + s)) return false
+    if (p && full.includes(p + quote)) return false
+    if (s && full.includes(quote + s)) return false
+    return true
+  }
+  return !full.includes(quote) && !full.includes(quote.slice(0, 60))
+}
+
+/** Locate a quote inside a live container (context-aware, tolerant of edited tails). */
+export function findQuoteRange(
+  container: HTMLElement,
+  quote: string,
+  prefix?: string | null,
+  suffix?: string | null,
+): Range | null {
   const nodes: { node: Text; start: number }[] = []
   let full = ''
   const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT)
@@ -155,14 +221,9 @@ export function findQuoteRange(container: HTMLElement, quote: string): Range | n
     full += n.textContent ?? ''
   }
   if (!nodes.length) return null
-  let idx = full.indexOf(quote)
-  let len = quote.length
-  if (idx === -1) {
-    const probe = quote.slice(0, 60)
-    idx = full.indexOf(probe)
-    len = probe.length
-  }
-  if (idx === -1) return null
+  const located = locateQuoteIndex(full, quote, prefix, suffix)
+  if (!located) return null
+  const { idx, len } = located
   const locate = (pos: number) => {
     for (let i = nodes.length - 1; i >= 0; i--) {
       if (nodes[i].start <= pos) return { node: nodes[i].node, offset: pos - nodes[i].start }
@@ -181,9 +242,14 @@ export function findQuoteRange(container: HTMLElement, quote: string): Range | n
   return range
 }
 
-/** Select + scroll a quote into view inside a container. */
-export function jumpToQuote(container: HTMLElement, quote: string): void {
-  const range = findQuoteRange(container, quote)
+/** Select + scroll a quote into view inside a container (context-aware). */
+export function jumpToQuote(
+  container: HTMLElement,
+  quote: string,
+  prefix?: string | null,
+  suffix?: string | null,
+): void {
+  const range = findQuoteRange(container, quote, prefix, suffix)
   if (!range) return
   const sel = window.getSelection()
   sel?.removeAllRanges()

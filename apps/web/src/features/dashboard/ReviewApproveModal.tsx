@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import '@/app/article-typography.css'
 import { EditRequestPanel, type PendingEdit } from '@/features/review/EditRequestPanel'
-import { EditRequestList, jumpToQuote, type EditRequest } from '@/features/review/EditRequestList'
+import { EditRequestList, jumpToQuote, quoteAnchorMissing, type EditRequest } from '@/features/review/EditRequestList'
 
 export interface ReviewItem {
   kind: 'article' | 'newsletter'
@@ -16,18 +16,45 @@ export interface ReviewItem {
   finalQuality?: { verdict: string; reasons: string[] } | null
 }
 
-/** Capture the current text selection inside a container as a quote + context. */
+/** Absolute offset of (node, offsetInNode) within container's concatenated text nodes. */
+function absoluteTextOffset(container: HTMLElement, node: Node, offsetInNode: number): number {
+  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT)
+  let acc = 0
+  let n: Node | null
+  while ((n = walker.nextNode())) {
+    if (n === node) return acc + offsetInNode
+    acc += (n.textContent ?? '').length
+  }
+  return -1
+}
+
+/**
+ * Capture the current text selection as a quote + surrounding context. The
+ * context is sliced at the selection's REAL position (via the Range), never
+ * via indexOf — selecting the 3rd occurrence of a word used to store the
+ * 1st occurrence's context, mis-anchoring every later jump/pin (2026-09-23).
+ */
 function captureSelection(container: HTMLElement): Omit<PendingEdit, 'note'> | null {
   const sel = window.getSelection()
   if (!sel || sel.isCollapsed || sel.rangeCount === 0) return null
-  const text = sel.toString().trim()
+  const raw = sel.toString()
+  const text = raw.trim()
   if (!text || !container.contains(sel.anchorNode)) return null
   const full = container.textContent ?? ''
-  const idx = full.indexOf(text)
+
+  const range = sel.getRangeAt(0)
+  let pos = -1
+  if (range.startContainer.nodeType === Node.TEXT_NODE) {
+    const startAbs = absoluteTextOffset(container, range.startContainer, range.startOffset)
+    if (startAbs >= 0) pos = startAbs + (raw.length - raw.trimStart().length)
+  }
+  // Fallback for element-anchored selections: first occurrence (old behavior).
+  if (pos < 0 || full.slice(pos, pos + text.length) !== text) pos = full.indexOf(text)
+
   return {
     quotedText: text,
-    prefixContext: idx > 0 ? full.slice(Math.max(0, idx - 40), idx) : '',
-    suffixContext: idx >= 0 ? full.slice(idx + text.length, idx + text.length + 40) : '',
+    prefixContext: pos > 0 ? full.slice(Math.max(0, pos - 40), pos) : '',
+    suffixContext: pos >= 0 ? full.slice(pos + text.length, pos + text.length + 40) : '',
   }
 }
 
@@ -198,7 +225,7 @@ export function ReviewApproveModal({
         const missing = new Set<string>()
         for (const r of requestListRef.current) {
           if (r.status !== 'open') continue
-          if (!full.includes(r.quotedText) && !full.includes(r.quotedText.slice(0, 60))) missing.add(r.id)
+          if (quoteAnchorMissing(full, r.quotedText, r.prefixContext, r.suffixContext)) missing.add(r.id)
         }
         setNudgeIds(missing)
       }
@@ -241,7 +268,7 @@ export function ReviewApproveModal({
     if (openList.length === 0) return
     const next = (Math.min(navIdx, openList.length - 1) + offset + openList.length) % openList.length
     setNavIdx(next)
-    if (bodyRef.current) jumpToQuote(bodyRef.current, openList[next].quotedText)
+    if (bodyRef.current) jumpToQuote(bodyRef.current, openList[next].quotedText, openList[next].prefixContext, openList[next].suffixContext)
   }
 
   async function navMarkDone() {
@@ -250,7 +277,7 @@ export function ReviewApproveModal({
     // The list shrinks; the same index now points at the next open request.
     if (bodyRef.current && openList.length > 1) {
       const next = openList.filter((r) => r.id !== navCurrent.id)[Math.min(navIdx, openList.length - 2)]
-      if (next) jumpToQuote(bodyRef.current, next.quotedText)
+      if (next) jumpToQuote(bodyRef.current, next.quotedText, next.prefixContext, next.suffixContext)
     }
   }
 
@@ -309,7 +336,7 @@ export function ReviewApproveModal({
                       Edit {Math.min(navIdx, openList.length - 1) + 1}/{openList.length}
                     </span>
                     <button
-                      onClick={() => { if (bodyRef.current) jumpToQuote(bodyRef.current, navCurrent.quotedText) }}
+                      onClick={() => { if (bodyRef.current) jumpToQuote(bodyRef.current, navCurrent.quotedText, navCurrent.prefixContext, navCurrent.suffixContext) }}
                       className="max-w-[14rem] truncate text-xs italic text-foreground underline decoration-dotted underline-offset-2 hover:text-primary"
                       title={`${navCurrent.note} — “${navCurrent.quotedText}”`}
                     >
@@ -378,7 +405,7 @@ export function ReviewApproveModal({
                   <EditRequestList
                     requests={requestList}
                     onStatus={(id, st) => void setRequestStatus(id, st)}
-                    onJump={(q) => bodyRef.current && jumpToQuote(bodyRef.current, q)}
+                    onJump={(q, p2, s2) => bodyRef.current && jumpToQuote(bodyRef.current, q, p2, s2)}
                     onNotify={() =>
                       void fetch(`/api/articles/${item.id}/request-review`, { method: 'POST' }).then(() =>
                         toast.success('Sent back for review.'),
