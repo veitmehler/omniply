@@ -21,12 +21,21 @@ export function EditRequestPickup() {
   const [targets, setTargets] = useState<Target[]>([])
   const [open, setOpen] = useState<Target | null>(null)
 
-  useEffect(() => {
+  function loadTargets() {
     fetch('/api/edit-requests/mine', { cache: 'no-store' })
       .then(async (res) => (res.ok ? (await res.json()).targets ?? [] : []))
       .then(setTargets)
       .catch(() => setTargets([]))
-  }, [])
+  }
+
+  useEffect(loadTargets, [])
+
+  // Re-check on modal close so the banner disappears the moment the last
+  // request is resolved — no page reload needed.
+  function closeAndRefresh() {
+    setOpen(null)
+    loadTargets()
+  }
 
   if (targets.length === 0) return null
 
@@ -56,14 +65,14 @@ export function EditRequestPickup() {
       </div>
 
       {open?.kind === 'newsletter' && (
-        <NewsletterReviewModal newsletterId={open.id} title={open.title} onClose={() => setOpen(null)} />
+        <NewsletterReviewModal newsletterId={open.id} title={open.title} onClose={closeAndRefresh} />
       )}
       {open?.kind === 'article' && (
         <ReviewApproveModal
           item={{ kind: 'article', id: open.id, title: open.title }}
           hasNext={false}
-          onClose={() => setOpen(null)}
-          onApproved={() => setOpen(null)}
+          onClose={closeAndRefresh}
+          onApproved={closeAndRefresh}
         />
       )}
     </>

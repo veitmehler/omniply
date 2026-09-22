@@ -565,7 +565,7 @@ export function ContentPlan() {
       )}
 
       {openIndex != null && readyQueue[openIndex] && readyQueue[openIndex].kind === 'article' && (
-        <ReviewApproveModal item={readyQueue[openIndex]} hasNext={openIndex < readyQueue.length - 1} onClose={() => setOpenIndex(null)} onApproved={onApproved} />
+        <ReviewApproveModal item={readyQueue[openIndex]} hasNext={openIndex < readyQueue.length - 1} onClose={() => { setOpenIndex(null); void load() }} onApproved={onApproved} />
       )}
 
       {/* Newsletters open the FULL review experience (edit sections, toggles,

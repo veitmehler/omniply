@@ -817,12 +817,20 @@ const EDIT_BRIDGE_SCRIPT = `<style>
   function post(msg) { parent.postMessage(msg, '*'); }
   els.forEach(function (el) {
     el.setAttribute('contenteditable', 'true');
-    var t;
+    // Save model (2026-09-22): typing only FLAGS the section dirty; the full
+    // content ships when the section loses focus ("dehighlight" = done
+    // editing) — never a mid-word snapshot.
+    var dirtyFlagged = false;
     el.addEventListener('input', function () {
-      clearTimeout(t);
-      t = setTimeout(function () {
-        post({ type: 'nl-edit', section: el.getAttribute('data-nl-section'), html: el.innerHTML, text: el.innerText });
-      }, 250);
+      if (!dirtyFlagged) {
+        dirtyFlagged = true;
+        post({ type: 'nl-dirty', section: el.getAttribute('data-nl-section') });
+      }
+    });
+    el.addEventListener('blur', function () {
+      if (!dirtyFlagged) return;
+      dirtyFlagged = false;
+      post({ type: 'nl-edit', section: el.getAttribute('data-nl-section'), html: el.innerHTML, text: el.innerText });
     });
   });
   // Links must not navigate while reviewing.

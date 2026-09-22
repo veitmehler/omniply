@@ -193,16 +193,20 @@ export function NewsletterEditionContent({ newsletterId }: { newsletterId: strin
   const [bridgeReady, setBridgeReady] = useState(false)
   const dirtyCount = Object.keys(dirty).length
 
-  // Autosave (parity with the article modal, 2026-09-22): refs mirror the
-  // latest dirty map + edition so debounced/unmount flushes read fresh state.
+  // Save-on-blur model (2026-09-22): refs mirror the latest dirty map +
+  // edition so blur/unmount flushes read fresh state. `uiDirty` tracks
+  // sections being typed in (bridge nl-dirty) before their blur-save lands.
   const dirtyRef = useRef<Record<string, DirtyEdit>>({})
   const nlRef = useRef<Newsletter | null>(null)
   const savingRef = useRef(false)
-  const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [uiDirty, setUiDirty] = useState(false)
   useEffect(() => { dirtyRef.current = dirty }, [dirty])
   useEffect(() => { nlRef.current = nl }, [nl])
-  // Floating navigator through open edit requests.
+  // Floating navigator through open edit requests + "looks done" nudges.
   const [navIdx, setNavIdx] = useState(0)
+  const [nudgeIds, setNudgeIds] = useState<Set<string>>(new Set())
+  const requestsRef = useRef<typeof requests>([])
+  useEffect(() => { requestsRef.current = requests }, [requests])
 
   async function loadEditPreview() {
     try {
@@ -233,9 +237,14 @@ export function NewsletterEditionContent({ newsletterId }: { newsletterId: strin
   useEffect(() => {
     function onMessage(e: MessageEvent) {
       const d = e.data ?? {}
-      if (d.type === 'nl-edit' && typeof d.section === 'string') {
-        setDirty((prev) => ({ ...prev, [d.section]: { html: String(d.html ?? ''), text: String(d.text ?? '') } }))
-        scheduleAutosave()
+      if (d.type === 'nl-dirty') {
+        setUiDirty(true)
+      } else if (d.type === 'nl-edit' && typeof d.section === 'string') {
+        // Section blurred — its final content arrives here; save immediately.
+        const entry = { html: String(d.html ?? ''), text: String(d.text ?? '') }
+        setDirty((prev) => ({ ...prev, [d.section]: entry }))
+        dirtyRef.current = { ...dirtyRef.current, [d.section]: entry }
+        void autosaveFlush()
       } else if (d.type === 'nl-selection' && requestMode) {
         setSelDraft({ quotedText: d.quotedText ?? '', prefixContext: d.prefixContext ?? '', suffixContext: d.suffixContext ?? '' })
       } else if (d.type === 'nl-ready') {
@@ -247,7 +256,7 @@ export function NewsletterEditionContent({ newsletterId }: { newsletterId: strin
     }
     window.addEventListener('message', onMessage)
     return () => window.removeEventListener('message', onMessage)
-    // scheduleAutosave only touches refs — stable across renders.
+    // autosaveFlush only touches refs — stable across renders.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [requestMode, requests])
 
@@ -280,26 +289,18 @@ export function NewsletterEditionContent({ newsletterId }: { newsletterId: strin
     await patchEdition({}, 'Saved — preview updated.')
   }
 
-  function scheduleAutosave() {
-    if (autosaveTimer.current) clearTimeout(autosaveTimer.current)
-    autosaveTimer.current = setTimeout(() => {
-      autosaveTimer.current = null
-      void autosaveFlush()
-    }, 2000)
-  }
-
   /**
-   * Background flush of dirty WYSIWYG sections. Unlike a manual save it does
-   * NOT reload the edit iframe (that re-render would steal the caret while
-   * the user is typing — and the iframe already shows exactly what was
-   * saved), and it only clears dirty entries unchanged since the snapshot so
-   * keystrokes landing mid-request are never lost.
+   * Flush of blurred-section edits (save-on-blur model). Does NOT reload the
+   * edit iframe (a reload would steal the caret — the iframe already shows
+   * exactly what was saved) and only clears dirty entries unchanged since the
+   * snapshot so a section re-edited mid-request is never lost. Returns
+   * whether the save persisted (Mark done refuses to resolve on failure).
    */
-  async function autosaveFlush() {
+  async function autosaveFlush(): Promise<boolean> {
     const edition = nlRef.current
     const snap = dirtyRef.current
-    if (!edition || Object.keys(snap).length === 0) return
-    if (savingRef.current) { scheduleAutosave(); return }
+    if (!edition || Object.keys(snap).length === 0) return true
+    if (savingRef.current) return true // in-flight save carries the map ref state
     savingRef.current = true
     try {
       const merged = buildSectionPatch(snap, edition as unknown as Record<string, unknown>)
@@ -308,17 +309,35 @@ export function NewsletterEditionContent({ newsletterId }: { newsletterId: strin
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(merged),
       })
-      if (!res.ok) return // stays dirty; the visible hint and manual Save remain
+      if (!res.ok) {
+        setError('Saving your edits failed — they are still in the editor, try Save changes.')
+        return false
+      }
       const data = await res.json().catch(() => ({}))
       if (data.newsletter) setNl(data.newsletter)
       setDirty((prev) => {
         const next = { ...prev }
         for (const k of Object.keys(snap)) if (prev[k] === snap[k]) delete next[k]
+        if (Object.keys(next).length === 0) setUiDirty(false)
         return next
       })
-      setNotice('Saved automatically.')
+      setNotice('Saved.')
+      // "Looks done" nudges: open requests whose quoted text no longer
+      // appears in the (same-origin srcdoc) edit iframe were likely handled.
+      const doc = iframeRef.current?.contentDocument
+      if (doc) {
+        const full = doc.body?.textContent ?? ''
+        const missing = new Set<string>()
+        for (const r of requestsRef.current) {
+          if (r.status !== 'open') continue
+          if (!full.includes(r.quotedText) && !full.includes(r.quotedText.slice(0, 60))) missing.add(r.id)
+        }
+        setNudgeIds(missing)
+      }
+      return true
     } catch {
-      /* stays dirty — retried on the next edit or manual Save */
+      setError('Saving your edits failed — they are still in the editor, try Save changes.')
+      return false
     } finally {
       savingRef.current = false
     }
@@ -327,7 +346,6 @@ export function NewsletterEditionContent({ newsletterId }: { newsletterId: strin
   // Flush on unmount (modal close / navigation): keepalive lets the PATCH
   // finish even as the page goes away.
   useEffect(() => () => {
-    if (autosaveTimer.current) clearTimeout(autosaveTimer.current)
     const snap = dirtyRef.current
     const edition = nlRef.current
     if (edition && Object.keys(snap).length > 0) {
@@ -343,8 +361,12 @@ export function NewsletterEditionContent({ newsletterId }: { newsletterId: strin
   }, [])
 
   async function setRequestStatus(id: string, status: 'resolved' | 'open') {
-    // Resolving a request is a natural checkpoint — flush content edits first.
-    if (Object.keys(dirtyRef.current).length > 0) await autosaveFlush()
+    // Resolving a request is a checkpoint — flush content edits first, and
+    // refuse to resolve if the save failed.
+    if (Object.keys(dirtyRef.current).length > 0) {
+      const ok = await autosaveFlush()
+      if (!ok) return
+    }
     await fetch(`/api/edit-requests/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -660,41 +682,69 @@ export function NewsletterEditionContent({ newsletterId }: { newsletterId: strin
 
         {/* Preview — editable in place when ready_for_review (review WYSIWYG) */}
         <div className="relative flex flex-col rounded-xl border border-border bg-card p-2">
-          {editable && !requestMode && navCurrent && (
+          {editable && !requestMode && (
             <div className="pointer-events-none absolute inset-x-0 bottom-4 z-10 flex justify-center px-6">
               <div className="pointer-events-auto flex max-w-full items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 shadow-lg">
                 <button
-                  onClick={() => navJump(-1)}
-                  disabled={openList.length < 2}
-                  className="rounded-full px-1.5 py-0.5 text-sm text-muted-foreground hover:bg-muted disabled:opacity-40"
-                  aria-label="Previous edit request"
+                  onClick={() => {
+                    // Blur the active section inside the (same-origin) edit
+                    // iframe — its blur handler ships the content, which the
+                    // parent then saves.
+                    const active = iframeRef.current?.contentDocument?.activeElement as HTMLElement | null
+                    active?.blur?.()
+                  }}
+                  className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ${
+                    savingSection || savingRef.current
+                      ? 'text-muted-foreground'
+                      : uiDirty || dirtyCount > 0
+                        ? 'bg-amber-500/15 text-amber-700 hover:bg-amber-500/25'
+                        : 'text-green-700'
+                  }`}
+                  title={uiDirty || dirtyCount > 0 ? 'Save now' : 'All edits saved'}
                 >
-                  ←
+                  {savingSection || savingRef.current ? 'Saving…' : uiDirty || dirtyCount > 0 ? '● Unsaved' : '✓ Saved'}
                 </button>
-                <span className="whitespace-nowrap text-xs font-medium text-muted-foreground">
-                  Edit {Math.min(navIdx, openList.length - 1) + 1}/{openList.length}
-                </span>
-                <button
-                  onClick={() => scrollToPin(navCurrent.quotedText)}
-                  className="max-w-[16rem] truncate text-xs italic text-foreground underline decoration-dotted underline-offset-2 hover:text-primary"
-                  title={`${navCurrent.note} — “${navCurrent.quotedText}”`}
-                >
-                  “{navCurrent.quotedText}”
-                </button>
-                <button
-                  onClick={() => void navMarkDone()}
-                  className="rounded-full bg-primary px-2.5 py-0.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
-                >
-                  Mark done
-                </button>
-                <button
-                  onClick={() => navJump(1)}
-                  disabled={openList.length < 2}
-                  className="rounded-full px-1.5 py-0.5 text-sm text-muted-foreground hover:bg-muted disabled:opacity-40"
-                  aria-label="Next edit request"
-                >
-                  →
-                </button>
+                {navCurrent && (
+                  <>
+                    <span className="text-border">|</span>
+                    <button
+                      onClick={() => navJump(-1)}
+                      disabled={openList.length < 2}
+                      className="rounded-full px-1.5 py-0.5 text-sm text-muted-foreground hover:bg-muted disabled:opacity-40"
+                      aria-label="Previous edit request"
+                    >
+                      ←
+                    </button>
+                    <span className="whitespace-nowrap text-xs font-medium text-muted-foreground">
+                      Edit {Math.min(navIdx, openList.length - 1) + 1}/{openList.length}
+                    </span>
+                    <button
+                      onClick={() => scrollToPin(navCurrent.quotedText)}
+                      className="max-w-[14rem] truncate text-xs italic text-foreground underline decoration-dotted underline-offset-2 hover:text-primary"
+                      title={`${navCurrent.note} — “${navCurrent.quotedText}”`}
+                    >
+                      “{navCurrent.quotedText}”
+                    </button>
+                    <button
+                      onClick={() => void navMarkDone()}
+                      className={`whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                        nudgeIds.has(navCurrent.id)
+                          ? 'bg-green-600 text-white hover:bg-green-700'
+                          : 'bg-primary text-primary-foreground hover:bg-primary/90'
+                      }`}
+                    >
+                      {nudgeIds.has(navCurrent.id) ? 'Looks done — mark it ✓' : 'Mark done'}
+                    </button>
+                    <button
+                      onClick={() => navJump(1)}
+                      disabled={openList.length < 2}
+                      className="rounded-full px-1.5 py-0.5 text-sm text-muted-foreground hover:bg-muted disabled:opacity-40"
+                      aria-label="Next edit request"
+                    >
+                      →
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           )}

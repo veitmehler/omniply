@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { Loader2, X, Check, Save, FileText, Mail, ArrowRight, MessageSquarePlus, Send, Trash2 } from 'lucide-react'
+import { Loader2, X, Check, Save, FileText, Mail, ArrowRight, MessageSquarePlus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import '@/app/article-typography.css'
@@ -62,9 +62,13 @@ export function ReviewApproveModal({
   }
 
   async function setRequestStatus(id: string, status: 'resolved' | 'open') {
-    // Marking a request done is a natural checkpoint — flush any unsaved
-    // content edits so resolving never races a lost edit.
-    if (dirtyRef.current) await saveEdits()
+    // Marking a request done is a checkpoint — flush unsaved content first,
+    // and REFUSE to resolve if the save failed (a resolved request must never
+    // vouch for an edit that didn't persist).
+    if (dirtyRef.current) {
+      const ok = await saveEdits()
+      if (!ok) return
+    }
     await fetch(`/api/edit-requests/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -96,31 +100,35 @@ export function ReviewApproveModal({
 
   const scrollRef = useRef<HTMLDivElement>(null)
   const bodyRef = useRef<HTMLDivElement>(null)
-  // Autosave: mirror `dirty` in a ref (async handlers read the latest value)
-  // and debounce a background save while the user edits.
+  // `dirty` mirrored in a ref so async handlers read the latest value.
   const dirtyRef = useRef(false)
-  const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   // Floating navigator through open edit requests.
   const [navIdx, setNavIdx] = useState(0)
+  // Requests whose quoted text vanished after a save — "looks done" nudges.
+  const [nudgeIds, setNudgeIds] = useState<Set<string>>(new Set())
+  const requestListRef = useRef<EditRequest[]>([])
+  useEffect(() => { requestListRef.current = requestList }, [requestList])
 
   const isArticle = item.kind === 'article'
 
   function markDirty() {
     dirtyRef.current = true
     setDirty(true)
-    if (autosaveTimer.current) clearTimeout(autosaveTimer.current)
-    autosaveTimer.current = setTimeout(() => {
-      autosaveTimer.current = null
-      if (dirtyRef.current) void saveEdits()
-    }, 2000)
   }
 
-  useEffect(() => () => {
-    if (autosaveTimer.current) clearTimeout(autosaveTimer.current)
-  }, [])
+  // OWNERSHIP FIX (2026-09-22): the editable body's HTML is written
+  // imperatively ONCE per load — React never renders it, so no re-render or
+  // remount can silently restore stale content over the user's edits (the
+  // "reverted word" bug). Saves happen at intent boundaries: editor blur,
+  // Mark done, and close — never on a typing timer that could snapshot a
+  // half-finished state.
+  useEffect(() => {
+    if (!loading && isArticle && html !== null && bodyRef.current) {
+      bodyRef.current.innerHTML = html
+    }
+  }, [loading, isArticle, html])
 
   async function handleClose() {
-    if (autosaveTimer.current) clearTimeout(autosaveTimer.current)
     if (isArticle && dirtyRef.current) {
       const ok = await saveEdits()
       if (!ok && !window.confirm('Saving your edits failed. Close anyway and lose them?')) return
@@ -183,6 +191,17 @@ export function ReviewApproveModal({
       if (!res.ok) { toast.error('Failed to save edits'); return false }
       dirtyRef.current = false
       setDirty(false)
+      // "Looks done" nudges: any open request whose quoted text no longer
+      // appears in the edited body was almost certainly addressed.
+      if (bodyRef.current) {
+        const full = bodyRef.current.textContent ?? ''
+        const missing = new Set<string>()
+        for (const r of requestListRef.current) {
+          if (r.status !== 'open') continue
+          if (!full.includes(r.quotedText) && !full.includes(r.quotedText.slice(0, 60))) missing.add(r.id)
+        }
+        setNudgeIds(missing)
+      }
       return true
     } finally {
       setSaving(false)
@@ -258,42 +277,64 @@ export function ReviewApproveModal({
         )}
 
         <div className="relative flex min-h-0 flex-1">
-          {/* Floating edit-request navigator: work through requests in place. */}
-          {isArticle && !requestMode && !loading && navCurrent && (
+          {/* Floating pill: save-state chip + edit-request navigator. */}
+          {isArticle && !requestMode && !loading && (
             <div className="pointer-events-none absolute inset-x-0 bottom-4 z-10 flex justify-center px-6">
               <div className="pointer-events-auto flex max-w-full items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 shadow-lg">
                 <button
-                  onClick={() => navJump(-1)}
-                  disabled={openList.length < 2}
-                  className="rounded-full px-1.5 py-0.5 text-sm text-muted-foreground hover:bg-muted disabled:opacity-40"
-                  aria-label="Previous edit request"
+                  onClick={() => { if (dirty) void saveEdits() }}
+                  className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ${
+                    saving
+                      ? 'text-muted-foreground'
+                      : dirty
+                        ? 'bg-amber-500/15 text-amber-700 hover:bg-amber-500/25'
+                        : 'text-green-700'
+                  }`}
+                  title={dirty ? 'Save now' : 'All edits saved'}
                 >
-                  ←
+                  {saving ? 'Saving…' : dirty ? '● Unsaved' : '✓ Saved'}
                 </button>
-                <span className="whitespace-nowrap text-xs font-medium text-muted-foreground">
-                  Edit {Math.min(navIdx, openList.length - 1) + 1}/{openList.length}
-                </span>
-                <button
-                  onClick={() => { if (bodyRef.current) jumpToQuote(bodyRef.current, navCurrent.quotedText) }}
-                  className="max-w-[16rem] truncate text-xs italic text-foreground underline decoration-dotted underline-offset-2 hover:text-primary"
-                  title={`${navCurrent.note} — “${navCurrent.quotedText}”`}
-                >
-                  “{navCurrent.quotedText}”
-                </button>
-                <button
-                  onClick={() => void navMarkDone()}
-                  className="rounded-full bg-primary px-2.5 py-0.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
-                >
-                  Mark done
-                </button>
-                <button
-                  onClick={() => navJump(1)}
-                  disabled={openList.length < 2}
-                  className="rounded-full px-1.5 py-0.5 text-sm text-muted-foreground hover:bg-muted disabled:opacity-40"
-                  aria-label="Next edit request"
-                >
-                  →
-                </button>
+                {navCurrent && (
+                  <>
+                    <span className="text-border">|</span>
+                    <button
+                      onClick={() => navJump(-1)}
+                      disabled={openList.length < 2}
+                      className="rounded-full px-1.5 py-0.5 text-sm text-muted-foreground hover:bg-muted disabled:opacity-40"
+                      aria-label="Previous edit request"
+                    >
+                      ←
+                    </button>
+                    <span className="whitespace-nowrap text-xs font-medium text-muted-foreground">
+                      Edit {Math.min(navIdx, openList.length - 1) + 1}/{openList.length}
+                    </span>
+                    <button
+                      onClick={() => { if (bodyRef.current) jumpToQuote(bodyRef.current, navCurrent.quotedText) }}
+                      className="max-w-[14rem] truncate text-xs italic text-foreground underline decoration-dotted underline-offset-2 hover:text-primary"
+                      title={`${navCurrent.note} — “${navCurrent.quotedText}”`}
+                    >
+                      “{navCurrent.quotedText}”
+                    </button>
+                    <button
+                      onClick={() => void navMarkDone()}
+                      className={`whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                        nudgeIds.has(navCurrent.id)
+                          ? 'bg-green-600 text-white hover:bg-green-700'
+                          : 'bg-primary text-primary-foreground hover:bg-primary/90'
+                      }`}
+                    >
+                      {nudgeIds.has(navCurrent.id) ? 'Looks done — mark it ✓' : 'Mark done'}
+                    </button>
+                    <button
+                      onClick={() => navJump(1)}
+                      disabled={openList.length < 2}
+                      className="rounded-full px-1.5 py-0.5 text-sm text-muted-foreground hover:bg-muted disabled:opacity-40"
+                      aria-label="Next edit request"
+                    >
+                      →
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           )}
@@ -348,14 +389,16 @@ export function ReviewApproveModal({
                   />
                 </div>
               )}
+              {/* innerHTML is set imperatively (ownership fix) — no
+                  dangerouslySetInnerHTML, so React can never rewrite edits. */}
               <div
                 ref={bodyRef}
                 contentEditable={!requestMode}
                 suppressContentEditableWarning
                 onInput={markDirty}
+                onBlur={() => { if (dirtyRef.current) void saveEdits() }}
                 onMouseUp={() => { if (requestMode && bodyRef.current) setSelDraft(captureSelection(bodyRef.current)) }}
                 className="article-body max-w-none rounded-lg bg-card p-6 text-foreground focus:outline-none"
-                dangerouslySetInnerHTML={{ __html: html ?? '' }}
               />
               </>
             ) : (
