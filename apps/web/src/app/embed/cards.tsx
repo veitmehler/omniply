@@ -794,6 +794,50 @@ export function InstallConsentCard({
   )
 }
 
+// ── publish time ─────────────────────────────────────────────────────────────
+
+/** Hour-only selector (Veit 2026-09-23: a selector, not preset buttons) for
+ * the WordPress article publish time. */
+export function PublishTimeCard({
+  card,
+  disabled,
+  onSubmit,
+}: {
+  card: { defaultHour?: number }
+  disabled: boolean
+  onSubmit: (answer: { hour: number }, display?: string) => void
+}) {
+  const [hour, setHour] = useState(typeof card.defaultHour === 'number' ? card.defaultHour : 9)
+  const label = (h: number) => `${h % 12 === 0 ? 12 : h % 12}:00 ${h < 12 ? 'AM' : 'PM'}`
+  return (
+    <div className="space-y-3 rounded-xl border border-border bg-card p-4">
+      <label htmlFor="publish-hour" className="block text-sm font-medium text-foreground">
+        Articles go live at
+      </label>
+      <select
+        id="publish-hour"
+        value={hour}
+        onChange={(e) => setHour(Number.parseInt(e.target.value, 10))}
+        disabled={disabled}
+        className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-base"
+      >
+        {Array.from({ length: 24 }, (_, h) => (
+          <option key={h} value={h}>
+            {label(h)}
+          </option>
+        ))}
+      </select>
+      <button
+        className={`${primaryBtn} w-full`}
+        disabled={disabled}
+        onClick={() => onSubmit({ hour }, `Articles go live at ${label(hour)} ✓`)}
+      >
+        Continue ✓
+      </button>
+    </div>
+  )
+}
+
 // ── offers ────────────────────────────────────────────────────────────────────
 
 interface OfferDraft {

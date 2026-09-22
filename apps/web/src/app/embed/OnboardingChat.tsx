@@ -13,7 +13,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { embedFetch } from '@/lib/embedSession'
 import { VoiceRecorder } from './VoiceRecorder'
-import { BusinessCard, LogoCard, PhotoCard, ProfileCard, TemplateCard, OffersCard, WordpressCard, SocialsCard, FrontDeskCard, KbReviewCard, InstallConsentCard } from './cards'
+import { BusinessCard, LogoCard, PhotoCard, ProfileCard, TemplateCard, OffersCard, WordpressCard, SocialsCard, FrontDeskCard, KbReviewCard, InstallConsentCard, PublishTimeCard } from './cards'
 
 // The chat message scrolls away — the input itself must say what belongs in it.
 const TEXT_PLACEHOLDERS: Record<string, string> = {
@@ -381,6 +381,14 @@ function ConfirmCard({
           disabled={busy}
           downloadPath="/api/onboarding/linktree.html"
           onSubmit={(a) => onSubmit(a, a.mode === 'skip' ? 'No WordPress — HTML export' : 'Connect & verify ✓')}
+        />
+      )
+    case 'wp_publish_time':
+      return (
+        <PublishTimeCard
+          card={card as { defaultHour?: number }}
+          disabled={busy}
+          onSubmit={(a, display) => onSubmit(a, display)}
         />
       )
     case 'socials':

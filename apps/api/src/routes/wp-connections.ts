@@ -4,7 +4,7 @@ import { requireAuth } from '../middleware/auth'
 import { encrypt, decrypt } from '@omniply/shared'
 import { assertSafeWpUrl } from '../lib/ssrf'
 import { installOmniplyConnect } from '../lib/omniply-connect'
-import { bootstrapWpTaxonomy } from '../lib/wp-taxonomy'
+import { getWpTaxonomyState, createWpCategories, seedWpTagsIfNone } from '../lib/wp-taxonomy'
 import { verticalForUser } from '../lib/prompt-resolver'
 import { logger } from '../lib/logger'
 
@@ -206,11 +206,17 @@ export async function wpConnectionRoutes(app: FastifyInstance) {
     // the background, logs its own failures, never delays the response.
     void installOmniplyConnect(user.id).catch(() => {})
 
-    // Seed categories/tags so publish-time selection has real choices
-    // (fire-and-forget — a taxonomy hiccup must not fail the connect).
-    void verticalForUser(user.id)
-      .then((vertical) => bootstrapWpTaxonomy({ siteUrl: conn.siteUrl, authHeader: auth, vertical }))
-      .catch((err) => logger.warn({ err, siteUrl: conn.siteUrl }, '[wp-connections] taxonomy bootstrap failed'))
+    // Seed categories/tags ONLY on a bare site (no real categories beyond
+    // "Uncategorized") — sites with their own taxonomy are respected; the
+    // consented partial-add lives in the onboarding chat. Fire-and-forget.
+    void (async () => {
+      const vertical = await verticalForUser(user.id)
+      if (vertical === 'azavea') return
+      const state = await getWpTaxonomyState(conn.siteUrl, auth)
+      if (state.realCategoryNames.length > 0) return
+      await createWpCategories(conn.siteUrl, auth, state.missingCurated)
+      await seedWpTagsIfNone(conn.siteUrl, auth)
+    })().catch((err) => logger.warn({ err, siteUrl: conn.siteUrl }, '[wp-connections] taxonomy bootstrap failed'))
 
     return reply.status(201).send({
       connection: conn,

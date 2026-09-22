@@ -44,6 +44,10 @@ describe('onboarding flow', () => {
     // §4b-3: wordpress connects BEFORE the quiz consent pitch (cta), and the
     // install_consent step sits right before the finale.
     expect(STEP_ORDER.indexOf('wordpress')).toBeLessThan(STEP_ORDER.indexOf('cta'))
+    // Category consent + publish-time selector follow the connect directly
+    // (Veit 2026-09-23).
+    expect(STEP_ORDER.indexOf('wp_categories')).toBe(STEP_ORDER.indexOf('wordpress') + 1)
+    expect(STEP_ORDER.indexOf('wp_publish_time')).toBe(STEP_ORDER.indexOf('wp_categories') + 1)
     expect(STEP_ORDER).toContain('install_consent')
     expect(STEP_ORDER.indexOf('install_consent')).toBe(STEP_ORDER.indexOf('final') - 1)
   })

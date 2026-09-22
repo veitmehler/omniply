@@ -32,12 +32,15 @@ import {
   commitWritingSample,
   commitStoryMoments,
   commitWordpress,
+  commitWpCategories,
+  commitPublishTime,
   commitSocials,
   commitElevenLabs,
   commitToggles,
 } from './commits'
 import { specializationRegistryKeys } from './site-analysis'
 import { mergeStepDataAndStep } from './step-data'
+import { wpAuthForUser, getWpTaxonomyState, CHIRO_WP_CATEGORIES } from '../lib/wp-taxonomy'
 
 export type StepKind = 'info' | 'text' | 'choice' | 'confirm_card' | 'voice' | 'action'
 
@@ -330,6 +333,67 @@ const STEPS: StepDef[] = [
       if (!err) ctx.stepData.wordpress = answer
       return err
     },
+  },
+  // Blog categories (Veit 2026-09-23): three-way consent — a site with all
+  // our curated categories just continues; a site with its own gets offered
+  // ONLY the missing ones; a bare site gets the full pitch. Never created
+  // without a yes.
+  {
+    id: 'wp_categories',
+    kind: 'choice',
+    prepare: async (ctx) => {
+      const skipView = (msg: string) => ({
+        messages: [msg],
+        options: [{ value: 'skip', label: 'Continue' }],
+      })
+      if (!ctx.stepData.wordpressConnected) {
+        return skipView("We'll sort out blog categories once your website is connected.")
+      }
+      try {
+        const auth = await wpAuthForUser(ctx.userId)
+        if (!auth) return skipView("We'll sort out blog categories once your website is connected.")
+        const state = await getWpTaxonomyState(auth.siteUrl, auth.authHeader)
+        if (state.realCategoryNames.length > 0 && state.missingCurated.length === 0) {
+          return skipView('I see your site already has blog categories. We will assign your articles to those.')
+        }
+        if (state.realCategoryNames.length > 0) {
+          return {
+            messages: [
+              `I see your site already has blog categories. To better categorize your content, would you like us to set up these categories as well, to better assign your articles?\n\n${state.missingCurated.join(', ')}`,
+            ],
+            options: [
+              { value: 'yes', label: 'Yes, add them' },
+              { value: 'no', label: 'No, use mine as they are' },
+            ],
+          }
+        }
+        return {
+          messages: [
+            `Your site has no blog categories yet. Want us to set up six chiropractic ones? (${CHIRO_WP_CATEGORIES.join(', ')}) - This helps readers and Google to better navigate and understand your content. You can rename or remove them in WordPress anytime.`,
+          ],
+          options: [
+            { value: 'yes', label: 'Yes, set them up' },
+            { value: 'no', label: 'No, leave it' },
+          ],
+        }
+      } catch (err) {
+        logger.warn({ err }, '[onboarding] category check failed — continuing without')
+        return skipView("I couldn't check your blog categories just now — you can manage them in WordPress anytime.")
+      }
+    },
+    commit: commitWpCategories,
+  },
+  // Article publish time (Veit 2026-09-23): hour-only selector, 9 AM default.
+  {
+    id: 'wp_publish_time',
+    kind: 'confirm_card',
+    prepare: async () => ({
+      messages: [
+        'When should new articles go live on your website? Most clinics pick 9 AM. You can change this anytime in Settings.',
+      ],
+      card: { type: 'publish_time', defaultHour: 9 },
+    }),
+    commit: commitPublishTime,
   },
   // Social lead-gen consent (§4b-3, replaces the old CTA choice — the SPINE
   // comment→DM funnel is the only wired machine; every alternative silently

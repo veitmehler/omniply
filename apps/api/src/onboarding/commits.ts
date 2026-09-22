@@ -6,8 +6,7 @@ import { relativeLuminance, darkenHex, lightenHex } from '../article-pipeline/en
 import { pickBrandLogoForBackground } from '../newsletter/logo-process'
 import { prisma, encrypt, ghlSettingsForUser, brandSettingsForUser } from '@omniply/shared'
 import { logger } from '../lib/logger'
-import { bootstrapWpTaxonomy } from '../lib/wp-taxonomy'
-import { verticalForUser } from '../lib/prompt-resolver'
+import { wpAuthForUser, getWpTaxonomyState, createWpCategories, seedWpTagsIfNone } from '../lib/wp-taxonomy'
 import { getBoss, QUEUES } from '../queues/index'
 import { getSystemApiKey } from '../lib/system-keys'
 import { generateDiagramStyleGuideFromWebsite } from './diagram-style-gen'
@@ -573,12 +572,8 @@ export async function commitWordpress(ctx: StepContext, answer: unknown): Promis
     update: { username, appPassword: encrypt(appPassword) },
   })
   ctx.stepData.wordpressConnected = true
-  // Seed the site's categories/tags so publish-time selection has real
-  // choices (fire-and-forget — a taxonomy hiccup must not fail onboarding).
-  const taxonomyAuth = `Basic ${Buffer.from(`${username}:${appPassword}`).toString('base64')}`
-  void verticalForUser(ctx.userId)
-    .then((vertical) => bootstrapWpTaxonomy({ siteUrl: base, authHeader: taxonomyAuth, vertical }))
-    .catch((err) => logger.warn({ err, siteUrl: base }, '[onboarding] WP taxonomy bootstrap failed'))
+  // Category/tag seeding is CONSENTED in the wp_categories step that follows —
+  // no automatic taxonomy writes here.
   return null
 }
 
@@ -777,6 +772,37 @@ export async function commitBookingUrl(ctx: StepContext, answer: unknown): Promi
 }
 
 /** pms: market-research capture only (connector framework stays parked). */
+/** wp_categories: consented category/tag seeding — creates only what's missing. */
+export async function commitWpCategories(ctx: StepContext, answer: unknown): Promise<string | null> {
+  const a = (answer ?? {}) as { value?: string }
+  ctx.stepData.wpCategories = a.value ?? 'skip'
+  if (a.value !== 'yes') return null
+  try {
+    const auth = await wpAuthForUser(ctx.userId)
+    if (!auth) return null
+    const state = await getWpTaxonomyState(auth.siteUrl, auth.authHeader)
+    if (state.missingCurated.length > 0) {
+      await createWpCategories(auth.siteUrl, auth.authHeader, state.missingCurated)
+    }
+    await seedWpTagsIfNone(auth.siteUrl, auth.authHeader)
+  } catch (err) {
+    // A WP hiccup must not block onboarding — log and continue.
+    logger.warn({ err, userId: ctx.userId }, '[onboarding] category setup failed — continuing')
+  }
+  return null
+}
+
+/** wp_publish_time: hour of day (clinic timezone) articles go live on WordPress. */
+export async function commitPublishTime(ctx: StepContext, answer: unknown): Promise<string | null> {
+  const a = (answer ?? {}) as { hour?: number }
+  const hour =
+    typeof a.hour === 'number' && Number.isInteger(a.hour) && a.hour >= 0 && a.hour <= 23 ? a.hour : null
+  if (hour === null) return 'Pick an hour'
+  await settingsUpsert(ctx.userId, { wpPublishTime: `${String(hour).padStart(2, '0')}:00` })
+  ctx.stepData.wpPublishTime = hour
+  return null
+}
+
 export async function commitPms(ctx: StepContext, answer: unknown): Promise<string | null> {
   const a = (answer ?? {}) as { value?: string; customText?: string }
   const value = a.value === 'other' ? (a.customText?.trim() || 'other') : a.value

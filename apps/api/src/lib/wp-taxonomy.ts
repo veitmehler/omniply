@@ -1,10 +1,12 @@
 /**
- * WordPress taxonomy bootstrap (Veit 2026-09-22): a freshly-connected clinic
+ * WordPress taxonomy helpers (Veit 2026-09-22/23): a freshly-connected clinic
  * site usually has only "Uncategorized" and zero tags, which starves the
- * publish-time category/tag selectors. On connect we create a small curated,
- * vertical-aware set ONCE — the selectors then pick among real choices.
- * Deliberately deterministic (no LLM): predictable names, no sprawl.
+ * publish-time category/tag selectors. Category creation is CONSENTED in the
+ * onboarding chat (three-way: all-ours-present / partial / bare site); the
+ * admin Settings route auto-seeds ONLY bare sites. Deterministic curated
+ * names — no LLM, no sprawl.
  */
+import { prisma, decrypt } from '@omniply/shared'
 import { logger } from './logger'
 import { assertSafeWpUrl } from './ssrf'
 
@@ -58,39 +60,66 @@ function norm(s: string): string {
   return s.toLowerCase().replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim()
 }
 
-/**
- * Idempotent: compares case-insensitively against what the site already has
- * and only creates the missing terms. Safe to call on every (re)connect.
- */
-export async function bootstrapWpTaxonomy(opts: {
-  siteUrl: string
-  authHeader: string
-  vertical?: string | null
-}): Promise<{ createdCategories: number; createdTags: number }> {
-  // Vertical-aware: only clinic verticals get the chiro set. Azavea (B2B)
-  // manages its own WP taxonomy.
-  if (opts.vertical === 'azavea') return { createdCategories: 0, createdTags: 0 }
+export interface WpTaxonomyState {
+  /** Category names present on the site, EXCLUDING "Uncategorized". */
+  realCategoryNames: string[]
+  /** Curated categories the site does not have yet. */
+  missingCurated: string[]
+  tagCount: number
+}
 
-  const base = opts.siteUrl.replace(/\/$/, '')
+/** Resolve the site URL + Basic auth header for a user's WP connection. */
+export async function wpAuthForUser(
+  userId: string,
+): Promise<{ siteUrl: string; authHeader: string } | null> {
+  const conn = await prisma.wordPressConnection.findFirst({
+    where: { userId },
+    select: { siteUrl: true, username: true, appPassword: true },
+  })
+  if (!conn) return null
+  const authHeader = 'Basic ' + Buffer.from(`${conn.username}:${decrypt(conn.appPassword)}`).toString('base64')
+  return { siteUrl: conn.siteUrl.replace(/\/$/, ''), authHeader }
+}
+
+export async function getWpTaxonomyState(siteUrl: string, authHeader: string): Promise<WpTaxonomyState> {
+  const base = siteUrl.replace(/\/$/, '')
   await assertSafeWpUrl(base)
+  const [cats, tags] = await Promise.all([
+    listTerms(`${base}/wp-json/wp/v2/categories?per_page=100`, authHeader),
+    listTerms(`${base}/wp-json/wp/v2/tags?per_page=100`, authHeader),
+  ])
+  const catNames = new Set(cats.map((c) => norm(c.name)))
+  const realCategoryNames = cats.map((c) => c.name).filter((n) => norm(n) !== 'uncategorized')
+  const missingCurated = CHIRO_WP_CATEGORIES.filter((name) => !catNames.has(norm(name)))
+  return { realCategoryNames, missingCurated, tagCount: tags.length }
+}
 
-  let createdCategories = 0
-  let createdTags = 0
-
-  const existingCats = await listTerms(`${base}/wp-json/wp/v2/categories?per_page=100`, opts.authHeader)
-  const catNames = new Set(existingCats.map((c) => norm(c.name)))
-  for (const name of CHIRO_WP_CATEGORIES) {
-    if (catNames.has(norm(name))) continue
-    if (await createTerm(`${base}/wp-json/wp/v2/categories`, opts.authHeader, name)) createdCategories++
+/** Create the given categories (idempotent — existing names tolerated). */
+export async function createWpCategories(
+  siteUrl: string,
+  authHeader: string,
+  names: string[],
+): Promise<number> {
+  const base = siteUrl.replace(/\/$/, '')
+  await assertSafeWpUrl(base)
+  let created = 0
+  for (const name of names) {
+    if (await createTerm(`${base}/wp-json/wp/v2/categories`, authHeader, name)) created++
   }
+  logger.info({ siteUrl: base, created }, '[wp-taxonomy] categories created')
+  return created
+}
 
-  const existingTags = await listTerms(`${base}/wp-json/wp/v2/tags?per_page=100`, opts.authHeader)
-  const tagNames = new Set(existingTags.map((t) => norm(t.name)))
+/** Seed the starter tags ONLY when the site has none (invisible plumbing for the tag selector). */
+export async function seedWpTagsIfNone(siteUrl: string, authHeader: string): Promise<number> {
+  const base = siteUrl.replace(/\/$/, '')
+  await assertSafeWpUrl(base)
+  const tags = await listTerms(`${base}/wp-json/wp/v2/tags?per_page=100`, authHeader)
+  if (tags.length > 0) return 0
+  let created = 0
   for (const name of CHIRO_WP_TAGS) {
-    if (tagNames.has(norm(name))) continue
-    if (await createTerm(`${base}/wp-json/wp/v2/tags`, opts.authHeader, name)) createdTags++
+    if (await createTerm(`${base}/wp-json/wp/v2/tags`, authHeader, name)) created++
   }
-
-  logger.info({ siteUrl: base, createdCategories, createdTags }, '[wp-taxonomy] bootstrap complete')
-  return { createdCategories, createdTags }
+  logger.info({ siteUrl: base, created }, '[wp-taxonomy] starter tags seeded')
+  return created
 }
