@@ -31,6 +31,23 @@ export function VoiceRecorder({
   const recorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  // Escalating failure copy (Veit 2026-09-23): failures 1-2 prompt a
+  // re-record; from the 3rd on, advise typing instead. Mic-access and
+  // too-short messages don't count — only real service failures.
+  const failCountRef = useRef(0)
+
+  function serviceFailure() {
+    failCountRef.current += 1
+    const n = failCountRef.current
+    setError(
+      n === 1
+        ? "That didn't come through — please try recording again."
+        : n === 2
+          ? 'Still no luck — one more try, please.'
+          : 'The transcription service is having trouble right now — please type your answer below instead.',
+    )
+    setPhase('idle')
+  }
 
   async function start() {
     setError(null)
@@ -76,16 +93,22 @@ export function VoiceRecorder({
       })
       const data = await res.json()
       if (!res.ok) {
-        setError(data.error ?? 'Upload failed — you can type instead.')
-        setPhase('idle')
+        // 422 = audio was silent/too quiet — that's a mic tip, not a service
+        // failure; keep the server's specific message and don't escalate.
+        if (res.status === 422 && data.error) {
+          setError(data.error)
+          setPhase('idle')
+          return
+        }
+        serviceFailure()
         return
       }
+      failCountRef.current = 0
       setTranscript(data.transcript)
       setAudioKey(data.audioKey ?? null)
       setPhase('review')
     } catch {
-      setError('Upload failed — you can type instead.')
-      setPhase('idle')
+      serviceFailure()
     }
   }
 

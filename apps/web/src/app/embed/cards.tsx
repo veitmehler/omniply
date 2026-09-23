@@ -1168,29 +1168,119 @@ export function FrontDeskCard({ disabled, onSubmit }: { disabled: boolean; onSub
 
 // ── KB review (chat-kb plan F1) ──────────────────────────────────────────────
 
+const HOURS_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'] as const
+
+/** Parse "Monday: 8:00 – 12:00, …" lines into a per-day map (null = freeform). */
+function parseDayHours(s: string): Record<string, string> | null {
+  const map: Record<string, string> = {}
+  for (const line of s.split('\n').map((l) => l.trim()).filter(Boolean)) {
+    const m = /^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)\s*:\s*(.+)$/i.exec(line)
+    if (!m) return null
+    const day = HOURS_DAYS.find((d) => d.toLowerCase() === m[1].toLowerCase())
+    if (day) map[day] = m[2].trim()
+  }
+  return Object.keys(map).length > 0 ? map : null
+}
+
 export function KbReviewCard({ card, disabled, onSubmit }: { card: Record<string, unknown>; disabled: boolean; onSubmit: (a: unknown, echo: string) => void }) {
   const [faqs, setFaqs] = useState<{ q: string; a: string }[]>(
     Array.isArray(card.faqs) ? (card.faqs as { q: string; a: string }[]) : [],
   )
-  const [openingHours, setOpeningHours] = useState((card.openingHours as string) ?? '')
+  const initialHours = (card.openingHours as string) ?? ''
+  const parsedDays = parseDayHours(initialHours)
+  const [openingHours, setOpeningHours] = useState(initialHours)
+  const [dayHours, setDayHours] = useState<Record<string, string> | null>(parsedDays)
+  // Hours confirmation (Veit 2026-09-23): fetched hours must be explicitly
+  // confirmed or edited before the KB can be approved — a GBP/website
+  // mismatch slipped through the old buried textarea.
+  const [hoursMode, setHoursMode] = useState<'ask' | 'confirmed' | 'edit'>(initialHours.trim() ? 'ask' : 'edit')
+  const [hoursEdited, setHoursEdited] = useState(false)
+  const fromGoogle = card.hoursSource === 'google'
   const [phone, setPhone] = useState((card.organizationPhone as string) ?? '')
   const [bookingUrl, setBookingUrl] = useState((card.bookingUrl as string) ?? '')
 
   const input = 'w-full rounded-lg border border-input bg-background px-3 py-2 text-sm'
   const label = 'block text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1 mt-3'
 
+  const effectiveHours = dayHours
+    ? HOURS_DAYS.map((d) => `${d}: ${dayHours[d]?.trim() || 'Closed'}`).join('\n')
+    : openingHours
+
   return (
     <div className="rounded-xl border border-border bg-card p-4 space-y-1 max-h-[70vh] overflow-y-auto">
       <p className={label}>Business basics</p>
       <input className={input} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Practice phone" />
       <input className={input} value={bookingUrl} onChange={(e) => setBookingUrl(e.target.value)} placeholder="Booking page URL" />
-      <textarea
-        className={input}
-        rows={3}
-        value={openingHours}
-        onChange={(e) => setOpeningHours(e.target.value)}
-        placeholder={card.hoursSource === 'google' ? 'Hours (detected from your Google listing — edit to override)' : 'Opening hours (one line per day)'}
-      />
+
+      <p className={label}>Opening hours</p>
+      {hoursMode !== 'edit' && initialHours.trim() ? (
+        <div className="rounded-lg border border-border p-3">
+          <p className="mb-2 text-xs text-muted-foreground">
+            {fromGoogle ? 'From your Google Business listing — are these correct?' : 'Are these correct?'}
+          </p>
+          <div className="mb-2 space-y-0.5 text-sm text-foreground">
+            {(dayHours ? HOURS_DAYS.map((d) => `${d}: ${dayHours[d] ?? 'Closed'}`) : openingHours.split('\n')).map(
+              (line, i) => (
+                <div key={i}>{line}</div>
+              ),
+            )}
+          </div>
+          {hoursMode === 'confirmed' ? (
+            <p className="text-sm font-medium text-green-700">✓ Confirmed correct</p>
+          ) : (
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setHoursMode('confirmed')}
+                className="flex-1 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground"
+              >
+                These are correct ✓
+              </button>
+              <button
+                type="button"
+                onClick={() => setHoursMode('edit')}
+                className="rounded-lg border border-border px-3 py-2 text-sm"
+              >
+                Edit hours
+              </button>
+            </div>
+          )}
+        </div>
+      ) : dayHours || !initialHours.trim() ? (
+        <div className="rounded-lg border border-border p-3 space-y-1.5">
+          {HOURS_DAYS.map((d) => (
+            <div key={d} className="flex items-center gap-2">
+              <span className="w-24 flex-shrink-0 text-xs font-medium text-muted-foreground">{d}</span>
+              <input
+                className={input}
+                value={dayHours?.[d] ?? ''}
+                placeholder="Closed"
+                onChange={(e) => {
+                  setDayHours({ ...(dayHours ?? {}), [d]: e.target.value })
+                  setHoursEdited(true)
+                }}
+              />
+            </div>
+          ))}
+          {fromGoogle && hoursEdited && (
+            <p className="rounded-md bg-amber-500/10 p-2 text-xs text-amber-700">
+              These hours came from your Google Business listing — patients see those on Google and Maps, so it&apos;s
+              worth updating your listing too.
+            </p>
+          )}
+        </div>
+      ) : (
+        <textarea
+          className={input}
+          rows={4}
+          value={openingHours}
+          onChange={(e) => {
+            setOpeningHours(e.target.value)
+            setHoursEdited(true)
+          }}
+          placeholder="Opening hours (one line per day)"
+        />
+      )}
 
       <p className={label}>What the assistant will know ({faqs.length} answers)</p>
       {faqs.map((f, i) => (
@@ -1207,11 +1297,11 @@ export function KbReviewCard({ card, disabled, onSubmit }: { card: Record<string
       </button>
 
       <button
-        onClick={() => onSubmit({ faqs, openingHours, organizationPhone: phone, bookingUrl }, 'Knowledge base approved ✓')}
-        disabled={disabled}
+        onClick={() => onSubmit({ faqs, openingHours: effectiveHours, organizationPhone: phone, bookingUrl }, 'Knowledge base approved ✓')}
+        disabled={disabled || (initialHours.trim() !== '' && hoursMode === 'ask')}
         className="mt-4 w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground disabled:opacity-50"
       >
-        Approve knowledge base
+        {initialHours.trim() !== '' && hoursMode === 'ask' ? 'Confirm your hours first' : 'Approve knowledge base'}
       </button>
     </div>
   )

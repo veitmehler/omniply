@@ -818,6 +818,11 @@ export async function commitGbp(ctx: StepContext, answer: unknown): Promise<stri
   if (!raw) return 'Paste your Google listing link, or type "skip" if you don\'t have one'
   if (/^(skip|none|no)$/i.test(raw)) {
     ctx.stepData.gbpSkipped = true
+    // No link ≠ no listing: resolvePlaceId falls back to a name+address
+    // Find Place search, so hours/reviews still resolve for clinics that
+    // just don't have their GBP link handy (gap found 2026-09-23 — the
+    // probe used to be skipped entirely, leaving openingHours empty).
+    await probePlaceAndStore(ctx, null)
     return null
   }
   const url = raw.startsWith('http') ? raw : `https://${raw}`
@@ -827,8 +832,12 @@ export async function commitGbp(ctx: StepContext, answer: unknown): Promise<stri
     return 'That doesn\'t look like a link — use the Share button on your Google Business Profile, or type "skip"'
   }
   await brandUpsert(ctx.userId, { googleBusinessProfileUrl: url })
+  await probePlaceAndStore(ctx, url)
+  return null
+}
 
-  // Best-effort place resolution + review/hours probe — NEVER blocks onboarding.
+/** Best-effort place resolution + review/hours probe — NEVER blocks onboarding. */
+async function probePlaceAndStore(ctx: StepContext, url: string | null): Promise<void> {
   try {
     const { placesConfigured, resolvePlaceId, probePlace } = await import('../lib/google/places')
     if (placesConfigured()) {
@@ -868,7 +877,6 @@ export async function commitGbp(ctx: StepContext, answer: unknown): Promise<stri
   } catch (err) {
     logger.warn({ err }, '[onboarding] places probe failed (non-fatal)')
   }
-  return null
 }
 
 /** google_reviews: record the OAuth decision (the popup does the actual connect). */

@@ -18,7 +18,32 @@ import { withTimeout } from '../lib/net/with-timeout'
 const TRANSCRIBE_MODEL = 'gemini-3-flash-preview'
 const MAX_AUDIO_BYTES = 20 * 1024 * 1024
 
+/**
+ * Two attempts (45s, then 75s) — a hung Gemini request used to hold the
+ * whole upload for the 120s cap and surface an error (seen live during the
+ * 2026-09-23 onboarding run). Same total ceiling, but a transient hang now
+ * recovers silently on the retry.
+ */
 async function transcribe(geminiKey: string, audio: Buffer, mimeType: string): Promise<string> {
+  const attemptTimeouts = [45_000, 75_000]
+  let lastErr: unknown
+  for (let i = 0; i < attemptTimeouts.length; i++) {
+    try {
+      return await transcribeOnce(geminiKey, audio, mimeType, attemptTimeouts[i])
+    } catch (err) {
+      lastErr = err
+      logger.warn({ err, attempt: i + 1 }, '[onboarding-voice] transcribe attempt failed')
+    }
+  }
+  throw lastErr
+}
+
+async function transcribeOnce(
+  geminiKey: string,
+  audio: Buffer,
+  mimeType: string,
+  timeoutMs: number,
+): Promise<string> {
   const res = await instrumentCall({ provider: 'gemini', op: 'onboarding.transcribe' }, () =>
     withTimeout(
       (signal) =>
@@ -43,7 +68,7 @@ async function transcribe(geminiKey: string, audio: Buffer, mimeType: string): P
             signal,
           },
         ),
-      120_000,
+      timeoutMs,
       'onboarding.transcribe',
     ),
   )
