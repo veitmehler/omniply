@@ -11,7 +11,11 @@ import Link from 'next/link'
 import { PhoneCall, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
-export function VoiceAgentCard() {
+/**
+ * `onSetup`: embed mode — switch to the Settings tab instead of navigating
+ * (the /settings page is a Clerk route the GHL iframe must never load).
+ */
+export function VoiceAgentCard({ onSetup }: { onSetup?: () => void } = {}) {
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
@@ -50,9 +54,13 @@ export function VoiceAgentCard() {
           the same safe knowledge as your chat assistant. Takes about 10 minutes to set up.
         </p>
         <div className="mt-2 flex gap-2">
-          <Button size="sm" asChild>
-            <Link href="/settings#voice-assistant">Set it up</Link>
-          </Button>
+          {onSetup ? (
+            <Button size="sm" onClick={onSetup}>Set it up</Button>
+          ) : (
+            <Button size="sm" asChild>
+              <Link href="/settings#voice-assistant">Set it up</Link>
+            </Button>
+          )}
           <Button size="sm" variant="ghost" onClick={dismiss}>
             I don&apos;t want an AI voice agent yet
           </Button>

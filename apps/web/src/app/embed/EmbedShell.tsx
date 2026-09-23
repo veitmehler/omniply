@@ -11,6 +11,7 @@ import { useEffect, useState } from 'react'
 import { EditRequestPickup } from './EditRequestPickup'
 import { embedFetch, installEmbedFetchBridge } from '@/lib/embedSession'
 import { ContentPlan } from '@/features/dashboard/ContentPlan'
+import { VoiceAgentCard } from '@/features/dashboard/VoiceAgentCard'
 import { SettingsView } from '@/features/settings/SettingsView'
 import { LeadMagnetsView } from '@/components/LeadMagnetsView'
 import { IdeasBankView } from '@/features/ideas/IdeasBankView'
@@ -74,6 +75,7 @@ export function EmbedShell({ justCompletedOnboarding = false }: { justCompletedO
                 newsletters and social posts appear below for review as they finish.
               </div>
             )}
+            <VoiceAgentCard onSetup={() => setTab('settings')} />
             <EditRequestPickup />
             <IdeaCapturePanel onFleshOut={() => setTab('ideas')} />
             <ContentPlan />
