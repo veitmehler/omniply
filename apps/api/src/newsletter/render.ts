@@ -788,9 +788,16 @@ ${fontLink}
 ${preheader}
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f5f5;">
   <tr><td align="center" style="padding:20px 10px;">
-    <table role="presentation" class="nl-container" width="680" cellpadding="0" cellspacing="0" style="width:680px;max-width:680px;background-color:#ffffff;">
+    <!-- Fluid-hybrid container (2026-09-23): inline width:100% + max-width
+         so the layout shrinks on phones even in clients that STRIP <style>
+         (Proton app rendered the fixed 680px table zoom-fitted → 20px text
+         looked ~11px). The mso ghost table pins 680px for Outlook desktop,
+         which ignores max-width. -->
+    <!--[if mso]><table role="presentation" width="680" cellpadding="0" cellspacing="0"><tr><td><![endif]-->
+    <table role="presentation" class="nl-container" width="680" cellpadding="0" cellspacing="0" style="width:100%;max-width:680px;background-color:#ffffff;">
       ${rowsHtml}
     </table>
+    <!--[if mso]></td></tr></table><![endif]-->
   </td></tr>
 </table>
 ${theme.editAnchors ? EDIT_BRIDGE_SCRIPT : ''}
