@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { format } from 'date-fns'
 import {
   Loader2, CalendarRange, CalendarCheck, CalendarClock, Table as TableIcon, LayoutGrid, Pencil, X,
-  Lightbulb, Plus, CalendarX, Mail, FileText, CheckCircle2, AlertTriangle,
+  Lightbulb, Plus, CalendarX, Mail, FileText, CheckCircle2, AlertTriangle, BookMarked,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
@@ -13,6 +13,7 @@ import { ReviewApproveModal, type ReviewItem } from './ReviewApproveModal'
 import { isEmbedMode } from '@/lib/embedSession'
 import { TopicEditModal, type EditableTopic } from './TopicEditModal'
 import { SocialReviewModal } from './SocialReviewModal'
+import { SyndicationModal } from './SyndicationModal'
 import { NewsletterReviewModal } from './NewsletterReviewModal'
 
 interface ArticleEntry {
@@ -70,6 +71,7 @@ export function ContentPlan() {
   const [openIndex, setOpenIndex] = useState<number | null>(null)
   const [socialReviewArticle, setSocialReviewArticle] = useState<{ jobId: string; title: string } | null>(null)
   const [socialReviewNewsletter, setSocialReviewNewsletter] = useState<{ newsletterId: string; title: string } | null>(null)
+  const [syndicationFor, setSyndicationFor] = useState<{ jobId: string; title: string } | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -271,6 +273,9 @@ export function ContentPlan() {
     const assignedToMe = a?.jobId && assignedToMeIds.has(a.jobId)
     const articleReady = a?.jobId && readyArticleIds.has(a.jobId)
     const articleFlagged = a?.jobStatus === 'needs_review' && a.jobId
+    // Published articles: the LinkedIn & Medium platform-article window
+    // (syndication auto-generates at publish; this is the client's access).
+    const articlePublished = a?.jobId && a.jobStatus === 'published'
     const nlReady = nl?.newsletterId && readyNewsletterIds.has(nl.newsletterId)
     const articleSocialReady = a?.jobId && socialReadyArticleIds.has(a.jobId)
     const nlSocialReady = nl?.newsletterId && socialReadyNewsletterIds.has(nl.newsletterId)
@@ -309,6 +314,14 @@ export function ContentPlan() {
         ) : null}
         {articleSocialReady && <SocialReviewBtn kind="article" id={a!.jobId!} title={a!.topic} />}
         {articleSocialGen && <SocialGeneratingChip />}
+        {articlePublished && (
+          <button
+            onClick={() => setSyndicationFor({ jobId: a!.jobId!, title: a!.topic })}
+            className="inline-flex items-center gap-1 rounded-md border border-border px-2.5 py-1 text-xs font-medium text-foreground hover:bg-muted"
+          >
+            <BookMarked className="h-3.5 w-3.5" /> LinkedIn &amp; Medium
+          </button>
+        )}
         {nlReady && <ReviewBtn kind="newsletter" id={nl!.newsletterId!} />}
         {nlSocialReady && <SocialReviewBtn kind="newsletter" id={nl!.newsletterId!} title={nl!.topic} />}
         {nlSocialGen && <SocialGeneratingChip />}
@@ -595,6 +608,14 @@ export function ContentPlan() {
           jobId={socialReviewArticle.jobId}
           title={socialReviewArticle.title}
           onClose={() => { setSocialReviewArticle(null); void load() }}
+        />
+      )}
+
+      {syndicationFor && (
+        <SyndicationModal
+          jobId={syndicationFor.jobId}
+          articleTitle={syndicationFor.title}
+          onClose={() => setSyndicationFor(null)}
         />
       )}
 
