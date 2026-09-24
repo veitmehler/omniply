@@ -58,7 +58,18 @@ export function ContentPlan() {
   const [data, setData] = useState<PlanData | null>(null)
   const [inbox, setInbox] = useState<Inbox | null>(null)
   const [loading, setLoading] = useState(true)
-  const [view, setView] = useState<'table' | 'grid'>('table')
+  // View preference persists per browser (Veit 2026-09-24). Read in an
+  // effect (not the initializer) so SSR hydration stays consistent.
+  const [view, setViewState] = useState<'table' | 'grid'>('table')
+  useEffect(() => {
+    try {
+      if (window.localStorage.getItem('omniply:contentPlanView') === 'grid') setViewState('grid')
+    } catch { /* blocked storage */ }
+  }, [])
+  const setView = (v: 'table' | 'grid') => {
+    setViewState(v)
+    try { window.localStorage.setItem('omniply:contentPlanView', v) } catch { /* blocked storage */ }
+  }
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [busyDate, setBusyDate] = useState<string | null>(null)
   const [generating, setGenerating] = useState(false)
