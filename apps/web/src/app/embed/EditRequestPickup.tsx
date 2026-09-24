@@ -68,7 +68,7 @@ export function EditRequestPickup() {
       </div>
 
       {open?.kind === 'newsletter' && (
-        <NewsletterReviewModal newsletterId={open.id} title={open.title} onClose={closeAndRefresh} />
+        <NewsletterReviewModal newsletterId={open.id} title={open.title} onClose={closeAndRefresh} onApproved={closeAndRefresh} />
       )}
       {open?.kind === 'article' && (
         <ReviewApproveModal

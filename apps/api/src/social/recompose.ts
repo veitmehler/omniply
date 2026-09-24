@@ -11,7 +11,6 @@
  */
 import { prisma } from '@omniply/shared'
 import { generateStorySlidesAsset, regenerateCarouselSlide } from './generate-assets'
-import { generateStoryPhoto } from './story-photo'
 import { socialImageModel } from './automation/matrix-processor'
 import { logger } from '../lib/logger'
 
@@ -114,21 +113,17 @@ async function recomposeStory(
   for (const [i, o] of Object.entries(patch.slides ?? {})) {
     merged.slides![i] = { ...merged.slides![i], ...o }
   }
+  // Story slides are tint + faded icon motif ONLY (Veit 2026-09-24) —
+  // generated photos belong exclusively to the P2 photo-carousels.
   if (typeof patch.regenerateImage === 'number') {
-    const idx = patch.regenerateImage
-    const text = merged.slides?.[String(idx)]?.text ?? storySlides[idx] ?? storySlides[0]
-    const url = await generateStoryPhoto(ownerId, `recompose-${specId}`, text)
-    if (!url) return { error: 'Image generation failed — try again', status: 502 }
-    merged.slides![String(idx)] = { ...merged.slides![String(idx)], imageUrl: url }
+    return { error: 'Story slides use the brand motif — photos are not part of this design', status: 400 }
   }
 
   const effectiveSlides = storySlides.map((t, i) => merged.slides?.[String(i)]?.text ?? t)
-  const slideImages: Record<number, string> = {}
-  for (const [i, o] of Object.entries(merged.slides ?? {})) {
-    if (o.imageUrl) slideImages[Number(i)] = o.imageUrl
-  }
-  // Reuse the original motif background so recomposites stay visually stable.
-  const motifUrl = (assets.backgroundImageUrls ?? []).find((u, i) => !slideImages[i]) ?? assets.backgroundImageUrls?.[0]
+  // Reuse the original motif background so recomposites stay visually
+  // stable. Motif-only: legacy per-slide photo overrides are ignored —
+  // recompositing a pre-correction post also heals it back to the design.
+  const motifUrl = assets.backgroundImageUrls?.[0]
 
   const story = await generateStorySlidesAsset({
     userId: ownerId,
@@ -136,7 +131,6 @@ async function recomposeStory(
     jobId: `recompose-${specId}`,
     forceTextMode: merged.textMode ?? undefined,
     reuseBackgroundUrl: motifUrl,
-    slideImages: Object.keys(slideImages).length ? slideImages : undefined,
     // Beat-1 slots carry the second brand tint — reproduce it exactly.
     tintColor: assets.tintColorHex ?? undefined,
   })

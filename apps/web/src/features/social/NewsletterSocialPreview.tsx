@@ -6,7 +6,7 @@ import { CalendarClock } from 'lucide-react'
 import { SocialPreviewPanel, type SocialAutomationRunRow } from './SocialPreviewPanel'
 
 /** Preview + approve the newsletter-day social posts (weekly cadence). */
-export function NewsletterSocialPreview({ newsletterId }: { newsletterId: string }) {
+export function NewsletterSocialPreview({ newsletterId, onApproved }: { newsletterId: string; onApproved?: () => void }) {
   const getToken = useAppToken()
   const [runs, setRuns] = useState<SocialAutomationRunRow[]>([])
   const [retryingSpec, setRetryingSpec] = useState<string | null>(null)
@@ -64,6 +64,7 @@ export function NewsletterSocialPreview({ newsletterId }: { newsletterId: string
         </div>
       </div>
       <SocialPreviewPanel
+        onApproved={onApproved}
         runs={runs}
         onRefresh={fetchRuns}
         onRetryFailed={handleRetrySpec}

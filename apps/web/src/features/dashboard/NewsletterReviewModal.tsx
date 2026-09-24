@@ -16,10 +16,13 @@ export function NewsletterReviewModal({
   newsletterId,
   title,
   onClose,
+  onApproved,
 }: {
   newsletterId: string
   title: string
   onClose: () => void
+  /** Newsletter approve or social approve-all closes the modal (defaults to onClose). */
+  onApproved?: () => void
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -40,7 +43,7 @@ export function NewsletterReviewModal({
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto bg-background px-6 py-5">
-          <NewsletterEditionContent newsletterId={newsletterId} />
+          <NewsletterEditionContent newsletterId={newsletterId} onApproved={onApproved ?? onClose} />
         </div>
       </div>
     </div>

@@ -303,7 +303,9 @@ function StorySlideEditor({
   }
 
   const slideCount = isStory ? storySlides.length : plans.length
-  const canNewImage = (i: number) => (isStory ? i > 0 : true)
+  // Story slides are tint+icon motif ONLY (Veit 2026-09-24) — photo
+  // regeneration exists solely for photo-carousels (P2).
+  const canNewImage = (_i: number) => !isStory
 
   return (
     <>
@@ -697,6 +699,8 @@ type SocialPreviewPanelProps = {
   onRefresh: () => Promise<void>
   onRetryFailed: (runId: string, slotKey: string) => Promise<void>
   retryingSpec: string | null
+  /** Called after a successful approve-all — hosts close their popover. */
+  onApproved?: () => void
 }
 
 export function SocialPreviewPanel({
@@ -704,6 +708,7 @@ export function SocialPreviewPanel({
   onRefresh,
   onRetryFailed,
   retryingSpec,
+  onApproved,
 }: SocialPreviewPanelProps) {
   const getToken = useAppToken()
   const [approvingAllRunId, setApprovingAllRunId] = useState<string | null>(null)
@@ -736,6 +741,9 @@ export function SocialPreviewPanel({
       if (!res.ok) throw new Error(data.error ?? 'Failed to schedule posts')
       toast.success('Scheduling all posts to Omniply…')
       await onRefresh()
+      // Close the hosting popover — staying open after approval reads as
+      // "nothing happened" (Veit 2026-09-24).
+      onApproved?.()
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Approve failed')
     } finally {

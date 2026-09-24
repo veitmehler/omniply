@@ -66,7 +66,7 @@ const SECTIONS: Array<{ key: string; label: string }> = [
  * with each caller, since a modal has no "navigate away" concept and provides
  * its own sizing.
  */
-export function NewsletterEditionContent({ newsletterId }: { newsletterId: string }) {
+export function NewsletterEditionContent({ newsletterId, onApproved }: { newsletterId: string; onApproved?: () => void }) {
   const [nl, setNl] = useState<Newsletter | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -170,6 +170,9 @@ export function NewsletterEditionContent({ newsletterId }: { newsletterId: strin
       }
       setNotice('Approved — the email is scheduled.')
       await load()
+      // Close the hosting popover — staying open after approval reads as
+      // "nothing happened" (Veit 2026-09-24). Standalone page: no-op.
+      onApproved?.()
     } catch (err) {
       setError((err as Error).message ?? 'Approve failed')
     } finally {
@@ -819,7 +822,7 @@ export function NewsletterEditionContent({ newsletterId }: { newsletterId: strin
       </div>
 
       {/* Full-width: social posts generated from this newsletter */}
-      <NewsletterSocialPreview newsletterId={newsletterId} />
+      <NewsletterSocialPreview newsletterId={newsletterId} onApproved={onApproved} />
     </div>
   )
 }

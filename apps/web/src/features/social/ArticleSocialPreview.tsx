@@ -12,7 +12,7 @@ import { SocialPreviewPanel, type SocialAutomationRunRow } from './SocialPreview
  * all unrelated to social review). No section header here — the modal chrome
  * that hosts this owns the title (see dashboard/SocialReviewModal.tsx).
  */
-export function ArticleSocialPreview({ jobId }: { jobId: string }) {
+export function ArticleSocialPreview({ jobId, onApproved }: { jobId: string; onApproved?: () => void }) {
   const getToken = useAppToken()
   const [runs, setRuns] = useState<SocialAutomationRunRow[]>([])
   const [retryingSpec, setRetryingSpec] = useState<string | null>(null)
@@ -75,6 +75,7 @@ export function ArticleSocialPreview({ jobId }: { jobId: string }) {
 
   return (
     <SocialPreviewPanel
+      onApproved={onApproved}
       jobId={jobId}
       runs={runs}
       onRefresh={fetchRuns}

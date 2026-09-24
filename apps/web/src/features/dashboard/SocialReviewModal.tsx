@@ -15,10 +15,13 @@ export function SocialReviewModal({
   jobId,
   title,
   onClose,
+  onApproved,
 }: {
   jobId: string
   title: string
   onClose: () => void
+  /** Approve-all inside the panel closes the modal (defaults to onClose). */
+  onApproved?: () => void
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -39,7 +42,7 @@ export function SocialReviewModal({
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto bg-background">
-          <ArticleSocialPreview jobId={jobId} />
+          <ArticleSocialPreview jobId={jobId} onApproved={onApproved ?? onClose} />
         </div>
       </div>
     </div>

@@ -608,6 +608,7 @@ export function ContentPlan() {
           jobId={socialReviewArticle.jobId}
           title={socialReviewArticle.title}
           onClose={() => { setSocialReviewArticle(null); void load() }}
+          onApproved={() => { setSocialReviewArticle(null); void load() }}
         />
       )}
 
@@ -624,6 +625,7 @@ export function ContentPlan() {
           newsletterId={socialReviewNewsletter.newsletterId}
           title={socialReviewNewsletter.title}
           onClose={() => { setSocialReviewNewsletter(null); void load() }}
+          onApproved={() => { setSocialReviewNewsletter(null); void load() }}
         />
       )}
 
