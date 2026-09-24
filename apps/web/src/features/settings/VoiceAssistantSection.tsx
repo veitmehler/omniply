@@ -142,13 +142,17 @@ export function VoiceAssistantSection() {
           <p className="text-sm font-medium text-card-foreground mb-1">Step 1 — connect your ElevenLabs account</p>
           <p className="text-xs text-muted-foreground mb-2">
             Create an account at elevenlabs.io (the Creator plan, $22/month, is what we recommend — it includes
-            enough call minutes for most clinics). Then open Profile → API Keys, create a key, and paste it here.
+            enough call minutes for most clinics). Then open Profile → API Keys and create a key.{' '}
+            <span className="font-medium text-card-foreground">
+              Copy the key from the creation dialog — it starts with sk_ and is shown only once.
+            </span>{' '}
+            The key list afterwards only shows the key&apos;s ID, which won&apos;t work here.
           </p>
           <div className="flex gap-2">
             <input
               className={input}
               type="password"
-              placeholder="ElevenLabs API key"
+              placeholder="ElevenLabs API key (sk_…)"
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
             />
@@ -156,6 +160,12 @@ export function VoiceAssistantSection() {
               {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Verify & save'}
             </Button>
           </div>
+          {apiKey.trim() !== '' && !apiKey.trim().startsWith('sk_') && (
+            <p className="text-xs text-amber-600 mt-2">
+              This doesn&apos;t look like an API key — keys start with sk_. If you copied this from the key list,
+              that&apos;s the key&apos;s ID: create a new key and copy the sk_… value shown in the creation dialog.
+            </p>
+          )}
         </div>
       )}
 

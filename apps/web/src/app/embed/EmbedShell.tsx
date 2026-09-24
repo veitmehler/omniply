@@ -37,6 +37,29 @@ export function EmbedShell({ justCompletedOnboarding = false }: { justCompletedO
     setBridgeReady(true)
   }, [])
 
+  // "Set it up" on the voice card must land the user ON the ElevenLabs step,
+  // not just on the Settings tab. The section renders #voice-assistant from
+  // its very first (loading) state, but the tab content mounts a React commit
+  // after setTab — so poll briefly instead of assuming one frame is enough.
+  function openVoiceSetup() {
+    setTab('settings')
+    let tries = 0
+    const find = () => {
+      const el = document.getElementById('voice-assistant')
+      if (!el) {
+        if (tries++ < 20) setTimeout(find, 50)
+        return
+      }
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      el.style.transition = 'box-shadow 0.4s ease'
+      el.style.boxShadow = '0 0 0 3px color-mix(in srgb, var(--primary) 45%, transparent)'
+      setTimeout(() => {
+        el.style.boxShadow = ''
+      }, 2200)
+    }
+    requestAnimationFrame(find)
+  }
+
   if (!bridgeReady) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -75,7 +98,7 @@ export function EmbedShell({ justCompletedOnboarding = false }: { justCompletedO
                 newsletters and social posts appear below for review as they finish.
               </div>
             )}
-            <VoiceAgentCard onSetup={() => setTab('settings')} />
+            <VoiceAgentCard onSetup={openVoiceSetup} />
             <EditRequestPickup />
             <IdeaCapturePanel onFleshOut={() => setTab('ideas')} />
             <ContentPlan />

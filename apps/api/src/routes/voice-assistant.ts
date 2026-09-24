@@ -66,7 +66,18 @@ export async function voiceAssistantRoutes(app: FastifyInstance) {
       const v = await verifyElevenLabsKey(key)
       tier = v.subscription
     } catch (err) {
-      return reply.status(400).send({ error: err instanceof Error ? err.message : 'Key verification failed' })
+      // Don't pass the upstream response body to the UI — map the two
+      // failure modes people actually hit to instructions they can act on.
+      // The classic trap: pasting the key ID from the ElevenLabs key LIST
+      // instead of the sk_ secret shown once in the creation dialog.
+      const raw = err instanceof Error ? err.message : ''
+      const invalidKey = /invalid_api_key|auth failed \(401\)|authentication_error/i.test(raw)
+      logger.warn({ accountId: user.accountId, err: raw.slice(0, 200) }, '[voice-assistant] key verification failed')
+      return reply.status(400).send({
+        error: invalidKey
+          ? "ElevenLabs rejected this value — it looks like a key ID, not the key itself. API keys start with sk_ and are shown only once, in the dialog when you create the key. Create a new key in ElevenLabs and copy the sk_… value from that dialog."
+          : 'Could not verify the key with ElevenLabs. Please check the key and try again in a moment.',
+      })
     }
 
     const ownerId = await canonicalAccountUserId(user.id)
