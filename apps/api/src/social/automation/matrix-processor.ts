@@ -15,7 +15,6 @@ import {
   type NewsletterContentContext,
 } from './newsletter-content'
 import { generateQuoteCardAsset, generateCarouselAssets, generateStorySlidesAsset } from '../generate-assets'
-import { generateStoryPhoto } from '../story-photo'
 import { loadSocialBrandTheme } from '../brand-theme'
 import { pickAlternateTintColor } from '../compositors/brand-tint'
 import { generateVideoReelAsset, generateHookVideoAsset, generateKtMusicVideoAsset } from '../generate-video-assets'
@@ -181,19 +180,11 @@ export async function generateMatrixAsset(opts: {
           .findUnique({ where: { id: userId }, select: { account: { select: { vertical: true } } } })
           .catch(() => null)
         const isAzavea = acct?.account?.vertical === 'azavea'
-        // Story image (Veit 2026-09-17): a Nano-Banana photo behind the first
-        // CONTENT slide that TELLS THE STORY of its text — client accounts
-        // only; azavea's locked motif design is exempt. Best-effort.
-        let slideImages: Record<number, string> | undefined
-        try {
-          const contentIdx = resolved.slot.storySlides.length > 1 ? 1 : 0
-          if (!isAzavea) {
-            const url = await generateStoryPhoto(userId, assetJobId, resolved.slot.storySlides[contentIdx])
-            if (url) slideImages = { [contentIdx]: url }
-          }
-        } catch {
-          /* motif fallback */
-        }
+        // NO photos on story slides (Veit correction 2026-09-24): P1/P3
+        // story carousels are tint overlay + faded icon motif ONLY, on every
+        // slide. Nano-Banana photos belong exclusively to the P2 newsletter
+        // photo-carousels — the 2026-09-17 "story image" implementation had
+        // mis-scoped that decision onto this path.
         // Second story tint (Veit 2026-09-17): the evening beat (beatIndex 1)
         // tints with the brand color most distant from the primary, so the
         // same-day P1/P3 pair isn't two near-identical washes. Persisted so
@@ -217,7 +208,6 @@ export async function generateMatrixAsset(opts: {
           slides: resolved.slot.storySlides,
           jobId: assetJobId,
           imageModel: await socialImageModel(),
-          slideImages,
           tintColor,
         })
         return {
