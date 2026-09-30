@@ -1,0 +1,1051 @@
+SKIP (no hemisphere): Azavea — B2B Practice Growth
+WARN judge-parse 2026 - Chiro - Prenatal & Pediatric - Northern: Unexpected non-whitespace character after JSON at position 100
+WARN judge-parse 2026 - Chiro - Prenatal & Pediatric - Southern: Unexpected non-whitespace character after JSON at position 74
+WARN judge-parse 2026 - Chiro - Prenatal & Pediatric - Southern: Unexpected non-whitespace character after JSON at position 2030
+WARN judge-parse 2026 - Chiro - Prenatal & Pediatric - Southern: Unexpected non-whitespace character after JSON at position 1440
+WARN judge-parse 2026 - Chiro NL - Prenatal & Pediatric - Southern: Unexpected non-whitespace character after JSON at position 980
+WARN judge-parse 2026 - Chiro NL - Prenatal & Pediatric - Southern: Unexpected non-whitespace character after JSON at position 1446
+WARN judge-parse 2026 - Chiro NL - Healthy Aging - Southern: Unexpected non-whitespace character after JSON at position 1762
+WARN judge-parse 2026 - Chiro NL - Healthy Aging - Southern: Unexpected non-whitespace character after JSON at position 558
+
+TOTAL violations to fix: 298
+WARN duplicate replacement skipped: New Year's Resolutions Written in December: The Head Start
+WARN duplicate replacement skipped: Baseball and Softball Shoulders: The Throwing Athlete's Spring
+WARN duplicate replacement skipped: Blisters, Black Toenails and Other Spring Race Souvenirs
+WARN duplicate replacement skipped: Surf, SUP and the Shoulders That Paddle All Summer
+WARN duplicate replacement skipped: Back to the Gym: Rebuilding a Routine After Summer Chaos
+WARN duplicate replacement skipped: Autumn Cycling and the Cold-Start Knee
+WARN duplicate replacement skipped: The Fall Reset: Building a Training Base Before Winter
+WARN duplicate replacement skipped: Back-to-School Backpacks for the Smallest Students
+WARN duplicate replacement skipped: Pumpkin-Patch Season: Lifting Odd Objects With Small Supervisors
+WARN duplicate replacement skipped: Thanksgiving Standing Shifts: Kitchen Marathon Management
+WARN duplicate replacement skipped: The Gratitude Walk: A Holiday Tradition Worth Starting
+WARN duplicate replacement skipped: Thanksgiving Standing Shifts: Kitchen Marathon Management
+WARN duplicate replacement skipped: Grandparents Day: The Active Legacy Worth Modeling
+WARN duplicate replacement skipped: Sandals Season: Summer Footwear That Doesn't Sabotage
+WARN duplicate replacement skipped: The Rake Before the Rake: Pre-Season Movement Prep
+WARN duplicate replacement skipped: Pumpkin Spice and Everything Sitting: Cafe Season Posture
+WARN duplicate replacement skipped: School-Supply Season: The Parent's Carrying Preview
+WARN duplicate replacement skipped: How spring allergies affect neck and shoulder tension
+WARN duplicate replacement skipped: Proper form for lifting heavy pumpkins
+WARN duplicate replacement skipped: Runner's knee season and the cadence fix
+WARN duplicate replacement skipped: Racquet season and the elbow's complaint
+WARN duplicate replacement skipped: Tendons love boring consistency
+WARN duplicate replacement skipped: Base season begins: the unglamorous months
+WARN duplicate replacement skipped: Warm-up protocols for cold-weather training
+WARN duplicate replacement skipped: Grip strength for winter sports equipment
+WARN duplicate replacement skipped: Hydration mistakes in cold training blocks
+WARN duplicate replacement skipped: Starting the training year without week-three regret
+WARN duplicate replacement skipped: Cold-weather warm-ups that actually warm
+WARN duplicate replacement skipped: Ski legs are built in the living room
+WARN duplicate replacement skipped: Treadmill season without the shin complaints
+WARN duplicate replacement skipped: Winter running form adjustments that protect knees and ankles
+WARN duplicate replacement skipped: Midseason injury prevention for winter sport athletes
+WARN duplicate replacement skipped: Sleep quality and muscle recovery in shorter daylight hours
+WARN duplicate replacement skipped: Core stability work that translates to winter sports
+WARN duplicate replacement skipped: Hydration strategies when you don't feel thirsty
+WARN duplicate replacement skipped: Breathing mechanics for cold air endurance training
+WARN duplicate replacement skipped: Lower back care for the lifting athlete in winter
+WARN duplicate replacement skipped: Maintaining training motivation through the middle of winter
+WARN duplicate replacement skipped: Winter training indoors without losing power
+WARN duplicate replacement skipped: Trail running on wet winter tracks without rolling ankles
+WARN duplicate replacement skipped: AFL winter training camps and hamstring strain prevention
+WARN duplicate replacement skipped: Crossfit in winter and grip failure in the cold
+WARN duplicate replacement skipped: Junior sport load: growth spurts and injury windows
+WARN duplicate replacement skipped: Plantar heel pain in spring runners: load, footwear, and tissue
+WARN duplicate replacement skipped: Car seat stages and changes
+WARN duplicate replacement skipped: Car seat stages and changes
+WARN duplicate replacement skipped: Gardening without the next-day regret
+WARN duplicate replacement skipped: Walking pace as a health metric
+WARN duplicate replacement skipped: Sleep quality changes after fifty
+WARN duplicate replacement skipped: The September reset
+WARN duplicate replacement skipped: Indoor exercise and joint preparation
+WARN duplicate replacement skipped: Allergy season sleep strategy
+WARN duplicate replacement skipped: Spring training without the injury spike
+WARN duplicate replacement skipped: Spring cleaning your movement patterns
+WARN duplicate replacement skipped: Autumn sleep debt repayment
+WARN duplicate replacement skipped: Vitamin D recalibration after winter
+
+Applying 242 changes…
+ARTICLE [2026 - Chiro - Family Care - Northern] 2026-02-10
+  - Backpack Safety for the Mid-Year School Term
+  + Backpack Safety for the Winter School Term
+  (mid-year/wrong-month)
+ARTICLE [2026 - Chiro - Family Care - Northern] 2026-06-02
+  - Managing Holiday Stress and Muscle Tension
+  + Managing Summer Activity Stress and Muscle Tension
+  (holidays/wrong-month)
+ARTICLE [2026 - Chiro - Family Care - Northern] 2026-06-16
+  - Staying Hydrated in the December Heat
+  + Staying Hydrated in the Summer Heat
+  (says-december/not-december)
+ARTICLE [2026 - Chiro - Family Care - Northern] 2026-06-23
+  - Celebrating the Holidays with Healthy Movement
+  + Celebrating Summer Solstice with Healthy Movement
+  (holidays/wrong-month)
+ARTICLE [2026 - Chiro - Family Care - Northern] 2026-06-25
+  - Post-Holiday Rest and Recovery
+  + Mid-Year Rest and Recovery
+  (holidays/wrong-month)
+ARTICLE [2026 - Chiro - Family Care - Northern] 2026-06-30
+  - Setting Family Health Goals for the New Year
+  + Setting Family Health Goals for Summer
+  (new-year/wrong-month)
+ARTICLE [2026 - Chiro - Family Care - Northern] 2026-07-14
+  - Back to School Backpack Checks
+  + Summer Sports Injury Prevention for Kids
+  (back-to-school/wrong-month)
+ARTICLE [2026 - Chiro - Family Care - Northern] 2026-07-23
+  - Senior Health Checks for the New Year
+  + Senior Health Checks for Mid-Year Wellness
+  (new-year/wrong-month)
+ARTICLE [2026 - Chiro - Family Care - Northern] 2026-10-01
+  - Easter Holiday Travel and Posture
+  + Fall Sports Preparation and Posture
+  (easter/wrong-month)
+ARTICLE [2026 - Chiro - Family Care - Northern] 2026-12-17
+  - A Mid-Year Posture Check-In for the Family
+  + An End-of-Year Posture Check-In for the Family
+  (mid-year/wrong-month)
+ARTICLE [2026 - Chiro - Family Care - Northern] 2027-02-09
+  - Backpack Safety for the Mid-Year School Term
+  + Backpack Safety for the Winter School Term
+  (mid-year/wrong-month)
+ARTICLE [2026 - Chiro - Family Care - Northern] 2027-06-01
+  - Managing Holiday Stress and Muscle Tension
+  + Managing Summer Activity Stress and Muscle Tension
+  (holidays/wrong-month)
+ARTICLE [2026 - Chiro - Family Care - Northern] 2027-06-15
+  - Staying Hydrated in the December Heat
+  + Staying Hydrated in the Summer Heat
+  (says-december/not-december)
+ARTICLE [2026 - Chiro - Family Care - Northern] 2027-06-22
+  - Celebrating the Holidays with Healthy Movement
+  + Celebrating Summer Solstice with Healthy Movement
+  (holidays/wrong-month)
+ARTICLE [2026 - Chiro - Family Care - Northern] 2027-06-24
+  - Post-Holiday Rest and Recovery
+  + Mid-Year Rest and Recovery
+  (holidays/wrong-month)
+ARTICLE [2026 - Chiro - Family Care - Northern] 2027-06-29
+  - Setting Family Health Goals for the New Year
+  + Setting Family Health Goals for Summer
+  (new-year/wrong-month)
+ARTICLE [2026 - Chiro - Family Care - Northern] 2027-07-13
+  - Back to School Backpack Checks
+  + Summer Sports Injury Prevention for Kids
+  (back-to-school/wrong-month)
+ARTICLE [2026 - Chiro - Family Care - Northern] 2027-07-22
+  - Senior Health Checks for the New Year
+  + Senior Health Checks for Mid-Year Wellness
+  (new-year/wrong-month)
+ARTICLE [2026 - Chiro - Family Care - Northern] 2027-09-30
+  - Easter Holiday Travel and Posture
+  + Fall Sports Preparation and Posture
+  (easter/wrong-month)
+ARTICLE [2026 - Chiro - Family Care - Northern] 2027-12-16
+  - A Mid-Year Posture Check-In for the Family
+  + An End-of-Year Posture Check-In for the Family
+  (mid-year/wrong-month)
+ARTICLE [2026 - Chiro - Family Care - Northern] 2026-05-28
+  - Wrapping Presents Without Neck Pain
+  + Gardening Posture for the Growing Season
+  (llm: 'Wrapping Presents' in late May contradicts typical gift-giving seasons)
+ARTICLE [2026 - Chiro - Family Care - Northern] 2026-07-02
+  - Starting the Year with Better Posture
+  + Starting Summer with Better Posture
+  (llm: 'Starting the Year' in July contradicts New Year timing)
+ARTICLE [2026 - Chiro - Family Care - Northern] 2026-07-16
+  - Transitioning Back to the Office After Holidays
+  + Maintaining Posture During Summer Vacation
+  (llm: 'After Holidays' in July contradicts major holiday timing)
+ARTICLE [2026 - Chiro - Family Care - Northern] 2026-07-21
+  - Supporting Teens as They Start the School Year
+  + Supporting Teens Through Summer Activities
+  (llm: 'Start the School Year' in July is too early for Northern hemisphere)
+ARTICLE [2026 - Chiro - Family Care - Northern] 2027-05-27
+  - Wrapping Presents Without Neck Pain
+  + Gardening Posture for the Growing Season
+  (llm: 'Wrapping Presents' in May (gift wrapping is December holidays))
+ARTICLE [2026 - Chiro - Family Care - Northern] 2027-07-20
+  - Supporting Teens as They Start the School Year
+  + Supporting Teens Through Summer Activities
+  (llm: School year starts in July contradicts Northern hemisphere school calendar (starts Aug/Sep))
+ARTICLE [2026 - Chiro - Family Care - Southern] 2026-08-11
+  - Backpack Safety for the Mid-Year School Term
+  + Backpack Safety for the New School Term
+  (mid-year/wrong-month)
+ARTICLE [2026 - Chiro - Family Care - Southern] 2027-08-10
+  - Backpack Safety for the Mid-Year School Term
+  + Backpack Safety for the New School Term
+  (mid-year/wrong-month)
+ARTICLE [2026 - Chiro - Family Care - Southern] 2028-03-30
+  - Easter Holiday Travel and Posture
+  + Autumn Weekend Travel and Posture
+  (llm: Easter in March, but Easter 2028 is April 16)
+ARTICLE [2026 - Chiro - Sports - Northern] 2026-10-13
+  - Weight-Room Etiquette for the Returning New Year... in October
+  + Weight-Room Etiquette for the Fall Comeback: Post-Season Rebuilds
+  (new-year/wrong-month)
+ARTICLE [2026 - Chiro - Sports - Northern] 2027-02-02
+  - Swimmer's Shoulder Before Summer: Fixing the Catch in February
+  + Swimmer's Shoulder in Winter Pool Training: Fixing the Catch in February
+  (winter-month/summer-text)
+ARTICLE [2026 - Chiro - Sports - Northern] 2027-10-21
+  - Weight-Room Etiquette for the Returning New Year... in October
+  + Weight-Room Etiquette for the Fall Comeback: Post-Season Rebuilds
+  (new-year/wrong-month)
+ARTICLE [2026 - Chiro - Sports - Northern] 2028-02-10
+  - Swimmer's Shoulder Before Summer: Fixing the Catch in February
+  + Swimmer's Shoulder in Winter Pool Training: Fixing the Catch in February
+  (winter-month/summer-text)
+ARTICLE [2026 - Chiro - Sports - Southern] 2026-12-31
+  - Mid-Year Review for the Amateur Athlete
+  + Year-End Review for the Amateur Athlete
+  (mid-year/wrong-month)
+ARTICLE [2026 - Chiro - Sports - Southern] 2027-04-20
+  - Weight-Room Etiquette for the Returning New Year... in October
+  + Weight-Room Etiquette for the Autumn Returnee
+  (new-year/wrong-month)
+ARTICLE [2026 - Chiro - Sports - Southern] 2027-06-24
+  - New Year's Resolutions Written in December: The Head Start
+  + Mid-Year Resolutions Written in June: The Head Start
+  (new-year/wrong-month)
+ARTICLE [2026 - Chiro - Sports - Southern] 2027-07-01
+  - New Year Training Surges and Why Joints Rebel in Week Three
+  + Mid-Year Training Surges and Why Joints Rebel in Week Three
+  (new-year/wrong-month)
+ARTICLE [2026 - Chiro - Sports - Southern] 2027-08-10
+  - Swimmer's Shoulder Before Summer: Fixing the Catch in February
+  + Swimmer's Shoulder in Winter: Fixing the Catch Before Spring
+  (winter-month/summer-text)
+ARTICLE [2026 - Chiro - Sports - Southern] 2028-01-11
+  - Mid-Year Review for the Amateur Athlete
+  + Mid-Summer Review for the Amateur Athlete
+  (mid-year/wrong-month)
+ARTICLE [2026 - Chiro - Sports - Southern] 2028-04-27
+  - Weight-Room Etiquette for the Returning New Year... in October
+  + Weight-Room Etiquette for the Autumn Athlete
+  (new-year/wrong-month)
+ARTICLE [2026 - Chiro - Sports - Southern] 2028-07-04
+  - New Year's Resolutions Written in December: The Head Start
+  + Mid-Year Resolutions Written in July: The Head Start
+  (new-year/wrong-month)
+ARTICLE [2026 - Chiro - Sports - Southern] 2028-07-11
+  - New Year Training Surges and Why Joints Rebel in Week Three
+  + Mid-Year Training Surges and Why Joints Rebel in Week Three
+  (new-year/wrong-month)
+ARTICLE [2026 - Chiro - Sports - Southern] 2028-08-17
+  - Swimmer's Shoulder Before Summer: Fixing the Catch in February
+  + Swimmer's Shoulder in Late Winter: Fixing the Catch Before Spring
+  (winter-month/summer-text)
+ARTICLE [2026 - Chiro - Sports - Southern] 2026-10-22
+  - May Mileage Ramps and the Shin Splint Spike
+  + Spring Mileage Ramps and the Shin Splint Spike
+  (llm: 'May Mileage' mentioned in October)
+ARTICLE [2026 - Chiro - Sports - Southern] 2026-11-05
+  - Bike-to-Work Month Without the Numb Hands
+  + Bike-to-Work Commuting Without the Numb Hands
+  (llm: 'Bike-to-Work Month' implies May in November)
+ARTICLE [2026 - Chiro - Sports - Southern] 2026-11-24
+  - Summer Tournament Weekends: Playing Four Games in Two Days
+  + Pre-Summer Tournament Weekends: Playing Four Games in Two Days
+  (llm: 'Summer Tournament' in November (Southern summer is Dec-Feb))
+ARTICLE [2026 - Chiro - Sports - Southern] 2026-11-26
+  - Running in the Heat: What Slows You Down Is Protecting You
+  + Training in the Spring Heat: What Slows You Down Is Protecting You
+  (llm: 'Running in the Heat...Summer' context in November (Southern summer is Dec-Feb))
+ARTICLE [2026 - Chiro - Sports - Southern] 2027-01-28
+  - The August Long Run and the Art of Not Melting
+  + The Summer Long Run and the Art of Not Melting
+  (llm: 'August Long Run' mentioned in January)
+ARTICLE [2026 - Chiro - Sports - Southern] 2027-02-11
+  - The Masters Athlete's August: Training Hard After Fifty
+  + The Masters Athlete's Late Summer: Training Hard After Fifty
+  (llm: 'August' mentioned in February)
+ARTICLE [2026 - Chiro - Sports - Southern] 2027-02-25
+  - Fall League Kickoff: The Most Injurious Fortnight of the Year
+  + Autumn League Kickoff: The Most Injurious Fortnight of the Year
+  (llm: 'Fall League Kickoff' in February (Southern fall is Mar-May))
+ARTICLE [2026 - Chiro - Sports - Southern] 2027-03-25
+  - Fantasy Football Posture: The Other Season Starting in September
+  + Fantasy Football Posture: The Other Season Starting Now
+  (llm: 'Starting in September' mentioned in March)
+ARTICLE [2026 - Chiro - Sports - Southern] 2027-03-30
+  - October Races and the Cold Start Line
+  + Autumn Races and the Cold Start Line
+  (llm: 'October Races' mentioned in March)
+ARTICLE [2026 - Chiro - Sports - Southern] 2027-08-31
+  - Spring Training for Grown-Ups: Restarting After a Winter Off
+  + Late-Winter Training for Grown-Ups: Restarting After an Off-Season
+  (llm: Text says 'Winter Off' but August is winter in Southern hemisphere)
+ARTICLE [2026 - Chiro - Sports - Southern] 2027-09-02
+  - Runner's Knee Season Opens in March: Here's the Usual Story
+  + Runner's Knee Season Opens in Spring: Here's the Usual Story
+  (llm: Text says 'opens in March' but date is September)
+ARTICLE [2026 - Chiro - Sports - Southern] 2027-09-09
+  - March Madness for Your Calves: Court Sports and Achilles Load
+  + Spring Court Sports: Calf and Achilles Load Management
+  (llm: Text says 'March Madness' but date is September)
+ARTICLE [2026 - Chiro - Sports - Southern] 2027-11-02
+  - May Mileage Ramps and the Shin Splint Spike
+  + Spring Mileage Ramps and the Shin Splint Spike
+  (llm: Text says 'May Mileage' but date is November)
+ARTICLE [2026 - Chiro - Sports - Southern] 2028-02-08
+  - The August Long Run and the Art of Not Melting
+  + The Summer Long Run and the Art of Not Melting
+  (llm: Text says 'August Long Run' but date is February)
+ARTICLE [2026 - Chiro - Sports - Southern] 2028-04-06
+  - October Races and the Cold Start Line
+  + Autumn Races and Preparing for the Cool Start Line
+  (llm: Text mentions 'October Races' but date is April)
+ARTICLE [2026 - Chiro - Sports - Southern] 2028-04-25
+  - Halloween Fun Runs With Kids: Costumes Meet Cadence
+  + The Mid-Autumn Strength Block: Building Power in the Off-Season
+  (llm: Halloween (October 31) referenced in April)
+ARTICLE [2026 - Chiro - Sports - Southern] 2028-05-09
+  - Turkey Trots and the Once-a-Year Runner
+  + The Once-a-Year Runner: Preparing for Winter Fun Runs
+  (llm: Turkey Trots (November/Thanksgiving) referenced in May)
+ARTICLE [2026 - Chiro - Sports - Southern] 2028-06-06
+  - Black Friday for the Home Gym: What's Worth Buying
+  + Mid-Year Sales for the Home Gym: What's Worth Buying
+  (llm: Black Friday (November) referenced in June)
+ARTICLE [2026 - Chiro - Sports - Southern] 2028-06-15
+  - The Twelve Lifts of December: A Maintenance Month Plan
+  + The Mid-Winter Maintenance Plan: Twelve Lifts to Stay Strong
+  (llm: Text says 'Twelve Lifts of December' but date is June)
+ARTICLE [2026 - Chiro - Sports - Southern] 2028-09-12
+  - Runner's Knee Season Opens in March: Here's the Usual Story
+  + Runner's Knee Season Opens in Spring: Here's the Usual Story
+  (llm: Text says 'Season Opens in March' but date is September)
+ARTICLE [2026 - Chiro - Sports - Southern] 2028-09-19
+  - March Madness for Your Calves: Court Sports and Achilles Load
+  + Spring Court Sports: Managing Calf and Achilles Load
+  (llm: Text says 'March Madness' but date is September)
+ARTICLE [2026 - Chiro - Prenatal & Pediatric - Northern] 2027-07-08
+  - Back-to-School Backpacks for the Smallest Students
+  + Summer Camp Prep: Movement-Ready Bodies for Little Adventurers
+  (back-to-school/wrong-month)
+ARTICLE [2026 - Chiro - Prenatal & Pediatric - Northern] 2027-11-11
+  - New Year's Reflections for the Almost-Due
+  + Year-End Reflections for the Almost-Due
+  (new-year/wrong-month)
+ARTICLE [2026 - Chiro - Prenatal & Pediatric - Northern] 2027-11-23
+  - New Year, New Baby: Preparing Your Body for a Winter Pregnancy
+  + Thanksgiving Week With a Bump: Hosting, Helping and Knowing When to Sit
+  (new-year/wrong-month)
+ARTICLE [2026 - Chiro - Prenatal & Pediatric - Northern] 2028-06-15
+  - Back-to-School Backpacks for the Smallest Students
+  + Summer Playground Safety: Heat, Surfaces and Supervision
+  (back-to-school/wrong-month)
+ARTICLE [2026 - Chiro - Prenatal & Pediatric - Northern] 2026-10-20
+  - Thanksgiving Hosting While Expecting: Delegation as Self-Care
+  + Halloween Planning While Expecting: Trick-or-Treat Strategy for the Pregnant Parent
+  (llm: Thanksgiving referenced in October (US Thanksgiving is in November))
+ARTICLE [2026 - Chiro - Prenatal & Pediatric - Northern] 2027-01-21
+  - Loving Your Changed Body: Valentine Thoughts on Postpartum Identity
+  + Winter Body Acceptance: Postpartum Identity in the Cold Months
+  (llm: Valentine referenced in January (Valentine's Day is February 14))
+ARTICLE [2026 - Chiro - Prenatal & Pediatric - Northern] 2027-02-11
+  - Spring Walks With the Stroller: Handle Heights and Hill Strategy
+  + Winter Walks With the Stroller: Handle Heights and Ice Strategy
+  (llm: 'Spring Walks' referenced in February (Northern hemisphere spring starts late March))
+ARTICLE [2026 - Chiro - Prenatal & Pediatric - Northern] 2027-04-13
+  - Mother's Day Truth: The Load Mothers Carry Is Also Literal
+  + Spring Awakening: Pregnancy Energy Shifts as Seasons Change
+  (llm: Mother's Day referenced in April (US Mother's Day is second Sunday in May))
+ARTICLE [2026 - Chiro - Prenatal & Pediatric - Northern] 2027-05-11
+  - Father's Day Feature: Dads' Backs and the Airplane Game
+  + Memorial Day Weekend Prep: Pregnant at the Season's First Gatherings
+  (llm: Father's Day referenced in May (US Father's Day is third Sunday in June))
+ARTICLE [2026 - Chiro - Prenatal & Pediatric - Northern] 2027-08-05
+  - The Growing Backpack Audit: What September Bags Reveal
+  + Late Summer Routines: Preparing Bodies for the School Year Ahead
+  (llm: Text says 'September bags' but date is August 5)
+ARTICLE [2026 - Chiro - Prenatal & Pediatric - Northern] 2027-08-31
+  - Pumpkin-Patch Season: Lifting Odd Objects With Small Supervisors
+  + Labor Day Weekend With Little Ones: The Last Hurrah of Summer Play
+  (llm: Pumpkin-patch season referenced in late August; typically September-October)
+ARTICLE [2026 - Chiro - Prenatal & Pediatric - Northern] 2027-09-07
+  - The Crawler's Halloween: Baby-Proofing the Decoration Season
+  + The Crawler's Autumn: Baby-Proofing the Seasonal Transition
+  (llm: Halloween referenced in early September; Halloween is October 31)
+ARTICLE [2026 - Chiro - Prenatal & Pediatric - Northern] 2027-09-14
+  - Costume Mobility Check: Can Your Toddler Actually Move in That
+  + Fall Weather Dressing: Layers and Mobility for Active Toddlers
+  (llm: Costume topic in mid-September; Halloween is October 31)
+ARTICLE [2026 - Chiro - Prenatal & Pediatric - Northern] 2027-09-28
+  - Thanksgiving Hosting While Expecting: Delegation as Self-Care
+  + Autumn Harvest Activities While Expecting: Farm Visits and Body Wisdom
+  (llm: Thanksgiving hosting in late September; US Thanksgiving is late November, Canadian is October)
+ARTICLE [2026 - Chiro - Prenatal & Pediatric - Northern] 2027-12-30
+  - Loving Your Changed Body: Valentine Thoughts on Postpartum Identity
+  + Year-End Body Inventory: What Pregnancy and Parenting Have Taught
+  (llm: Valentine thoughts on December 30; Valentine's Day is February 14)
+ARTICLE [2026 - Chiro - Prenatal & Pediatric - Northern] 2028-03-21
+  - Mother's Day Truth: The Load Mothers Carry Is Also Literal
+  + Spring Equinox Energy: Pregnancy Vitality as Days Lengthen
+  (llm: Mother's Day in March; Mother's Day is in May in Northern hemisphere)
+ARTICLE [2026 - Chiro - Prenatal & Pediatric - Southern] 2026-10-08
+  - Easter Egg Hunts and the Squat Olympics
+  + Spring Garden Play and the Squat Olympics
+  (easter/wrong-month)
+ARTICLE [2026 - Chiro - Prenatal & Pediatric - Southern] 2027-05-25
+  - New Year's Reflections for the Almost-Due
+  + Mid-Year Reflections for the Almost-Due
+  (new-year/wrong-month)
+ARTICLE [2026 - Chiro - Prenatal & Pediatric - Southern] 2027-06-03
+  - New Year, New Baby: Preparing Your Body for a Winter Pregnancy
+  + Mid-Year, New Baby: Preparing Your Body for a Winter Pregnancy
+  (new-year/wrong-month)
+ARTICLE [2026 - Chiro - Prenatal & Pediatric - Southern] 2027-09-16
+  - Easter Egg Hunts and the Squat Olympics
+  + Spring Outdoor Play and the Squat Olympics
+  (easter/wrong-month)
+ARTICLE [2026 - Chiro - Prenatal & Pediatric - Southern] 2027-12-28
+  - Back-to-School Backpacks for the Smallest Students
+  + Summer Holidays and Small Bodies: Travel Tips for Toddlers
+  (back-to-school/wrong-month)
+ARTICLE [2026 - Chiro - Prenatal & Pediatric - Southern] 2028-05-02
+  - New Year's Reflections for the Almost-Due
+  + Autumn Reflections for the Almost-Due
+  (new-year/wrong-month)
+ARTICLE [2026 - Chiro - Prenatal & Pediatric - Southern] 2028-05-11
+  - New Year, New Baby: Preparing Your Body for a Winter Pregnancy
+  + Autumn Arrival: Preparing Your Body for a Winter Pregnancy
+  (new-year/wrong-month)
+ARTICLE [2026 - Chiro - Healthy Aging - Northern] 2027-07-22
+  - Back-to-School for Grandparents: The Pickup-Line Season Begins
+  + Summer Garden Duty: The Pickup-and-Carry Season Begins
+  (back-to-school/wrong-month)
+ARTICLE [2026 - Chiro - Healthy Aging - Northern] 2027-11-11
+  - New Year's Eve at Every Age: Celebrations That Fit
+  + Thanksgiving Table Realities: Seating That Supports
+  (new-year/wrong-month)
+ARTICLE [2026 - Chiro - Healthy Aging - Northern] 2028-06-27
+  - Back-to-School for Grandparents: The Pickup-Line Season Begins
+  + Summer Garden Duty: The Pickup-and-Carry Season Begins
+  (back-to-school/wrong-month)
+ARTICLE [2026 - Chiro - Healthy Aging - Northern] 2027-07-01
+  - The Late-Summer Check-In: How Did the Active Season Treat You
+  + The Early-Summer Check-In: How Did the Active Season Start
+  (llm: Text says 'Late-Summer' but July 1 is early summer in Northern hemisphere)
+ARTICLE [2026 - Chiro - Healthy Aging - Northern] 2027-08-03
+  - Apple Season Ladders: The Orchard Conversation Nobody Wants
+  + Late-Summer Endurance: Maintaining Movement Through the Heat
+  (llm: Text says 'Apple Season' but August is summer, apple season is fall (Sept-Oct) in Northern hemisphere)
+ARTICLE [2026 - Chiro - Healthy Aging - Northern] 2027-08-05
+  - The Autumn Reset: Rebuilding Routine as Structure Returns
+  + The Late-Summer Check-In: Rebuilding Routine Before Fall Returns
+  (llm: Text says 'Autumn Reset' but August 5 is summer in Northern hemisphere)
+ARTICLE [2026 - Chiro - Healthy Aging - Northern] 2027-08-12
+  - Leaf-Peeping Drives and the Every-Hour Unfold
+  + Road-Trip Returns: Long-Drive Recovery and the Every-Hour Unfold
+  (llm: Text says 'Leaf-Peeping' but August is summer, leaf-peeping is fall (Sept-Oct) in Northern hemisphere)
+ARTICLE [2026 - Chiro - Healthy Aging - Northern] 2027-08-19
+  - Soup Season Prep: Batch Cooking Ergonomics
+  + Late-Summer Batch Cooking: Preserving Season Ergonomics
+  (llm: Text says 'Soup Season' but August is summer in Northern hemisphere)
+ARTICLE [2026 - Chiro - Healthy Aging - Northern] 2027-08-26
+  - Rake Season Returns: The Annual Test of Technique
+  + Garden Cleanup Season: The End-of-Summer Test of Technique
+  (llm: Text says 'Rake Season' but August is summer, raking leaves is fall (Oct-Nov) in Northern hemisphere)
+ARTICLE [2026 - Chiro - Healthy Aging - Northern] 2027-09-09
+  - Pumpkin Logistics: The Season's Awkward Lifts
+  + Harvest Basket Logistics: The Season's Awkward Lifts
+  (llm: Pumpkin season is October, not early September)
+ARTICLE [2026 - Chiro - Healthy Aging - Northern] 2027-09-23
+  - Thanksgiving Standing Shifts: Kitchen Marathon Management
+  + Fall Equinox Movement: Honoring the Seasonal Shift Actively
+  (llm: Thanksgiving is November (US) or October (Canada), not September)
+ARTICLE [2026 - Chiro - Healthy Aging - Northern] 2027-10-07
+  - Strength as Thanksgiving: What Your Muscles Did This Year
+  + Strength as Gratitude: What Your Muscles Did This Year
+  (llm: Text references Thanksgiving but date is early October; US Thanksgiving is late November)
+ARTICLE [2026 - Chiro - Healthy Aging - Northern] 2027-10-14
+  - Black Friday From the Couch: Online-Era Shopping Postures
+  + Autumn Leaf Walks: Footing and Balance on Slippery Surfaces
+  (llm: Black Friday is day after Thanksgiving (late November), not mid-October)
+ARTICLE [2026 - Chiro - Healthy Aging - Northern] 2027-11-02
+  - Winter Solstice Movement: Honoring the Darkest Day Actively
+  + Thanksgiving Prep Movement: Kitchen Marathon Management
+  (llm: Winter Solstice is December 21, not early November)
+ARTICLE [2026 - Chiro - Healthy Aging - Northern] 2028-04-11
+  - Grandkids Out of School: Surviving and Savoring Summer Duty
+  + Spring Gardening Reboot: Surviving and Savoring Planting Season
+  (llm: 'Grandkids Out of School' and 'Summer Duty' in April (school ends June, summer is June-August in Northern hemisphere))
+ARTICLE [2026 - Chiro - Healthy Aging - Northern] 2028-04-13
+  - Heat Wisdom: Why Thermoregulation Changes and What To Do
+  + Spring Warming Wisdom: Transitioning Activity as Temperatures Rise
+  (llm: 'Heat Wisdom' implies summer heat in April (spring in Northern hemisphere))
+ARTICLE [2026 - Chiro - Healthy Aging - Northern] 2028-04-18
+  - The Long Evening Walk: Solstice Light as Movement Invitation
+  + The Longer Evening Walk: Springtime Light as Movement Invitation
+  (llm: 'Solstice' in April (solstice is June 21 in Northern hemisphere))
+ARTICLE [2026 - Chiro - Healthy Aging - Northern] 2028-04-25
+  - Sandals Season: Summer Footwear That Doesn't Sabotage
+  + Spring Footwear: Transitional Shoes That Don't Sabotage
+  (llm: 'Sandals Season: Summer Footwear' in April (summer is June-August in Northern hemisphere))
+ARTICLE [2026 - Chiro - Healthy Aging - Northern] 2028-05-11
+  - The National Park Summer: Trail Grades and Honest Self-Rating
+  + The National Park Spring: Trail Grades and Honest Self-Rating
+  (llm: 'National Park Summer' in May (summer is June-August in Northern hemisphere))
+ARTICLE [2026 - Chiro - Healthy Aging - Northern] 2028-06-06
+  - The Late-Summer Check-In: How Did the Active Season Treat You
+  + The Early-Summer Check-In: How Did the Active Season Start
+  (llm: 'Late-Summer' in early June (late summer is August in Northern hemisphere))
+ARTICLE [2026 - Chiro - Healthy Aging - Northern] 2028-07-04
+  - Fall Prevention Month: A Word About the Word
+  + Summer Balance Practice: A Word About Staying Steady
+  (llm: 'Fall Prevention Month' in July (fall/autumn is September-November in Northern hemisphere))
+ARTICLE [2026 - Chiro - Healthy Aging - Northern] 2028-07-06
+  - Apple Season Ladders: The Orchard Conversation Nobody Wants
+  + Summer Garden Ladders: The Pruning Conversation Nobody Wants
+  (llm: 'Apple Season' in July (apple season is September-October in Northern hemisphere))
+ARTICLE [2026 - Chiro - Healthy Aging - Northern] 2028-07-11
+  - The Autumn Reset: Rebuilding Routine as Structure Returns
+  + The Mid-Summer Reset: Maintaining Routine Through Peak Season
+  (llm: 'Autumn Reset' in July (autumn is September-November in Northern hemisphere))
+ARTICLE [2026 - Chiro - Healthy Aging - Northern] 2028-07-18
+  - Leaf-Peeping Drives and the Every-Hour Unfold
+  + Scenic Summer Drives and the Every-Hour Unfold
+  (llm: 'Leaf-Peeping' in July (leaf-peeping is September-October in Northern hemisphere))
+ARTICLE [2026 - Chiro - Healthy Aging - Northern] 2028-07-25
+  - Soup Season Prep: Batch Cooking Ergonomics
+  + Summer Salad Prep: Fresh-Food Season Ergonomics
+  (llm: 'Soup Season' in July (soup season is fall/winter, not summer in Northern hemisphere))
+ARTICLE [2026 - Chiro - Healthy Aging - Southern] 2027-05-25
+  - New Year's Eve at Every Age: Celebrations That Fit
+  + Mid-Year Mobility Inventory: Six Months of Motion Reviewed
+  (new-year/wrong-month)
+ARTICLE [2026 - Chiro - Healthy Aging - Southern] 2027-06-03
+  - New Year Movement Goals That Respect Six Decades of History
+  + Mid-Year Movement Goals That Respect Six Decades of History
+  (new-year/wrong-month)
+ARTICLE [2026 - Chiro - Healthy Aging - Southern] 2028-04-27
+  - New Year's Eve at Every Age: Celebrations That Fit
+  + Autumn Evening Celebrations: Gatherings That Fit Every Age
+  (new-year/wrong-month)
+ARTICLE [2026 - Chiro - Healthy Aging - Southern] 2028-05-09
+  - New Year Movement Goals That Respect Six Decades of History
+  + Autumn Movement Goals That Respect Six Decades of History
+  (new-year/wrong-month)
+ARTICLE [2026 - Chiro - Healthy Aging - Southern] 2026-10-27
+  - Mother's Day Across Generations: Moving Together as a Gift
+  + Spring Garden Season: Building Stamina for the Planting Months
+  (llm: Mother's Day in October (Southern hemisphere Mother's Day is in May))
+ARTICLE [2026 - Chiro - Healthy Aging - Southern] 2026-11-17
+  - Grandkids Out of School: Surviving and Savoring Summer Duty
+  + Grandkids Out of School: Surviving and Savoring Spring Break Duty
+  (llm: 'Summer Duty' in November (Southern hemisphere summer begins late December))
+ARTICLE [2026 - Chiro - Healthy Aging - Southern] 2027-01-12
+  - The Late-Summer Check-In: How Did the Active Season Treat You
+  + The Mid-Summer Check-In: How Did the Active Season Treat You
+  (llm: 'Late-Summer' in January (Southern hemisphere late summer is February/March))
+ARTICLE [2026 - Chiro - Healthy Aging - Southern] 2027-02-09
+  - Fall Prevention Month: A Word About the Word
+  + Late Summer Balance: The Pre-Autumn Stability Check
+  (llm: 'Fall Prevention Month' in February (Southern hemisphere fall is March-May))
+ARTICLE [2026 - Chiro - Healthy Aging - Southern] 2027-02-11
+  - Apple Season Ladders: The Orchard Conversation Nobody Wants
+  + Late Summer Harvest: The Season's Awkward Lifts
+  (llm: 'Apple Season' in February (Southern hemisphere apple season is late summer/autumn: Feb-May, but 'Autumn' reference suggests wrong season))
+ARTICLE [2026 - Chiro - Healthy Aging - Southern] 2027-02-16
+  - The Autumn Reset: Rebuilding Routine as Structure Returns
+  + The Autumn Ahead: Preparing Routine as Season Changes
+  (llm: 'Autumn Reset' in February (Southern hemisphere autumn begins March))
+ARTICLE [2026 - Chiro - Healthy Aging - Southern] 2027-03-18
+  - Halloween on the Porch: Hosting Trick-or-Treat Comfortably
+  + Easter Weekend Hosting: Managing Multi-Day Gatherings Comfortably
+  (llm: Halloween in March (Halloween is October 31))
+ARTICLE [2026 - Chiro - Healthy Aging - Southern] 2027-03-23
+  - Pumpkin Logistics: The Season's Awkward Lifts
+  + Autumn Harvest Logistics: The Season's Awkward Lifts
+  (llm: 'Pumpkin' season in March (context suggests Halloween, which is October))
+ARTICLE [2026 - Chiro - Healthy Aging - Southern] 2027-04-06
+  - Thanksgiving Standing Shifts: Kitchen Marathon Management
+  + Easter Feast Standing Shifts: Kitchen Marathon Management
+  (llm: Thanksgiving in April (no major Thanksgiving in Southern hemisphere in April))
+ARTICLE [2026 - Chiro - Healthy Aging - Southern] 2027-06-29
+  - Vitamin D Season: Sunshine Math at Northern Latitudes
+  + Winter Light and Bone Health: Indoor Strategies for Vitamin D
+  (llm: June is winter in Southern hemisphere, not 'Vitamin D Season' from sunshine)
+ARTICLE [2026 - Chiro - Healthy Aging - Southern] 2027-08-05
+  - The Spring Closet Swap: Reaching, Lifting and Ladder Truths
+  + The Autumn Closet Swap: Reaching, Lifting and Ladder Truths
+  (llm: August is late winter in Southern hemisphere, not 'Spring Closet Swap')
+ARTICLE [2026 - Chiro - Healthy Aging - Southern] 2027-08-26
+  - Spring Cleaning in Chapters: The Multi-Day Method
+  + Winter Cleaning in Chapters: The Multi-Day Method
+  (llm: August is late winter in Southern hemisphere, not 'Spring Cleaning')
+ARTICLE [2026 - Chiro - Healthy Aging - Southern] 2027-08-31
+  - The Golf Return: First Rounds After Winter at Any Age
+  + The Golf Return: First Rounds After Winter Layoff
+  (llm: August is late winter in Southern hemisphere, references 'After Winter' but winter hasn't ended)
+ARTICLE [2026 - Chiro - Healthy Aging - Southern] 2027-09-30
+  - Mother's Day Across Generations: Moving Together as a Gift
+  + Spring Garden Planning: Moving Together as a Gift
+  (llm: Mother's Day in Southern hemisphere is in May, not September)
+ARTICLE [2026 - Chiro - Healthy Aging - Southern] 2027-10-21
+  - Grandkids Out of School: Surviving and Savoring Summer Duty
+  + Spring Break Grandkids: Surviving and Savoring School Holiday Duty
+  (llm: October is spring in Southern hemisphere, not 'Summer Duty' for out-of-school grandkids)
+ARTICLE [2026 - Chiro - Healthy Aging - Southern] 2027-10-28
+  - The Long Evening Walk: Solstice Light as Movement Invitation
+  + The Long Evening Walk: Spring Light as Movement Invitation
+  (llm: October is spring in Southern hemisphere, solstice (longest day) is in December)
+ARTICLE [2026 - Chiro - Healthy Aging - Southern] 2027-11-23
+  - The National Park Summer: Trail Grades and Honest Self-Rating
+  + The National Park Spring: Trail Grades and Honest Self-Rating
+  (llm: November is spring in Southern hemisphere, 'National Park Summer' is premature)
+ARTICLE [2026 - Chiro - Healthy Aging - Southern] 2027-12-16
+  - The Late-Summer Check-In: How Did the Active Season Treat You
+  + The Early-Summer Check-In: How Did the Active Season Treat You
+  (llm: December is early summer in Southern hemisphere, not 'Late-Summer')
+ARTICLE [2026 - Chiro - Healthy Aging - Southern] 2028-01-06
+  - Back-to-School for Grandparents: The Pickup-Line Season Begins
+  + Summer Holiday Routines: Adapting Movement When Grandkids Visit
+  (llm: January is summer in Southern hemisphere; school starts late Jan/Feb, not 'Back-to-School')
+ARTICLE [2026 - Chiro - Healthy Aging - Southern] 2028-01-13
+  - Fall Prevention Month: A Word About the Word
+  + The Balance Check: Mid-Summer Stability Assessment
+  (llm: January is summer in Southern hemisphere, not 'Fall Prevention Month' (fall is March-May))
+ARTICLE [2026 - Chiro - Healthy Aging - Southern] 2028-01-18
+  - Apple Season Ladders: The Orchard Conversation Nobody Wants
+  + Summer Stone Fruit Season: Reaching and Carrying Safely
+  (llm: January is summer in Southern hemisphere, not 'Apple Season' or 'Autumn')
+ARTICLE [2026 - Chiro - Healthy Aging - Southern] 2028-01-20
+  - The Autumn Reset: Rebuilding Routine as Structure Returns
+  + The Summer Routine: Maintaining Structure in Holiday Season
+  (llm: January is summer in Southern hemisphere, not 'Autumn Reset')
+ARTICLE [2026 - Chiro - Healthy Aging - Southern] 2028-02-10
+  - Rake Season Returns: The Annual Test of Technique
+  + Garden Bed Transition: Preparing for Autumn Planting
+  (llm: February is summer/early autumn in Southern hemisphere, not 'Rake Season Returns')
+ARTICLE [2026 - Chiro - Healthy Aging - Southern] 2028-02-15
+  - Darker Evenings, Earlier Walks: Rescheduling for the Season
+  + Longer Evenings, Later Walks: Embracing the Season's Light
+  (llm: February is late summer in Southern hemisphere, evenings get darker later, not earlier)
+ARTICLE [2026 - Chiro - Healthy Aging - Southern] 2028-02-22
+  - Halloween on the Porch: Hosting Trick-or-Treat Comfortably
+  + Autumn Planting Season: Bulbs, Bending and Boundaries
+  (llm: Halloween is October 31 globally, not February)
+ARTICLE [2026 - Chiro - Healthy Aging - Southern] 2028-02-24
+  - Pumpkin Logistics: The Season's Awkward Lifts
+  + Autumn Produce Logistics: The Season's Awkward Lifts
+  (llm: February is late summer in Southern hemisphere, not pumpkin season)
+ARTICLE [2026 - Chiro - Healthy Aging - Southern] 2028-03-09
+  - Thanksgiving Standing Shifts: Kitchen Marathon Management
+  + Autumn Feast Standing Shifts: Kitchen Marathon Management
+  (llm: Thanksgiving is a US/Canada November holiday, not March in Southern hemisphere)
+ARTICLE [2026 - Chiro - Healthy Aging - Southern] 2028-04-18
+  - Winter Solstice Movement: Honoring the Darkest Day Actively
+  + Autumn Equinox Movement: Honoring Seasonal Balance Actively
+  (llm: Winter Solstice occurs in June in Southern hemisphere, not April)
+ARTICLE [2026 - Chiro - Healthy Aging - Southern] 2028-06-01
+  - Vitamin D Season: Sunshine Math at Northern Latitudes
+  + Vitamin D Season: Sunshine Math at Southern Latitudes
+  (llm: Text says 'Northern Latitudes' but calendar is for Southern hemisphere)
+ARTICLE [2026 - Chiro - Wellness & Maintenance - Northern] 2027-08-03
+  - The September Reset: New Year Energy Without the Snow
+  + The August Reset: New Year Energy Without the Pressure
+  (summer-month/winter-text)
+ARTICLE [2026 - Chiro - Wellness & Maintenance - Northern] 2028-07-11
+  - The September Reset: New Year Energy Without the Snow
+  + The July Reset: Mid-Summer Energy Without the Rush
+  (summer-month/winter-text)
+ARTICLE [2026 - Chiro - Wellness & Maintenance - Northern] 2026-10-20
+  - The Gratitude Body Scan: A Thanksgiving Tradition for the Nervous System
+  + The Gratitude Body Scan: An October Practice for the Nervous System
+  (llm: Thanksgiving referenced in October (U.S. Thanksgiving is November in Northern Hemisphere))
+ARTICLE [2026 - Chiro - Wellness & Maintenance - Northern] 2027-02-11
+  - Spring Forward, Fall Apart? Clock Changes and Body Rhythms
+  + The Mid-Winter Check-In: Body Rhythms in the Deep Cold
+  (llm: References 'Spring Forward' clock change (occurs in March in Northern Hemisphere, not February))
+ARTICLE [2026 - Chiro - Wellness & Maintenance - Northern] 2027-05-11
+  - The Solstice Audit: Are You Using the Light You Asked For
+  + The Late Spring Audit: Are You Using the Light You Have
+  (llm: References 'Solstice' in May (summer solstice is June 20-21 in Northern Hemisphere))
+ARTICLE [2026 - Chiro - Wellness & Maintenance - Northern] 2027-09-28
+  - The Gratitude Body Scan: A Thanksgiving Tradition for the Nervous System
+  + The Autumn Body Scan: A September Practice for the Nervous System
+  (llm: Thanksgiving referenced in September (US Thanksgiving is November))
+ARTICLE [2026 - Chiro - Wellness & Maintenance - Northern] 2027-10-26
+  - Twelve Days of Maintenance: A Holiday Movement Advent
+  + The Pre-Holiday Movement Plan: Building Capacity Before the Rush
+  (llm: 'Advent' referenced in October (Advent begins late November/December))
+ARTICLE [2026 - Chiro - Wellness & Maintenance - Northern] 2028-01-20
+  - Spring Forward, Fall Apart? Clock Changes and Body Rhythms
+  + The Mid-Winter Mobility Check: Combating the Indoor Months
+  (llm: 'Spring Forward' clock change referenced in January (occurs in March))
+ARTICLE [2026 - Chiro - Wellness & Maintenance - Northern] 2028-01-25
+  - The Great Unshrinking: Posture as Spring Emergence
+  + The Great Unshrinking: Posture as Winter Resilience
+  (llm: 'Spring Emergence' referenced in January (winter in Northern hemisphere))
+ARTICLE [2026 - Chiro - Wellness & Maintenance - Northern] 2028-02-10
+  - March Garden Prep: Soil Bags and Smart Hinges
+  + Early Garden Prep: Soil Bags and Smart Hinges
+  (llm: 'March Garden Prep' referenced in February)
+ARTICLE [2026 - Chiro - Wellness & Maintenance - Northern] 2028-03-16
+  - Earth Day on Foot: Errands Within the Walkshed
+  + Spring Errands on Foot: Exploring Your Walkshed
+  (llm: 'Earth Day' referenced mid-March (Earth Day is April 22))
+ARTICLE [2026 - Chiro - Wellness & Maintenance - Northern] 2028-04-18
+  - The Solstice Audit: Are You Using the Light You Asked For
+  + The Spring Light Audit: Are You Using the Hours You Have
+  (llm: Solstice reference in April (solstices occur in June and December))
+ARTICLE [2026 - Chiro - Wellness & Maintenance - Northern] 2028-06-13
+  - The Back-to-Routine Blueprint: September Starts in August
+  + The Mid-Summer Maintenance Check: Keeping Routines in Vacation Season
+  (llm: Text says 'September Starts in August' but date is June)
+ARTICLE [2026 - Chiro - Wellness & Maintenance - Northern] 2028-07-04
+  - School-Supply Season: The Parent's Carrying Preview
+  + Mid-Summer Movement: Staying Active in the Heat
+  (llm: Text says 'School-Supply Season' but date is July (school starts Aug/Sep in Northern hemisphere))
+ARTICLE [2026 - Chiro - Wellness & Maintenance - Northern] 2028-07-18
+  - Meeting Marathon Season: Surviving the Calendar's Autumn Flood
+  + Summer Calendar Management: The Mid-Year Meeting Balance
+  (llm: Text says 'Calendar's Autumn Flood' but date is July (still summer))
+ARTICLE [2026 - Chiro - Wellness & Maintenance - Northern] 2028-07-20
+  - The Sweater Drawer Swap: Seasonal Wardrobe Mechanics
+  + The Summer Wardrobe: Sandals, Support and Seasonal Footwear
+  (llm: Text says 'Sweater Drawer Swap' implying fall transition but date is July (mid-summer))
+ARTICLE [2026 - Chiro - Wellness & Maintenance - Northern] 2028-07-27
+  - Sleep Debt Repayment Plan: Autumn's Earlier Nights
+  + Sleep in the Heat: Summer Night Position Strategy
+  (llm: Text says 'Autumn's Earlier Nights' but date is July (summer))
+ARTICLE [2026 - Chiro - Wellness & Maintenance - Southern] 2027-02-09
+  - The September Reset: New Year Energy Without the Snow
+  + The February Reset: New Year Energy Without the Winter
+  (summer-month/winter-text)
+ARTICLE [2026 - Chiro - Wellness & Maintenance - Southern] 2028-01-18
+  - The September Reset: New Year Energy Without the Snow
+  + The January Reset: New Year Energy Without the Winter
+  (summer-month/winter-text)
+ARTICLE [2026 - Chiro - Wellness & Maintenance - Southern] 2026-10-15
+  - Earth Day on Foot: Errands Within the Walkshed
+  + Spring Movement Audit: Are You Ready for the Active Months
+  (llm: Earth Day is April 22, not October)
+ARTICLE [2026 - Chiro - Wellness & Maintenance - Southern] 2026-11-17
+  - The Solstice Audit: Are You Using the Light You Asked For
+  + The Summer Solstice Audit: Are You Using the Light You Have
+  (llm: Solstice in November is wrong; Southern summer solstice is December ~21)
+ARTICLE [2026 - Chiro - Wellness & Maintenance - Southern] 2027-01-12
+  - The Back-to-Routine Blueprint: September Starts in August
+  + The Mid-Summer Blueprint: Routine Maintenance Before Autumn
+  (llm: Text says 'September Starts in August' but date is January)
+ARTICLE [2026 - Chiro - Wellness & Maintenance - Southern] 2027-02-16
+  - Meeting Marathon Season: Surviving the Calendar's Autumn Flood
+  + Meeting Marathon Season: Surviving the Calendar's Summer Flood
+  (llm: Text says 'Calendar's Autumn Flood' but February is summer in Southern hemisphere)
+ARTICLE [2026 - Chiro - Wellness & Maintenance - Southern] 2027-02-23
+  - Apple Crumble and Core Strength: The Baking Stand Hours
+  + Stone Fruit and Core Strength: The Baking Stand Hours
+  (llm: Apple season and autumn reference but February is summer in Southern hemisphere)
+ARTICLE [2026 - Chiro - Wellness & Maintenance - Southern] 2027-02-25
+  - Sleep Debt Repayment Plan: Autumn's Earlier Nights
+  + Sleep Debt Repayment Plan: Summer's Long Light Hours
+  (llm: Text says 'Autumn's Earlier Nights' but February is summer in Southern hemisphere)
+ARTICLE [2026 - Chiro - Wellness & Maintenance - Southern] 2027-03-09
+  - The Great Indoors Migration: Winterizing Your Movement Life
+  + The Great Indoors Migration: Autumn-Proofing Your Movement Life
+  (llm: Text says 'Winterizing' but March is autumn in Southern hemisphere)
+ARTICLE [2026 - Chiro - Wellness & Maintenance - Southern] 2027-04-06
+  - The Gratitude Body Scan: A Thanksgiving Tradition for the Nervous System
+  + The Autumn Body Scan: A Seasonal Tradition for the Nervous System
+  (llm: Thanksgiving reference in April; Southern hemisphere doesn't have November Thanksgiving)
+ARTICLE [2026 - Chiro - Wellness & Maintenance - Southern] 2027-04-29
+  - Reflect Before Resolve: The November Review Advantage
+  + Reflect Before Resolve: The Autumn Review Advantage
+  (llm: Text says 'November Review' but date is April)
+ARTICLE [2026 - Chiro - Wellness & Maintenance - Southern] 2027-07-29
+  - Spring Forward, Fall Apart? Clock Changes and Body Rhythms
+  + Winter Rhythm Shift: Clock Changes and Body Rhythms
+  (llm: 'Spring Forward' references spring in July (Southern winter))
+ARTICLE [2026 - Chiro - Wellness & Maintenance - Southern] 2027-08-03
+  - The Great Unshrinking: Posture as Spring Emergence
+  + The Great Unshrinking: Posture as Winter Thaw Begins
+  (llm: 'Spring Emergence' references spring in August (Southern winter))
+ARTICLE [2026 - Chiro - Wellness & Maintenance - Southern] 2027-08-19
+  - March Garden Prep: Soil Bags and Smart Hinges
+  + Winter Garden Prep: Soil Bags and Smart Hinges
+  (llm: 'March Garden Prep' references March in August)
+ARTICLE [2026 - Chiro - Wellness & Maintenance - Southern] 2027-12-21
+  - The Back-to-Routine Blueprint: September Starts in August
+  + The Summer Slowdown Blueprint: January Rest as Strategy
+  (llm: 'September Starts in August' references September in December)
+ARTICLE [2026 - Chiro - Wellness & Maintenance - Southern] 2028-02-03
+  - Sleep Debt Repayment Plan: Autumn's Earlier Nights
+  + Sleep Debt Repayment Plan: Summer's Later Nights
+  (llm: 'Autumn's Earlier Nights' references autumn in February (Southern summer))
+ARTICLE [2026 - Chiro - Wellness & Maintenance - Southern] 2028-02-15
+  - The Great Indoors Migration: Winterizing Your Movement Life
+  + The Great Outdoors Return: Summer-Proofing Your Movement Life
+  (llm: 'Winterizing Your Movement Life' references winter in February (Southern summer))
+ARTICLE [2026 - Chiro - Wellness & Maintenance - Southern] 2028-04-06
+  - Reflect Before Resolve: The November Review Advantage
+  + Reflect Before Resolve: The Autumn Review Advantage
+  (llm: Text mentions 'November Review' in April)
+ARTICLE [2026 - Chiro - Wellness & Maintenance - Southern] 2028-04-11
+  - Twelve Days of Maintenance: A Holiday Movement Advent
+  + Twelve Days of Maintenance: An Autumn Movement Practice
+  (llm: 'Holiday Movement Advent' refers to December holiday traditions in April)
+ARTICLE [2026 - Chiro - Wellness & Maintenance - Southern] 2028-04-13
+  - Gift-Carrying Season: Parcels, Stairs and Parking Garages
+  + Grocery Haul Season: Parcels, Stairs and Parking Garages
+  (llm: 'Gift-Carrying Season' refers to December/Christmas period in April)
+ARTICLE [2026 - Chiro - Wellness & Maintenance - Southern] 2028-04-18
+  - The Party Stand: Mingling Mechanics for Long Evenings
+  + The Autumn Stand: Event Mechanics for Cooler Evenings
+  (llm: 'Party Stand' and 'Long Evenings' suggests December holiday party season in April)
+ARTICLE [2026 - Chiro - Wellness & Maintenance - Southern] 2028-04-20
+  - Wrapping Paper Physics: The Floor Versus Table Debate Settled
+  + Packing Paper Physics: The Floor Versus Table Debate Settled
+  (llm: 'Wrapping Paper Physics' refers to Christmas gift-wrapping season in April)
+ARTICLE [2026 - Chiro - Wellness & Maintenance - Southern] 2028-04-25
+  - Silent Nights: Protecting Sleep Through Celebration Season
+  + Restful Nights: Protecting Sleep Through Busy Season
+  (llm: 'Celebration Season' refers to December/New Year period in April)
+ARTICLE [2026 - Chiro - Wellness & Maintenance - Southern] 2028-05-02
+  - Cold Snap Protocol: The Sub-Zero Movement Menu
+  + Cool Morning Protocol: The Autumn Movement Menu
+  (llm: 'Cold Snap Protocol: Sub-Zero' describes winter conditions in May (Southern autumn))
+ARTICLE [2026 - Chiro - Wellness & Maintenance - Southern] 2028-05-04
+  - Champagne, Confetti and the Midnight Stretch: Closing Well
+  + The Midweek Stretch: Closing the Work Week Well
+  (llm: 'Champagne, Confetti and Midnight Stretch' refers to New Year's Eve in May)
+ARTICLE [2026 - Chiro - Wellness & Maintenance - Southern] 2028-05-09
+  - The Maintenance Mindset: Why January's Best Resolution Is Boring
+  + The Maintenance Mindset: Why Consistency Beats Resolution
+  (llm: 'January's Best Resolution' mentioned in May)
+ARTICLE [2026 - Chiro - Wellness & Maintenance - Southern] 2028-05-11
+  - Desk Hibernation: Winter's Extra Sitting Hours Audited
+  + Desk Autumn: The Extra Indoor Hours Audited
+  (llm: 'Desk Hibernation: Winter's Extra Sitting Hours' describes winter in May (Southern autumn))
+ARTICLE [2026 - Chiro - Wellness & Maintenance - Southern] 2028-05-23
+  - The Standing Desk Honeymoon: Making It Past February
+  + The Standing Desk Honeymoon: Making It Past Month Three
+  (llm: 'Making It Past February' mentioned in May)
+ARTICLE [2026 - Chiro - Wellness & Maintenance - Southern] 2028-05-30
+  - Blue Monday and the Movement-Mood Loop
+  + Midweek Blues and the Movement-Mood Loop
+  (llm: 'Blue Monday' is a January phenomenon, mentioned in May)
+ARTICLE [2026 - Chiro - Wellness & Maintenance - Southern] 2028-06-01
+  - The Phone in Winter Gloves: Cold-Season Text Neck
+  + The Phone in Cool Weather: Early Winter Text Neck
+  (llm: 'Phone in Winter Gloves' describes winter in June (Southern winter begins late May, but glove-weather typically July-Aug))
+ARTICLE [2026 - Chiro - Wellness & Maintenance - Southern] 2028-07-06
+  - Spring Forward, Fall Apart? Clock Changes and Body Rhythms
+  + Winter Rhythm Shift: Clock Changes and Body Rhythms
+  (llm: 'Spring Forward' refers to spring in July (Southern winter))
+ARTICLE [2026 - Chiro - Wellness & Maintenance - Southern] 2028-07-11
+  - The Great Unshrinking: Posture as Spring Emergence
+  + The Great Contraction: Posture in Winter's Depth
+  (llm: 'Posture as Spring Emergence' describes spring in July (Southern winter))
+ARTICLE [2026 - Chiro - Wellness & Maintenance - Southern] 2028-07-27
+  - March Garden Prep: Soil Bags and Smart Hinges
+  + Winter Garden Prep: Soil Bags and Smart Hinges
+  (llm: 'March Garden Prep' mentions March in July)
+NEWSLETTER [2026 - Chiro - Family Care - Southern] 2027-04-14
+  - The role of sleep in back-to-school recovery
+  + The role of sleep in autumn recovery
+  (back-to-school/wrong-month)
+NEWSLETTER [2026 - Chiro - Family Care - Southern] 2027-06-05
+  - Setting ergonomic health goals for the New Year
+  + Setting ergonomic health goals for midyear
+  (new-year/wrong-month)
+NEWSLETTER [2026 - Chiro - Family Care - Southern] 2027-06-28
+  - A Christmas message: Family health and joy
+  + A midwinter message: Family health and joy
+  (holidays/wrong-month)
+NEWSLETTER [2026 - Chiro - Family Care - Southern] 2026-09-19
+  - Winter sleep hygiene: creating a restorative environment
+  + Spring sleep hygiene: creating a restorative environment
+  (llm: Text says 'Winter sleep hygiene' but September is spring in Southern hemisphere)
+NEWSLETTER [2026 - Chiro - Family Care - Southern] 2026-10-19
+  - Managing tech neck in children returning to school routines
+  + Managing tech neck in children during the school year
+  (llm: Text says 'children returning to school routines' but October is late in school year (school starts late Jan/Feb in Southern hemisphere))
+NEWSLETTER [2026 - Chiro - Family Care - Southern] 2027-01-06
+  - Staying safe and aligned during 4th of July celebrations
+  + Staying safe and aligned during summer celebrations
+  (llm: Text references '4th of July celebrations' but date is January 6th)
+NEWSLETTER [2026 - Chiro - Family Care - Southern] 2027-03-08
+  - Proper posture for raking fall leaves
+  + Proper posture for late summer yard work
+  (llm: 'fall leaves' in March (Southern hemisphere is autumn, but March is late summer/early autumn and 'fall' typically refers to April-May))
+NEWSLETTER [2026 - Chiro - Family Care - Southern] 2027-03-12
+  - Labor Day recovery: Resting your spine
+  + Late summer recovery: Resting your spine
+  (llm: 'Labor Day' in March (Southern hemisphere Labor Day is in October))
+NEWSLETTER [2026 - Chiro - Family Care - Southern] 2027-03-13
+  - Preventing injuries in fall youth soccer and football
+  + Preventing injuries in late summer youth sports
+  (llm: 'fall youth soccer and football' in March (autumn/fall is April-June in Southern hemisphere))
+NEWSLETTER [2026 - Chiro - Family Care - Southern] 2027-03-15
+  - Transitioning to closed shoes: Foot mechanics in autumn
+  + Transitioning to closed shoes: Foot mechanics as weather cools
+  (llm: 'autumn' in mid-March (Southern hemisphere autumn starts late March, this is still summer))
+NEWSLETTER [2026 - Chiro - Family Care - Southern] 2027-03-20
+  - Stretching before early morning fall jogs
+  + Stretching before early morning late summer jogs
+  (llm: 'fall jogs' and 'cold weather' in March (Southern hemisphere is late summer))
+NEWSLETTER [2026 - Chiro - Family Care - Southern] 2027-03-29
+  - Choosing the right supportive boots for autumn
+  + Choosing the right supportive footwear for cooler weather
+  (llm: 'autumn' in late March (Southern hemisphere autumn just beginning, references seem early))
+NEWSLETTER [2026 - Chiro - Family Care - Southern] 2027-04-10
+  - Avoiding injuries during haunted house frights
+  + Preventing injuries during autumn outdoor activities
+  (llm: 'haunted house' in April (Halloween is October 31, wrong season))
+NEWSLETTER [2026 - Chiro - Family Care - Southern] 2027-05-05
+  - Trick-or-Treat survival guide for parent's backs
+  + Managing posture during autumn outdoor activities
+  (llm: 'Trick-or-Treat' in May (Halloween is October 31))
+NEWSLETTER [2026 - Chiro - Family Care - Southern] 2027-05-17
+  - Preparing your back for winter snow shoveling
+  + Preparing your back for autumn yard cleanup
+  (llm: 'winter snow shoveling' in May (Southern hemisphere May is late autumn, not winter))
+NEWSLETTER [2026 - Chiro - Family Care - Southern] 2027-05-29
+  - Pre-Thanksgiving travel and ergonomic cooking tips
+  + Managing posture during extended cooking sessions
+  (llm: 'Pre-Thanksgiving' in May (US Thanksgiving is November, not relevant or wrong hemisphere reference))
+NEWSLETTER [2026 - Chiro - Family Care - Southern] 2027-06-26
+  - Preventing repetitive strain when writing holiday cards
+  + Preventing repetitive strain during winter crafts and activities
+  (llm: Writing holiday cards in late June (Southern hemisphere winter) - holiday cards are for December holidays)
+NEWSLETTER [2026 - Chiro - Family Care - Nothern] 2026-10-14
+  - The role of sleep in back-to-school recovery
+  + The role of sleep in autumn recovery
+  (back-to-school/wrong-month)
+NEWSLETTER [2026 - Chiro - Family Care - Nothern] 2026-09-28
+  - Labor Day recovery: Resting your spine
+  + End-of-September recovery: Resting your spine
+  (llm: Labor Day is in September, not late September (US Labor Day is first Monday in September))
+NEWSLETTER [2026 - Chiro - Family Care - Nothern] 2026-11-04
+  - Trick-or-Treat survival guide for parent's backs
+  + Post-Halloween recovery guide for parent's backs
+  (llm: Trick-or-Treat is October 31st (Halloween), not November)
+NEWSLETTER [2026 - Chiro - Family Care - Nothern] 2026-12-28
+  - A Christmas message: Family health and joy
+  + A year-end message: Family health and joy
+  (llm: References 'Christmas message' on December 28th, not Christmas Day (December 25th))
+NEWSLETTER [2026 - Chiro - Family Care - Nothern] 2027-02-26
+  - Backpack safety for the spring semester start
+  + Backpack safety check for the winter semester
+  (llm: References 'spring semester start' in late February, but spring semester typically starts in January in Northern hemisphere)
+NEWSLETTER [2026 - Chiro NL - Sports - Southern] 2027-05-12
+  - Rugby season peak: managing contact load mid-year
+  + Rugby season peak: managing contact load in autumn
+  (mid-year/wrong-month)
+NEWSLETTER [2026 - Chiro NL - Sports - Southern] 2027-02-03
+  - August long runs without melting
+  + Summer long runs without melting
+  (llm: Text says 'August long runs' but date is February)
+NEWSLETTER [2026 - Chiro NL - Sports - Southern] 2027-03-01
+  - Fall league kickoff: the risky fortnight
+  + Autumn league kickoff: the risky fortnight
+  (llm: 'Fall league kickoff' in March (Southern hemisphere autumn starts late March, not early March - debatable boundary))
+NEWSLETTER [2026 - Chiro NL - Sports - Southern] 2027-04-02
+  - Cold start lines and October races
+  + Cool start lines and autumn races
+  (llm: 'October races' mentioned in April date)
+NEWSLETTER [2026 - Chiro NL - Sports - Southern] 2027-05-01
+  - Turkey trot: the once-a-year runner's guide
+  + Cross-country season: the once-a-year runner's guide
+  (llm: 'Turkey trot' (US Thanksgiving November tradition) in May (Southern hemisphere autumn))
+NEWSLETTER [2026 - Chiro NL - Sports - Southern] 2027-08-28
+  - Skiing prep for the upcoming season in two months
+  + Spring running prep starting now
+  (llm: August is winter in Southern hemisphere, skiing season is 2 months away would be October/November (summer))
+NEWSLETTER [2026 - Chiro NL - Sports - Southern] 2027-09-08
+  - Tennis elbow off-season: load management for weekend players
+  + Tennis elbow spring season: load management for weekend players
+  (llm: September is spring in Southern hemisphere, text refers to 'spring comebacks')
+NEWSLETTER [2026 - Chiro NL - Prenatal & Pediatric - Northern] 2026-10-03
+  - Halloween with a bump
+  + Fall transition wellness check-ins
+  (llm: Halloween is October 31, not October 3)
+NEWSLETTER [2026 - Chiro NL - Prenatal & Pediatric - Northern] 2026-10-07
+  - Crawler-proofing decoration season
+  + Crawler-proofing fall hazards
+  (llm: References 'decoration season' and 'save the tree' in early October, clearly Christmas/winter holiday context wrong for the date)
+NEWSLETTER [2026 - Chiro NL - Prenatal & Pediatric - Northern] 2027-03-01
+  - Stroller season opens
+  + Late winter stroller strategies
+  (llm: 'Stroller season opens' implies spring start, but March 1 is still winter in Northern hemisphere)
+NEWSLETTER [2026 - Chiro NL - Prenatal & Pediatric - Northern] 2027-03-08
+  - Spring cleaning posture: bending and reaching without the back penalty
+  + Early spring prep posture: bending and reaching without the back penalty
+  (llm: 'Spring cleaning' referenced on March 8, but spring doesn't begin until ~March 20 in Northern hemisphere)
+NEWSLETTER [2026 - Chiro NL - Healthy Aging - Northern] 2026-10-12
+  - Grandparent lifting after summer break
+  + Grandparent lifting after fall break
+  (llm: References 'after summer break' in October; school starts in Aug/Sep in Northern hemisphere, summer break ends then, not October)
+NEWSLETTER [2026 - Chiro NL - Healthy Aging - Northern] 2026-10-30
+  - Thanksgiving prep timeline for aging backs
+  + Halloween candy prep timeline for aging backs
+  (llm: References 'Thanksgiving prep' in October; Thanksgiving in Northern hemisphere (US) is in late November)
+NEWSLETTER [2026 - Chiro NL - Healthy Aging - Southern] 2027-03-03
+  - The autumn routine reset
+  + The late summer routine reset
+  (llm: Text says 'autumn routine reset' and 'Winter-proofing plans early' but early March is late summer/early autumn in Southern hemisphere)
+NEWSLETTER [2026 - Chiro NL - Healthy Aging - Southern] 2027-03-22
+  - Driving comfort on longer autumn trips
+  + Driving comfort on longer early autumn trips
+  (llm: Text says 'longer autumn trips' but late March is early autumn in Southern hemisphere)
+NEWSLETTER [2026 - Chiro NL - Healthy Aging - Southern] 2027-04-05
+  - Porch hosting on Halloween
+  + Autumn garden cleanup ergonomics
+  (llm: Text references 'Halloween' but Halloween (Oct 31) doesn't occur in April)
+NEWSLETTER [2026 - Chiro NL - Healthy Aging - Southern] 2027-05-03
+  - The gratitude walk tradition
+  + Winter preparation walkthrough
+  (llm: Text says 'Post-meal walking' with context suggesting Thanksgiving, but that's a US November holiday, not May in Southern hemisphere)
+NEWSLETTER [2026 - Chiro NL - Healthy Aging - Southern] 2027-05-15
+  - Autumn cycling and balance confidence
+  + Winter cycling and balance confidence
+  (llm: Text says 'Autumn cycling' but mid-May is late autumn/early winter in Southern hemisphere)
+NEWSLETTER [2026 - Chiro NL - Healthy Aging - Southern] 2027-06-02
+  - Decking halls with a height budget
+  + Winter comfort adjustments at home
+  (llm: Text says 'Decking halls' (Christmas reference) but Christmas is December 25, not early June)
+NEWSLETTER [2026 - Chiro NL - Wellness & Maintenance - Southern] 2027-03-01
+  - The September reset
+  + The March reset
+  (new-year/wrong-month)
+NEWSLETTER [2026 - Chiro NL - Wellness & Maintenance - Southern] 2026-12-02
+  - The solstice audit
+  + The summer solstice audit
+  (llm: 'Summer's low-friction opportunities · Daylight banking for dark months' - December is early summer in southern hemisphere, dark months are ahead in mid-year not behind)
+NEWSLETTER [2026 - Chiro NL - Wellness & Maintenance - Southern] 2027-02-01
+  - September starts in August
+  + March starts in February
+  (llm: 'September starts in August' and 'autumn structure' in February (southern hemisphere February is late summer, autumn starts March))
+NEWSLETTER [2026 - Chiro NL - Wellness & Maintenance - Southern] 2027-04-02
+  - Winterizing your movement life
+  + Pre-winterizing your movement life
+  (llm: Text says 'Winterizing your movement life' but date is April 2 (still autumn in Southern hemisphere, winter starts June))
+NEWSLETTER [2026 - Chiro NL - Wellness & Maintenance - Southern] 2027-05-01
+  - The gratitude body scan
+  + The midyear body scan
+  (llm: Text refers to 'the feast' suggesting Thanksgiving but May 1 has no such holiday in Southern hemisphere)
+NEWSLETTER [2026 - Chiro NL - Wellness & Maintenance - Southern] 2027-05-07
+  - The November review advantage
+  + The May review advantage
+  (llm: Text says 'The November review advantage' but date is May 7)
+RENAMED: "2026 - Chiro - Family Care - Nothern" -> "2026 - Chiro - Family Care - Northern"
+RESIDUAL [2026 - Chiro - Prenatal & Pediatric - Southern] 2027-05-25 [mid-year/wrong-month] Mid-Year Reflections for the Almost-Due
+RESIDUAL [2026 - Chiro - Healthy Aging - Northern] 2027-11-23 [new-year/wrong-month] New Year Movement Goals That Respect Six Decades of History
+RESIDUAL [2026 - Chiro - Healthy Aging - Southern] 2027-05-25 [mid-year/wrong-month] Mid-Year Mobility Inventory: Six Months of Motion Reviewed
+RESIDUAL [2026 - Chiro - Wellness & Maintenance - Northern] 2027-08-03 [new-year/wrong-month] The August Reset: New Year Energy Without the Pressure
+RESIDUAL [2026 - Chiro - Wellness & Maintenance - Southern] 2027-02-09 [summer-month/winter-text] The February Reset: New Year Energy Without the Winter
+RESIDUAL [2026 - Chiro - Wellness & Maintenance - Southern] 2028-01-18 [summer-month/winter-text] The January Reset: New Year Energy Without the Winter
+RESIDUAL [2026 - Chiro NL - Prenatal & Pediatric - Northern] 2027-08-06 [summer-month/winter-text] Car seat stages and changes · Rear-facing longer: the reasoning · Installation mechanics for parents
+RESIDUAL [2026 - Chiro NL - Prenatal & Pediatric - Southern] 2027-02-05 [summer-month/winter-text] Car seat stages and changes · Rear-facing longer: the reasoning · Installation mechanics for parents
+RESIDUAL [2026 - Chiro NL - Wellness & Maintenance - Northern] 2026-09-19 [new-year/wrong-month] The September reset · School-year energy for adults · The autumn habit window open · Enrollment as c
+RESIDUAL [2026 - Chiro NL - Wellness & Maintenance - Southern] 2027-03-01 [new-year/wrong-month] The March reset · School-year energy for adults · The autumn habit window open · Enrollment as commi
+RESIDUAL [2026 - Chiro NL - Wellness & Maintenance - Southern] 2027-07-21 [winter-month/summer-text] Indoor exercise and joint preparation · Why gym floors feel harder than summer grass · Warm-up time 
+
+DONE. changes=242, residual-heuristic-flags=11

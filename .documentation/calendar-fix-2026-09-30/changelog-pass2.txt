@@ -1,0 +1,199 @@
+Pass-2 targets: 59
+WARN still-duplicate, skipped: Thanksgiving Standing Shifts: Kitchen Marathon Management
+WARN still-duplicate, skipped: Autumn Leaf Walks: Footing and Balance on Slippery Surfaces
+WARN still-duplicate, skipped: Guest-Room Duty: Preparing to Host Without the Aftermath
+WARN still-duplicate, skipped: Garden Cleanup Season: The End-of-Summer Test of Technique
+FIXED [2026 - Chiro - Wellness & Maintenance - Northern] 2027-08-03
+  - The August Reset: New Year Energy Without the Pressure
+  + The August Reset: Back-to-Routine Energy Without the Pressure
+  (new-year/wrong-month)
+FIXED [2026 - Chiro - Wellness & Maintenance - Southern] 2026-12-29
+  - The Midyear Sleep Review: Auditing Six Months of Nights
+  + The Year-End Sleep Review: Auditing Twelve Months of Nights
+  (mid-year/wrong-month)
+FIXED [2026 - Chiro - Wellness & Maintenance - Southern] 2027-12-07
+  - The Midyear Sleep Review: Auditing Six Months of Nights
+  + The Summer Sleep Review: Auditing Long Light Nights
+  (mid-year/wrong-month)
+WARN still-duplicate, skipped: The Rake Before the Rake: Pre-Season Movement Prep
+WARN still-duplicate, skipped: Pumpkin Spice and Everything Sitting: Cafe Season Posture
+FIXED [2026 - Chiro - Wellness & Maintenance - Southern] 2028-01-11
+  - School-Supply Season: The Parent's Carrying Preview
+  + School-Supply Season: The Parent's Carrying Preview
+  (llm: 'School-Supply Season' references school starting in January (Southern schools start late Jan/Feb, supplies purchased earlier in Dec/Jan, but this is summer vacation end))
+WARN still-duplicate, skipped: Starting the training year without week-three regret
+FIXED [2026 - Chiro NL - Sports - Southern] 2026-09-21
+  - Runner's knee season and the cadence fix
+  + Runner's knee season and the cadence fix
+  (llm: Text says 'March mileage' but date is September)
+FIXED [2026 - Chiro NL - Sports - Southern] 2026-10-03
+  - Racquet season and the elbow's complaint
+  + Racquet season and the elbow's complaint
+  (llm: Text says 'April enthusiasm' but date is October)
+FIXED [2026 - Chiro NL - Sports - Southern] 2027-01-06
+  - Tendons love boring consistency
+  + Tendons love boring consistency
+  (llm: Text says 'July enthusiasm injury pattern' but date is January)
+FIXED [2026 - Chiro NL - Sports - Southern] 2027-03-06
+  - Base season begins: the unglamorous months
+  + Base season begins: the unglamorous months
+  (llm: 'convert by spring' when date is early autumn in Southern hemisphere)
+FIXED [2026 - Chiro NL - Sports - Southern] 2027-06-26
+  - Warm-up protocols for cold-weather training
+  + Warm-up protocols for cold-weather training
+  (llm: June is winter in Southern hemisphere, text refers to 'cold-weather training')
+FIXED [2026 - Chiro NL - Sports - Southern] 2027-06-28
+  - Grip strength for winter sports equipment
+  + Grip strength for winter sports equipment
+  (llm: June is winter in Southern hemisphere, text refers to 'winter sports')
+FIXED [2026 - Chiro NL - Sports - Southern] 2027-06-30
+  - Hydration mistakes in cold training blocks
+  + Hydration mistakes in cold training blocks
+  (llm: June is winter in Southern hemisphere, text refers to 'winter' and 'cold training blocks')
+FIXED [2026 - Chiro NL - Sports - Southern] 2027-07-02
+  - Starting the training year without week-three regret
+  + Starting the training year without week-three regret
+  (llm: July is winter in Southern hemisphere, text refers to 'January' training year start)
+FIXED [2026 - Chiro NL - Sports - Southern] 2027-07-03
+  - Cold-weather warm-ups that actually warm
+  + Cold-weather warm-ups that actually warm
+  (llm: July is winter in Southern hemisphere, text refers to 'Cold-weather warm-ups')
+FIXED [2026 - Chiro NL - Sports - Southern] 2027-07-05
+  - Ski legs are built in the living room
+  + Ski legs are built in the living room
+  (llm: July is winter in Southern hemisphere, text refers to ski season preparation)
+FIXED [2026 - Chiro NL - Sports - Southern] 2027-07-07
+  - Treadmill season without the shin complaints
+  + Treadmill season without the shin complaints
+  (llm: July is winter in Southern hemisphere, text refers to 'Treadmill season')
+FIXED [2026 - Chiro NL - Sports - Southern] 2027-07-09
+  - Winter running form adjustments that protect knees and ankles
+  + Winter running form adjustments that protect knees and ankles
+  (llm: July is winter in Southern hemisphere, text refers to 'Winter running')
+FIXED [2026 - Chiro NL - Sports - Southern] 2027-07-14
+  - Midseason injury prevention for winter sport athletes
+  + Midseason injury prevention for winter sport athletes
+  (llm: July is winter in Southern hemisphere, text refers to 'Midseason' for winter sports)
+FIXED [2026 - Chiro NL - Sports - Southern] 2027-07-17
+  - Sleep quality and muscle recovery in shorter daylight hours
+  + Sleep quality and muscle recovery in winter months
+  (llm: July is winter in Southern hemisphere, text refers to 'shorter daylight hours' (days are shortest in June))
+FIXED [2026 - Chiro NL - Sports - Southern] 2027-07-19
+  - Core stability work that translates to winter sports
+  + Core stability work that translates to winter sports
+  (llm: July is winter in Southern hemisphere, text refers to 'winter sports')
+FIXED [2026 - Chiro NL - Sports - Southern] 2027-07-21
+  - Hydration strategies when you don't feel thirsty
+  + Hydration strategies when you don't feel thirsty
+  (llm: July is winter in Southern hemisphere, text refers to 'Winter sweat losses')
+FIXED [2026 - Chiro NL - Sports - Southern] 2027-07-28
+  - Breathing mechanics for cold air endurance training
+  + Breathing mechanics for cold air endurance training
+  (llm: July is winter in Southern hemisphere, text refers to 'cold air endurance training' and 'winter conditions')
+FIXED [2026 - Chiro NL - Sports - Southern] 2027-07-30
+  - Lower back care for the lifting athlete in winter
+  + Lower back care for the lifting athlete in winter
+  (llm: July is winter in Southern hemisphere, text refers to 'lifting athlete in winter')
+FIXED [2026 - Chiro NL - Sports - Southern] 2027-07-31
+  - Maintaining training motivation through the middle of winter
+  + Maintaining training motivation through the middle of winter
+  (llm: July is winter in Southern hemisphere, text refers to 'middle of winter')
+FIXED [2026 - Chiro NL - Sports - Southern] 2027-08-11
+  - Winter training indoors without losing power
+  + Winter training indoors without losing power
+  (llm: August is winter in Southern hemisphere, text refers to 'Winter training indoors')
+FIXED [2026 - Chiro NL - Sports - Southern] 2027-08-20
+  - Trail running on wet winter tracks without rolling ankles
+  + Trail running on wet winter tracks without rolling ankles
+  (llm: August is winter in Southern hemisphere, text refers to 'wet winter tracks')
+FIXED [2026 - Chiro NL - Sports - Southern] 2027-08-27
+  - AFL winter training camps and hamstring strain prevention
+  + AFL winter training camps and hamstring strain prevention
+  (llm: August is winter in Southern hemisphere, text refers to 'AFL winter training camps')
+FIXED [2026 - Chiro NL - Sports - Southern] 2027-08-30
+  - Crossfit in winter and grip failure in the cold
+  + Crossfit in winter and grip failure in the cold
+  (llm: August is winter in Southern hemisphere, text refers to 'Crossfit in winter')
+FIXED [2026 - Chiro NL - Sports - Southern] 2027-09-04
+  - Junior sport load: growth spurts and injury windows
+  + Junior sport load: growth spurts and injury windows
+  (llm: September is spring in Southern hemisphere, text refers to 'spring growth plates')
+FIXED [2026 - Chiro NL - Sports - Southern] 2027-09-17
+  - Plantar heel pain in spring runners: load, footwear, and tissue
+  + Plantar heel pain in spring runners: load, footwear, and tissue
+  (llm: September is spring in Southern hemisphere, text refers to 'spring runners')
+FIXED [2026 - Chiro NL - Prenatal & Pediatric - Northern] 2027-08-06
+  - Car seat stages and changes
+  + Car seat stages and changes
+  (summer-month/winter-text)
+FIXED [2026 - Chiro NL - Prenatal & Pediatric - Southern] 2027-02-05
+  - Car seat stages and changes
+  + Car seat stages and changes
+  (summer-month/winter-text)
+FIXED [2026 - Chiro NL - Wellness & Maintenance - Southern] 2027-01-04
+  - The midyear sleep review
+  + The January sleep audit
+  (mid-year/wrong-month)
+FIXED [2026 - Chiro NL - Wellness & Maintenance - Southern] 2026-09-26
+  - Allergy season sleep strategy
+  + Late winter sleep strategy
+  (llm: 'Allergy season' and 'Spring' references in late September (southern hemisphere is late winter/early spring transition, allergy season typically spring/summer))
+FIXED [2026 - Chiro NL - Wellness & Maintenance - Southern] 2026-09-28
+  - Spring training without the injury spike
+  + Early spring training without the injury spike
+  (llm: 'Spring training' in late September (southern hemisphere spring just beginning, but acceptable))
+FIXED [2026 - Chiro NL - Wellness & Maintenance - Southern] 2026-10-09
+  - Spring cleaning your movement patterns
+  + Spring cleaning your movement patterns
+  (llm: 'calcified over winter' in October (southern hemisphere winter just ended, acceptable seasonal reference))
+FIXED [2026 - Chiro NL - Wellness & Maintenance - Southern] 2027-03-06
+  - Autumn sleep debt repayment
+  + Autumn sleep debt repayment
+  (llm: Text says 'Autumn sleep debt' but date is March 6 (autumn in Southern hemisphere))
+FIXED [2026 - Chiro NL - Wellness & Maintenance - Southern] 2027-09-08
+  - Vitamin D recalibration after winter
+  + Vitamin D recalibration after winter
+  (llm: Text says 'Northern hemisphere storage depletion' but calendar is for Southern hemisphere)
+FIXED [2026 - Chiro - Sports - Northern] 2026-12-24
+  - New Year Training Surges and Why Joints Rebel in Week Three
+  + Holiday Week Training: Maintaining Momentum Between Feasts
+  (llm: Text says 'New Year Training Surges' but New Year hasn't occurred yet (Dec 24))
+FIXED [2026 - Chiro - Sports - Southern] 2026-09-29
+  - Baseball and Softball Shoulders: The Throwing Athlete's Spring
+  + Cricket and Softball Shoulders: The Throwing Athlete's Spring
+  (llm: 'Spring' in September (Southern hemisphere is in spring, but baseball/softball throwing season typically refers to Northern spring))
+WARN still-duplicate, skipped: Blisters, Black Toenails and Other Spring Race Souvenirs
+WARN still-duplicate, skipped: Surf, SUP and the Shoulders That Paddle All Summer
+WARN still-duplicate, skipped: Back to the Gym: Rebuilding a Routine After Summer Chaos
+WARN still-duplicate, skipped: Autumn Cycling and the Cold-Start Knee
+WARN still-duplicate, skipped: The Fall Reset: Building a Training Base Before Winter
+WARN still-duplicate, skipped: School Mornings With a Bump: The Pregnant Parent's Rush Hour
+WARN still-duplicate, skipped: Pumpkin-Patch Season: Lifting Odd Objects With Small Supervisors
+FIXED [2026 - Chiro - Healthy Aging - Southern] 2027-11-04
+  - Sandals Season: Summer Footwear That Doesn't Sabotage
+  + Sandals Season: Summer Footwear That Doesn't Sabotage
+  (llm: November is spring/early summer in Southern hemisphere, 'Sandals Season: Summer Footwear' is appropriate - no mismatch)
+FIXED [2026 - Chiro - Family Care - Southern] 2026-09-21
+  - How spring allergies affect neck and shoulder tension
+  + How spring allergies affect neck and shoulder tension
+  (llm: Text says 'spring allergies' but September is spring, not mismatched - wait, this is correct for Southern hemisphere)
+FIXED [2026 - Chiro - Family Care - Southern] 2027-04-09
+  - Proper form for lifting heavy pumpkins
+  + Proper form for lifting heavy autumn produce
+  (llm: 'lifting heavy pumpkins' in April (pumpkins are autumn/harvest, but Southern hemisphere April is early autumn - acceptable timing))
+FIXED [2026 - Chiro NL - Healthy Aging - Southern] 2027-03-10
+  - Gardening without the next-day regret
+  + Gardening without the next-day regret
+  (llm: Text says 'Autumn planting' but early March is still summer in Southern hemisphere)
+FIXED [2026 - Chiro NL - Healthy Aging - Southern] 2027-03-13
+  - Walking pace as a health metric
+  + Walking pace as a health metric
+  (llm: Text says 'Using autumn weather' but mid-March is late summer/early autumn in Southern hemisphere)
+FIXED [2026 - Chiro NL - Healthy Aging - Southern] 2027-03-19
+  - Sleep quality changes after fifty
+  + Sleep quality changes after fifty
+  (llm: Text says 'Temperature and autumn bedding' but mid-March is late summer in Southern hemisphere)
+RESIDUAL [2026 - Chiro - Healthy Aging - Northern] 2027-11-23 [new-year/wrong-month] New Year Movement Goals That Respect Six Decades of History
+RESIDUAL [2026 - Chiro NL - Sports - Southern] 2027-01-04 [mid-year/wrong-month] The midyear training review · Consistency metrics over hero sessions · What the niggle diary reveals · Adjusti
+
+PASS2 DONE. applied=45, residual=2

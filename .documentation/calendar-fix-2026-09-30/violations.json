@@ -1,0 +1,4564 @@
+[
+  {
+    "kind": "article",
+    "calId": "cmu1kdcm00032ogr2nuaq3q9b",
+    "calName": "2026 - Chiro - Family Care - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32l996000eqiex2kpamu7y",
+      "date": "2026-02-10",
+      "text": "Backpack Safety for the Mid-Year School Term"
+    },
+    "reason": "mid-year/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu1kdcm00032ogr2nuaq3q9b",
+    "calName": "2026 - Chiro - Family Care - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32l997001aqiexxcw9pxb0",
+      "date": "2026-06-02",
+      "text": "Managing Holiday Stress and Muscle Tension"
+    },
+    "reason": "holidays/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu1kdcm00032ogr2nuaq3q9b",
+    "calName": "2026 - Chiro - Family Care - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32l997001eqiex0sauebom",
+      "date": "2026-06-16",
+      "text": "Staying Hydrated in the December Heat"
+    },
+    "reason": "says-december/not-december",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu1kdcm00032ogr2nuaq3q9b",
+    "calName": "2026 - Chiro - Family Care - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32l998001gqiexfu9g0rel",
+      "date": "2026-06-23",
+      "text": "Celebrating the Holidays with Healthy Movement"
+    },
+    "reason": "holidays/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu1kdcm00032ogr2nuaq3q9b",
+    "calName": "2026 - Chiro - Family Care - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32l998001hqiexajmmry8n",
+      "date": "2026-06-25",
+      "text": "Post-Holiday Rest and Recovery"
+    },
+    "reason": "holidays/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu1kdcm00032ogr2nuaq3q9b",
+    "calName": "2026 - Chiro - Family Care - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32l998001iqiex5kfz7g53",
+      "date": "2026-06-30",
+      "text": "Setting Family Health Goals for the New Year"
+    },
+    "reason": "new-year/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu1kdcm00032ogr2nuaq3q9b",
+    "calName": "2026 - Chiro - Family Care - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32l998001mqiexfovpzoml",
+      "date": "2026-07-14",
+      "text": "Back to School Backpack Checks"
+    },
+    "reason": "back-to-school/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu1kdcm00032ogr2nuaq3q9b",
+    "calName": "2026 - Chiro - Family Care - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32l998001pqiex9vmjhen3",
+      "date": "2026-07-23",
+      "text": "Senior Health Checks for the New Year"
+    },
+    "reason": "new-year/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu1kdcm00032ogr2nuaq3q9b",
+    "calName": "2026 - Chiro - Family Care - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32l99a0029qiexbresctk6",
+      "date": "2026-10-01",
+      "text": "Easter Holiday Travel and Posture"
+    },
+    "reason": "easter/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu1kdcm00032ogr2nuaq3q9b",
+    "calName": "2026 - Chiro - Family Care - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32l99b002vqiex656gvydr",
+      "date": "2026-12-17",
+      "text": "A Mid-Year Posture Check-In for the Family"
+    },
+    "reason": "mid-year/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu1kdcm00032ogr2nuaq3q9b",
+    "calName": "2026 - Chiro - Family Care - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32l99c003aqiexyfzgrzyk",
+      "date": "2027-02-09",
+      "text": "Backpack Safety for the Mid-Year School Term"
+    },
+    "reason": "mid-year/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu1kdcm00032ogr2nuaq3q9b",
+    "calName": "2026 - Chiro - Family Care - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32l99d0046qiexgxe2gb03",
+      "date": "2027-06-01",
+      "text": "Managing Holiday Stress and Muscle Tension"
+    },
+    "reason": "holidays/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu1kdcm00032ogr2nuaq3q9b",
+    "calName": "2026 - Chiro - Family Care - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32l99d004aqiexk5vlo5sl",
+      "date": "2027-06-15",
+      "text": "Staying Hydrated in the December Heat"
+    },
+    "reason": "says-december/not-december",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu1kdcm00032ogr2nuaq3q9b",
+    "calName": "2026 - Chiro - Family Care - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32l99d004cqiex74sdbu8v",
+      "date": "2027-06-22",
+      "text": "Celebrating the Holidays with Healthy Movement"
+    },
+    "reason": "holidays/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu1kdcm00032ogr2nuaq3q9b",
+    "calName": "2026 - Chiro - Family Care - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32l99d004dqiex3r2nkb5l",
+      "date": "2027-06-24",
+      "text": "Post-Holiday Rest and Recovery"
+    },
+    "reason": "holidays/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu1kdcm00032ogr2nuaq3q9b",
+    "calName": "2026 - Chiro - Family Care - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32l99e004eqiexhbe58cx0",
+      "date": "2027-06-29",
+      "text": "Setting Family Health Goals for the New Year"
+    },
+    "reason": "new-year/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu1kdcm00032ogr2nuaq3q9b",
+    "calName": "2026 - Chiro - Family Care - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32l99e004iqiexwx3oyv3i",
+      "date": "2027-07-13",
+      "text": "Back to School Backpack Checks"
+    },
+    "reason": "back-to-school/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu1kdcm00032ogr2nuaq3q9b",
+    "calName": "2026 - Chiro - Family Care - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32l99e004lqiexbpgsp7n0",
+      "date": "2027-07-22",
+      "text": "Senior Health Checks for the New Year"
+    },
+    "reason": "new-year/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu1kdcm00032ogr2nuaq3q9b",
+    "calName": "2026 - Chiro - Family Care - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32l99f0055qiexqoxvw6va",
+      "date": "2027-09-30",
+      "text": "Easter Holiday Travel and Posture"
+    },
+    "reason": "easter/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu1kdcm00032ogr2nuaq3q9b",
+    "calName": "2026 - Chiro - Family Care - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32l99g005rqiexd22v1vlt",
+      "date": "2027-12-16",
+      "text": "A Mid-Year Posture Check-In for the Family"
+    },
+    "reason": "mid-year/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu1kdcm00032ogr2nuaq3q9b",
+    "calName": "2026 - Chiro - Family Care - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32l9970019qiexclv7p07s",
+      "date": "2026-05-28",
+      "text": "Wrapping Presents Without Neck Pain"
+    },
+    "reason": "llm: 'Wrapping Presents' in late May contradicts typical gift-giving seasons",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu1kdcm00032ogr2nuaq3q9b",
+    "calName": "2026 - Chiro - Family Care - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32l998001jqiexrozizo75",
+      "date": "2026-07-02",
+      "text": "Starting the Year with Better Posture"
+    },
+    "reason": "llm: 'Starting the Year' in July contradicts New Year timing",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu1kdcm00032ogr2nuaq3q9b",
+    "calName": "2026 - Chiro - Family Care - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32l998001nqiex3mlul2bz",
+      "date": "2026-07-16",
+      "text": "Transitioning Back to the Office After Holidays"
+    },
+    "reason": "llm: 'After Holidays' in July contradicts major holiday timing",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu1kdcm00032ogr2nuaq3q9b",
+    "calName": "2026 - Chiro - Family Care - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32l998001oqiexrk6erra9",
+      "date": "2026-07-21",
+      "text": "Supporting Teens as They Start the School Year"
+    },
+    "reason": "llm: 'Start the School Year' in July is too early for Northern hemisphere",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu1kdcm00032ogr2nuaq3q9b",
+    "calName": "2026 - Chiro - Family Care - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32l99d0045qiexdypxc6nm",
+      "date": "2027-05-27",
+      "text": "Wrapping Presents Without Neck Pain"
+    },
+    "reason": "llm: 'Wrapping Presents' in May (gift wrapping is December holidays)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu1kdcm00032ogr2nuaq3q9b",
+    "calName": "2026 - Chiro - Family Care - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32l99e004kqiexeor696sh",
+      "date": "2027-07-20",
+      "text": "Supporting Teens as They Start the School Year"
+    },
+    "reason": "llm: School year starts in July contradicts Northern hemisphere school calendar (starts Aug/Sep)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321gni0000qiw9hraozins",
+    "calName": "2026 - Chiro - Family Care - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu321god000tqiw9stm9o3ce",
+      "date": "2026-08-11",
+      "text": "Backpack Safety for the Mid-Year School Term"
+    },
+    "reason": "mid-year/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321gni0000qiw9hraozins",
+    "calName": "2026 - Chiro - Family Care - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32l9co0066qiexdx595w8h",
+      "date": "2027-08-10",
+      "text": "Backpack Safety for the Mid-Year School Term"
+    },
+    "reason": "mid-year/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321gni0000qiw9hraozins",
+    "calName": "2026 - Chiro - Family Care - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32l9ct0081qiex32y0t52u",
+      "date": "2028-03-30",
+      "text": "Easter Holiday Travel and Posture"
+    },
+    "reason": "llm: Easter in March, but Easter 2028 is April 16",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321gpv005tqiw9tij1k8vd",
+    "calName": "2026 - Chiro - Sports - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32l9h0008uqiextom94g0t",
+      "date": "2026-10-13",
+      "text": "Weight-Room Etiquette for the Returning New Year... in October"
+    },
+    "reason": "new-year/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321gpv005tqiw9tij1k8vd",
+    "calName": "2026 - Chiro - Sports - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32l9h1009qqiexhgyvaup5",
+      "date": "2027-02-02",
+      "text": "Swimmer's Shoulder Before Summer: Fixing the Catch in February"
+    },
+    "reason": "winter-month/summer-text",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321gpv005tqiw9tij1k8vd",
+    "calName": "2026 - Chiro - Sports - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32l9h500btqiexbkhjyq8k",
+      "date": "2027-10-21",
+      "text": "Weight-Room Etiquette for the Returning New Year... in October"
+    },
+    "reason": "new-year/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321gpv005tqiw9tij1k8vd",
+    "calName": "2026 - Chiro - Sports - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32l9h700cpqiexu6hhvg0b",
+      "date": "2028-02-10",
+      "text": "Swimmer's Shoulder Before Summer: Fixing the Catch in February"
+    },
+    "reason": "winter-month/summer-text",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321gpv005tqiw9tij1k8vd",
+    "calName": "2026 - Chiro - Sports - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32l9h1009fqiexgkkgozly",
+      "date": "2026-12-24",
+      "text": "New Year Training Surges and Why Joints Rebel in Week Three"
+    },
+    "reason": "llm: Text says 'New Year Training Surges' but New Year hasn't occurred yet (Dec 24)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321guj00erqiw93mkduyyw",
+    "calName": "2026 - Chiro - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32l9qq00idqiex9wkuiv1y",
+      "date": "2026-12-31",
+      "text": "Mid-Year Review for the Amateur Athlete"
+    },
+    "reason": "mid-year/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321guj00erqiw93mkduyyw",
+    "calName": "2026 - Chiro - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32l9qs00j8qiexr1406ryy",
+      "date": "2027-04-20",
+      "text": "Weight-Room Etiquette for the Returning New Year... in October"
+    },
+    "reason": "new-year/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321guj00erqiw93mkduyyw",
+    "calName": "2026 - Chiro - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32l9qt00jrqiexz59dt2q0",
+      "date": "2027-06-24",
+      "text": "New Year's Resolutions Written in December: The Head Start"
+    },
+    "reason": "new-year/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321guj00erqiw93mkduyyw",
+    "calName": "2026 - Chiro - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32l9qt00jtqiexhy8pawsi",
+      "date": "2027-07-01",
+      "text": "New Year Training Surges and Why Joints Rebel in Week Three"
+    },
+    "reason": "new-year/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321guj00erqiw93mkduyyw",
+    "calName": "2026 - Chiro - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32l9qt00k4qiex9uap1qhp",
+      "date": "2027-08-10",
+      "text": "Swimmer's Shoulder Before Summer: Fixing the Catch in February"
+    },
+    "reason": "winter-month/summer-text",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321guj00erqiw93mkduyyw",
+    "calName": "2026 - Chiro - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32l9qw00lcqiexpa9ctpcv",
+      "date": "2028-01-11",
+      "text": "Mid-Year Review for the Amateur Athlete"
+    },
+    "reason": "mid-year/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321guj00erqiw93mkduyyw",
+    "calName": "2026 - Chiro - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32l9qx00m7qiexq259unxu",
+      "date": "2028-04-27",
+      "text": "Weight-Room Etiquette for the Returning New Year... in October"
+    },
+    "reason": "new-year/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321guj00erqiw93mkduyyw",
+    "calName": "2026 - Chiro - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32l9qy00mqqiexxczsgita",
+      "date": "2028-07-04",
+      "text": "New Year's Resolutions Written in December: The Head Start"
+    },
+    "reason": "new-year/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321guj00erqiw93mkduyyw",
+    "calName": "2026 - Chiro - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32l9qy00msqiexigde6x76",
+      "date": "2028-07-11",
+      "text": "New Year Training Surges and Why Joints Rebel in Week Three"
+    },
+    "reason": "new-year/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321guj00erqiw93mkduyyw",
+    "calName": "2026 - Chiro - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32l9qz00n3qiexh5o0mraa",
+      "date": "2028-08-17",
+      "text": "Swimmer's Shoulder Before Summer: Fixing the Catch in February"
+    },
+    "reason": "winter-month/summer-text",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321guj00erqiw93mkduyyw",
+    "calName": "2026 - Chiro - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32l9qo00hmqiexhn8e5mzd",
+      "date": "2026-09-29",
+      "text": "Baseball and Softball Shoulders: The Throwing Athlete's Spring"
+    },
+    "reason": "llm: 'Spring' in September (Southern hemisphere is in spring, but baseball/softball throwing season typically refers to Northern spring)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321guj00erqiw93mkduyyw",
+    "calName": "2026 - Chiro - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32l9qp00hpqiexi2t2er1s",
+      "date": "2026-10-08",
+      "text": "Blisters, Black Toenails and Other Spring Race Souvenirs"
+    },
+    "reason": "llm: 'Spring Race' in October (Southern hemisphere spring is Sept-Nov, but this aligns correctly—no flag needed)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321guj00erqiw93mkduyyw",
+    "calName": "2026 - Chiro - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32l9qp00htqiexxmxwuje8",
+      "date": "2026-10-22",
+      "text": "May Mileage Ramps and the Shin Splint Spike"
+    },
+    "reason": "llm: 'May Mileage' mentioned in October",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321guj00erqiw93mkduyyw",
+    "calName": "2026 - Chiro - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32l9qp00hxqiex1oydz8wm",
+      "date": "2026-11-05",
+      "text": "Bike-to-Work Month Without the Numb Hands"
+    },
+    "reason": "llm: 'Bike-to-Work Month' implies May in November",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321guj00erqiw93mkduyyw",
+    "calName": "2026 - Chiro - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32l9qp00i2qiexrqkdgd2n",
+      "date": "2026-11-24",
+      "text": "Summer Tournament Weekends: Playing Four Games in Two Days"
+    },
+    "reason": "llm: 'Summer Tournament' in November (Southern summer is Dec-Feb)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321guj00erqiw93mkduyyw",
+    "calName": "2026 - Chiro - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32l9qq00i3qiexjwlucbhh",
+      "date": "2026-11-26",
+      "text": "Running in the Heat: What Slows You Down Is Protecting You"
+    },
+    "reason": "llm: 'Running in the Heat...Summer' context in November (Southern summer is Dec-Feb)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321guj00erqiw93mkduyyw",
+    "calName": "2026 - Chiro - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32l9qq00i5qiexezy4ftjp",
+      "date": "2026-12-03",
+      "text": "Surf, SUP and the Shoulders That Paddle All Summer"
+    },
+    "reason": "llm: 'All Summer' in December (acceptable as summer is starting)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321guj00erqiw93mkduyyw",
+    "calName": "2026 - Chiro - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32l9qq00ilqiexi1sou40y",
+      "date": "2027-01-28",
+      "text": "The August Long Run and the Art of Not Melting"
+    },
+    "reason": "llm: 'August Long Run' mentioned in January",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321guj00erqiw93mkduyyw",
+    "calName": "2026 - Chiro - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32l9qq00imqiex8dvhpbli",
+      "date": "2027-02-02",
+      "text": "Back to the Gym: Rebuilding a Routine After Summer Chaos"
+    },
+    "reason": "llm: 'After Summer Chaos' in February (summer just ending, acceptable)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321guj00erqiw93mkduyyw",
+    "calName": "2026 - Chiro - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32l9qr00ipqiexp95av0p6",
+      "date": "2027-02-11",
+      "text": "The Masters Athlete's August: Training Hard After Fifty"
+    },
+    "reason": "llm: 'August' mentioned in February",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321guj00erqiw93mkduyyw",
+    "calName": "2026 - Chiro - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32l9qr00itqiexu90b8gfh",
+      "date": "2027-02-25",
+      "text": "Fall League Kickoff: The Most Injurious Fortnight of the Year"
+    },
+    "reason": "llm: 'Fall League Kickoff' in February (Southern fall is Mar-May)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321guj00erqiw93mkduyyw",
+    "calName": "2026 - Chiro - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32l9qr00iwqiexsxqn9t3x",
+      "date": "2027-03-09",
+      "text": "Autumn Cycling and the Cold-Start Knee"
+    },
+    "reason": "llm: 'Autumn Cycling' in March (Southern autumn starts late March, borderline but acceptable)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321guj00erqiw93mkduyyw",
+    "calName": "2026 - Chiro - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32l9qr00izqiexivaqqvfv",
+      "date": "2027-03-18",
+      "text": "The Fall Reset: Building a Training Base Before Winter"
+    },
+    "reason": "llm: 'Fall Reset...Before Winter' in March (appropriate timing for Southern hemisphere)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321guj00erqiw93mkduyyw",
+    "calName": "2026 - Chiro - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32l9qr00j1qiexldtpbb2i",
+      "date": "2027-03-25",
+      "text": "Fantasy Football Posture: The Other Season Starting in September"
+    },
+    "reason": "llm: 'Starting in September' mentioned in March",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321guj00erqiw93mkduyyw",
+    "calName": "2026 - Chiro - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32l9qr00j2qiexmb9kc9jv",
+      "date": "2027-03-30",
+      "text": "October Races and the Cold Start Line"
+    },
+    "reason": "llm: 'October Races' mentioned in March",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321guj00erqiw93mkduyyw",
+    "calName": "2026 - Chiro - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32l9qt00kaqiexkjnatbcw",
+      "date": "2027-08-31",
+      "text": "Spring Training for Grown-Ups: Restarting After a Winter Off"
+    },
+    "reason": "llm: Text says 'Winter Off' but August is winter in Southern hemisphere",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321guj00erqiw93mkduyyw",
+    "calName": "2026 - Chiro - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32l9qu00kbqiex72pkzp7c",
+      "date": "2027-09-02",
+      "text": "Runner's Knee Season Opens in March: Here's the Usual Story"
+    },
+    "reason": "llm: Text says 'opens in March' but date is September",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321guj00erqiw93mkduyyw",
+    "calName": "2026 - Chiro - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32l9qu00kdqiexn0jzh5pi",
+      "date": "2027-09-09",
+      "text": "March Madness for Your Calves: Court Sports and Achilles Load"
+    },
+    "reason": "llm: Text says 'March Madness' but date is September",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321guj00erqiw93mkduyyw",
+    "calName": "2026 - Chiro - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32l9qv00ksqiexgqyipczc",
+      "date": "2027-11-02",
+      "text": "May Mileage Ramps and the Shin Splint Spike"
+    },
+    "reason": "llm: Text says 'May Mileage' but date is November",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321guj00erqiw93mkduyyw",
+    "calName": "2026 - Chiro - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32l9qw00lkqiexpv570lai",
+      "date": "2028-02-08",
+      "text": "The August Long Run and the Art of Not Melting"
+    },
+    "reason": "llm: Text says 'August Long Run' but date is February",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321guj00erqiw93mkduyyw",
+    "calName": "2026 - Chiro - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32l9qx00m1qiex2sya62ka",
+      "date": "2028-04-06",
+      "text": "October Races and the Cold Start Line"
+    },
+    "reason": "llm: Text mentions 'October Races' but date is April",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321guj00erqiw93mkduyyw",
+    "calName": "2026 - Chiro - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32l9qx00m6qiexnqpuw7wg",
+      "date": "2028-04-25",
+      "text": "Halloween Fun Runs With Kids: Costumes Meet Cadence"
+    },
+    "reason": "llm: Halloween (October 31) referenced in April",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321guj00erqiw93mkduyyw",
+    "calName": "2026 - Chiro - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32l9qx00maqiexz5ufwu5f",
+      "date": "2028-05-09",
+      "text": "Turkey Trots and the Once-a-Year Runner"
+    },
+    "reason": "llm: Turkey Trots (November/Thanksgiving) referenced in May",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321guj00erqiw93mkduyyw",
+    "calName": "2026 - Chiro - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32l9qy00miqiex38ffef0q",
+      "date": "2028-06-06",
+      "text": "Black Friday for the Home Gym: What's Worth Buying"
+    },
+    "reason": "llm: Black Friday (November) referenced in June",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321guj00erqiw93mkduyyw",
+    "calName": "2026 - Chiro - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32l9qy00mlqiexwa6ijyxd",
+      "date": "2028-06-15",
+      "text": "The Twelve Lifts of December: A Maintenance Month Plan"
+    },
+    "reason": "llm: Text says 'Twelve Lifts of December' but date is June",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321guj00erqiw93mkduyyw",
+    "calName": "2026 - Chiro - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32l9qz00naqiexnkjedzqt",
+      "date": "2028-09-12",
+      "text": "Runner's Knee Season Opens in March: Here's the Usual Story"
+    },
+    "reason": "llm: Text says 'Season Opens in March' but date is September",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321guj00erqiw93mkduyyw",
+    "calName": "2026 - Chiro - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32l9qz00ncqiexj7cv5f0k",
+      "date": "2028-09-19",
+      "text": "March Madness for Your Calves: Court Sports and Achilles Load"
+    },
+    "reason": "llm: Text says 'March Madness' but date is September",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321gy000npqiw92pygwcyx",
+    "calName": "2026 - Chiro - Prenatal & Pediatric - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32l9ym00srqiexsboq7bqb",
+      "date": "2027-07-08",
+      "text": "Back-to-School Backpacks for the Smallest Students"
+    },
+    "reason": "back-to-school/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321gy000npqiw92pygwcyx",
+    "calName": "2026 - Chiro - Prenatal & Pediatric - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32l9yo00trqiexkl0kux8n",
+      "date": "2027-11-11",
+      "text": "New Year's Reflections for the Almost-Due"
+    },
+    "reason": "new-year/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321gy000npqiw92pygwcyx",
+    "calName": "2026 - Chiro - Prenatal & Pediatric - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32l9yo00tuqiexk99hfuhm",
+      "date": "2027-11-23",
+      "text": "New Year, New Baby: Preparing Your Body for a Winter Pregnancy"
+    },
+    "reason": "new-year/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321gy000npqiw92pygwcyx",
+    "calName": "2026 - Chiro - Prenatal & Pediatric - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32l9yr00vhqiexgaapq8r2",
+      "date": "2028-06-15",
+      "text": "Back-to-School Backpacks for the Smallest Students"
+    },
+    "reason": "back-to-school/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321gy000npqiw92pygwcyx",
+    "calName": "2026 - Chiro - Prenatal & Pediatric - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32l9yi00qoqiexh7wdnfkx",
+      "date": "2026-10-20",
+      "text": "Thanksgiving Hosting While Expecting: Delegation as Self-Care"
+    },
+    "reason": "llm: Thanksgiving referenced in October (US Thanksgiving is in November)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321gy000npqiw92pygwcyx",
+    "calName": "2026 - Chiro - Prenatal & Pediatric - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32l9yj00rfqiex5gkguro5",
+      "date": "2027-01-21",
+      "text": "Loving Your Changed Body: Valentine Thoughts on Postpartum Identity"
+    },
+    "reason": "llm: Valentine referenced in January (Valentine's Day is February 14)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321gy000npqiw92pygwcyx",
+    "calName": "2026 - Chiro - Prenatal & Pediatric - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32l9yk00rlqiexweykad8y",
+      "date": "2027-02-11",
+      "text": "Spring Walks With the Stroller: Handle Heights and Hill Strategy"
+    },
+    "reason": "llm: 'Spring Walks' referenced in February (Northern hemisphere spring starts late March)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321gy000npqiw92pygwcyx",
+    "calName": "2026 - Chiro - Prenatal & Pediatric - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32l9yk00s2qiexh2541xde",
+      "date": "2027-04-13",
+      "text": "Mother's Day Truth: The Load Mothers Carry Is Also Literal"
+    },
+    "reason": "llm: Mother's Day referenced in April (US Mother's Day is second Sunday in May)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321gy000npqiw92pygwcyx",
+    "calName": "2026 - Chiro - Prenatal & Pediatric - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32l9yl00saqiexkettzawr",
+      "date": "2027-05-11",
+      "text": "Father's Day Feature: Dads' Backs and the Airplane Game"
+    },
+    "reason": "llm: Father's Day referenced in May (US Father's Day is third Sunday in June)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321gy000npqiw92pygwcyx",
+    "calName": "2026 - Chiro - Prenatal & Pediatric - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32l9ym00szqiexf7sssj6i",
+      "date": "2027-08-05",
+      "text": "The Growing Backpack Audit: What September Bags Reveal"
+    },
+    "reason": "llm: Text says 'September bags' but date is August 5",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321gy000npqiw92pygwcyx",
+    "calName": "2026 - Chiro - Prenatal & Pediatric - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32l9ym00t6qiex9y9qb04m",
+      "date": "2027-08-31",
+      "text": "Pumpkin-Patch Season: Lifting Odd Objects With Small Supervisors"
+    },
+    "reason": "llm: Pumpkin-patch season referenced in late August; typically September-October",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321gy000npqiw92pygwcyx",
+    "calName": "2026 - Chiro - Prenatal & Pediatric - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32l9ym00t7qiexa2tp9iqc",
+      "date": "2027-09-02",
+      "text": "Halloween While Pregnant: Costumes, Comfort and Candy Walks"
+    },
+    "reason": "llm: Halloween referenced in early September; Halloween is October 31",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321gy000npqiw92pygwcyx",
+    "calName": "2026 - Chiro - Prenatal & Pediatric - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32l9ym00t8qiexdxl4e8wm",
+      "date": "2027-09-07",
+      "text": "The Crawler's Halloween: Baby-Proofing the Decoration Season"
+    },
+    "reason": "llm: Halloween referenced in early September; Halloween is October 31",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321gy000npqiw92pygwcyx",
+    "calName": "2026 - Chiro - Prenatal & Pediatric - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32l9yn00taqiexqfc10ygt",
+      "date": "2027-09-14",
+      "text": "Costume Mobility Check: Can Your Toddler Actually Move in That"
+    },
+    "reason": "llm: Costume topic in mid-September; Halloween is October 31",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321gy000npqiw92pygwcyx",
+    "calName": "2026 - Chiro - Prenatal & Pediatric - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32l9yn00teqiexydnt0xnm",
+      "date": "2027-09-28",
+      "text": "Thanksgiving Hosting While Expecting: Delegation as Self-Care"
+    },
+    "reason": "llm: Thanksgiving hosting in late September; US Thanksgiving is late November, Canadian is October",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321gy000npqiw92pygwcyx",
+    "calName": "2026 - Chiro - Prenatal & Pediatric - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32l9yn00tgqiexh3grow9q",
+      "date": "2027-10-05",
+      "text": "Black Friday With a Baby Registry: Gear That Serves Bodies"
+    },
+    "reason": "llm: Black Friday in early October; Black Friday is late November (day after US Thanksgiving)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321gy000npqiw92pygwcyx",
+    "calName": "2026 - Chiro - Prenatal & Pediatric - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32l9yo00u5qiex9r31im96",
+      "date": "2027-12-30",
+      "text": "Loving Your Changed Body: Valentine Thoughts on Postpartum Identity"
+    },
+    "reason": "llm: Valentine thoughts on December 30; Valentine's Day is February 14",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321gy000npqiw92pygwcyx",
+    "calName": "2026 - Chiro - Prenatal & Pediatric - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32l9yp00usqiex8cnsh5ft",
+      "date": "2028-03-21",
+      "text": "Mother's Day Truth: The Load Mothers Carry Is Also Literal"
+    },
+    "reason": "llm: Mother's Day in March; Mother's Day is in May in Northern hemisphere",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h1a00w3qiw9ii9a06yn",
+    "calName": "2026 - Chiro - Prenatal & Pediatric - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32la5k00yxqiex5z0mb0pj",
+      "date": "2026-10-08",
+      "text": "Easter Egg Hunts and the Squat Olympics"
+    },
+    "reason": "easter/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h1a00w3qiw9ii9a06yn",
+    "calName": "2026 - Chiro - Prenatal & Pediatric - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32la5n010qqiexg3r43hnw",
+      "date": "2027-05-25",
+      "text": "New Year's Reflections for the Almost-Due"
+    },
+    "reason": "new-year/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h1a00w3qiw9ii9a06yn",
+    "calName": "2026 - Chiro - Prenatal & Pediatric - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32la5n010tqiex0xf1gtdn",
+      "date": "2027-06-03",
+      "text": "New Year, New Baby: Preparing Your Body for a Winter Pregnancy"
+    },
+    "reason": "new-year/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h1a00w3qiw9ii9a06yn",
+    "calName": "2026 - Chiro - Prenatal & Pediatric - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32la5o011nqiexg5gnybog",
+      "date": "2027-09-16",
+      "text": "Easter Egg Hunts and the Squat Olympics"
+    },
+    "reason": "easter/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h1a00w3qiw9ii9a06yn",
+    "calName": "2026 - Chiro - Prenatal & Pediatric - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32la5q012gqiexe8rj7ja3",
+      "date": "2027-12-28",
+      "text": "Back-to-School Backpacks for the Smallest Students"
+    },
+    "reason": "back-to-school/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h1a00w3qiw9ii9a06yn",
+    "calName": "2026 - Chiro - Prenatal & Pediatric - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32la5s013gqiexv75cnrjl",
+      "date": "2028-05-02",
+      "text": "New Year's Reflections for the Almost-Due"
+    },
+    "reason": "new-year/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h1a00w3qiw9ii9a06yn",
+    "calName": "2026 - Chiro - Prenatal & Pediatric - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32la5s013jqiex5isbejsg",
+      "date": "2028-05-11",
+      "text": "New Year, New Baby: Preparing Your Body for a Winter Pregnancy"
+    },
+    "reason": "new-year/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h4b014hqiw95nuocxcj",
+    "calName": "2026 - Chiro - Healthy Aging - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32laat019jqiexofa3uub3",
+      "date": "2027-07-22",
+      "text": "Back-to-School for Grandparents: The Pickup-Line Season Begins"
+    },
+    "reason": "back-to-school/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h4b014hqiw95nuocxcj",
+    "calName": "2026 - Chiro - Healthy Aging - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32laau01afqiexbe80ums0",
+      "date": "2027-11-11",
+      "text": "New Year's Eve at Every Age: Celebrations That Fit"
+    },
+    "reason": "new-year/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h4b014hqiw95nuocxcj",
+    "calName": "2026 - Chiro - Healthy Aging - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32laau01aiqiexr19knehv",
+      "date": "2027-11-23",
+      "text": "New Year Movement Goals That Respect Six Decades of History"
+    },
+    "reason": "new-year/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h4b014hqiw95nuocxcj",
+    "calName": "2026 - Chiro - Healthy Aging - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32laax01c8qiex2n6xugdh",
+      "date": "2028-06-27",
+      "text": "Back-to-School for Grandparents: The Pickup-Line Season Begins"
+    },
+    "reason": "back-to-school/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h4b014hqiw95nuocxcj",
+    "calName": "2026 - Chiro - Healthy Aging - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32laap017cqiexp7m55qw1",
+      "date": "2026-10-20",
+      "text": "Thanksgiving Standing Shifts: Kitchen Marathon Management"
+    },
+    "reason": "llm: Thanksgiving referenced in October; U.S. Thanksgiving is in November",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h4b014hqiw95nuocxcj",
+    "calName": "2026 - Chiro - Healthy Aging - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32laap017nqiexptrw31wi",
+      "date": "2026-11-26",
+      "text": "Winter Solstice Movement: Honoring the Darkest Day Actively"
+    },
+    "reason": "llm: Winter Solstice is December 21, not November 26",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h4b014hqiw95nuocxcj",
+    "calName": "2026 - Chiro - Healthy Aging - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32laas019dqiexzohkxmq9",
+      "date": "2027-07-01",
+      "text": "The Late-Summer Check-In: How Did the Active Season Treat You"
+    },
+    "reason": "llm: Text says 'Late-Summer' but July 1 is early summer in Northern hemisphere",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h4b014hqiw95nuocxcj",
+    "calName": "2026 - Chiro - Healthy Aging - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32laat019mqiex4smt38ow",
+      "date": "2027-08-03",
+      "text": "Apple Season Ladders: The Orchard Conversation Nobody Wants"
+    },
+    "reason": "llm: Text says 'Apple Season' but August is summer, apple season is fall (Sept-Oct) in Northern hemisphere",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h4b014hqiw95nuocxcj",
+    "calName": "2026 - Chiro - Healthy Aging - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32laat019nqiexoq4gljx3",
+      "date": "2027-08-05",
+      "text": "The Autumn Reset: Rebuilding Routine as Structure Returns"
+    },
+    "reason": "llm: Text says 'Autumn Reset' but August 5 is summer in Northern hemisphere",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h4b014hqiw95nuocxcj",
+    "calName": "2026 - Chiro - Healthy Aging - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32laat019pqiexdjqyz0ky",
+      "date": "2027-08-12",
+      "text": "Leaf-Peeping Drives and the Every-Hour Unfold"
+    },
+    "reason": "llm: Text says 'Leaf-Peeping' but August is summer, leaf-peeping is fall (Sept-Oct) in Northern hemisphere",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h4b014hqiw95nuocxcj",
+    "calName": "2026 - Chiro - Healthy Aging - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32laat019rqiexjqmsjkuv",
+      "date": "2027-08-19",
+      "text": "Soup Season Prep: Batch Cooking Ergonomics"
+    },
+    "reason": "llm: Text says 'Soup Season' but August is summer in Northern hemisphere",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h4b014hqiw95nuocxcj",
+    "calName": "2026 - Chiro - Healthy Aging - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32laat019tqiexn0x4z1vn",
+      "date": "2027-08-26",
+      "text": "Rake Season Returns: The Annual Test of Technique"
+    },
+    "reason": "llm: Text says 'Rake Season' but August is summer, raking leaves is fall (Oct-Nov) in Northern hemisphere",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h4b014hqiw95nuocxcj",
+    "calName": "2026 - Chiro - Healthy Aging - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32laat019wqiexc4v5ec1s",
+      "date": "2027-09-07",
+      "text": "Halloween on the Porch: Hosting Trick-or-Treat Comfortably"
+    },
+    "reason": "llm: Halloween is October 31, not early September",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h4b014hqiw95nuocxcj",
+    "calName": "2026 - Chiro - Healthy Aging - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32laat019xqiexmaxjt5d0",
+      "date": "2027-09-09",
+      "text": "Pumpkin Logistics: The Season's Awkward Lifts"
+    },
+    "reason": "llm: Pumpkin season is October, not early September",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h4b014hqiw95nuocxcj",
+    "calName": "2026 - Chiro - Healthy Aging - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32laat01a1qiex33bj7tuc",
+      "date": "2027-09-23",
+      "text": "Thanksgiving Standing Shifts: Kitchen Marathon Management"
+    },
+    "reason": "llm: Thanksgiving is November (US) or October (Canada), not September",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h4b014hqiw95nuocxcj",
+    "calName": "2026 - Chiro - Healthy Aging - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32laau01a5qiex2rvj1k8w",
+      "date": "2027-10-07",
+      "text": "Strength as Thanksgiving: What Your Muscles Did This Year"
+    },
+    "reason": "llm: Text references Thanksgiving but date is early October; US Thanksgiving is late November",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h4b014hqiw95nuocxcj",
+    "calName": "2026 - Chiro - Healthy Aging - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32laau01a7qiexavjzfwys",
+      "date": "2027-10-14",
+      "text": "Black Friday From the Couch: Online-Era Shopping Postures"
+    },
+    "reason": "llm: Black Friday is day after Thanksgiving (late November), not mid-October",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h4b014hqiw95nuocxcj",
+    "calName": "2026 - Chiro - Healthy Aging - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32laau01acqiexd6d6zfze",
+      "date": "2027-11-02",
+      "text": "Winter Solstice Movement: Honoring the Darkest Day Actively"
+    },
+    "reason": "llm: Winter Solstice is December 21, not early November",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h4b014hqiw95nuocxcj",
+    "calName": "2026 - Chiro - Healthy Aging - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32laaw01bmqiexun1i0cir",
+      "date": "2028-04-11",
+      "text": "Grandkids Out of School: Surviving and Savoring Summer Duty"
+    },
+    "reason": "llm: 'Grandkids Out of School' and 'Summer Duty' in April (school ends June, summer is June-August in Northern hemisphere)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h4b014hqiw95nuocxcj",
+    "calName": "2026 - Chiro - Healthy Aging - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32laaw01bnqiex7gxggph7",
+      "date": "2028-04-13",
+      "text": "Heat Wisdom: Why Thermoregulation Changes and What To Do"
+    },
+    "reason": "llm: 'Heat Wisdom' implies summer heat in April (spring in Northern hemisphere)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h4b014hqiw95nuocxcj",
+    "calName": "2026 - Chiro - Healthy Aging - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32laaw01boqiex3dpxtyhm",
+      "date": "2028-04-18",
+      "text": "The Long Evening Walk: Solstice Light as Movement Invitation"
+    },
+    "reason": "llm: 'Solstice' in April (solstice is June 21 in Northern hemisphere)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h4b014hqiw95nuocxcj",
+    "calName": "2026 - Chiro - Healthy Aging - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32laaw01bqqiex3b2sm0pv",
+      "date": "2028-04-25",
+      "text": "Sandals Season: Summer Footwear That Doesn't Sabotage"
+    },
+    "reason": "llm: 'Sandals Season: Summer Footwear' in April (summer is June-August in Northern hemisphere)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h4b014hqiw95nuocxcj",
+    "calName": "2026 - Chiro - Healthy Aging - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32laax01bvqiexaidu3h09",
+      "date": "2028-05-11",
+      "text": "The National Park Summer: Trail Grades and Honest Self-Rating"
+    },
+    "reason": "llm: 'National Park Summer' in May (summer is June-August in Northern hemisphere)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h4b014hqiw95nuocxcj",
+    "calName": "2026 - Chiro - Healthy Aging - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32laax01c2qiexflexp5tw",
+      "date": "2028-06-06",
+      "text": "The Late-Summer Check-In: How Did the Active Season Treat You"
+    },
+    "reason": "llm: 'Late-Summer' in early June (late summer is August in Northern hemisphere)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h4b014hqiw95nuocxcj",
+    "calName": "2026 - Chiro - Healthy Aging - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32laax01caqiexj2jhjni5",
+      "date": "2028-07-04",
+      "text": "Fall Prevention Month: A Word About the Word"
+    },
+    "reason": "llm: 'Fall Prevention Month' in July (fall/autumn is September-November in Northern hemisphere)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h4b014hqiw95nuocxcj",
+    "calName": "2026 - Chiro - Healthy Aging - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32laax01cbqiexwjehnydh",
+      "date": "2028-07-06",
+      "text": "Apple Season Ladders: The Orchard Conversation Nobody Wants"
+    },
+    "reason": "llm: 'Apple Season' in July (apple season is September-October in Northern hemisphere)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h4b014hqiw95nuocxcj",
+    "calName": "2026 - Chiro - Healthy Aging - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32laax01ccqiex28576p7i",
+      "date": "2028-07-11",
+      "text": "The Autumn Reset: Rebuilding Routine as Structure Returns"
+    },
+    "reason": "llm: 'Autumn Reset' in July (autumn is September-November in Northern hemisphere)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h4b014hqiw95nuocxcj",
+    "calName": "2026 - Chiro - Healthy Aging - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32laay01ceqiexjm98xebb",
+      "date": "2028-07-18",
+      "text": "Leaf-Peeping Drives and the Every-Hour Unfold"
+    },
+    "reason": "llm: 'Leaf-Peeping' in July (leaf-peeping is September-October in Northern hemisphere)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h4b014hqiw95nuocxcj",
+    "calName": "2026 - Chiro - Healthy Aging - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32laay01cgqiexqf2x4y60",
+      "date": "2028-07-25",
+      "text": "Soup Season Prep: Batch Cooking Ergonomics"
+    },
+    "reason": "llm: 'Soup Season' in July (soup season is fall/winter, not summer in Northern hemisphere)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h7x01ctqiw9qu7w2xbb",
+    "calName": "2026 - Chiro - Healthy Aging - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32lage01hcqiexqvjf7jc1",
+      "date": "2027-05-25",
+      "text": "New Year's Eve at Every Age: Celebrations That Fit"
+    },
+    "reason": "new-year/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h7x01ctqiw9qu7w2xbb",
+    "calName": "2026 - Chiro - Healthy Aging - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32lage01hfqiexbdvvsjh6",
+      "date": "2027-06-03",
+      "text": "New Year Movement Goals That Respect Six Decades of History"
+    },
+    "reason": "new-year/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h7x01ctqiw9qu7w2xbb",
+    "calName": "2026 - Chiro - Healthy Aging - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32lagi01k1qiex82cx2nbj",
+      "date": "2028-04-27",
+      "text": "New Year's Eve at Every Age: Celebrations That Fit"
+    },
+    "reason": "new-year/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h7x01ctqiw9qu7w2xbb",
+    "calName": "2026 - Chiro - Healthy Aging - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32lagi01k4qiexeeqs45p4",
+      "date": "2028-05-09",
+      "text": "New Year Movement Goals That Respect Six Decades of History"
+    },
+    "reason": "new-year/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h7x01ctqiw9qu7w2xbb",
+    "calName": "2026 - Chiro - Healthy Aging - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32lagb01foqiex6twzvhyn",
+      "date": "2026-10-27",
+      "text": "Mother's Day Across Generations: Moving Together as a Gift"
+    },
+    "reason": "llm: Mother's Day in October (Southern hemisphere Mother's Day is in May)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h7x01ctqiw9qu7w2xbb",
+    "calName": "2026 - Chiro - Healthy Aging - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32lagb01fuqiexydo7tge3",
+      "date": "2026-11-17",
+      "text": "Grandkids Out of School: Surviving and Savoring Summer Duty"
+    },
+    "reason": "llm: 'Summer Duty' in November (Southern hemisphere summer begins late December)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h7x01ctqiw9qu7w2xbb",
+    "calName": "2026 - Chiro - Healthy Aging - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32lagc01gaqiex0wq36xht",
+      "date": "2027-01-12",
+      "text": "The Late-Summer Check-In: How Did the Active Season Treat You"
+    },
+    "reason": "llm: 'Late-Summer' in January (Southern hemisphere late summer is February/March)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h7x01ctqiw9qu7w2xbb",
+    "calName": "2026 - Chiro - Healthy Aging - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32lagc01giqiexhr6crgzv",
+      "date": "2027-02-09",
+      "text": "Fall Prevention Month: A Word About the Word"
+    },
+    "reason": "llm: 'Fall Prevention Month' in February (Southern hemisphere fall is March-May)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h7x01ctqiw9qu7w2xbb",
+    "calName": "2026 - Chiro - Healthy Aging - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32lagc01gjqiextkx1q9jl",
+      "date": "2027-02-11",
+      "text": "Apple Season Ladders: The Orchard Conversation Nobody Wants"
+    },
+    "reason": "llm: 'Apple Season' in February (Southern hemisphere apple season is late summer/autumn: Feb-May, but 'Autumn' reference suggests wrong season)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h7x01ctqiw9qu7w2xbb",
+    "calName": "2026 - Chiro - Healthy Aging - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32lagc01gkqiex8ivmrswp",
+      "date": "2027-02-16",
+      "text": "The Autumn Reset: Rebuilding Routine as Structure Returns"
+    },
+    "reason": "llm: 'Autumn Reset' in February (Southern hemisphere autumn begins March)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h7x01ctqiw9qu7w2xbb",
+    "calName": "2026 - Chiro - Healthy Aging - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32lagd01gtqiexcea2fcxa",
+      "date": "2027-03-18",
+      "text": "Halloween on the Porch: Hosting Trick-or-Treat Comfortably"
+    },
+    "reason": "llm: Halloween in March (Halloween is October 31)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h7x01ctqiw9qu7w2xbb",
+    "calName": "2026 - Chiro - Healthy Aging - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32lagd01guqiextk1r6zbs",
+      "date": "2027-03-23",
+      "text": "Pumpkin Logistics: The Season's Awkward Lifts"
+    },
+    "reason": "llm: 'Pumpkin' season in March (context suggests Halloween, which is October)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h7x01ctqiw9qu7w2xbb",
+    "calName": "2026 - Chiro - Healthy Aging - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32lagd01gyqiex522gnxx7",
+      "date": "2027-04-06",
+      "text": "Thanksgiving Standing Shifts: Kitchen Marathon Management"
+    },
+    "reason": "llm: Thanksgiving in April (no major Thanksgiving in Southern hemisphere in April)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h7x01ctqiw9qu7w2xbb",
+    "calName": "2026 - Chiro - Healthy Aging - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32lage01hmqiexlpddh1bb",
+      "date": "2027-06-29",
+      "text": "Vitamin D Season: Sunshine Math at Northern Latitudes"
+    },
+    "reason": "llm: June is winter in Southern hemisphere, not 'Vitamin D Season' from sunshine",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h7x01ctqiw9qu7w2xbb",
+    "calName": "2026 - Chiro - Healthy Aging - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32lagf01hxqiex0tqi8l4c",
+      "date": "2027-08-05",
+      "text": "The Spring Closet Swap: Reaching, Lifting and Ladder Truths"
+    },
+    "reason": "llm: August is late winter in Southern hemisphere, not 'Spring Closet Swap'",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h7x01ctqiw9qu7w2xbb",
+    "calName": "2026 - Chiro - Healthy Aging - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32lagf01i3qiexticg9m8j",
+      "date": "2027-08-26",
+      "text": "Spring Cleaning in Chapters: The Multi-Day Method"
+    },
+    "reason": "llm: August is late winter in Southern hemisphere, not 'Spring Cleaning'",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h7x01ctqiw9qu7w2xbb",
+    "calName": "2026 - Chiro - Healthy Aging - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32lagf01i4qiex3vj83kel",
+      "date": "2027-08-31",
+      "text": "The Golf Return: First Rounds After Winter at Any Age"
+    },
+    "reason": "llm: August is late winter in Southern hemisphere, references 'After Winter' but winter hasn't ended",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h7x01ctqiw9qu7w2xbb",
+    "calName": "2026 - Chiro - Healthy Aging - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32lagf01idqiex6eu9p0g5",
+      "date": "2027-09-30",
+      "text": "Mother's Day Across Generations: Moving Together as a Gift"
+    },
+    "reason": "llm: Mother's Day in Southern hemisphere is in May, not September",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h7x01ctqiw9qu7w2xbb",
+    "calName": "2026 - Chiro - Healthy Aging - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32lagg01ijqiexsbs018se",
+      "date": "2027-10-21",
+      "text": "Grandkids Out of School: Surviving and Savoring Summer Duty"
+    },
+    "reason": "llm: October is spring in Southern hemisphere, not 'Summer Duty' for out-of-school grandkids",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h7x01ctqiw9qu7w2xbb",
+    "calName": "2026 - Chiro - Healthy Aging - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32lagg01ilqiexl30x0jm7",
+      "date": "2027-10-28",
+      "text": "The Long Evening Walk: Solstice Light as Movement Invitation"
+    },
+    "reason": "llm: October is spring in Southern hemisphere, solstice (longest day) is in December",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h7x01ctqiw9qu7w2xbb",
+    "calName": "2026 - Chiro - Healthy Aging - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32lagg01inqiexq7ijcg59",
+      "date": "2027-11-04",
+      "text": "Sandals Season: Summer Footwear That Doesn't Sabotage"
+    },
+    "reason": "llm: November is spring/early summer in Southern hemisphere, 'Sandals Season: Summer Footwear' is appropriate - no mismatch",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h7x01ctqiw9qu7w2xbb",
+    "calName": "2026 - Chiro - Healthy Aging - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32lagg01isqiexjxyazspb",
+      "date": "2027-11-23",
+      "text": "The National Park Summer: Trail Grades and Honest Self-Rating"
+    },
+    "reason": "llm: November is spring in Southern hemisphere, 'National Park Summer' is premature",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h7x01ctqiw9qu7w2xbb",
+    "calName": "2026 - Chiro - Healthy Aging - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32lagg01izqiexojaz1w8d",
+      "date": "2027-12-16",
+      "text": "The Late-Summer Check-In: How Did the Active Season Treat You"
+    },
+    "reason": "llm: December is early summer in Southern hemisphere, not 'Late-Summer'",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h7x01ctqiw9qu7w2xbb",
+    "calName": "2026 - Chiro - Healthy Aging - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32lagh01j5qiexehzrjk9z",
+      "date": "2028-01-06",
+      "text": "Back-to-School for Grandparents: The Pickup-Line Season Begins"
+    },
+    "reason": "llm: January is summer in Southern hemisphere; school starts late Jan/Feb, not 'Back-to-School'",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h7x01ctqiw9qu7w2xbb",
+    "calName": "2026 - Chiro - Healthy Aging - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32lagh01j7qiexqhhg2564",
+      "date": "2028-01-13",
+      "text": "Fall Prevention Month: A Word About the Word"
+    },
+    "reason": "llm: January is summer in Southern hemisphere, not 'Fall Prevention Month' (fall is March-May)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h7x01ctqiw9qu7w2xbb",
+    "calName": "2026 - Chiro - Healthy Aging - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32lagh01j8qiex2c8tvmj4",
+      "date": "2028-01-18",
+      "text": "Apple Season Ladders: The Orchard Conversation Nobody Wants"
+    },
+    "reason": "llm: January is summer in Southern hemisphere, not 'Apple Season' or 'Autumn'",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h7x01ctqiw9qu7w2xbb",
+    "calName": "2026 - Chiro - Healthy Aging - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32lagh01j9qiex24x94jzy",
+      "date": "2028-01-20",
+      "text": "The Autumn Reset: Rebuilding Routine as Structure Returns"
+    },
+    "reason": "llm: January is summer in Southern hemisphere, not 'Autumn Reset'",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h7x01ctqiw9qu7w2xbb",
+    "calName": "2026 - Chiro - Healthy Aging - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32lagh01jfqiexnlxqazly",
+      "date": "2028-02-10",
+      "text": "Rake Season Returns: The Annual Test of Technique"
+    },
+    "reason": "llm: February is summer/early autumn in Southern hemisphere, not 'Rake Season Returns'",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h7x01ctqiw9qu7w2xbb",
+    "calName": "2026 - Chiro - Healthy Aging - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32lagh01jgqiexnu8dyh2f",
+      "date": "2028-02-15",
+      "text": "Darker Evenings, Earlier Walks: Rescheduling for the Season"
+    },
+    "reason": "llm: February is late summer in Southern hemisphere, evenings get darker later, not earlier",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h7x01ctqiw9qu7w2xbb",
+    "calName": "2026 - Chiro - Healthy Aging - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32lagh01jiqiexqzlw12yu",
+      "date": "2028-02-22",
+      "text": "Halloween on the Porch: Hosting Trick-or-Treat Comfortably"
+    },
+    "reason": "llm: Halloween is October 31 globally, not February",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h7x01ctqiw9qu7w2xbb",
+    "calName": "2026 - Chiro - Healthy Aging - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32lagh01jjqiexvvswk9ub",
+      "date": "2028-02-24",
+      "text": "Pumpkin Logistics: The Season's Awkward Lifts"
+    },
+    "reason": "llm: February is late summer in Southern hemisphere, not pumpkin season",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h7x01ctqiw9qu7w2xbb",
+    "calName": "2026 - Chiro - Healthy Aging - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32lagi01jnqiexnz1n17mh",
+      "date": "2028-03-09",
+      "text": "Thanksgiving Standing Shifts: Kitchen Marathon Management"
+    },
+    "reason": "llm: Thanksgiving is a US/Canada November holiday, not March in Southern hemisphere",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h7x01ctqiw9qu7w2xbb",
+    "calName": "2026 - Chiro - Healthy Aging - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32lagi01jyqiexhw0whsa2",
+      "date": "2028-04-18",
+      "text": "Winter Solstice Movement: Honoring the Darkest Day Actively"
+    },
+    "reason": "llm: Winter Solstice occurs in June in Southern hemisphere, not April",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321h7x01ctqiw9qu7w2xbb",
+    "calName": "2026 - Chiro - Healthy Aging - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32lagj01kbqiexztwge2vc",
+      "date": "2028-06-01",
+      "text": "Vitamin D Season: Sunshine Math at Northern Latitudes"
+    },
+    "reason": "llm: Text says 'Northern Latitudes' but calendar is for Southern hemisphere",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321hbi01l5qiw9hzwfxdu1",
+    "calName": "2026 - Chiro - Wellness & Maintenance - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32lamb01q6qiex82jmgipl",
+      "date": "2027-08-03",
+      "text": "The September Reset: New Year Energy Without the Snow"
+    },
+    "reason": "summer-month/winter-text",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321hbi01l5qiw9hzwfxdu1",
+    "calName": "2026 - Chiro - Wellness & Maintenance - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32lamf01swqiexi5s8jfup",
+      "date": "2028-07-11",
+      "text": "The September Reset: New Year Energy Without the Snow"
+    },
+    "reason": "summer-month/winter-text",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321hbi01l5qiw9hzwfxdu1",
+    "calName": "2026 - Chiro - Wellness & Maintenance - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32lam801nwqiexqtvwyue2",
+      "date": "2026-10-20",
+      "text": "The Gratitude Body Scan: A Thanksgiving Tradition for the Nervous System"
+    },
+    "reason": "llm: Thanksgiving referenced in October (U.S. Thanksgiving is November in Northern Hemisphere)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321hbi01l5qiw9hzwfxdu1",
+    "calName": "2026 - Chiro - Wellness & Maintenance - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32lama01otqiexq4kbx763",
+      "date": "2027-02-11",
+      "text": "Spring Forward, Fall Apart? Clock Changes and Body Rhythms"
+    },
+    "reason": "llm: References 'Spring Forward' clock change (occurs in March in Northern Hemisphere, not February)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321hbi01l5qiw9hzwfxdu1",
+    "calName": "2026 - Chiro - Wellness & Maintenance - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32lama01piqiex3y1vuiux",
+      "date": "2027-05-11",
+      "text": "The Solstice Audit: Are You Using the Light You Asked For"
+    },
+    "reason": "llm: References 'Solstice' in May (summer solstice is June 20-21 in Northern Hemisphere)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321hbi01l5qiw9hzwfxdu1",
+    "calName": "2026 - Chiro - Wellness & Maintenance - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32lamc01qmqiexsu2bqxxc",
+      "date": "2027-09-28",
+      "text": "The Gratitude Body Scan: A Thanksgiving Tradition for the Nervous System"
+    },
+    "reason": "llm: Thanksgiving referenced in September (US Thanksgiving is November)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321hbi01l5qiw9hzwfxdu1",
+    "calName": "2026 - Chiro - Wellness & Maintenance - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32lamc01quqiexxguk7jk9",
+      "date": "2027-10-26",
+      "text": "Twelve Days of Maintenance: A Holiday Movement Advent"
+    },
+    "reason": "llm: 'Advent' referenced in October (Advent begins late November/December)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321hbi01l5qiw9hzwfxdu1",
+    "calName": "2026 - Chiro - Wellness & Maintenance - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32lamd01rjqiex5z5o2wf4",
+      "date": "2028-01-20",
+      "text": "Spring Forward, Fall Apart? Clock Changes and Body Rhythms"
+    },
+    "reason": "llm: 'Spring Forward' clock change referenced in January (occurs in March)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321hbi01l5qiw9hzwfxdu1",
+    "calName": "2026 - Chiro - Wellness & Maintenance - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32lamd01rkqiex8kd4hub2",
+      "date": "2028-01-25",
+      "text": "The Great Unshrinking: Posture as Spring Emergence"
+    },
+    "reason": "llm: 'Spring Emergence' referenced in January (winter in Northern hemisphere)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321hbi01l5qiw9hzwfxdu1",
+    "calName": "2026 - Chiro - Wellness & Maintenance - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32lamd01rpqiexzqfe5kyw",
+      "date": "2028-02-10",
+      "text": "March Garden Prep: Soil Bags and Smart Hinges"
+    },
+    "reason": "llm: 'March Garden Prep' referenced in February",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321hbi01l5qiw9hzwfxdu1",
+    "calName": "2026 - Chiro - Wellness & Maintenance - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32lamd01rzqiex5t2mcc5x",
+      "date": "2028-03-16",
+      "text": "Earth Day on Foot: Errands Within the Walkshed"
+    },
+    "reason": "llm: 'Earth Day' referenced mid-March (Earth Day is April 22)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321hbi01l5qiw9hzwfxdu1",
+    "calName": "2026 - Chiro - Wellness & Maintenance - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32lamd01s8qiexti29w47y",
+      "date": "2028-04-18",
+      "text": "The Solstice Audit: Are You Using the Light You Asked For"
+    },
+    "reason": "llm: Solstice reference in April (solstices occur in June and December)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321hbi01l5qiw9hzwfxdu1",
+    "calName": "2026 - Chiro - Wellness & Maintenance - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32lame01soqiex1yh0zlgn",
+      "date": "2028-06-13",
+      "text": "The Back-to-Routine Blueprint: September Starts in August"
+    },
+    "reason": "llm: Text says 'September Starts in August' but date is June",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321hbi01l5qiw9hzwfxdu1",
+    "calName": "2026 - Chiro - Wellness & Maintenance - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32lamf01suqiexoh7acovf",
+      "date": "2028-07-04",
+      "text": "School-Supply Season: The Parent's Carrying Preview"
+    },
+    "reason": "llm: Text says 'School-Supply Season' but date is July (school starts Aug/Sep in Northern hemisphere)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321hbi01l5qiw9hzwfxdu1",
+    "calName": "2026 - Chiro - Wellness & Maintenance - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32lamf01syqiexh9njxx7f",
+      "date": "2028-07-18",
+      "text": "Meeting Marathon Season: Surviving the Calendar's Autumn Flood"
+    },
+    "reason": "llm: Text says 'Calendar's Autumn Flood' but date is July (still summer)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321hbi01l5qiw9hzwfxdu1",
+    "calName": "2026 - Chiro - Wellness & Maintenance - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32lamf01szqiexb8duoide",
+      "date": "2028-07-20",
+      "text": "The Sweater Drawer Swap: Seasonal Wardrobe Mechanics"
+    },
+    "reason": "llm: Text says 'Sweater Drawer Swap' implying fall transition but date is July (mid-summer)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321hbi01l5qiw9hzwfxdu1",
+    "calName": "2026 - Chiro - Wellness & Maintenance - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu32lamf01t1qiex8lzv3uky",
+      "date": "2028-07-27",
+      "text": "Sleep Debt Repayment Plan: Autumn's Earlier Nights"
+    },
+    "reason": "llm: Text says 'Autumn's Earlier Nights' but date is July (summer)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321hfk01tjqiw9t8ktn167",
+    "calName": "2026 - Chiro - Wellness & Maintenance - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32laur01x4qiex192s7ckd",
+      "date": "2027-02-09",
+      "text": "The September Reset: New Year Energy Without the Snow"
+    },
+    "reason": "summer-month/winter-text",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321hfk01tjqiw9t8ktn167",
+    "calName": "2026 - Chiro - Wellness & Maintenance - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32lauw01zuqiex8ipsulri",
+      "date": "2028-01-18",
+      "text": "The September Reset: New Year Energy Without the Snow"
+    },
+    "reason": "summer-month/winter-text",
+    "source": "heuristic"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321hfk01tjqiw9t8ktn167",
+    "calName": "2026 - Chiro - Wellness & Maintenance - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32laup01w7qiexli7xykqp",
+      "date": "2026-10-15",
+      "text": "Earth Day on Foot: Errands Within the Walkshed"
+    },
+    "reason": "llm: Earth Day is April 22, not October",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321hfk01tjqiw9t8ktn167",
+    "calName": "2026 - Chiro - Wellness & Maintenance - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32lauq01wgqiexnrw0ywzi",
+      "date": "2026-11-17",
+      "text": "The Solstice Audit: Are You Using the Light You Asked For"
+    },
+    "reason": "llm: Solstice in November is wrong; Southern summer solstice is December ~21",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321hfk01tjqiw9t8ktn167",
+    "calName": "2026 - Chiro - Wellness & Maintenance - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32lauq01wwqiextd2l2ckg",
+      "date": "2027-01-12",
+      "text": "The Back-to-Routine Blueprint: September Starts in August"
+    },
+    "reason": "llm: Text says 'September Starts in August' but date is January",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321hfk01tjqiw9t8ktn167",
+    "calName": "2026 - Chiro - Wellness & Maintenance - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32laur01x6qiexkjgmhsie",
+      "date": "2027-02-16",
+      "text": "Meeting Marathon Season: Surviving the Calendar's Autumn Flood"
+    },
+    "reason": "llm: Text says 'Calendar's Autumn Flood' but February is summer in Southern hemisphere",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321hfk01tjqiw9t8ktn167",
+    "calName": "2026 - Chiro - Wellness & Maintenance - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32laur01x8qiex78tj1qgz",
+      "date": "2027-02-23",
+      "text": "Apple Crumble and Core Strength: The Baking Stand Hours"
+    },
+    "reason": "llm: Apple season and autumn reference but February is summer in Southern hemisphere",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321hfk01tjqiw9t8ktn167",
+    "calName": "2026 - Chiro - Wellness & Maintenance - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32laur01x9qiexi0wjf0i6",
+      "date": "2027-02-25",
+      "text": "Sleep Debt Repayment Plan: Autumn's Earlier Nights"
+    },
+    "reason": "llm: Text says 'Autumn's Earlier Nights' but February is summer in Southern hemisphere",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321hfk01tjqiw9t8ktn167",
+    "calName": "2026 - Chiro - Wellness & Maintenance - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32laur01xaqiex1ibyuhsu",
+      "date": "2027-03-02",
+      "text": "The Rake Before the Rake: Pre-Season Movement Prep"
+    },
+    "reason": "llm: Pre-season prep for raking implies autumn but March is autumn start in Southern hemisphere (acceptable)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321hfk01tjqiw9t8ktn167",
+    "calName": "2026 - Chiro - Wellness & Maintenance - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32laur01xcqiex1vav637v",
+      "date": "2027-03-09",
+      "text": "The Great Indoors Migration: Winterizing Your Movement Life"
+    },
+    "reason": "llm: Text says 'Winterizing' but March is autumn in Southern hemisphere",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321hfk01tjqiw9t8ktn167",
+    "calName": "2026 - Chiro - Wellness & Maintenance - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32laur01xeqiex6oc3e1jr",
+      "date": "2027-03-16",
+      "text": "Pumpkin Spice and Everything Sitting: Cafe Season Posture"
+    },
+    "reason": "llm: Text says 'Pumpkin Spice' cafe season implies autumn but context acceptable for March",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321hfk01tjqiw9t8ktn167",
+    "calName": "2026 - Chiro - Wellness & Maintenance - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32laus01xkqiex8lyjdbei",
+      "date": "2027-04-06",
+      "text": "The Gratitude Body Scan: A Thanksgiving Tradition for the Nervous System"
+    },
+    "reason": "llm: Thanksgiving reference in April; Southern hemisphere doesn't have November Thanksgiving",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321hfk01tjqiw9t8ktn167",
+    "calName": "2026 - Chiro - Wellness & Maintenance - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32laus01xrqiex2bdyqjzj",
+      "date": "2027-04-29",
+      "text": "Reflect Before Resolve: The November Review Advantage"
+    },
+    "reason": "llm: Text says 'November Review' but date is April",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321hfk01tjqiw9t8ktn167",
+    "calName": "2026 - Chiro - Wellness & Maintenance - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32lauu01yhqiexg8aliw13",
+      "date": "2027-07-29",
+      "text": "Spring Forward, Fall Apart? Clock Changes and Body Rhythms"
+    },
+    "reason": "llm: 'Spring Forward' references spring in July (Southern winter)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321hfk01tjqiw9t8ktn167",
+    "calName": "2026 - Chiro - Wellness & Maintenance - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32lauu01yiqiexi9y8bwsz",
+      "date": "2027-08-03",
+      "text": "The Great Unshrinking: Posture as Spring Emergence"
+    },
+    "reason": "llm: 'Spring Emergence' references spring in August (Southern winter)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321hfk01tjqiw9t8ktn167",
+    "calName": "2026 - Chiro - Wellness & Maintenance - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32lauu01ynqiex92c88rqb",
+      "date": "2027-08-19",
+      "text": "March Garden Prep: Soil Bags and Smart Hinges"
+    },
+    "reason": "llm: 'March Garden Prep' references March in August",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321hfk01tjqiw9t8ktn167",
+    "calName": "2026 - Chiro - Wellness & Maintenance - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32lauw01zmqiexlybr81du",
+      "date": "2027-12-21",
+      "text": "The Back-to-Routine Blueprint: September Starts in August"
+    },
+    "reason": "llm: 'September Starts in August' references September in December",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321hfk01tjqiw9t8ktn167",
+    "calName": "2026 - Chiro - Wellness & Maintenance - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32lauw01zsqiexb08hj2i1",
+      "date": "2028-01-11",
+      "text": "School-Supply Season: The Parent's Carrying Preview"
+    },
+    "reason": "llm: 'School-Supply Season' references school starting in January (Southern schools start late Jan/Feb, supplies purchased earlier in Dec/Jan, but this is summer vacation end)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321hfk01tjqiw9t8ktn167",
+    "calName": "2026 - Chiro - Wellness & Maintenance - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32lauw01zzqiex8c6flvpo",
+      "date": "2028-02-03",
+      "text": "Sleep Debt Repayment Plan: Autumn's Earlier Nights"
+    },
+    "reason": "llm: 'Autumn's Earlier Nights' references autumn in February (Southern summer)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321hfk01tjqiw9t8ktn167",
+    "calName": "2026 - Chiro - Wellness & Maintenance - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32lauw0202qiexucxpuln1",
+      "date": "2028-02-15",
+      "text": "The Great Indoors Migration: Winterizing Your Movement Life"
+    },
+    "reason": "llm: 'Winterizing Your Movement Life' references winter in February (Southern summer)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321hfk01tjqiw9t8ktn167",
+    "calName": "2026 - Chiro - Wellness & Maintenance - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32laux020hqiexlde4zuvl",
+      "date": "2028-04-06",
+      "text": "Reflect Before Resolve: The November Review Advantage"
+    },
+    "reason": "llm: Text mentions 'November Review' in April",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321hfk01tjqiw9t8ktn167",
+    "calName": "2026 - Chiro - Wellness & Maintenance - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32laux020iqiexkm0l7jje",
+      "date": "2028-04-11",
+      "text": "Twelve Days of Maintenance: A Holiday Movement Advent"
+    },
+    "reason": "llm: 'Holiday Movement Advent' refers to December holiday traditions in April",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321hfk01tjqiw9t8ktn167",
+    "calName": "2026 - Chiro - Wellness & Maintenance - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32laux020jqiex8xfkfxnx",
+      "date": "2028-04-13",
+      "text": "Gift-Carrying Season: Parcels, Stairs and Parking Garages"
+    },
+    "reason": "llm: 'Gift-Carrying Season' refers to December/Christmas period in April",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321hfk01tjqiw9t8ktn167",
+    "calName": "2026 - Chiro - Wellness & Maintenance - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32laux020kqiex3ila9jmc",
+      "date": "2028-04-18",
+      "text": "The Party Stand: Mingling Mechanics for Long Evenings"
+    },
+    "reason": "llm: 'Party Stand' and 'Long Evenings' suggests December holiday party season in April",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321hfk01tjqiw9t8ktn167",
+    "calName": "2026 - Chiro - Wellness & Maintenance - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32laux020lqiexm7cxjpdt",
+      "date": "2028-04-20",
+      "text": "Wrapping Paper Physics: The Floor Versus Table Debate Settled"
+    },
+    "reason": "llm: 'Wrapping Paper Physics' refers to Christmas gift-wrapping season in April",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321hfk01tjqiw9t8ktn167",
+    "calName": "2026 - Chiro - Wellness & Maintenance - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32laux020mqiexnim7o35k",
+      "date": "2028-04-25",
+      "text": "Silent Nights: Protecting Sleep Through Celebration Season"
+    },
+    "reason": "llm: 'Celebration Season' refers to December/New Year period in April",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321hfk01tjqiw9t8ktn167",
+    "calName": "2026 - Chiro - Wellness & Maintenance - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32lauy020oqiexqo0etglf",
+      "date": "2028-05-02",
+      "text": "Cold Snap Protocol: The Sub-Zero Movement Menu"
+    },
+    "reason": "llm: 'Cold Snap Protocol: Sub-Zero' describes winter conditions in May (Southern autumn)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321hfk01tjqiw9t8ktn167",
+    "calName": "2026 - Chiro - Wellness & Maintenance - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32lauy020pqiex74wzpfxj",
+      "date": "2028-05-04",
+      "text": "Champagne, Confetti and the Midnight Stretch: Closing Well"
+    },
+    "reason": "llm: 'Champagne, Confetti and Midnight Stretch' refers to New Year's Eve in May",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321hfk01tjqiw9t8ktn167",
+    "calName": "2026 - Chiro - Wellness & Maintenance - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32lauy020qqiex6c4eqjto",
+      "date": "2028-05-09",
+      "text": "The Maintenance Mindset: Why January's Best Resolution Is Boring"
+    },
+    "reason": "llm: 'January's Best Resolution' mentioned in May",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321hfk01tjqiw9t8ktn167",
+    "calName": "2026 - Chiro - Wellness & Maintenance - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32lauy020rqiexh80qrs2e",
+      "date": "2028-05-11",
+      "text": "Desk Hibernation: Winter's Extra Sitting Hours Audited"
+    },
+    "reason": "llm: 'Desk Hibernation: Winter's Extra Sitting Hours' describes winter in May (Southern autumn)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321hfk01tjqiw9t8ktn167",
+    "calName": "2026 - Chiro - Wellness & Maintenance - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32lauy020uqiexx35c4q3f",
+      "date": "2028-05-23",
+      "text": "The Standing Desk Honeymoon: Making It Past February"
+    },
+    "reason": "llm: 'Making It Past February' mentioned in May",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321hfk01tjqiw9t8ktn167",
+    "calName": "2026 - Chiro - Wellness & Maintenance - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32lauy020wqiexz27nlv47",
+      "date": "2028-05-30",
+      "text": "Blue Monday and the Movement-Mood Loop"
+    },
+    "reason": "llm: 'Blue Monday' is a January phenomenon, mentioned in May",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321hfk01tjqiw9t8ktn167",
+    "calName": "2026 - Chiro - Wellness & Maintenance - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32lauy020xqiexzhxj6nlu",
+      "date": "2028-06-01",
+      "text": "The Phone in Winter Gloves: Cold-Season Text Neck"
+    },
+    "reason": "llm: 'Phone in Winter Gloves' describes winter in June (Southern winter begins late May, but glove-weather typically July-Aug)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321hfk01tjqiw9t8ktn167",
+    "calName": "2026 - Chiro - Wellness & Maintenance - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32lauy0217qiexyh1fdjiq",
+      "date": "2028-07-06",
+      "text": "Spring Forward, Fall Apart? Clock Changes and Body Rhythms"
+    },
+    "reason": "llm: 'Spring Forward' refers to spring in July (Southern winter)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321hfk01tjqiw9t8ktn167",
+    "calName": "2026 - Chiro - Wellness & Maintenance - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32lauz0218qiexutioduge",
+      "date": "2028-07-11",
+      "text": "The Great Unshrinking: Posture as Spring Emergence"
+    },
+    "reason": "llm: 'Posture as Spring Emergence' describes spring in July (Southern winter)",
+    "source": "llm"
+  },
+  {
+    "kind": "article",
+    "calId": "cmu321hfk01tjqiw9t8ktn167",
+    "calName": "2026 - Chiro - Wellness & Maintenance - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu32lauz021dqiexk72dqonr",
+      "date": "2028-07-27",
+      "text": "March Garden Prep: Soil Bags and Smart Hinges"
+    },
+    "reason": "llm: 'March Garden Prep' mentions March in July",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmql7k6rp0066pf01g3mctwfi",
+    "calName": "2026 - Chiro - Family Care - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv4dp008zq9pc5tovgthj",
+      "date": "2027-04-14",
+      "text": "The role of sleep in back-to-school recovery · Why deep sleep is crucial for tissue repair · Creating a tech-free bedroom environment · Choosing the right pillow for growing kids · Postpartum recovery for the spine",
+      "fields": {
+        "topic": "The role of sleep in back-to-school recovery",
+        "bullet1": "Why deep sleep is crucial for tissue repair",
+        "bullet2": "Creating a tech-free bedroom environment",
+        "bullet3": "Choosing the right pillow for growing kids",
+        "secondaryTopic": "Postpartum recovery for the spine",
+        "draftedAt": null
+      }
+    },
+    "reason": "back-to-school/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmql7k6rp0066pf01g3mctwfi",
+    "calName": "2026 - Chiro - Family Care - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv4ds009tq9pctahta0xr",
+      "date": "2027-06-05",
+      "text": "Setting ergonomic health goals for the New Year · Auditing your home office setup · Committing to daily movement snacks · Scheduling regular chiropractic maintenance · Headache relief without medication",
+      "fields": {
+        "topic": "Setting ergonomic health goals for the New Year",
+        "bullet1": "Auditing your home office setup",
+        "bullet2": "Committing to daily movement snacks",
+        "bullet3": "Scheduling regular chiropractic maintenance",
+        "secondaryTopic": "Headache relief without medication",
+        "draftedAt": null
+      }
+    },
+    "reason": "new-year/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmql7k6rp0066pf01g3mctwfi",
+    "calName": "2026 - Chiro - Family Care - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv4ds00a6q9pc1pu9vhyl",
+      "date": "2027-06-28",
+      "text": "A Christmas message: Family health and joy · Taking time to rest · Enjoying family walks · Gratitude and wellness · Infant colic and spinal alignment",
+      "fields": {
+        "topic": "A Christmas message: Family health and joy",
+        "bullet1": "Taking time to rest",
+        "bullet2": "Enjoying family walks",
+        "bullet3": "Gratitude and wellness",
+        "secondaryTopic": "Infant colic and spinal alignment",
+        "draftedAt": null
+      }
+    },
+    "reason": "holidays/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmql7k6rp0066pf01g3mctwfi",
+    "calName": "2026 - Chiro - Family Care - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmql7kfiq006spf01zkmpbe6w",
+      "date": "2026-09-19",
+      "text": "Winter sleep hygiene: creating a restorative environment · Choosing the right pillow for neck support · The ideal bedroom temperature for quality sleep · Establishing a calming pre-bedtime routine · Addressing sleep difficulties in the elderly",
+      "fields": {
+        "topic": "Winter sleep hygiene: creating a restorative environment",
+        "bullet1": "Choosing the right pillow for neck support",
+        "bullet2": "The ideal bedroom temperature for quality sleep",
+        "bullet3": "Establishing a calming pre-bedtime routine",
+        "secondaryTopic": "Addressing sleep difficulties in the elderly",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: Text says 'Winter sleep hygiene' but September is spring in Southern hemisphere",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmql7k6rp0066pf01g3mctwfi",
+    "calName": "2026 - Chiro - Family Care - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv4dh005qq9pcveb0mwfs",
+      "date": "2026-09-21",
+      "text": "How spring allergies affect neck and shoulder tension · The connection between sinus pressure and upper cervical strain · Breathing exercises that reduce compensatory muscle tightness · Hydration strategies to thin mucus and ease postural stress · Ergonomic setup for home office workers",
+      "fields": {
+        "topic": "How spring allergies affect neck and shoulder tension",
+        "bullet1": "The connection between sinus pressure and upper cervical strain",
+        "bullet2": "Breathing exercises that reduce compensatory muscle tightness",
+        "bullet3": "Hydration strategies to thin mucus and ease postural stress",
+        "secondaryTopic": "Ergonomic setup for home office workers",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: Text says 'spring allergies' but September is spring, not mismatched - wait, this is correct for Southern hemisphere",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmql7k6rp0066pf01g3mctwfi",
+    "calName": "2026 - Chiro - Family Care - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv4di0066q9pc5h2x5gox",
+      "date": "2026-10-19",
+      "text": "Managing tech neck in children returning to school routines · Screen height adjustments for homework and devices · Setting timer reminders for posture breaks · Strengthening exercises for young necks and upper backs · Backpack weight limits and proper wearing technique",
+      "fields": {
+        "topic": "Managing tech neck in children returning to school routines",
+        "bullet1": "Screen height adjustments for homework and devices",
+        "bullet2": "Setting timer reminders for posture breaks",
+        "bullet3": "Strengthening exercises for young necks and upper backs",
+        "secondaryTopic": "Backpack weight limits and proper wearing technique",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: Text says 'children returning to school routines' but October is late in school year (school starts late Jan/Feb in Southern hemisphere)",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmql7k6rp0066pf01g3mctwfi",
+    "calName": "2026 - Chiro - Family Care - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv4dl007fq9pc0clenwek",
+      "date": "2027-01-06",
+      "text": "Staying safe and aligned during 4th of July celebrations · Lifting heavy coolers safely · Avoiding neck strain from fireworks · Hydration during outdoor parties · Postpartum recovery for the spine",
+      "fields": {
+        "topic": "Staying safe and aligned during 4th of July celebrations",
+        "bullet1": "Lifting heavy coolers safely",
+        "bullet2": "Avoiding neck strain from fireworks",
+        "bullet3": "Hydration during outdoor parties",
+        "secondaryTopic": "Postpartum recovery for the spine",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: Text references '4th of July celebrations' but date is January 6th",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmql7k6rp0066pf01g3mctwfi",
+    "calName": "2026 - Chiro - Family Care - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv4do008eq9pcfydtsf25",
+      "date": "2027-03-08",
+      "text": "Proper posture for raking fall leaves · Switching sides frequently to avoid asymmetry · Using the legs to shift weight rather than twisting · Choosing an ergonomic rake with a bent handle · Teenagers and tech-neck prevention",
+      "fields": {
+        "topic": "Proper posture for raking fall leaves",
+        "bullet1": "Switching sides frequently to avoid asymmetry",
+        "bullet2": "Using the legs to shift weight rather than twisting",
+        "bullet3": "Choosing an ergonomic rake with a bent handle",
+        "secondaryTopic": "Teenagers and tech-neck prevention",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: 'fall leaves' in March (Southern hemisphere is autumn, but March is late summer/early autumn and 'fall' typically refers to April-May)",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmql7k6rp0066pf01g3mctwfi",
+    "calName": "2026 - Chiro - Family Care - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv4do008gq9pcdj3h8xmp",
+      "date": "2027-03-12",
+      "text": "Labor Day recovery: Resting your spine · Post-party cleanup ergonomics · Active recovery walks · Transitioning back to work safely · The link between digestion and the spine",
+      "fields": {
+        "topic": "Labor Day recovery: Resting your spine",
+        "bullet1": "Post-party cleanup ergonomics",
+        "bullet2": "Active recovery walks",
+        "bullet3": "Transitioning back to work safely",
+        "secondaryTopic": "The link between digestion and the spine",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: 'Labor Day' in March (Southern hemisphere Labor Day is in October)",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmql7k6rp0066pf01g3mctwfi",
+    "calName": "2026 - Chiro - Family Care - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv4do008hq9pc5u2vbncy",
+      "date": "2027-03-13",
+      "text": "Preventing injuries in fall youth soccer and football · Pre-season conditioning and flexibility · Proper tackling and collision techniques · Recognizing concussion symptoms early · Better sleep through spinal health",
+      "fields": {
+        "topic": "Preventing injuries in fall youth soccer and football",
+        "bullet1": "Pre-season conditioning and flexibility",
+        "bullet2": "Proper tackling and collision techniques",
+        "bullet3": "Recognizing concussion symptoms early",
+        "secondaryTopic": "Better sleep through spinal health",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: 'fall youth soccer and football' in March (autumn/fall is April-June in Southern hemisphere)",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmql7k6rp0066pf01g3mctwfi",
+    "calName": "2026 - Chiro - Family Care - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv4do008iq9pcyk8bsp1b",
+      "date": "2027-03-15",
+      "text": "Transitioning to closed shoes: Foot mechanics in autumn · Breaking in new boots without blisters · How tight toe boxes alter foot biomechanics · Toe splay exercises for foot health · Managing arthritis pain naturally",
+      "fields": {
+        "topic": "Transitioning to closed shoes: Foot mechanics in autumn",
+        "bullet1": "Breaking in new boots without blisters",
+        "bullet2": "How tight toe boxes alter foot biomechanics",
+        "bullet3": "Toe splay exercises for foot health",
+        "secondaryTopic": "Managing arthritis pain naturally",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: 'autumn' in mid-March (Southern hemisphere autumn starts late March, this is still summer)",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmql7k6rp0066pf01g3mctwfi",
+    "calName": "2026 - Chiro - Family Care - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv4do008lq9pcbgf3ev4m",
+      "date": "2027-03-20",
+      "text": "Stretching before early morning fall jogs · The importance of longer warm-ups in cold weather · Dynamic leg swings for hip mobility · Layering clothes to keep joints warm · Why athletes need chiropractic care",
+      "fields": {
+        "topic": "Stretching before early morning fall jogs",
+        "bullet1": "The importance of longer warm-ups in cold weather",
+        "bullet2": "Dynamic leg swings for hip mobility",
+        "bullet3": "Layering clothes to keep joints warm",
+        "secondaryTopic": "Why athletes need chiropractic care",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: 'fall jogs' and 'cold weather' in March (Southern hemisphere is late summer)",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmql7k6rp0066pf01g3mctwfi",
+    "calName": "2026 - Chiro - Family Care - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv4dp008qq9pc2qu4wxya",
+      "date": "2027-03-29",
+      "text": "Choosing the right supportive boots for autumn · Ankle support for uneven terrain · Tread types for wet leaves and slick sidewalks · Why a slight heel drop matters for the Achilles · Injury recovery for weekend warriors",
+      "fields": {
+        "topic": "Choosing the right supportive boots for autumn",
+        "bullet1": "Ankle support for uneven terrain",
+        "bullet2": "Tread types for wet leaves and slick sidewalks",
+        "bullet3": "Why a slight heel drop matters for the Achilles",
+        "secondaryTopic": "Injury recovery for weekend warriors",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: 'autumn' in late March (Southern hemisphere autumn just beginning, references seem early)",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmql7k6rp0066pf01g3mctwfi",
+    "calName": "2026 - Chiro - Family Care - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv4dp008wq9pcn6p5r9if",
+      "date": "2027-04-09",
+      "text": "Proper form for lifting heavy pumpkins · Treating pumpkins like kettlebells · The hip hinge technique for heavy lifting · Avoiding the 'lift and twist' mechanism of injury · Work-from-home ergonomics for parents",
+      "fields": {
+        "topic": "Proper form for lifting heavy pumpkins",
+        "bullet1": "Treating pumpkins like kettlebells",
+        "bullet2": "The hip hinge technique for heavy lifting",
+        "bullet3": "Avoiding the 'lift and twist' mechanism of injury",
+        "secondaryTopic": "Work-from-home ergonomics for parents",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: 'lifting heavy pumpkins' in April (pumpkins are autumn/harvest, but Southern hemisphere April is early autumn - acceptable timing)",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmql7k6rp0066pf01g3mctwfi",
+    "calName": "2026 - Chiro - Family Care - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv4dp008xq9pc3qdv7aj7",
+      "date": "2027-04-10",
+      "text": "Avoiding injuries during haunted house frights · Whiplash mechanisms from sudden flinching · Navigating dark uneven pathways safely · Calming the nervous system after a scare · Boosting energy levels naturally",
+      "fields": {
+        "topic": "Avoiding injuries during haunted house frights",
+        "bullet1": "Whiplash mechanisms from sudden flinching",
+        "bullet2": "Navigating dark uneven pathways safely",
+        "bullet3": "Calming the nervous system after a scare",
+        "secondaryTopic": "Boosting energy levels naturally",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: 'haunted house' in April (Halloween is October 31, wrong season)",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmql7k6rp0066pf01g3mctwfi",
+    "calName": "2026 - Chiro - Family Care - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv4dq009bq9pcg1ppqb5m",
+      "date": "2027-05-05",
+      "text": "Trick-or-Treat survival guide for parent's backs · Wearing comfortable walking shoes · Carrying tired toddlers correctly · Stretching after a long neighborhood walk · Infant colic and spinal alignment",
+      "fields": {
+        "topic": "Trick-or-Treat survival guide for parent's backs",
+        "bullet1": "Wearing comfortable walking shoes",
+        "bullet2": "Carrying tired toddlers correctly",
+        "bullet3": "Stretching after a long neighborhood walk",
+        "secondaryTopic": "Infant colic and spinal alignment",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: 'Trick-or-Treat' in May (Halloween is October 31)",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmql7k6rp0066pf01g3mctwfi",
+    "calName": "2026 - Chiro - Family Care - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv4dr009iq9pcpvksxiul",
+      "date": "2027-05-17",
+      "text": "Preparing your back for winter snow shoveling · Choosing an ergonomic bent-handle shovel · Pushing snow instead of lifting it · Warming up before tackling the driveway · The link between digestion and the spine",
+      "fields": {
+        "topic": "Preparing your back for winter snow shoveling",
+        "bullet1": "Choosing an ergonomic bent-handle shovel",
+        "bullet2": "Pushing snow instead of lifting it",
+        "bullet3": "Warming up before tackling the driveway",
+        "secondaryTopic": "The link between digestion and the spine",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: 'winter snow shoveling' in May (Southern hemisphere May is late autumn, not winter)",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmql7k6rp0066pf01g3mctwfi",
+    "calName": "2026 - Chiro - Family Care - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv4dr009pq9pc2w78bgp8",
+      "date": "2027-05-29",
+      "text": "Pre-Thanksgiving travel and ergonomic cooking tips · Car packing posture · Anti-fatigue kitchen setups · Managing holiday travel stress · Infant colic and spinal alignment",
+      "fields": {
+        "topic": "Pre-Thanksgiving travel and ergonomic cooking tips",
+        "bullet1": "Car packing posture",
+        "bullet2": "Anti-fatigue kitchen setups",
+        "bullet3": "Managing holiday travel stress",
+        "secondaryTopic": "Infant colic and spinal alignment",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: 'Pre-Thanksgiving' in May (US Thanksgiving is November, not relevant or wrong hemisphere reference)",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmql7k6rp0066pf01g3mctwfi",
+    "calName": "2026 - Chiro - Family Care - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv4ds00a5q9pcqm6ocgxv",
+      "date": "2027-06-26",
+      "text": "Preventing repetitive strain when writing holiday cards · Taking breaks every 10 cards · Using a thick-barreled pen for easier grip · Stretching the thumbs and fingers · Teenagers and tech-neck prevention",
+      "fields": {
+        "topic": "Preventing repetitive strain when writing holiday cards",
+        "bullet1": "Taking breaks every 10 cards",
+        "bullet2": "Using a thick-barreled pen for easier grip",
+        "bullet3": "Stretching the thumbs and fingers",
+        "secondaryTopic": "Teenagers and tech-neck prevention",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: Writing holiday cards in late June (Southern hemisphere winter) - holiday cards are for December holidays",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmql7j6z90001pf01q16qc4vj",
+    "calName": "2026 - Chiro - Family Care - Nothern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu4hv48h000eq9pcidhr79ig",
+      "date": "2026-10-14",
+      "text": "The role of sleep in back-to-school recovery · Why deep sleep is crucial for tissue repair · Creating a tech-free bedroom environment · Choosing the right pillow for growing kids · Postpartum recovery for the spine",
+      "fields": {
+        "topic": "The role of sleep in back-to-school recovery",
+        "bullet1": "Why deep sleep is crucial for tissue repair",
+        "bullet2": "Creating a tech-free bedroom environment",
+        "bullet3": "Choosing the right pillow for growing kids",
+        "secondaryTopic": "Postpartum recovery for the spine",
+        "draftedAt": null
+      }
+    },
+    "reason": "back-to-school/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmql7j6z90001pf01q16qc4vj",
+    "calName": "2026 - Chiro - Family Care - Nothern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu4hv48g0005q9pcretfd87o",
+      "date": "2026-09-28",
+      "text": "Labor Day recovery: Resting your spine · Post-party cleanup ergonomics · Active recovery walks · Transitioning back to work safely · The link between digestion and the spine",
+      "fields": {
+        "topic": "Labor Day recovery: Resting your spine",
+        "bullet1": "Post-party cleanup ergonomics",
+        "bullet2": "Active recovery walks",
+        "bullet3": "Transitioning back to work safely",
+        "secondaryTopic": "The link between digestion and the spine",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: Labor Day is in September, not late September (US Labor Day is first Monday in September)",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmql7j6z90001pf01q16qc4vj",
+    "calName": "2026 - Chiro - Family Care - Nothern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu4hv48i000qq9pcyw58kz5r",
+      "date": "2026-11-04",
+      "text": "Trick-or-Treat survival guide for parent's backs · Wearing comfortable walking shoes · Carrying tired toddlers correctly · Stretching after a long neighborhood walk · Infant colic and spinal alignment",
+      "fields": {
+        "topic": "Trick-or-Treat survival guide for parent's backs",
+        "bullet1": "Wearing comfortable walking shoes",
+        "bullet2": "Carrying tired toddlers correctly",
+        "bullet3": "Stretching after a long neighborhood walk",
+        "secondaryTopic": "Infant colic and spinal alignment",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: Trick-or-Treat is October 31st (Halloween), not November",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmql7j6z90001pf01q16qc4vj",
+    "calName": "2026 - Chiro - Family Care - Nothern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu4hv48k001lq9pc22qmav1v",
+      "date": "2026-12-28",
+      "text": "A Christmas message: Family health and joy · Taking time to rest · Enjoying family walks · Gratitude and wellness · Infant colic and spinal alignment",
+      "fields": {
+        "topic": "A Christmas message: Family health and joy",
+        "bullet1": "Taking time to rest",
+        "bullet2": "Enjoying family walks",
+        "bullet3": "Gratitude and wellness",
+        "secondaryTopic": "Infant colic and spinal alignment",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: References 'Christmas message' on December 28th, not Christmas Day (December 25th)",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmql7j6z90001pf01q16qc4vj",
+    "calName": "2026 - Chiro - Family Care - Nothern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu4hv48n002jq9pceo1qnn5c",
+      "date": "2027-02-26",
+      "text": "Backpack safety for the spring semester start · Proper weight distribution using both shoulder straps · How to adjust straps for your child's height · Signs that a backpack is causing spinal problems · Strengthening exercises for school-age children",
+      "fields": {
+        "topic": "Backpack safety for the spring semester start",
+        "bullet1": "Proper weight distribution using both shoulder straps",
+        "bullet2": "How to adjust straps for your child's height",
+        "bullet3": "Signs that a backpack is causing spinal problems",
+        "secondaryTopic": "Strengthening exercises for school-age children",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: References 'spring semester start' in late February, but spring semester typically starts in January in Northern hemisphere",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321gwm00kqqiw9jnnqbqti",
+    "calName": "2026 - Chiro NL - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv4ka00kzq9pc4x1cuzmt",
+      "date": "2027-05-12",
+      "text": "Rugby season peak: managing contact load mid-year · Recovery between Saturday matches · Neck and shoulder resilience work · When soreness needs assessment · Mouthguard fit and jaw tension",
+      "fields": {
+        "topic": "Rugby season peak: managing contact load mid-year",
+        "bullet1": "Recovery between Saturday matches",
+        "bullet2": "Neck and shoulder resilience work",
+        "bullet3": "When soreness needs assessment",
+        "secondaryTopic": "Mouthguard fit and jaw tension",
+        "draftedAt": null
+      }
+    },
+    "reason": "mid-year/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321gwm00kqqiw9jnnqbqti",
+    "calName": "2026 - Chiro NL - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv4k200haq9pcsjp4f430",
+      "date": "2026-09-21",
+      "text": "Runner's knee season and the cadence fix · Why March mileage jumps find kneecaps · Small cadence lifts with big load changes · Hip strength as the upstream answer · Shoes: rotation beats replacement rules",
+      "fields": {
+        "topic": "Runner's knee season and the cadence fix",
+        "bullet1": "Why March mileage jumps find kneecaps",
+        "bullet2": "Small cadence lifts with big load changes",
+        "bullet3": "Hip strength as the upstream answer",
+        "secondaryTopic": "Shoes: rotation beats replacement rules",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: Text says 'March mileage' but date is September",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321gwm00kqqiw9jnnqbqti",
+    "calName": "2026 - Chiro NL - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv4k200hhq9pcyicsvxfd",
+      "date": "2026-10-03",
+      "text": "Racquet season and the elbow's complaint · Why lateral elbows hate April enthusiasm · Grip sizes and string tension basics · Loading the tendon back to happiness · Warm-up serves before match play",
+      "fields": {
+        "topic": "Racquet season and the elbow's complaint",
+        "bullet1": "Why lateral elbows hate April enthusiasm",
+        "bullet2": "Grip sizes and string tension basics",
+        "bullet3": "Loading the tendon back to happiness",
+        "secondaryTopic": "Warm-up serves before match play",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: Text says 'April enthusiasm' but date is October",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321gwm00kqqiw9jnnqbqti",
+    "calName": "2026 - Chiro NL - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv4k600izq9pc0f88egcj",
+      "date": "2027-01-06",
+      "text": "Tendons love boring consistency · Why tendons adapt slower than muscles · The July enthusiasm injury pattern · Isometrics as tendon vocabulary · Achilles mornings and what they mean",
+      "fields": {
+        "topic": "Tendons love boring consistency",
+        "bullet1": "Why tendons adapt slower than muscles",
+        "bullet2": "The July enthusiasm injury pattern",
+        "bullet3": "Isometrics as tendon vocabulary",
+        "secondaryTopic": "Achilles mornings and what they mean",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: Text says 'July enthusiasm injury pattern' but date is January",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321gwm00kqqiw9jnnqbqti",
+    "calName": "2026 - Chiro NL - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv4k700jfq9pc32sti5d8",
+      "date": "2027-02-03",
+      "text": "August long runs without melting · Pre-cooling tricks that travel · Route planning around shade and fountains · Adjusting expectations by dew point · Salt, sweat rates and simple math",
+      "fields": {
+        "topic": "August long runs without melting",
+        "bullet1": "Pre-cooling tricks that travel",
+        "bullet2": "Route planning around shade and fountains",
+        "bullet3": "Adjusting expectations by dew point",
+        "secondaryTopic": "Salt, sweat rates and simple math",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: Text says 'August long runs' but date is February",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321gwm00kqqiw9jnnqbqti",
+    "calName": "2026 - Chiro NL - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv4k700juq9pcvl403mgz",
+      "date": "2027-03-01",
+      "text": "Fall league kickoff: the risky fortnight · Why season starts spike injuries · The preseason micro-block that helps · First-week minutes management · Cleats, studs and surface changes",
+      "fields": {
+        "topic": "Fall league kickoff: the risky fortnight",
+        "bullet1": "Why season starts spike injuries",
+        "bullet2": "The preseason micro-block that helps",
+        "bullet3": "First-week minutes management",
+        "secondaryTopic": "Cleats, studs and surface changes",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: 'Fall league kickoff' in March (Southern hemisphere autumn starts late March, not early March - debatable boundary)",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321gwm00kqqiw9jnnqbqti",
+    "calName": "2026 - Chiro NL - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv4k700jxq9pclhljcq7f",
+      "date": "2027-03-06",
+      "text": "Base season begins: the unglamorous months · Aerobic foundations while races sleep · Strength blocks that convert by spring · Why easy season decides next year · Off-season goal setting that sticks",
+      "fields": {
+        "topic": "Base season begins: the unglamorous months",
+        "bullet1": "Aerobic foundations while races sleep",
+        "bullet2": "Strength blocks that convert by spring",
+        "bullet3": "Why easy season decides next year",
+        "secondaryTopic": "Off-season goal setting that sticks",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: 'convert by spring' when date is early autumn in Southern hemisphere",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321gwm00kqqiw9jnnqbqti",
+    "calName": "2026 - Chiro NL - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv4k800kcq9pc9g13oiy8",
+      "date": "2027-04-02",
+      "text": "Cold start lines and October races · Corral warmth without a discard crisis · Warm-up jogs in race logistics · Pacing the first chilly kilometers · Gloves, layers and the shedding plan",
+      "fields": {
+        "topic": "Cold start lines and October races",
+        "bullet1": "Corral warmth without a discard crisis",
+        "bullet2": "Warm-up jogs in race logistics",
+        "bullet3": "Pacing the first chilly kilometers",
+        "secondaryTopic": "Gloves, layers and the shedding plan",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: 'October races' mentioned in April date",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321gwm00kqqiw9jnnqbqti",
+    "calName": "2026 - Chiro NL - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv4k900ktq9pcdkjup892",
+      "date": "2027-05-01",
+      "text": "Turkey trot: the once-a-year runner's guide · Pacing when training didn't happen · Walk breaks as strategy not surrender · Next-day expectations set kindly · Family corrals and little legs",
+      "fields": {
+        "topic": "Turkey trot: the once-a-year runner's guide",
+        "bullet1": "Pacing when training didn't happen",
+        "bullet2": "Walk breaks as strategy not surrender",
+        "bullet3": "Next-day expectations set kindly",
+        "secondaryTopic": "Family corrals and little legs",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: 'Turkey trot' (US Thanksgiving November tradition) in May (Southern hemisphere autumn)",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321gwm00kqqiw9jnnqbqti",
+    "calName": "2026 - Chiro NL - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv4kb00lpq9pckoo9aasw",
+      "date": "2027-06-26",
+      "text": "Warm-up protocols for cold-weather training · Muscle temperature and injury threshold · Dynamic stretching in parking lots · Indoor pre-activation before outdoor sessions · Warm-down routines athletes skip in winter",
+      "fields": {
+        "topic": "Warm-up protocols for cold-weather training",
+        "bullet1": "Muscle temperature and injury threshold",
+        "bullet2": "Dynamic stretching in parking lots",
+        "bullet3": "Indoor pre-activation before outdoor sessions",
+        "secondaryTopic": "Warm-down routines athletes skip in winter",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: June is winter in Southern hemisphere, text refers to 'cold-weather training'",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321gwm00kqqiw9jnnqbqti",
+    "calName": "2026 - Chiro NL - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv4kb00lqq9pcualrtyjz",
+      "date": "2027-06-28",
+      "text": "Grip strength for winter sports equipment · Cold hands and stick control · Glove bulk and catch mechanics · Forearm fatigue in low temperatures · Hand and wrist mobility for racquet sports",
+      "fields": {
+        "topic": "Grip strength for winter sports equipment",
+        "bullet1": "Cold hands and stick control",
+        "bullet2": "Glove bulk and catch mechanics",
+        "bullet3": "Forearm fatigue in low temperatures",
+        "secondaryTopic": "Hand and wrist mobility for racquet sports",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: June is winter in Southern hemisphere, text refers to 'winter sports'",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321gwm00kqqiw9jnnqbqti",
+    "calName": "2026 - Chiro NL - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv4kb00lrq9pc1r46uuq3",
+      "date": "2027-06-30",
+      "text": "Hydration mistakes in cold training blocks · Reduced thirst signals in winter · Indoor heating and fluid loss · Pre-training hydration for morning athletes · Electrolyte needs in sweat-wicking layers",
+      "fields": {
+        "topic": "Hydration mistakes in cold training blocks",
+        "bullet1": "Reduced thirst signals in winter",
+        "bullet2": "Indoor heating and fluid loss",
+        "bullet3": "Pre-training hydration for morning athletes",
+        "secondaryTopic": "Electrolyte needs in sweat-wicking layers",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: June is winter in Southern hemisphere, text refers to 'winter' and 'cold training blocks'",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321gwm00kqqiw9jnnqbqti",
+    "calName": "2026 - Chiro NL - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv4kb00lsq9pceuulklnw",
+      "date": "2027-07-02",
+      "text": "Starting the training year without week-three regret · Why enthusiasm outpaces tissue adaptation in January · The 10 percent guideline and when it lies · Scheduling rest before your body schedules it for you · What a movement screen catches that mirrors miss",
+      "fields": {
+        "topic": "Starting the training year without week-three regret",
+        "bullet1": "Why enthusiasm outpaces tissue adaptation in January",
+        "bullet2": "The 10 percent guideline and when it lies",
+        "bullet3": "Scheduling rest before your body schedules it for you",
+        "secondaryTopic": "What a movement screen catches that mirrors miss",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: July is winter in Southern hemisphere, text refers to 'January' training year start",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321gwm00kqqiw9jnnqbqti",
+    "calName": "2026 - Chiro NL - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv4kc00ltq9pc9zx1y0ks",
+      "date": "2027-07-03",
+      "text": "Cold-weather warm-ups that actually warm · Ten indoor minutes before any outdoor session · Layering that lets you move and shed · Why cold muscles change your landing mechanics · The desk athlete's pre-training wake-up",
+      "fields": {
+        "topic": "Cold-weather warm-ups that actually warm",
+        "bullet1": "Ten indoor minutes before any outdoor session",
+        "bullet2": "Layering that lets you move and shed",
+        "bullet3": "Why cold muscles change your landing mechanics",
+        "secondaryTopic": "The desk athlete's pre-training wake-up",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: July is winter in Southern hemisphere, text refers to 'Cold-weather warm-ups'",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321gwm00kqqiw9jnnqbqti",
+    "calName": "2026 - Chiro NL - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv4kc00luq9pcrxr0by59",
+      "date": "2027-07-05",
+      "text": "Ski legs are built in the living room · Eccentric quad work for descent day · Hip control drills on one leg · The balance work that saves knees on ice · Reading slope fatigue before it reads you",
+      "fields": {
+        "topic": "Ski legs are built in the living room",
+        "bullet1": "Eccentric quad work for descent day",
+        "bullet2": "Hip control drills on one leg",
+        "bullet3": "The balance work that saves knees on ice",
+        "secondaryTopic": "Reading slope fatigue before it reads you",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: July is winter in Southern hemisphere, text refers to ski season preparation",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321gwm00kqqiw9jnnqbqti",
+    "calName": "2026 - Chiro NL - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv4kc00lvq9pchd54ix7h",
+      "date": "2027-07-07",
+      "text": "Treadmill season without the shin complaints · Belt pace versus outdoor effort honesty · Cadence cues for indoor miles · Progressing volume when weather traps you inside · Why runners cross-train in January",
+      "fields": {
+        "topic": "Treadmill season without the shin complaints",
+        "bullet1": "Belt pace versus outdoor effort honesty",
+        "bullet2": "Cadence cues for indoor miles",
+        "bullet3": "Progressing volume when weather traps you inside",
+        "secondaryTopic": "Why runners cross-train in January",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: July is winter in Southern hemisphere, text refers to 'Treadmill season'",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321gwm00kqqiw9jnnqbqti",
+    "calName": "2026 - Chiro NL - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv4kc00lwq9pcjoo6ao0l",
+      "date": "2027-07-09",
+      "text": "Winter running form adjustments that protect knees and ankles · Shorter strides on wet paths reduce impact and slip risk · Why your usual cadence feels harder in cold air · Lighting choices that help you see surface changes early · Trail shoes versus road shoes in winter conditions",
+      "fields": {
+        "topic": "Winter running form adjustments that protect knees and ankles",
+        "bullet1": "Shorter strides on wet paths reduce impact and slip risk",
+        "bullet2": "Why your usual cadence feels harder in cold air",
+        "bullet3": "Lighting choices that help you see surface changes early",
+        "secondaryTopic": "Trail shoes versus road shoes in winter conditions",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: July is winter in Southern hemisphere, text refers to 'Winter running'",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321gwm00kqqiw9jnnqbqti",
+    "calName": "2026 - Chiro NL - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv4kc00lzq9pclyn4mp2u",
+      "date": "2027-07-14",
+      "text": "Midseason injury prevention for winter sport athletes · Fatigue patterns that appear six weeks into competition · When to modify training volume during a packed fixture list · Spotting compensation patterns before they become problems · Ice versus heat for the winter athlete",
+      "fields": {
+        "topic": "Midseason injury prevention for winter sport athletes",
+        "bullet1": "Fatigue patterns that appear six weeks into competition",
+        "bullet2": "When to modify training volume during a packed fixture list",
+        "bullet3": "Spotting compensation patterns before they become problems",
+        "secondaryTopic": "Ice versus heat for the winter athlete",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: July is winter in Southern hemisphere, text refers to 'Midseason' for winter sports",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321gwm00kqqiw9jnnqbqti",
+    "calName": "2026 - Chiro NL - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv4kc00m1q9pctjei4jvv",
+      "date": "2027-07-17",
+      "text": "Sleep quality and muscle recovery in shorter daylight hours · Morning light exposure to reset winter sleep cycles · How training time affects sleep architecture · Temperature and bedding choices for deep recovery sleep · Caffeine timing for early morning winter sessions",
+      "fields": {
+        "topic": "Sleep quality and muscle recovery in shorter daylight hours",
+        "bullet1": "Morning light exposure to reset winter sleep cycles",
+        "bullet2": "How training time affects sleep architecture",
+        "bullet3": "Temperature and bedding choices for deep recovery sleep",
+        "secondaryTopic": "Caffeine timing for early morning winter sessions",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: July is winter in Southern hemisphere, text refers to 'shorter daylight hours' (days are shortest in June)",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321gwm00kqqiw9jnnqbqti",
+    "calName": "2026 - Chiro NL - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv4kc00m2q9pcb6vac26v",
+      "date": "2027-07-19",
+      "text": "Core stability work that translates to winter sports · Anti-rotation exercises for netball and football codes · Floor work that prepares you for unpredictable surfaces · Breathing patterns during core work that carry over to competition · When core strength becomes core endurance",
+      "fields": {
+        "topic": "Core stability work that translates to winter sports",
+        "bullet1": "Anti-rotation exercises for netball and football codes",
+        "bullet2": "Floor work that prepares you for unpredictable surfaces",
+        "bullet3": "Breathing patterns during core work that carry over to competition",
+        "secondaryTopic": "When core strength becomes core endurance",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: July is winter in Southern hemisphere, text refers to 'winter sports'",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321gwm00kqqiw9jnnqbqti",
+    "calName": "2026 - Chiro NL - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv4kc00m3q9pcyy32yooz",
+      "date": "2027-07-21",
+      "text": "Hydration strategies when you don't feel thirsty · Winter sweat losses that cold air masks · Pre-training hydration targets for indoor sport athletes · Electrolyte needs during heated gymnasium sessions · Urine colour charts and other practical hydration markers",
+      "fields": {
+        "topic": "Hydration strategies when you don't feel thirsty",
+        "bullet1": "Winter sweat losses that cold air masks",
+        "bullet2": "Pre-training hydration targets for indoor sport athletes",
+        "bullet3": "Electrolyte needs during heated gymnasium sessions",
+        "secondaryTopic": "Urine colour charts and other practical hydration markers",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: July is winter in Southern hemisphere, text refers to 'Winter sweat losses'",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321gwm00kqqiw9jnnqbqti",
+    "calName": "2026 - Chiro NL - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv4kd00m7q9pcyj3o9krt",
+      "date": "2027-07-28",
+      "text": "Breathing mechanics for cold air endurance training · Nasal versus mouth breathing in winter conditions · Diaphragm fatigue in cold weather efforts · Scarves and buffs that warm air without restricting breath · Altitude training effects in cold versus warm air",
+      "fields": {
+        "topic": "Breathing mechanics for cold air endurance training",
+        "bullet1": "Nasal versus mouth breathing in winter conditions",
+        "bullet2": "Diaphragm fatigue in cold weather efforts",
+        "bullet3": "Scarves and buffs that warm air without restricting breath",
+        "secondaryTopic": "Altitude training effects in cold versus warm air",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: July is winter in Southern hemisphere, text refers to 'cold air endurance training' and 'winter conditions'",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321gwm00kqqiw9jnnqbqti",
+    "calName": "2026 - Chiro NL - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv4kd00m8q9pc3qs4s5g7",
+      "date": "2027-07-30",
+      "text": "Lower back care for the lifting athlete in winter · Cold muscle tissue and morning lifting sessions · Thoracic mobility work that protects lumbar spine · Bracing techniques for heavy compound movements · Gym bag essentials for the cold-weather lifter",
+      "fields": {
+        "topic": "Lower back care for the lifting athlete in winter",
+        "bullet1": "Cold muscle tissue and morning lifting sessions",
+        "bullet2": "Thoracic mobility work that protects lumbar spine",
+        "bullet3": "Bracing techniques for heavy compound movements",
+        "secondaryTopic": "Gym bag essentials for the cold-weather lifter",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: July is winter in Southern hemisphere, text refers to 'lifting athlete in winter'",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321gwm00kqqiw9jnnqbqti",
+    "calName": "2026 - Chiro NL - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv4kd00m9q9pcxekalbgm",
+      "date": "2027-07-31",
+      "text": "Maintaining training motivation through the middle of winter · Goal-setting strategies for the long cold stretch · Training partners and accountability in low-light months · Small wins that sustain momentum until spring · Indoor training variety to prevent mental staleness",
+      "fields": {
+        "topic": "Maintaining training motivation through the middle of winter",
+        "bullet1": "Goal-setting strategies for the long cold stretch",
+        "bullet2": "Training partners and accountability in low-light months",
+        "bullet3": "Small wins that sustain momentum until spring",
+        "secondaryTopic": "Indoor training variety to prevent mental staleness",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: July is winter in Southern hemisphere, text refers to 'middle of winter'",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321gwm00kqqiw9jnnqbqti",
+    "calName": "2026 - Chiro NL - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv4kd00mfq9pc9ufg3x8i",
+      "date": "2027-08-11",
+      "text": "Winter training indoors without losing power · Plyometric drills that fit a garage or hallway · Maintaining explosive strength in confined spaces · When cold-weather outdoor work still makes sense · Warming up in cold gyms: time vs temperature",
+      "fields": {
+        "topic": "Winter training indoors without losing power",
+        "bullet1": "Plyometric drills that fit a garage or hallway",
+        "bullet2": "Maintaining explosive strength in confined spaces",
+        "bullet3": "When cold-weather outdoor work still makes sense",
+        "secondaryTopic": "Warming up in cold gyms: time vs temperature",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: August is winter in Southern hemisphere, text refers to 'Winter training indoors'",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321gwm00kqqiw9jnnqbqti",
+    "calName": "2026 - Chiro NL - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv4kd00mkq9pcv6ome707",
+      "date": "2027-08-20",
+      "text": "Trail running on wet winter tracks without rolling ankles · Foot intrinsic strength for uneven ground · Gaze strategy when visibility and footing both drop · Pole use and upper-body integration for stability · Choosing shoes for grip versus ground feel",
+      "fields": {
+        "topic": "Trail running on wet winter tracks without rolling ankles",
+        "bullet1": "Foot intrinsic strength for uneven ground",
+        "bullet2": "Gaze strategy when visibility and footing both drop",
+        "bullet3": "Pole use and upper-body integration for stability",
+        "secondaryTopic": "Choosing shoes for grip versus ground feel",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: August is winter in Southern hemisphere, text refers to 'wet winter tracks'",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321gwm00kqqiw9jnnqbqti",
+    "calName": "2026 - Chiro NL - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv4ke00moq9pcs0wew34f",
+      "date": "2027-08-27",
+      "text": "AFL winter training camps and hamstring strain prevention · Eccentric loading progressions before high-speed work · Sprint volume monitoring in the cold · Why previous hamstring injury changes your warm-up · Kick biomechanics and hip flexor tightness",
+      "fields": {
+        "topic": "AFL winter training camps and hamstring strain prevention",
+        "bullet1": "Eccentric loading progressions before high-speed work",
+        "bullet2": "Sprint volume monitoring in the cold",
+        "bullet3": "Why previous hamstring injury changes your warm-up",
+        "secondaryTopic": "Kick biomechanics and hip flexor tightness",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: August is winter in Southern hemisphere, text refers to 'AFL winter training camps'",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321gwm00kqqiw9jnnqbqti",
+    "calName": "2026 - Chiro NL - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv4ke00mpq9pc07g9d06q",
+      "date": "2027-08-28",
+      "text": "Skiing prep for the upcoming season in two months · Eccentric quad strength for downhill control · Single-leg balance work on unstable surfaces · Cardiovascular base-building in winter months · Knee braces on the slopes: support or crutch",
+      "fields": {
+        "topic": "Skiing prep for the upcoming season in two months",
+        "bullet1": "Eccentric quad strength for downhill control",
+        "bullet2": "Single-leg balance work on unstable surfaces",
+        "bullet3": "Cardiovascular base-building in winter months",
+        "secondaryTopic": "Knee braces on the slopes: support or crutch",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: August is winter in Southern hemisphere, skiing season is 2 months away would be October/November (summer)",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321gwm00kqqiw9jnnqbqti",
+    "calName": "2026 - Chiro NL - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv4ke00mqq9pcd7aocger",
+      "date": "2027-08-30",
+      "text": "Crossfit in winter and grip failure in the cold · Forearm warm-ups before barbell work · Chalk, gloves, and hand care in dry air · Grip endurance as a limiting factor in met-cons · Wrist mobility for front rack and overhead positions",
+      "fields": {
+        "topic": "Crossfit in winter and grip failure in the cold",
+        "bullet1": "Forearm warm-ups before barbell work",
+        "bullet2": "Chalk, gloves, and hand care in dry air",
+        "bullet3": "Grip endurance as a limiting factor in met-cons",
+        "secondaryTopic": "Wrist mobility for front rack and overhead positions",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: August is winter in Southern hemisphere, text refers to 'Crossfit in winter'",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321gwm00kqqiw9jnnqbqti",
+    "calName": "2026 - Chiro NL - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv4ke00mtq9pcfm2wfw96",
+      "date": "2027-09-04",
+      "text": "Junior sport load: growth spurts and injury windows · Why spring growth plates complain under training · Osgood-Schlatter and Sever's management facts · Monitoring fatigue in adolescent athletes · Multi-sport versus specialisation for young bodies",
+      "fields": {
+        "topic": "Junior sport load: growth spurts and injury windows",
+        "bullet1": "Why spring growth plates complain under training",
+        "bullet2": "Osgood-Schlatter and Sever's management facts",
+        "bullet3": "Monitoring fatigue in adolescent athletes",
+        "secondaryTopic": "Multi-sport versus specialisation for young bodies",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: September is spring in Southern hemisphere, text refers to 'spring growth plates'",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321gwm00kqqiw9jnnqbqti",
+    "calName": "2026 - Chiro NL - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv4ke00mvq9pcv5uflj23",
+      "date": "2027-09-08",
+      "text": "Tennis elbow off-season: load management for weekend players · Why spring comebacks strain wrist extensors · Grip size, string tension, and tissue tolerance · Eccentric wrist exercises that build capacity · Shoulder and thoracic mobility for serve health",
+      "fields": {
+        "topic": "Tennis elbow off-season: load management for weekend players",
+        "bullet1": "Why spring comebacks strain wrist extensors",
+        "bullet2": "Grip size, string tension, and tissue tolerance",
+        "bullet3": "Eccentric wrist exercises that build capacity",
+        "secondaryTopic": "Shoulder and thoracic mobility for serve health",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: September is spring in Southern hemisphere, text refers to 'spring comebacks'",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321gwm00kqqiw9jnnqbqti",
+    "calName": "2026 - Chiro NL - Sports - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv4kf00n0q9pc0kp5wasq",
+      "date": "2027-09-17",
+      "text": "Plantar heel pain in spring runners: load, footwear, and tissue · Why morning stiffness signals overload · Calf stretching versus calf strengthening evidence · Shoe cushioning and arch support realities · Running surface changes and impact forces",
+      "fields": {
+        "topic": "Plantar heel pain in spring runners: load, footwear, and tissue",
+        "bullet1": "Why morning stiffness signals overload",
+        "bullet2": "Calf stretching versus calf strengthening evidence",
+        "bullet3": "Shoe cushioning and arch support realities",
+        "secondaryTopic": "Running surface changes and impact forces",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: September is spring in Southern hemisphere, text refers to 'spring runners'",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321h0000t6qiw9jrqxj4f7",
+    "calName": "2026 - Chiro NL - Prenatal & Pediatric - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu4hv4o500s3q9pc3brw6km6",
+      "date": "2027-08-06",
+      "text": "Car seat stages and changes · Rear-facing longer: the reasoning · Installation mechanics for parents' backs · Positioning checks at each stage · The winter-coat car seat rule",
+      "fields": {
+        "topic": "Car seat stages and changes",
+        "bullet1": "Rear-facing longer: the reasoning",
+        "bullet2": "Installation mechanics for parents' backs",
+        "bullet3": "Positioning checks at each stage",
+        "secondaryTopic": "The winter-coat car seat rule",
+        "draftedAt": null
+      }
+    },
+    "reason": "summer-month/winter-text",
+    "source": "heuristic"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321h0000t6qiw9jrqxj4f7",
+    "calName": "2026 - Chiro NL - Prenatal & Pediatric - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu4hv4nq00n8q9pcek9ttdki",
+      "date": "2026-10-03",
+      "text": "Halloween with a bump · Costumes that celebrate the belly · Trick-or-treat walking budgets · Comfort shoes under any costume · Candy cravings navigated kindly",
+      "fields": {
+        "topic": "Halloween with a bump",
+        "bullet1": "Costumes that celebrate the belly",
+        "bullet2": "Trick-or-treat walking budgets",
+        "bullet3": "Comfort shoes under any costume",
+        "secondaryTopic": "Candy cravings navigated kindly",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: Halloween is October 31, not October 3",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321h0000t6qiw9jrqxj4f7",
+    "calName": "2026 - Chiro NL - Prenatal & Pediatric - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu4hv4nq00naq9pctw0o1dwi",
+      "date": "2026-10-07",
+      "text": "Crawler-proofing decoration season · Cords and candles at floor level · Small parts and curious mouths · Redirect zones that save the tree · Overstimulation signs at gatherings",
+      "fields": {
+        "topic": "Crawler-proofing decoration season",
+        "bullet1": "Cords and candles at floor level",
+        "bullet2": "Small parts and curious mouths",
+        "bullet3": "Redirect zones that save the tree",
+        "secondaryTopic": "Overstimulation signs at gatherings",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: References 'decoration season' and 'save the tree' in early October, clearly Christmas/winter holiday context wrong for the date",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321h0000t6qiw9jrqxj4f7",
+    "calName": "2026 - Chiro NL - Prenatal & Pediatric - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu4hv4ny00plq9pcv7s2jst5",
+      "date": "2027-03-01",
+      "text": "Stroller season opens · Handle height and the shrug it prevents · Uphill pushing without the lean · The one-hand-scroll pushing habit audit · Choosing terrain your stroller matches",
+      "fields": {
+        "topic": "Stroller season opens",
+        "bullet1": "Handle height and the shrug it prevents",
+        "bullet2": "Uphill pushing without the lean",
+        "bullet3": "The one-hand-scroll pushing habit audit",
+        "secondaryTopic": "Choosing terrain your stroller matches",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: 'Stroller season opens' implies spring start, but March 1 is still winter in Northern hemisphere",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321h0000t6qiw9jrqxj4f7",
+    "calName": "2026 - Chiro NL - Prenatal & Pediatric - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu4hv4ny00ppq9pc6a7ma2wd",
+      "date": "2027-03-08",
+      "text": "Spring cleaning posture: bending and reaching without the back penalty · Hip-hinge basics for low shelves and baseboards · Overhead reach patterns that protect your neck · The twist-and-lift combo to avoid · Kid-safe cleaning products and storage heights",
+      "fields": {
+        "topic": "Spring cleaning posture: bending and reaching without the back penalty",
+        "bullet1": "Hip-hinge basics for low shelves and baseboards",
+        "bullet2": "Overhead reach patterns that protect your neck",
+        "bullet3": "The twist-and-lift combo to avoid",
+        "secondaryTopic": "Kid-safe cleaning products and storage heights",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: 'Spring cleaning' referenced on March 8, but spring doesn't begin until ~March 20 in Northern hemisphere",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321h34011kqiw9joziibz0",
+    "calName": "2026 - Chiro NL - Prenatal & Pediatric - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv4rh00uzq9pcj9bpl7dv",
+      "date": "2027-02-05",
+      "text": "Car seat stages and changes · Rear-facing longer: the reasoning · Installation mechanics for parents' backs · Positioning checks at each stage · The winter-coat car seat rule",
+      "fields": {
+        "topic": "Car seat stages and changes",
+        "bullet1": "Rear-facing longer: the reasoning",
+        "bullet2": "Installation mechanics for parents' backs",
+        "bullet3": "Positioning checks at each stage",
+        "secondaryTopic": "The winter-coat car seat rule",
+        "draftedAt": null
+      }
+    },
+    "reason": "summer-month/winter-text",
+    "source": "heuristic"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321h63019wqiw9mkb0ff7h",
+    "calName": "2026 - Chiro NL - Healthy Aging - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu4hv4up00yxq9pc1ch22ezm",
+      "date": "2026-10-12",
+      "text": "Grandparent lifting after summer break · Toddler pickup mechanics reviewed · Car seat transfers without twisting · Floor play positions that protect · Visiting grandchildren: the preparation week",
+      "fields": {
+        "topic": "Grandparent lifting after summer break",
+        "bullet1": "Toddler pickup mechanics reviewed",
+        "bullet2": "Car seat transfers without twisting",
+        "bullet3": "Floor play positions that protect",
+        "secondaryTopic": "Visiting grandchildren: the preparation week",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: References 'after summer break' in October; school starts in Aug/Sep in Northern hemisphere, summer break ends then, not October",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321h63019wqiw9mkb0ff7h",
+    "calName": "2026 - Chiro NL - Healthy Aging - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu4hv4up00z7q9pcmj1v6sku",
+      "date": "2026-10-30",
+      "text": "Thanksgiving prep timeline for aging backs · Cooking task distribution across days · Counter height and prolonged standing · Heavy roaster alternatives · Hosting versus traveling: the physical cost",
+      "fields": {
+        "topic": "Thanksgiving prep timeline for aging backs",
+        "bullet1": "Cooking task distribution across days",
+        "bullet2": "Counter height and prolonged standing",
+        "bullet3": "Heavy roaster alternatives",
+        "secondaryTopic": "Hosting versus traveling: the physical cost",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: References 'Thanksgiving prep' in October; Thanksgiving in Northern hemisphere (US) is in late November",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321ha101i8qiw9uccxhi7m",
+    "calName": "2026 - Chiro NL - Healthy Aging - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv50s016yq9pcsijnl77j",
+      "date": "2027-03-03",
+      "text": "The autumn routine reset · Calendar anchoring new habits · Class enrollment as commitment · Winter-proofing plans early · Accountability partners after summer",
+      "fields": {
+        "topic": "The autumn routine reset",
+        "bullet1": "Calendar anchoring new habits",
+        "bullet2": "Class enrollment as commitment",
+        "bullet3": "Winter-proofing plans early",
+        "secondaryTopic": "Accountability partners after summer",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: Text says 'autumn routine reset' and 'Winter-proofing plans early' but early March is late summer/early autumn in Southern hemisphere",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321ha101i8qiw9uccxhi7m",
+    "calName": "2026 - Chiro NL - Healthy Aging - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv50s0172q9pcd4u9r78p",
+      "date": "2027-03-10",
+      "text": "Gardening without the next-day regret · Autumn planting posture basics · Tool selection for less strain · The 20-minute rule for repetitive tasks · Stretches for weekend warriors over fifty",
+      "fields": {
+        "topic": "Gardening without the next-day regret",
+        "bullet1": "Autumn planting posture basics",
+        "bullet2": "Tool selection for less strain",
+        "bullet3": "The 20-minute rule for repetitive tasks",
+        "secondaryTopic": "Stretches for weekend warriors over fifty",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: Text says 'Autumn planting' but early March is still summer in Southern hemisphere",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321ha101i8qiw9uccxhi7m",
+    "calName": "2026 - Chiro NL - Healthy Aging - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv50s0174q9pcuqa2kpb4",
+      "date": "2027-03-13",
+      "text": "Walking pace as a health metric · What speed reveals about function · Comfortable versus purposeful stride · Using autumn weather as training variety · Footwear for aging feet: the real criteria",
+      "fields": {
+        "topic": "Walking pace as a health metric",
+        "bullet1": "What speed reveals about function",
+        "bullet2": "Comfortable versus purposeful stride",
+        "bullet3": "Using autumn weather as training variety",
+        "secondaryTopic": "Footwear for aging feet: the real criteria",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: Text says 'Using autumn weather' but mid-March is late summer/early autumn in Southern hemisphere",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321ha101i8qiw9uccxhi7m",
+    "calName": "2026 - Chiro NL - Healthy Aging - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv50t0177q9pca9s3h3rr",
+      "date": "2027-03-19",
+      "text": "Sleep quality changes after fifty · Why sleep architecture shifts · Temperature and autumn bedding · Pain patterns that wake you · Afternoon naps: timing and duration",
+      "fields": {
+        "topic": "Sleep quality changes after fifty",
+        "bullet1": "Why sleep architecture shifts",
+        "bullet2": "Temperature and autumn bedding",
+        "bullet3": "Pain patterns that wake you",
+        "secondaryTopic": "Afternoon naps: timing and duration",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: Text says 'Temperature and autumn bedding' but mid-March is late summer in Southern hemisphere",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321ha101i8qiw9uccxhi7m",
+    "calName": "2026 - Chiro NL - Healthy Aging - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv50t0179q9pcoqfhuvcf",
+      "date": "2027-03-22",
+      "text": "Driving comfort on longer autumn trips · Seat adjustment for spinal support · Break schedules that prevent stiffness · Neck checks and blind spot safety · Car seat cushions: what works",
+      "fields": {
+        "topic": "Driving comfort on longer autumn trips",
+        "bullet1": "Seat adjustment for spinal support",
+        "bullet2": "Break schedules that prevent stiffness",
+        "bullet3": "Neck checks and blind spot safety",
+        "secondaryTopic": "Car seat cushions: what works",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: Text says 'longer autumn trips' but late March is early autumn in Southern hemisphere",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321ha101i8qiw9uccxhi7m",
+    "calName": "2026 - Chiro NL - Healthy Aging - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv50t017hq9pcfmnmdo1c",
+      "date": "2027-04-05",
+      "text": "Porch hosting on Halloween · Seated candy stations · Step lighting for visitors · Warmth without bulk · Decorations at reachable heights",
+      "fields": {
+        "topic": "Porch hosting on Halloween",
+        "bullet1": "Seated candy stations",
+        "bullet2": "Step lighting for visitors",
+        "bullet3": "Warmth without bulk",
+        "secondaryTopic": "Decorations at reachable heights",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: Text references 'Halloween' but Halloween (Oct 31) doesn't occur in April",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321ha101i8qiw9uccxhi7m",
+    "calName": "2026 - Chiro NL - Healthy Aging - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv50v017xq9pcig3jj8pm",
+      "date": "2027-05-03",
+      "text": "The gratitude walk tradition · Post-meal walking as ritual · Pace inclusivity across generations · Routes that fit every guest · Digestion folklore examined kindly",
+      "fields": {
+        "topic": "The gratitude walk tradition",
+        "bullet1": "Post-meal walking as ritual",
+        "bullet2": "Pace inclusivity across generations",
+        "bullet3": "Routes that fit every guest",
+        "secondaryTopic": "Digestion folklore examined kindly",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: Text says 'Post-meal walking' with context suggesting Thanksgiving, but that's a US November holiday, not May in Southern hemisphere",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321ha101i8qiw9uccxhi7m",
+    "calName": "2026 - Chiro NL - Healthy Aging - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv50v0184q9pctp8p7i79",
+      "date": "2027-05-15",
+      "text": "Autumn cycling and balance confidence · Wet leaf traction awareness · Visibility gear for shorter days · Bike fit adjustments after 60 · E-bike considerations for joint preservation",
+      "fields": {
+        "topic": "Autumn cycling and balance confidence",
+        "bullet1": "Wet leaf traction awareness",
+        "bullet2": "Visibility gear for shorter days",
+        "bullet3": "Bike fit adjustments after 60",
+        "secondaryTopic": "E-bike considerations for joint preservation",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: Text says 'Autumn cycling' but mid-May is late autumn/early winter in Southern hemisphere",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321ha101i8qiw9uccxhi7m",
+    "calName": "2026 - Chiro NL - Healthy Aging - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv50w018eq9pckuvbf7f1",
+      "date": "2027-06-02",
+      "text": "Decking halls with a height budget · Ground-level festivity strategies · Helper scheduling for high work · The ladder amnesty declared · Lightweight decorations that delight",
+      "fields": {
+        "topic": "Decking halls with a height budget",
+        "bullet1": "Ground-level festivity strategies",
+        "bullet2": "Helper scheduling for high work",
+        "bullet3": "The ladder amnesty declared",
+        "secondaryTopic": "Lightweight decorations that delight",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: Text says 'Decking halls' (Christmas reference) but Christmas is December 25, not early June",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321hdf01qmqiw9570y0783",
+    "calName": "2026 - Chiro NL - Wellness & Maintenance - Northern",
+    "hemi": "north",
+    "row": {
+      "id": "cmu4hv53u01a4q9pcya3uj3wt",
+      "date": "2026-09-19",
+      "text": "The September reset · School-year energy for adults · The autumn habit window open · Enrollment as commitment device · New year's in September argument",
+      "fields": {
+        "topic": "The September reset",
+        "bullet1": "School-year energy for adults",
+        "bullet2": "The autumn habit window open",
+        "bullet3": "Enrollment as commitment device",
+        "secondaryTopic": "New year's in September argument",
+        "draftedAt": null
+      }
+    },
+    "reason": "new-year/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321hhj01z0qiw91dcxff63",
+    "calName": "2026 - Chiro NL - Wellness & Maintenance - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv56v01ihq9pc31op8kc8",
+      "date": "2027-03-01",
+      "text": "The September reset · School-year energy for adults · The autumn habit window open · Enrollment as commitment device · New year's in September argument",
+      "fields": {
+        "topic": "The September reset",
+        "bullet1": "School-year energy for adults",
+        "bullet2": "The autumn habit window open",
+        "bullet3": "Enrollment as commitment device",
+        "secondaryTopic": "New year's in September argument",
+        "draftedAt": null
+      }
+    },
+    "reason": "new-year/wrong-month",
+    "source": "heuristic"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321hhj01z0qiw91dcxff63",
+    "calName": "2026 - Chiro NL - Wellness & Maintenance - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv57001kqq9pcvwksyoar",
+      "date": "2027-07-21",
+      "text": "Indoor exercise and joint preparation · Why gym floors feel harder than summer grass · Warm-up time when you skip the commute · Home workout surfaces ranked for impact · Stretching in heated rooms versus cold garages",
+      "fields": {
+        "topic": "Indoor exercise and joint preparation",
+        "bullet1": "Why gym floors feel harder than summer grass",
+        "bullet2": "Warm-up time when you skip the commute",
+        "bullet3": "Home workout surfaces ranked for impact",
+        "secondaryTopic": "Stretching in heated rooms versus cold garages",
+        "draftedAt": null
+      }
+    },
+    "reason": "winter-month/summer-text",
+    "source": "heuristic"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321hhj01z0qiw91dcxff63",
+    "calName": "2026 - Chiro NL - Wellness & Maintenance - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv56o01g0q9pcq82ec20u",
+      "date": "2026-09-26",
+      "text": "Allergy season sleep strategy · Elevated without neck wreckage · Wedge approaches compared · Bedroom air quality basics · Shower timing and pollen loads",
+      "fields": {
+        "topic": "Allergy season sleep strategy",
+        "bullet1": "Elevated without neck wreckage",
+        "bullet2": "Wedge approaches compared",
+        "bullet3": "Bedroom air quality basics",
+        "secondaryTopic": "Shower timing and pollen loads",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: 'Allergy season' and 'Spring' references in late September (southern hemisphere is late winter/early spring transition, allergy season typically spring/summer)",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321hhj01z0qiw91dcxff63",
+    "calName": "2026 - Chiro NL - Wellness & Maintenance - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv56o01g1q9pcwojoa7lz",
+      "date": "2026-09-28",
+      "text": "Spring training without the injury spike · Why warmer weather tempts overreach · Progressive load for weekend warriors · Tissue prep before first park run · Choosing shoes after winter storage",
+      "fields": {
+        "topic": "Spring training without the injury spike",
+        "bullet1": "Why warmer weather tempts overreach",
+        "bullet2": "Progressive load for weekend warriors",
+        "bullet3": "Tissue prep before first park run",
+        "secondaryTopic": "Choosing shoes after winter storage",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: 'Spring training' in late September (southern hemisphere spring just beginning, but acceptable)",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321hhj01z0qiw91dcxff63",
+    "calName": "2026 - Chiro NL - Wellness & Maintenance - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv56p01g7q9pcxevk0kmj",
+      "date": "2026-10-09",
+      "text": "Spring cleaning your movement patterns · Habits that calcified over winter · Three mobility checks for stiff spots · Resetting your default posture · Decluttering your exercise routine",
+      "fields": {
+        "topic": "Spring cleaning your movement patterns",
+        "bullet1": "Habits that calcified over winter",
+        "bullet2": "Three mobility checks for stiff spots",
+        "bullet3": "Resetting your default posture",
+        "secondaryTopic": "Decluttering your exercise routine",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: 'calcified over winter' in October (southern hemisphere winter just ended, acceptable seasonal reference)",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321hhj01z0qiw91dcxff63",
+    "calName": "2026 - Chiro NL - Wellness & Maintenance - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv56r01h2q9pcuk4ybvni",
+      "date": "2026-12-02",
+      "text": "The solstice audit · January intentions versus June minutes · Recommitting without shame · Summer's low-friction opportunities · Daylight banking for dark months",
+      "fields": {
+        "topic": "The solstice audit",
+        "bullet1": "January intentions versus June minutes",
+        "bullet2": "Recommitting without shame",
+        "bullet3": "Summer's low-friction opportunities",
+        "secondaryTopic": "Daylight banking for dark months",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: 'Summer's low-friction opportunities · Daylight banking for dark months' - December is early summer in southern hemisphere, dark months are ahead in mid-year not behind",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321hhj01z0qiw91dcxff63",
+    "calName": "2026 - Chiro NL - Wellness & Maintenance - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv56u01i1q9pc48k7g7e3",
+      "date": "2027-02-01",
+      "text": "September starts in August · Pre-building autumn structure · Habit staging before the avalanche · Calendar architecture now · The fresh-start effect explained",
+      "fields": {
+        "topic": "September starts in August",
+        "bullet1": "Pre-building autumn structure",
+        "bullet2": "Habit staging before the avalanche",
+        "bullet3": "Calendar architecture now",
+        "secondaryTopic": "The fresh-start effect explained",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: 'September starts in August' and 'autumn structure' in February (southern hemisphere February is late summer, autumn starts March)",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321hhj01z0qiw91dcxff63",
+    "calName": "2026 - Chiro NL - Wellness & Maintenance - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv56v01ikq9pcgvomtsep",
+      "date": "2027-03-06",
+      "text": "Autumn sleep debt repayment · Earlier darkness as ally · Wind-down architecture · Screen sunset alignment · Weekend catch-up sleep truths",
+      "fields": {
+        "topic": "Autumn sleep debt repayment",
+        "bullet1": "Earlier darkness as ally",
+        "bullet2": "Wind-down architecture",
+        "bullet3": "Screen sunset alignment",
+        "secondaryTopic": "Weekend catch-up sleep truths",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: Text says 'Autumn sleep debt' but date is March 6 (autumn in Southern hemisphere)",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321hhj01z0qiw91dcxff63",
+    "calName": "2026 - Chiro NL - Wellness & Maintenance - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv56w01izq9pccydtml16",
+      "date": "2027-04-02",
+      "text": "Winterizing your movement life · Outdoor habits translated indoors · Home circuit minimal design · Class enrollment timing · Equipment minimum honestly listed",
+      "fields": {
+        "topic": "Winterizing your movement life",
+        "bullet1": "Outdoor habits translated indoors",
+        "bullet2": "Home circuit minimal design",
+        "bullet3": "Class enrollment timing",
+        "secondaryTopic": "Equipment minimum honestly listed",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: Text says 'Winterizing your movement life' but date is April 2 (still autumn in Southern hemisphere, winter starts June)",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321hhj01z0qiw91dcxff63",
+    "calName": "2026 - Chiro NL - Wellness & Maintenance - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv56x01jgq9pc86j9tazh",
+      "date": "2027-05-01",
+      "text": "The gratitude body scan · Five minutes before the feast · Attention as tension release · A tradition worth starting · Family walks as second tradition",
+      "fields": {
+        "topic": "The gratitude body scan",
+        "bullet1": "Five minutes before the feast",
+        "bullet2": "Attention as tension release",
+        "bullet3": "A tradition worth starting",
+        "secondaryTopic": "Family walks as second tradition",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: Text refers to 'the feast' suggesting Thanksgiving but May 1 has no such holiday in Southern hemisphere",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321hhj01z0qiw91dcxff63",
+    "calName": "2026 - Chiro NL - Wellness & Maintenance - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv56x01jjq9pc73o7y2uy",
+      "date": "2027-05-07",
+      "text": "The November review advantage · Auditing before resolving · Pattern mining the year · Resolutions data would write · Celebrating maintained streaks",
+      "fields": {
+        "topic": "The November review advantage",
+        "bullet1": "Auditing before resolving",
+        "bullet2": "Pattern mining the year",
+        "bullet3": "Resolutions data would write",
+        "secondaryTopic": "Celebrating maintained streaks",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: Text says 'The November review advantage' but date is May 7",
+    "source": "llm"
+  },
+  {
+    "kind": "newsletter",
+    "calId": "cmu321hhj01z0qiw91dcxff63",
+    "calName": "2026 - Chiro NL - Wellness & Maintenance - Southern",
+    "hemi": "south",
+    "row": {
+      "id": "cmu4hv57201liq9pcouavna8w",
+      "date": "2027-09-08",
+      "text": "Vitamin D recalibration after winter · Northern hemisphere storage depletion · Sun exposure math for spring latitude · Bone health and loading synergy · Supplementation timing debate",
+      "fields": {
+        "topic": "Vitamin D recalibration after winter",
+        "bullet1": "Northern hemisphere storage depletion",
+        "bullet2": "Sun exposure math for spring latitude",
+        "bullet3": "Bone health and loading synergy",
+        "secondaryTopic": "Supplementation timing debate",
+        "draftedAt": null
+      }
+    },
+    "reason": "llm: Text says 'Northern hemisphere storage depletion' but calendar is for Southern hemisphere",
+    "source": "llm"
+  }
+]

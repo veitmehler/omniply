@@ -1,0 +1,109 @@
+FIXED 2026 - Chiro - Family Care - Northern 2027-07-01
+  - Starting the Year with Better Posture
+  + A Mid-Year Posture Reset for the Family
+FIXED 2026 - Chiro - Sports - Southern 2027-04-15
+  - Halloween Fun Runs With Kids: Costumes Meet Cadence
+  + Autumn Fun Runs With Kids: Cool Mornings Meet Cadence
+FIXED 2026 - Chiro - Sports - Southern 2028-04-04
+  - Fantasy Football Posture: The Other Season Starting in September
+  + Fantasy Football Posture: The Other Season on Your Sofa
+FIXED 2026 - Chiro - Prenatal & Pediatric - Northern 2027-07-06
+  - The August Baby Boom: Late-Pregnancy Survival in Peak Heat
+  + The Summer Baby Boom: Late-Pregnancy Survival in Peak Heat
+FIXED 2026 - Chiro - Prenatal & Pediatric - Northern 2028-04-18
+  - Father's Day Feature: Dads' Backs and the Airplane Game
+  + Dads' Backs and the Airplane Game
+FIXED 2026 - Chiro - Prenatal & Pediatric - Northern 2028-04-20
+  - Beach Days With Babies: Sand, Shade and Carrying Everything
+  + Park Days With Babies: Sand, Shade and Carrying Everything
+FIXED 2026 - Chiro - Prenatal & Pediatric - Northern 2028-04-25
+  - Summer Pregnancy Hydration: Drinking for Two Isn't a Metaphor
+  + Spring Pregnancy Hydration: Drinking for Two Isn't a Metaphor
+FIXED 2026 - Chiro - Prenatal & Pediatric - Northern 2028-07-20
+  - Apple-Picking Pregnant: Orchard Outings and Reaching Overhead
+  + Berry-Picking Pregnant: Orchard Outings and Reaching Overhead
+FIXED 2026 - Chiro - Prenatal & Pediatric - Southern 2027-03-16
+  - Halloween While Pregnant: Costumes, Comfort and Candy Walks
+  + School-Fair Season While Pregnant: Comfort, Crowds and Long Walks
+FIXED 2026 - Chiro - Prenatal & Pediatric - Southern 2028-02-22
+  - Halloween While Pregnant: Costumes, Comfort and Candy Walks
+  + School-Fair Season While Pregnant: Comfort, Crowds and Long Walks
+FIXED 2026 - Chiro - Prenatal & Pediatric - Southern 2027-03-18
+  - The Crawler's Halloween: Baby-Proofing the Decoration Season
+  + The Crawler's Big World: Baby-Proofing Room by Room
+FIXED 2026 - Chiro - Prenatal & Pediatric - Southern 2028-02-24
+  - The Crawler's Halloween: Baby-Proofing the Decoration Season
+  + The Crawler's Big World: Baby-Proofing Room by Room
+FIXED 2026 - Chiro - Prenatal & Pediatric - Southern 2027-04-08
+  - Thanksgiving Hosting While Expecting: Delegation as Self-Care
+  + Family-Gathering Hosting While Expecting: Delegation as Self-Care
+FIXED 2026 - Chiro - Prenatal & Pediatric - Southern 2028-03-16
+  - Thanksgiving Hosting While Expecting: Delegation as Self-Care
+  + Family-Gathering Hosting While Expecting: Delegation as Self-Care
+FIXED 2026 - Chiro - Prenatal & Pediatric - Southern 2028-04-04
+  - The Pregnant Traveler's Holiday Flight Guide
+  + The Pregnant Traveler's Long-Haul Flight Guide
+FIXED 2026 - Chiro - Prenatal & Pediatric - Southern 2028-04-06
+  - Baby's First Winter Illness Season: The Comfort-Holding Marathon
+  + Baby's First Cold-and-Flu Season: The Comfort-Holding Marathon
+FIXED 2026 - Chiro - Prenatal & Pediatric - Southern 2028-04-13
+  - Decorating With a Due Date: Holiday Prep in Late Pregnancy
+  + Decorating With a Due Date: Nursery Prep in Late Pregnancy
+FIXED 2026 - Chiro - Prenatal & Pediatric - Southern 2028-04-18
+  - Baby's First Holidays: Managing the Pass-the-Baby Gauntlet
+  + Baby's First Family Gatherings: Managing the Pass-the-Baby Gauntlet
+FIXED 2026 - Chiro - Prenatal & Pediatric - Southern 2028-04-27
+  - Winter Babywearing: The Warmest Way Through the Season
+  + Cool-Weather Babywearing: The Warmest Way Through the Season
+FIXED 2026 - Chiro - Prenatal & Pediatric - Southern 2028-06-01
+  - Postpartum in January: The Fourth Trimester Nobody Photographs
+  + Postpartum in Winter: The Fourth Trimester Nobody Photographs
+FIXED 2026 - Chiro - Prenatal & Pediatric - Southern 2028-06-20
+  - Loving Your Changed Body: Valentine Thoughts on Postpartum Identity
+  + Loving Your Changed Body: Midwinter Thoughts on Postpartum Identity
+FIXED 2026 - Chiro - Healthy Aging - Northern 2028-06-15
+  - Strength After Stroke of Midnight: Why Muscle Responds at Any Age
+  + Strength at the Halfway Mark of the Year: Why Muscle Responds at Any Age
+FIXED 2026 - Chiro - Healthy Aging - Southern 2027-04-20
+  - Strength as Thanksgiving: What Your Muscles Did This Year
+  + Strength as Gratitude: What Your Muscles Did This Year
+FIXED 2026 - Chiro - Healthy Aging - Southern 2028-03-23
+  - Strength as Thanksgiving: What Your Muscles Did This Year
+  + Strength as Gratitude: What Your Muscles Did This Year
+FIXED 2026 - Chiro - Healthy Aging - Southern 2027-05-13
+  - Winter Solstice Movement: Honoring the Darkest Day Actively
+  + Early Dusk Movement: Staying Active as the Days Grow Short
+FIXED 2026 - Chiro - Healthy Aging - Southern 2028-04-04
+  - Early Winter Swimming: The Indoor Pool as Season Bridge
+  + Indoor-Pool Swimming: The Indoor Pool as Season Bridge
+FIXED 2026 - Chiro - Healthy Aging - Southern 2028-04-06
+  - Decking Halls Without Decking Yourself: Decoration Strategy
+  + Reaching High Shelves Without Decking Yourself: Decoration Strategy
+FIXED 2026 - Chiro - Healthy Aging - Southern 2028-04-13
+  - Gift-Wrap Ergonomics: The Table Beats the Floor
+  + Craft-Table Ergonomics: The Table Beats the Floor
+FIXED 2026 - Chiro - Healthy Aging - Southern 2028-05-30
+  - Shoveling Delegated: The Art of Accepting Seasonal Help
+  + Heavy Garden Work Delegated: The Art of Accepting Seasonal Help
+FIXED 2026 - Chiro - Wellness & Maintenance - Southern 2027-10-26
+  - The Solstice Audit: Are You Using the Light You Asked For
+  + The Daylight Audit: Are You Using the Light You Asked For
+FIXED 2026 - Chiro - Wellness & Maintenance - Southern 2028-03-14
+  - The Gratitude Body Scan: A Thanksgiving Tradition for the Nervous System
+  + The Gratitude Body Scan: A Gratitude Ritual for the Nervous System
+FIXED 2026 - Chiro - Wellness & Maintenance - Southern 2028-07-06
+  - Winter Rhythm Shift: Clock Changes and Body Rhythms
+  + Winter Rhythm Shift: Shorter Days and Body Rhythms
+FIXED 2026 - Chiro - Wellness & Maintenance - Northern 2027-08-31
+  - The Great Indoors Migration: Winterizing Your Movement Life
+  + The Great Indoors Migration: Autumn-Proofing Your Movement Life
+FIXED 2026 - Chiro - Wellness & Maintenance - Northern 2028-06-15
+  - Late Summer Heat and the Case for Dawn Movement
+  + Early Summer Heat and the Case for Dawn Movement
+FIXED NL 2026 - Chiro NL - Prenatal & Pediatric - Southern 2027-04-03
+  - Halloween with a bump
+  + Fancy-dress season with a bump (fields: topic,bullet2,research,researchStatus)
+FIXED NL 2026 - Chiro - Family Care - Southern 2026-10-03
+  - Preparing your garden without straining your back
+  + Preparing your garden without straining your back (fields: bullet1,research,researchStatus)
+P4 DONE ok=36 miss=0
