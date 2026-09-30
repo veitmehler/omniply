@@ -1,4 +1,10 @@
-# Omniply Walkthrough — video script v4 FINAL (2026-09-24)
+# Omniply Walkthrough — video script v4.1 FINAL (2026-09-25)
+
+v4.1 = VO-pass text edits by Veit (2026-09-25): Scene 5 adds the
+table/calendar-views line, Scene 8 adds the magazine-newsletter pitch and
+the algorithm-schedule explanation ("only when you post on a regular
+schedule will the algorithms promote" — "will" grammar confirmed), Scene 9
+says "Every social media post". VO regenerated to match.
 
 Veit's final text after the first VO recording pass — VERBATIM, with
 mechanical typo fixes only (listed below). ~2,400 VO words ≈ **12:30–13:00**
@@ -39,10 +45,14 @@ Production notes
 
 ## Scene 1 — Cold open: the problem
 
-ON SCREEN: Quick montage, 3–4s each: a finished article on a clinic site,
-an IG slide carousel mid-swipe, a Key-Takeaways video post looping, a
-newsletter on a phone, a CRM contact record with a callback note. Outputs
-only, no UI chrome.
+ON SCREEN: COLD OPEN (≈0:00–0:10): AI-booking clip (Veo/Flow — prompts in
+marketing/cold-open-prompt-pack.md): a patient asks their phone's AI
+assistant to book a chiro; the assistant confirms it booked the practice
+that answered. Clip audio plays clean, then ducks as "When the world
+looks like this…" enters over the aftermath beat. THEN the quick montage,
+3–4s each: a finished article on a clinic site, an IG slide carousel
+mid-swipe, a Key-Takeaways video post looping, a newsletter on a phone, a
+CRM contact record with a callback note. Outputs only, no UI chrome.
 
 NARRATION:
 "When the world looks like this, will your practice survive the next
@@ -195,9 +205,9 @@ Google and AI assistants check before recommending anyone.
 Next step: if you have at least one article on your website, it asks one
 important question: did you write this yourself?
 
-Because if you did, it learns to write just like you, not like an AI. If
-that's not your content, just paste a piece of content that you wrote
-yourself because people smell generic-sounding content from a mile away.
+Because if you did, it learns to write like you, not like an AI. If
+that's not an article you wrote, just paste a piece you wrote yourself
+because people can smell generic sounding content a mile away.
 
 Mixed with your voice recordings from the first six questions, we distill
 your unique writing voice for you so every article, social media post,
@@ -296,9 +306,12 @@ planned topics stretching forward. A 5-second flip to table view and
 back.
 
 NARRATION:
-"So here's how this looks in one screen. One full month planned. Articles
-on Tuesday and Thursdays, newsletters four times a week, social media
-posts every single day except Sundays.
+"So here's how this looks in one screen. One full month planned. You can
+view this as content table, or in calendar views.
+
+The important part is: You'll post articles on Tuesday and Thursdays,
+newsletters four times a week, social media posts every single day except
+Sundays.
 
 Topics chosen for chiropractic patients, in season, in your voice, and
 for your specialization of your practice. This calendar fills itself
@@ -366,14 +379,21 @@ cadence (for the videos/algorithm line); (e) the plan grid after approval
 NARRATION:
 "And this is what the patient sees. Articles published on your website on
 schedule, categorized, compliant, and sourced. The newsletter in their
-inbox built for phone screens, and your social media feeds, carousels,
-stories, and some video posts. Every platform, every day, without anyone
-in your clinic touching a thing.
+inbox built for phone screens, looking like a magazine because THAT's
+what your patients want to see today. Magazine style newsletters are a
+billion-dollar industry because that's what works today.
+
+And then your social media posts like carousels, stories, and some video
+posts. Every platform, every day, without anyone in your clinic having
+to touch a thing.
 
 Then you can post any video you want on top of that. But this is the
 regular schedule that the algorithms are looking for to show your
-practice content to your followers. The more exposure you get, the more
-bookings you get.
+practice content to your followers. Because only when you post on a
+regular schedule will the algorithms promote your content. If not,
+nobody will see it.
+
+And the more exposure you get, the more bookings you get.
 
 And one more thing patients never see, but machines absolutely do. Every
 article also arrives as a ready-made LinkedIn and Medium article.
@@ -395,8 +415,8 @@ links page → the guide PDFs in the branded folder → the QR review card.
 Fast cuts, one beat per kit bullet.
 
 NARRATION:
-"Now, the part that pays for everything. Every post invites one small
-action: comment the word SPINE.
+"Now, the part that pays for everything. Every social media post invites
+one small action: comment the word SPINE.
 
 Whoever does that gets your two-minute spine check instantly and lands in
 your CRM, tagged, followed up, and nurtured. You actually get a full lead
