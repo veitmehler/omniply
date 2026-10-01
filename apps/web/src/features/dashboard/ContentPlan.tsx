@@ -292,7 +292,10 @@ export function ContentPlan() {
     const nlSocialReady = nl?.newsletterId && socialReadyNewsletterIds.has(nl.newsletterId)
     const articleSocialGen = a?.jobId && socialGenArticleIds.has(a.jobId)
     const nlSocialGen = nl?.newsletterId && socialGenNewsletterIds.has(nl.newsletterId)
-    if (!assignedToMe && !articleReady && !articleFlagged && !nlReady && !articleSocialReady && !nlSocialReady) {
+    // articlePublished keeps the row alive: the LinkedIn & Medium window
+    // must stay reachable after all reviews are approved (bug: it vanished
+    // once social approval cleared the last pending state, 2026-10-01).
+    if (!assignedToMe && !articleReady && !articleFlagged && !nlReady && !articleSocialReady && !nlSocialReady && !articlePublished) {
       return <span className="text-xs text-muted-foreground">—</span>
     }
     return (
