@@ -272,15 +272,27 @@ async function pregenerateBatchedCaptions(opts: {
         for (const platform of platforms) {
           const limit = PLATFORM_CHAR_LIMITS[platform] ?? 2000
           let t = beat.postText
-          if (storyHook && fbAppend && platform === 'facebook' && /\.[a-z]{2,4}\/|https?:/i.test(t.split('\n').pop() ?? '')) {
-            t = `${t}\n\n${fbAppend}`
+          // Keyword presence beats exact-string match: the model sometimes
+          // phrases its own keyword CTA from the prompt guidance — don't
+          // stack the canonical hook on top of it.
+          const kw = hookTheme?.commentKeyword ?? null
+          const mentionsKeyword = (s: string) => (kw ? s.toUpperCase().includes(kw) : s.includes(storyHook))
+          if (storyHook && fbAppend && platform === 'facebook') {
+            // Every beat invites the action on FB (option 3, user
+            // 2026-10-01): link-ending captions keep the link and add the
+            // comment path; the rest get the hook unless already phrased.
+            if (/\.[a-z]{2,4}\/|https?:/i.test(t.split('\n').pop() ?? '')) {
+              t = `${t}\n\n${fbAppend}`
+            } else if (!mentionsKeyword(t)) {
+              t = `${t}\n\n${storyHook}`
+            }
           } else if (storyHook && platform === 'instagram') {
             // IG captions are not clickable: drop EVERY URL-bearing line (a
             // mid-caption article link slipped the last-line-only replace —
             // sweep 2026-09-07), then make sure the comment hook closes it.
             const lines = t.split('\n').filter((l) => !/https?:\/\/|\b[\w-]+(?:\.[\w-]+)*\.(?:com|io|net|org|ai|co|app|dev|us)\b(?:\/\S*)?/i.test(l))
             while (lines.length && !lines[lines.length - 1].trim()) lines.pop()
-            if (!lines.some((l) => l.includes(storyHook))) lines.push('', storyHook)
+            if (!lines.some((l) => mentionsKeyword(l))) lines.push('', storyHook)
             t = lines.join('\n')
           }
           ;(bySlot[e.slotKey] ??= {})[platform] = t.length <= limit ? t : t.slice(0, limit - 1).trim() + '…'

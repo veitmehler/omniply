@@ -379,7 +379,12 @@ export async function generateStoryArc(opts: {
   // Evening post text must end with the CTA line — the prompt asks for it,
   // but the model occasionally closes on the open loop instead (Aug-31 beat
   // shipped with no lead-gen CTA at all — sweep 2026-09-07). Enforce it.
-  if (ctaLine) {
+  // Comment-keyword accounts: the per-platform layer (automation/run.ts)
+  // owns the reader-facing hook — IG/FB get it on EVERY beat, LinkedIn
+  // never does (no comment automation there). Appending ctaLine here would
+  // paste the LLM guidance sentence ("Invite readers to comment…") into
+  // published captions — seen live on prod P3 captions, fixed 2026-10-01.
+  if (ctaLine && !theme.commentKeyword) {
     for (let i = 1; i < beats.length; i += 2) {
       if (!beats[i].postText.includes(ctaLine)) {
         beats[i].postText = beats[i].postText.trimEnd() + '\n\n' + ctaLine
