@@ -12,6 +12,7 @@
 import type PgBoss from 'pg-boss'
 import { prisma, decrypt } from '@omniply/shared'
 import { placesConfigured, probePlace } from '../lib/google/places'
+import { listingTrusted } from '../lib/google/listing-trust'
 import { ingestReviews } from '../lib/google/review-ingest'
 import { logger } from '../lib/logger'
 
@@ -19,15 +20,32 @@ export async function placesReviewPollHandler(_jobs: PgBoss.Job<unknown>[]): Pro
   if (!placesConfigured()) return
   const brands = await prisma.brandSettings.findMany({
     where: { googlePlaceId: { not: null } },
-    select: { googlePlaceId: true, user: { select: { accountId: true } } },
+    select: {
+      googlePlaceId: true,
+      organizationName: true,
+      googleListingConfirmedAt: true,
+      user: { select: { accountId: true } },
+    },
   })
+  let skipped = 0
   for (const b of brands) {
     const accountId = b.user?.accountId
     if (!accountId || !b.googlePlaceId) continue
     const probe = await probePlace(b.googlePlaceId)
-    if (probe) await ingestReviews(accountId, 'places-poll', probe.reviews)
+    if (!probe) continue
+    // Trust gate (places-trust plan): never harvest another business's
+    // reviews from a mis-resolved, unconfirmed listing.
+    if (!listingTrusted({ listingName: probe.name, brandName: b.organizationName, confirmedAt: b.googleListingConfirmedAt })) {
+      skipped++
+      logger.warn(
+        { accountId, placeId: b.googlePlaceId, listing: probe.name, brand: b.organizationName },
+        '[places-poll] listing name mismatch — poll skipped',
+      )
+      continue
+    }
+    await ingestReviews(accountId, 'places-poll', probe.reviews, b.googlePlaceId)
   }
-  logger.info({ accounts: brands.length }, '[places-poll] weekly review poll done')
+  logger.info({ accounts: brands.length, skipped }, '[places-poll] weekly review poll done')
 }
 
 interface BackfillJobData {

@@ -21,7 +21,8 @@ import { acceptDmWebhook, type DmJobData } from '../agent/dm'
 import { getBoss, QUEUES } from '../queues/index'
 import { requireAuth } from '../middleware/auth'
 import { fillPrompt } from '../newsletter/llm'
-import { agentContextForAccount, clearAgentContextFor } from '../agent/context'
+import { agentContextForAccount, clearAgentContextFor, placesSnapshot } from '../agent/context'
+import { listingMatchesBrand } from '../lib/google/listing-trust'
 import { emergencyNumberFor, MAX_MESSAGE_CHARS } from '../agent/guardrails'
 import { AgentTurnError, runAgentTurn } from '../agent/engine'
 import { AGENT_LOADER_JS, buildAgentPanelHtml } from '../agent/widget'
@@ -144,16 +145,67 @@ export async function agentRoutes(app: FastifyInstance) {
     if (!user) return reply.status(404).send({ error: 'User not found' })
     const brand = await brandSettingsForUser(user.id)
     if (!brand) return reply.status(404).send({ error: 'Brand not set up yet' })
+
+    // Listing trust status (places-trust plan Item 1, Settings surface):
+    // mismatch-pending means a resolved listing's name doesn't match the
+    // brand and the clinic hasn't confirmed it — probe data stays discarded.
+    let listing: { state: 'none' | 'ok' | 'mismatch_pending'; listingName?: string } = { state: 'none' }
+    let trustedProbe: Awaited<ReturnType<typeof placesSnapshot>> = null
+    if (brand.googlePlaceId) {
+      const probe = await placesSnapshot(brand.googlePlaceId).catch(() => null)
+      if (probe?.name) {
+        const trusted =
+          Boolean(brand.googleListingConfirmedAt) || listingMatchesBrand(probe.name, brand.organizationName)
+        listing = { state: trusted ? 'ok' : 'mismatch_pending', listingName: probe.name }
+        if (trusted) trustedProbe = probe
+      }
+    }
+
+    // Site-vs-Google discrepancies (Item 2, warn-only): diffed live from the
+    // onboarding-extracted site facts against the current (24h-cached)
+    // snapshot, so a listing fixed on Google clears the panel by itself.
+    const ownerId = await canonicalAccountUserId(user.id)
+    const owner = await prisma.user.findUnique({ where: { id: ownerId }, select: { accountId: true } })
+    const sessionRow = owner?.accountId
+      ? await prisma.onboardingSession.findUnique({ where: { accountId: owner.accountId }, select: { stepData: true } })
+      : null
+    const stepData = (sessionRow?.stepData ?? null) as Record<string, unknown> | null
+    const siteFacts = (stepData?.siteFacts ?? null) as import('../lib/hours-compare').SiteFacts | null
+    const { compareSiteToGoogle } = await import('../lib/hours-compare')
+    const discrepancies = compareSiteToGoogle(siteFacts, trustedProbe)
+
     return {
       faqs: Array.isArray(brand.clinicFaqs) ? brand.clinicFaqs : [],
       openingHours: brand.openingHours ?? '',
       organizationPhone: brand.organizationPhone ?? '',
       bookingUrl: brand.bookingUrl ?? '',
       extraKnowledge: brand.agentExtraKnowledge ?? '',
+      listing,
+      discrepancies,
     }
   })
 
-  app.put<{ Body: { faqs?: { q?: string; a?: string }[]; openingHours?: string; organizationPhone?: string; bookingUrl?: string; extraKnowledge?: string } }>(
+  // Explicit "yes, that Google listing is ours" (places-trust plan Item 1).
+  app.post('/agent/kb/confirm-listing', async (request, reply) => {
+    const clerkId = await requireAuth(request, reply)
+    if (!clerkId) return
+    const user = await prisma.user.findUnique({ where: { clerkId }, select: { id: true, accountId: true } })
+    if (!user) return reply.status(404).send({ error: 'User not found' })
+    const ownerId = await canonicalAccountUserId(user.id)
+    const brand = await prisma.brandSettings.findUnique({
+      where: { userId: ownerId },
+      select: { googlePlaceId: true },
+    })
+    if (!brand?.googlePlaceId) return reply.status(400).send({ error: 'No Google listing attached yet.' })
+    await prisma.brandSettings.update({
+      where: { userId: ownerId },
+      data: { googleListingConfirmedAt: new Date() },
+    })
+    if (user.accountId) clearAgentContextFor(user.accountId)
+    return { ok: true }
+  })
+
+  app.put<{ Body: { faqs?: { q?: string; a?: string }[]; openingHours?: string; organizationPhone?: string; bookingUrl?: string; extraKnowledge?: string; gbpUrl?: string } }>(
     '/agent/kb',
     async (request, reply) => {
       const clerkId = await requireAuth(request, reply)
@@ -169,6 +221,25 @@ export async function agentRoutes(app: FastifyInstance) {
       if (faqs.length === 0) return reply.status(400).send({ error: 'At least one question and answer is required.' })
 
       const ownerId = await canonicalAccountUserId(user.id)
+      // Re-resolution hook (places-trust plan Item 1): a changed GBP/Maps
+      // link resets the resolved place entirely — the agent context's lazy,
+      // link-first resolution picks the new link up on its next assembly.
+      let gbpChanged = false
+      if (body.gbpUrl !== undefined) {
+        const next = body.gbpUrl.trim() || null
+        if (next) {
+          try {
+            new URL(next)
+          } catch {
+            return reply.status(400).send({ error: 'That Google listing link doesn\'t look like a URL.' })
+          }
+        }
+        const current = await prisma.brandSettings.findUnique({
+          where: { userId: ownerId },
+          select: { googleBusinessProfileUrl: true },
+        })
+        gbpChanged = (current?.googleBusinessProfileUrl ?? null) !== next
+      }
       await prisma.brandSettings.update({
         where: { userId: ownerId },
         data: {
@@ -180,6 +251,14 @@ export async function agentRoutes(app: FastifyInstance) {
           ...(body.bookingUrl?.trim() ? { bookingMode: 'online' } : {}),
           ...(body.extraKnowledge !== undefined
             ? { agentExtraKnowledge: body.extraKnowledge.trim().slice(0, 5000) || null }
+            : {}),
+          ...(gbpChanged
+            ? {
+                googleBusinessProfileUrl: body.gbpUrl!.trim() || null,
+                googlePlaceId: null,
+                googlePlaceIdSource: null,
+                googleListingConfirmedAt: null,
+              }
             : {}),
         },
       })

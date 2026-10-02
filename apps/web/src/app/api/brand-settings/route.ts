@@ -283,6 +283,23 @@ export async function PATCH(request: NextRequest) {
 
     // Brand profile is account-shared → write to the account owner's row.
     const ownerUserId = await canonicalAccountUserId(userId)
+
+    // Re-resolution hook (places-trust plan Item 1): a changed GBP/Maps link
+    // resets the resolved place + its confirmation, so the agent context's
+    // lazy, link-first resolution re-runs against the new link (within its
+    // 15-min bundle TTL — the API process owns that cache, not this route).
+    if ('googleBusinessProfileUrl' in body) {
+      const current = await prisma.brandSettings.findUnique({
+        where: { userId: ownerUserId },
+        select: { googleBusinessProfileUrl: true },
+      })
+      if ((current?.googleBusinessProfileUrl ?? null) !== (data.googleBusinessProfileUrl ?? null)) {
+        data.googlePlaceId = null
+        data.googlePlaceIdSource = null
+        data.googleListingConfirmedAt = null
+      }
+    }
+
     const settings = await prisma.brandSettings.upsert({
       where: { userId: ownerUserId },
       create: { userId: ownerUserId, ...data } as Prisma.BrandSettingsUncheckedCreateInput,

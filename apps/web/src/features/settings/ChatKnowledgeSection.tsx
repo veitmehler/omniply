@@ -6,11 +6,13 @@
  * the assistant's knowledge immediately (server busts the context cache).
  */
 import { useEffect, useState } from 'react'
-import { BookOpen, Loader2, Save, Plus, Trash2 } from 'lucide-react'
+import { BookOpen, Loader2, Save, Plus, Trash2, AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 
 interface Faq { q: string; a: string }
+interface ListingStatus { state: 'none' | 'ok' | 'mismatch_pending'; listingName?: string }
+interface Discrepancy { field: string; website: string; google: string; note: string }
 
 export function ChatKnowledgeSection() {
   const [loading, setLoading] = useState(true)
@@ -21,6 +23,11 @@ export function ChatKnowledgeSection() {
   const [bookingUrl, setBookingUrl] = useState('')
   const [extraKnowledge, setExtraKnowledge] = useState('')
   const [available, setAvailable] = useState(true)
+  const [listing, setListing] = useState<ListingStatus>({ state: 'none' })
+  const [discrepancies, setDiscrepancies] = useState<Discrepancy[]>([])
+  const [newGbpUrl, setNewGbpUrl] = useState('')
+  const [fixingLink, setFixingLink] = useState(false)
+  const [confirming, setConfirming] = useState(false)
 
   useEffect(() => {
     let alive = true
@@ -38,6 +45,8 @@ export function ChatKnowledgeSection() {
         setPhone(d.organizationPhone ?? '')
         setBookingUrl(d.bookingUrl ?? '')
         setExtraKnowledge(d.extraKnowledge ?? '')
+        if (d.listing?.state) setListing(d.listing)
+        setDiscrepancies(Array.isArray(d.discrepancies) ? d.discrepancies : [])
       } finally {
         if (alive) setLoading(false)
       }
@@ -46,6 +55,44 @@ export function ChatKnowledgeSection() {
       alive = false
     }
   }, [])
+
+  async function confirmListing() {
+    setConfirming(true)
+    try {
+      const res = await fetch('/api/agent/kb/confirm-listing', { method: 'POST' })
+      if (!res.ok) {
+        toast.error('Could not confirm the listing — try again')
+        return
+      }
+      setListing({ ...listing, state: 'ok' })
+      toast.success('Listing confirmed — its hours and reviews are now used')
+    } finally {
+      setConfirming(false)
+    }
+  }
+
+  async function updateGbpLink() {
+    const url = newGbpUrl.trim()
+    if (!url) return
+    setFixingLink(true)
+    try {
+      const res = await fetch('/api/agent/kb', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ faqs, gbpUrl: url }),
+      })
+      if (!res.ok) {
+        const d = (await res.json().catch(() => null)) as { error?: string } | null
+        toast.error(d?.error ?? 'Could not update the link')
+        return
+      }
+      setListing({ state: 'none' })
+      setNewGbpUrl('')
+      toast.success('Link updated — your listing re-resolves within a few minutes')
+    } finally {
+      setFixingLink(false)
+    }
+  }
 
   async function save() {
     setSaving(true)
@@ -86,6 +133,59 @@ export function ChatKnowledgeSection() {
         Everything the chat assistant knows about your practice. Edit any answer and save — changes reach the
         assistant within seconds.
       </p>
+
+      {listing.state === 'mismatch_pending' && (
+        <div className="mb-4 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+            <div className="text-sm">
+              <p className="text-card-foreground">
+                Your Google link points to a listing called <strong>&ldquo;{listing.listingName}&rdquo;</strong>, which
+                doesn&apos;t match your practice name. Until this is sorted out, that listing&apos;s hours, rating and
+                reviews are not used.
+              </p>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <Button size="sm" variant="outline" onClick={confirmListing} disabled={confirming}>
+                  {confirming && <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />}
+                  That&apos;s us — use it
+                </Button>
+                <input
+                  className="rounded-lg border border-input bg-background px-3 py-1.5 text-sm min-w-[220px] flex-1"
+                  placeholder="Paste the correct Google Maps link"
+                  value={newGbpUrl}
+                  onChange={(e) => setNewGbpUrl(e.target.value)}
+                />
+                <Button size="sm" onClick={updateGbpLink} disabled={fixingLink || !newGbpUrl.trim()}>
+                  {fixingLink && <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />}
+                  Update link
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {listing.state === 'ok' && listing.listingName && (
+        <p className="text-xs text-muted-foreground mb-3">
+          Google listing: <span className="text-card-foreground">{listing.listingName}</span>
+        </p>
+      )}
+      {discrepancies.length > 0 && (
+        <div className="mb-4 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+            <div className="text-sm space-y-1">
+              <p className="font-medium text-card-foreground">Your website and Google listing disagree</p>
+              {discrepancies.map((d, i) => (
+                <p key={i} className="text-muted-foreground">{d.note}</p>
+              ))}
+              <p className="text-xs text-muted-foreground">
+                Patients see the Google version — worth fixing on your Google Business Profile. The hours below are
+                what the assistant actually uses.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid gap-3 md:grid-cols-2 mb-4">
         <div>

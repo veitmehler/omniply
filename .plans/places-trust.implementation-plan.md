@@ -1,6 +1,9 @@
 # Places Trust: Link-First Resolution, Site-vs-Google Cross-Check, Admin Surfacing, Stated-Hours Open-Now
 
-**Status: SCOPED — 2026-10-02. Four items, user-requested ("a must for good
+**Status: BUILT — all four items implemented + tested 2026-10-02 (same-day
+as scoping); post-deploy backfill + demo RawReview purge tracked below.**
+
+**Originally: SCOPED — 2026-10-02. Four items, user-requested ("a must for good
 usability") after the demo account's place resolution mis-matched twice
 (a restaurant, then "Advantage ADHD & Psychiatry Services"). Builds on the
 name-mismatch guard + probe-periods gating shipped in 9ff3484.**

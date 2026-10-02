@@ -1206,6 +1206,11 @@ export function KbReviewCard({ card, disabled, onSubmit }: { card: Record<string
     ? HOURS_DAYS.map((d) => `${d}: ${dayHours[d]?.trim() || 'Closed'}`).join('\n')
     : openingHours
 
+  const googleListingName = typeof card.googleListingName === 'string' ? card.googleListingName : null
+  const discrepancies = Array.isArray(card.discrepancies)
+    ? (card.discrepancies as { note?: string }[]).filter((d) => typeof d?.note === 'string')
+    : []
+
   return (
     <div className="rounded-xl border border-border bg-card p-4 space-y-1 max-h-[70vh] overflow-y-auto">
       <p className={label}>Business basics</p>
@@ -1213,6 +1218,20 @@ export function KbReviewCard({ card, disabled, onSubmit }: { card: Record<string
       <input className={input} value={bookingUrl} onChange={(e) => setBookingUrl(e.target.value)} placeholder="Booking page URL" />
 
       <p className={label}>Opening hours</p>
+      {googleListingName && (
+        <p className="text-xs text-muted-foreground">
+          Google listing: <span className="text-foreground">{googleListingName}</span>
+        </p>
+      )}
+      {discrepancies.length > 0 && (
+        <div className="rounded-md bg-amber-500/10 p-2 space-y-1">
+          <p className="text-xs font-medium text-amber-700">Your website and Google listing disagree:</p>
+          {discrepancies.map((d, i) => (
+            <p key={i} className="text-xs text-amber-700">{d.note}</p>
+          ))}
+          <p className="text-xs text-amber-700">Confirm the correct hours below — and it&apos;s worth fixing the Google side too.</p>
+        </div>
+      )}
       {hoursMode !== 'edit' && initialHours.trim() ? (
         <div className="rounded-lg border border-border p-3">
           <p className="mb-2 text-xs text-muted-foreground">

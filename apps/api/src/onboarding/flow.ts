@@ -508,6 +508,10 @@ const STEPS: StepDef[] = [
           organizationPhone: brand?.organizationPhone ?? '',
           bookingUrl: brand?.bookingUrl ?? '',
           hoursSource: brand?.googlePlaceId ? 'google' : 'manual',
+          // Trust touch (places-trust plan): show which Google listing is
+          // attached; warn-only website-vs-listing discrepancies below it.
+          googleListingName: (ctx.stepData.googleListingName as string | undefined) ?? null,
+          discrepancies: Array.isArray(ctx.stepData.siteDiscrepancies) ? ctx.stepData.siteDiscrepancies : [],
         },
       }
     },

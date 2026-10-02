@@ -15,6 +15,7 @@ import { instrumentCall } from '../lib/net/instrument'
 import { withTimeout } from '../lib/net/with-timeout'
 import { assertSafePublicUrl } from '../lib/ssrf'
 import { normalizeHex, hexToHsl, type BrandColor, type BrandInventory } from './palette-compose'
+import type { SiteFacts } from '../lib/hours-compare'
 
 const PAGE_FETCH_TIMEOUT_MS = 15_000
 const MAX_PAGES = 6
@@ -742,6 +743,46 @@ ${corpus.slice(0, 24_000)}`,
     return parseFirstJson<SpecializationDraft>(text)
   } catch (err) {
     logger.warn({ err }, '[onboarding/site] specialization detection failed')
+    return null
+  }
+}
+
+/**
+ * Site-facts extraction (places-trust plan Item 2): pull the hours, phone
+ * numbers, and street address the clinic's OWN website states, for the
+ * site-vs-Google cross-check. Confidence 'low' when the site doesn't state
+ * them plainly — low-confidence facts never produce warnings.
+ */
+export async function extractSiteFacts(geminiKey: string, corpus: string): Promise<SiteFacts | null> {
+  try {
+    const text = await geminiGenerate(
+      geminiKey,
+      [
+        {
+          text: `From this healthcare-practice website text, extract ONLY facts the site states explicitly.
+Return STRICT JSON:
+{"hoursText": "weekly opening hours as one line per day-or-range, e.g. \\"Mon-Fri: 8:00 AM - 6:00 PM\\" (null if the site doesn't state hours)",
+ "phones": ["every phone number printed on the site, as printed"],
+ "streetAddress": "street address as printed (null if not stated)",
+ "confidence": "high if hours/phone/address are stated plainly on the site; low if you had to infer anything"}
+Never invent or infer values — a missing fact is null, not a guess.
+
+WEBSITE TEXT:
+${corpus.slice(0, 24_000)}`,
+        },
+      ],
+      'onboarding.site_facts',
+    )
+    const parsed = parseFirstJson<Partial<SiteFacts>>(text)
+    return {
+      hoursText: typeof parsed.hoursText === 'string' && parsed.hoursText.trim() ? parsed.hoursText.trim() : null,
+      phones: Array.isArray(parsed.phones) ? parsed.phones.filter((p): p is string => typeof p === 'string').slice(0, 5) : [],
+      streetAddress:
+        typeof parsed.streetAddress === 'string' && parsed.streetAddress.trim() ? parsed.streetAddress.trim() : null,
+      confidence: parsed.confidence === 'high' ? 'high' : 'low',
+    }
+  } catch (err) {
+    logger.warn({ err }, '[onboarding/site] site-facts extraction failed')
     return null
   }
 }

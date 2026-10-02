@@ -811,10 +811,43 @@ export async function commitPms(ctx: StepContext, answer: unknown): Promise<stri
   return null
 }
 
-/** gbp: capture the Google Business Profile / Maps link; resolve place + probe (best-effort). */
+/**
+ * gbp: capture the Google Business Profile / Maps link; resolve place + probe
+ * (best-effort). Two-phase (places-trust plan Item 1): a LINK that resolves
+ * to a listing whose name doesn't match the brand re-prompts for an explicit
+ * "yes, that's us" — hours seeding / review ingest / trigger-link pointing
+ * are deferred until the listing is trusted.
+ */
 export async function commitGbp(ctx: StepContext, answer: unknown): Promise<string | null> {
   const a = (answer ?? {}) as { text?: string }
   const raw = a.text?.trim() ?? ''
+
+  // Phase 2: a mismatched link is awaiting confirmation.
+  const pendingName = ctx.stepData.pendingListingName as string | undefined
+  const pendingPlaceId = ctx.stepData.pendingListingPlaceId as string | undefined
+  if (pendingName && pendingPlaceId) {
+    if (/^(yes|y|yep|yeah|confirm|that'?s us|thats us)$/i.test(raw)) {
+      delete ctx.stepData.pendingListingName
+      delete ctx.stepData.pendingListingPlaceId
+      await brandUpsert(ctx.userId, { googleListingConfirmedAt: new Date() })
+      await finishProbeSideEffects(ctx, pendingPlaceId)
+      return null
+    }
+    delete ctx.stepData.pendingListingName
+    delete ctx.stepData.pendingListingPlaceId
+    if (/^(skip|none|no)$/i.test(raw)) {
+      // Not their listing and no replacement: drop the bad match entirely
+      // (an untrusted stored ID would just keep the guard warning forever)
+      // and fall back to the name+address search, whose own mismatches are
+      // discarded silently rather than re-prompted.
+      await brandUpsert(ctx.userId, { googlePlaceId: null, googlePlaceIdSource: null, googleListingConfirmedAt: null })
+      ctx.stepData.gbpSkipped = true
+      await probePlaceAndStore(ctx, null)
+      return null
+    }
+    // Anything else is treated as a fresh link attempt — fall through.
+  }
+
   if (!raw) return 'Paste your Google listing link, or type "skip" if you don\'t have one'
   if (/^(skip|none|no)$/i.test(raw)) {
     ctx.stepData.gbpSkipped = true
@@ -832,50 +865,151 @@ export async function commitGbp(ctx: StepContext, answer: unknown): Promise<stri
     return 'That doesn\'t look like a link — use the Share button on your Google Business Profile, or type "skip"'
   }
   await brandUpsert(ctx.userId, { googleBusinessProfileUrl: url })
-  await probePlaceAndStore(ctx, url)
+  const mismatch = await probePlaceAndStore(ctx, url)
+  if (mismatch) {
+    ctx.stepData.pendingListingName = mismatch.listingName
+    ctx.stepData.pendingListingPlaceId = mismatch.placeId
+    return `That link points to a Google listing called "${mismatch.listingName}", but your practice is "${mismatch.brandName}". If that listing is yours, reply "yes" — otherwise paste the correct link (Share button on your Google Business Profile), or type "skip".`
+  }
   return null
 }
 
-/** Best-effort place resolution + review/hours probe — NEVER blocks onboarding. */
-async function probePlaceAndStore(ctx: StepContext, url: string | null): Promise<void> {
+/**
+ * Best-effort place resolution + review/hours probe — NEVER blocks
+ * onboarding. Returns mismatch info (instead of running side effects) when a
+ * LINK-derived listing fails the name check and needs clinic confirmation;
+ * search-derived mismatches are dropped silently (plan: only the clinic's
+ * own link earns a question).
+ */
+async function probePlaceAndStore(
+  ctx: StepContext,
+  url: string | null,
+): Promise<{ listingName: string; brandName: string; placeId: string } | null> {
   try {
     const { placesConfigured, resolvePlaceId, probePlace } = await import('../lib/google/places')
-    if (placesConfigured()) {
-      const brand = await prisma.brandSettings.findUnique({
-        where: { userId: ctx.userId },
-        select: { organizationName: true, geolocation: true, openingHours: true },
+    const { listingMatchesBrand } = await import('../lib/google/listing-trust')
+    if (!placesConfigured()) return null
+    const brand = await prisma.brandSettings.findUnique({
+      where: { userId: ctx.userId },
+      select: { organizationName: true, geolocation: true, openingHours: true },
+    })
+    const resolved = await resolvePlaceId(url, [brand?.organizationName, brand?.geolocation].filter(Boolean).join(' '))
+    if (!resolved) return null
+    const probe = await probePlace(resolved.placeId)
+    const matches = listingMatchesBrand(probe?.name, brand?.organizationName)
+    if (!matches && resolved.source === 'link' && probe?.name) {
+      // Store the reference (so Settings shows the pending state too) but
+      // run NO side effects until the clinic confirms.
+      await brandUpsert(ctx.userId, {
+        googlePlaceId: resolved.placeId,
+        googlePlaceIdSource: resolved.source,
+        googleListingConfirmedAt: null,
       })
-      const placeId = await resolvePlaceId(url, [brand?.organizationName, brand?.geolocation].filter(Boolean).join(' '))
-      if (placeId) {
-        await brandUpsert(ctx.userId, { googlePlaceId: placeId })
-        const probe = await probePlace(placeId)
-        if (probe) {
-          if (probe.openingHours && !brand?.openingHours?.trim()) {
-            await brandUpsert(ctx.userId, { openingHours: probe.openingHours })
-          }
-          const { ingestReviews } = await import('../lib/google/review-ingest')
-          await ingestReviews(ctx.accountId, 'places-probe', probe.reviews)
-        }
-        // Option C provisioning: point the snapshot's `omniply-review` trigger
-        // link at the clinic's Google review deep link (best-effort).
-        try {
-          const { getGhlCredentials } = await import('../lib/ghl/settings')
-          const creds = await getGhlCredentials(ctx.userId)
-          if (creds) {
-            const { listTriggerLinks, updateTriggerLink } = await import('../lib/ghl/client')
-            const { reviewDeepLink } = await import('../lib/google/places')
-            const link = (await listTriggerLinks(creds.apiKey, creds.locationId)).find(
-              (l) => l.name?.toLowerCase() === 'omniply-review',
-            )
-            if (link) await updateTriggerLink(creds.apiKey, link.id, link.name, reviewDeepLink(placeId))
-          }
-        } catch (err) {
-          logger.warn({ err }, '[onboarding] trigger-link provisioning failed (non-fatal)')
-        }
+      return { listingName: probe.name, brandName: brand?.organizationName ?? 'your practice', placeId: resolved.placeId }
+    }
+    if (!matches) {
+      logger.warn(
+        { userId: ctx.userId, placeId: resolved.placeId, listing: probe?.name, brand: brand?.organizationName },
+        '[onboarding] search-resolved listing name mismatch — dropped',
+      )
+      return null
+    }
+    await brandUpsert(ctx.userId, {
+      googlePlaceId: resolved.placeId,
+      googlePlaceIdSource: resolved.source,
+      googleListingConfirmedAt: null,
+    })
+    await finishProbeSideEffects(ctx, resolved.placeId)
+    return null
+  } catch (err) {
+    logger.warn({ err }, '[onboarding] places probe failed (non-fatal)')
+    return null
+  }
+}
+
+/**
+ * The trusted-listing side effects: seed hours, ingest reviews, point the
+ * review trigger link, stash the listing name for the kb_review card, and
+ * run the site-vs-Google cross-check. Only ever called for a listing that
+ * passed the name check or was explicitly confirmed.
+ */
+async function finishProbeSideEffects(ctx: StepContext, placeId: string): Promise<void> {
+  try {
+    const { probePlace } = await import('../lib/google/places')
+    const brand = await prisma.brandSettings.findUnique({
+      where: { userId: ctx.userId },
+      select: { openingHours: true },
+    })
+    const probe = await probePlace(placeId) // 24h-cached upstream of onboarding timing
+    if (probe) {
+      if (probe.name) ctx.stepData.googleListingName = probe.name
+      if (probe.openingHours && !brand?.openingHours?.trim()) {
+        await brandUpsert(ctx.userId, { openingHours: probe.openingHours })
+      }
+      const { ingestReviews } = await import('../lib/google/review-ingest')
+      await ingestReviews(ctx.accountId, 'places-probe', probe.reviews, placeId)
+      await runSiteFactsCrossCheck(ctx, probe)
+    }
+    // Option C provisioning: point the snapshot's `omniply-review` trigger
+    // link at the clinic's Google review deep link (best-effort).
+    try {
+      const { getGhlCredentials } = await import('../lib/ghl/settings')
+      const creds = await getGhlCredentials(ctx.userId)
+      if (creds) {
+        const { listTriggerLinks, updateTriggerLink } = await import('../lib/ghl/client')
+        const { reviewDeepLink } = await import('../lib/google/places')
+        const link = (await listTriggerLinks(creds.apiKey, creds.locationId)).find(
+          (l) => l.name?.toLowerCase() === 'omniply-review',
+        )
+        if (link) await updateTriggerLink(creds.apiKey, link.id, link.name, reviewDeepLink(placeId))
+      }
+    } catch (err) {
+      logger.warn({ err }, '[onboarding] trigger-link provisioning failed (non-fatal)')
+    }
+  } catch (err) {
+    logger.warn({ err }, '[onboarding] probe side effects failed (non-fatal)')
+  }
+}
+
+/**
+ * Site-vs-Google cross-check (places-trust plan Item 2): extract the hours /
+ * phone / address the clinic's own website states and diff them against the
+ * trusted listing. Warn-only — discrepancies land on the kb_review card, in
+ * Settings, and as an admin ErrorLog row. Best-effort, never throws out.
+ */
+async function runSiteFactsCrossCheck(ctx: StepContext, probe: import('../lib/google/places').PlaceProbe): Promise<void> {
+  try {
+    const corpus = ctx.stepData.corpus
+    if (typeof corpus !== 'string' || corpus.length < 200) return
+    const { getSystemApiKey } = await import('../lib/system-keys')
+    const geminiKey = await getSystemApiKey('gemini')
+    if (!geminiKey) return
+    const { extractSiteFacts } = await import('./site-analysis')
+    const { compareSiteToGoogle } = await import('../lib/hours-compare')
+    const facts = await extractSiteFacts(geminiKey, corpus)
+    if (!facts) return
+    ctx.stepData.siteFacts = facts
+    const discrepancies = compareSiteToGoogle(facts, probe)
+    ctx.stepData.siteDiscrepancies = discrepancies
+    if (discrepancies.length) {
+      logger.warn({ userId: ctx.userId, discrepancies }, '[onboarding] site-vs-Google discrepancies found')
+      const existing = await prisma.errorLog.findFirst({
+        where: { userId: ctx.userId, errorType: 'places_site_mismatch', resolved: false },
+        select: { id: true },
+      })
+      if (!existing) {
+        await prisma.errorLog.create({
+          data: {
+            userId: ctx.userId,
+            errorType: 'places_site_mismatch',
+            errorMessage: `Website and Google listing disagree: ${discrepancies.map((d) => d.field).join(', ')}`,
+            context: { accountId: ctx.accountId, discrepancies: JSON.parse(JSON.stringify(discrepancies)) },
+          },
+        })
       }
     }
   } catch (err) {
-    logger.warn({ err }, '[onboarding] places probe failed (non-fatal)')
+    logger.warn({ err }, '[onboarding] site-facts cross-check failed (non-fatal)')
   }
 }
 

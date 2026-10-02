@@ -10,6 +10,8 @@
 import { prisma, brandSettingsForUser } from '@omniply/shared'
 import { logger } from '../lib/logger'
 import { probePlace, placesConfigured, resolvePlaceId, type PlaceProbe, type PlacePeriod } from '../lib/google/places'
+import { listingTrusted } from '../lib/google/listing-trust'
+import { parseWeekdayText, offsetForZone } from '../lib/hours-parse'
 import { computeOpenStatus, type OpenStatus } from './hours'
 
 const BUNDLE_TTL_MS = 15 * 60 * 1000
@@ -43,13 +45,16 @@ export interface AgentContext {
   theme: AgentTheme
   periods?: PlacePeriod[]
   utcOffsetMinutes?: number
+  /** Clinic-confirmed IANA zone (settings.socialTimezone) — beats utcOffsetMinutes, DST-correct at call time. */
+  timezone?: string
   weekdayText: string | null
 }
 
 const bundleCache = new Map<string, { ctx: AgentContext; expires: number }>()
 const placesCache = new Map<string, { probe: PlaceProbe | null; expires: number }>()
 
-async function placesSnapshot(placeId: string): Promise<PlaceProbe | null> {
+/** 24h-cached Places probe (also used by the /agent/kb listing-status route). */
+export async function placesSnapshot(placeId: string): Promise<PlaceProbe | null> {
   const hit = placesCache.get(placeId)
   if (hit && hit.expires > Date.now()) return hit.probe
   const probe = placesConfigured() ? await probePlace(placeId) : null
@@ -76,13 +81,14 @@ export async function agentContextForAccount(accountId: string): Promise<AgentCo
     (await prisma.user.findFirst({ where: { accountId }, select: { id: true } }))?.id
   if (!ownerUserId) return null
 
-  const [brand, session, docs] = await Promise.all([
+  const [brand, session, docs, settings] = await Promise.all([
     brandSettingsForUser(ownerUserId),
     prisma.onboardingSession.findUnique({ where: { accountId }, select: { stepData: true } }),
     prisma.leadGenDocument.findMany({
       where: { accountId, status: 'live', driveFileId: { not: null } },
       select: { slug: true, title: true, driveLink: true },
     }),
+    prisma.settings.findUnique({ where: { userId: ownerUserId }, select: { socialTimezone: true } }),
   ])
   if (!brand) return null
 
@@ -96,24 +102,39 @@ export async function agentContextForAccount(accountId: string): Promise<AgentCo
       .filter(Boolean)
       .join(', ')
     if (address) {
-      placeId = await resolvePlaceId(brand.googleBusinessProfileUrl ?? null, `${brand.organizationName} ${address}`)
-      if (placeId) {
-        await prisma.brandSettings.update({ where: { userId: brand.userId }, data: { googlePlaceId: placeId } })
-        logger.info({ accountId, placeId }, '[places] lazily resolved place id for agent context — verify listing match during pilot')
+      const resolved = await resolvePlaceId(brand.googleBusinessProfileUrl ?? null, `${brand.organizationName} ${address}`)
+      if (resolved) {
+        placeId = resolved.placeId
+        await prisma.brandSettings.update({
+          where: { userId: brand.userId },
+          data: { googlePlaceId: resolved.placeId, googlePlaceIdSource: resolved.source, googleListingConfirmedAt: null },
+        })
+        logger.info({ accountId, placeId, source: resolved.source }, '[places] lazily resolved place id for agent context')
       }
     }
   }
   const probeRaw = placeId ? await placesSnapshot(placeId) : null
-  // Listing-match guard (the "verify listing match" the lazy resolution
-  // comment always demanded): a Find-Place match whose NAME doesn't
-  // resemble the brand is a different business — discard the whole probe
-  // (rating, periods, everything) rather than leak its facts into the KB.
-  const probe = probeRaw && listingMatchesBrand(probeRaw.name, brand.organizationName) ? probeRaw : null
+  // Listing trust gate (places-trust plan Item 1): a listing whose NAME
+  // doesn't resemble the brand — and that the clinic hasn't explicitly
+  // confirmed — is a different business. Discard the whole probe (rating,
+  // periods, everything) rather than leak its facts into the KB.
+  const probe =
+    probeRaw &&
+    listingTrusted({
+      listingName: probeRaw.name,
+      brandName: brand.organizationName,
+      confirmedAt: brand.googleListingConfirmedAt,
+    })
+      ? probeRaw
+      : null
   if (probeRaw && !probe) {
     logger.warn(
       { accountId, placeId, listing: probeRaw.name, brand: brand.organizationName },
       '[agent] places listing name mismatch — probe ignored',
     )
+    // Item 3: visible + resolvable in /admin/errors. Deduped per unresolved
+    // placeId — the guard fires on every 15-min bundle rebuild.
+    void recordListingMismatch(brand.userId, accountId, placeId!, probeRaw.name ?? '?', brand.organizationName ?? '?')
   }
   // USER-SET data always beats the probe: the Places snapshot can belong to
   // a mis-resolved listing (name+address Find Place matched a different
@@ -127,6 +148,15 @@ export async function agentContextForAccount(accountId: string): Promise<AgentCo
     .filter(Boolean)
     .join(', ')
   const address = brandAddress || probe?.formattedAddress || null
+
+  // Item 4: clinic-stated hours → open-now. Zone from the onboarding-confirmed
+  // socialTimezone (validated — free-text typos fall through), else a trusted
+  // probe's fixed offset.
+  const statedHours = brand.openingHours ? parseWeekdayText(brand.openingHours) : null
+  const timezone =
+    statedHours && settings?.socialTimezone && offsetForZone(settings.socialTimezone) !== null
+      ? settings.socialTimezone
+      : undefined
 
   const corpus =
     typeof (session?.stepData as Record<string, unknown> | null)?.corpus === 'string'
@@ -180,10 +210,15 @@ export async function agentContextForAccount(accountId: string): Promise<AgentCo
     // probe's open-now computation too — a mis-resolved listing's periods
     // must not produce "we're open right now" against the stated hours
     // (the lazy place resolution can re-match a wrong business whenever
-    // the stored name is weak, seen twice on the demo account).
-    periods: brand.openingHours ? undefined : probe?.periods,
-    utcOffsetMinutes: brand.openingHours ? undefined : probe?.utcOffsetMinutes,
-    weekdayText,
+    // the stored name is weak, seen twice on the demo account). Stated
+    // hours drive open-now through the strict parser instead (Item 4);
+    // an unparseable statement degrades to known:false, never a guess.
+    periods: brand.openingHours ? statedHours?.periods : probe?.periods,
+    utcOffsetMinutes: brand.openingHours ? (timezone ? undefined : probe?.utcOffsetMinutes) : probe?.utcOffsetMinutes,
+    timezone,
+    // computeOpenStatus's today-line lookup needs Monday-first 7 lines; the
+    // KB keeps the clinic's own wording above.
+    weekdayText: statedHours?.canonicalWeekdayText ?? weekdayText,
   }
 
   bundleCache.set(accountId, { ctx, expires: Date.now() + BUNDLE_TTL_MS })
@@ -195,33 +230,38 @@ export async function agentContextForAccount(accountId: string): Promise<AgentCo
   return ctx
 }
 
-/**
- * Does the resolved Places listing plausibly belong to this brand?
- * Compares distinctive name tokens (generic industry words dropped). When
- * either side has no distinctive tokens we can't judge — keep the probe
- * (legacy behavior) unless normalized containment also fails both ways.
- */
-const GENERIC_NAME_TOKENS = new Set([
-  'the', 'and', 'of', 'at', 'dr', 'llc', 'inc', 'pllc', 'pc',
-  'chiropractic', 'chiropractor', 'clinic', 'center', 'centre', 'practice',
-  'family', 'care', 'health', 'wellness', 'spine', 'medical', 'office', 'group',
-])
-export function listingMatchesBrand(listingName?: string | null, brandName?: string | null): boolean {
-  if (!listingName?.trim() || !brandName?.trim()) return true
-  const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
-  const nl = norm(listingName)
-  const nb = norm(brandName)
-  if (nl === nb || nl.includes(nb) || nb.includes(nl)) return true
-  const distinct = (s: string) => s.split(' ').filter((w) => w.length >= 3 && !GENERIC_NAME_TOKENS.has(w))
-  const a = distinct(nl)
-  const b = new Set(distinct(nb))
-  if (!a.length || !b.size) return true
-  return a.some((w) => b.has(w))
+/** Deduped ErrorLog write for the listing-mismatch guard (plan Item 3). */
+async function recordListingMismatch(
+  userId: string,
+  accountId: string,
+  placeId: string,
+  listing: string,
+  brandName: string,
+): Promise<void> {
+  try {
+    const open = await prisma.errorLog.findMany({
+      where: { userId, errorType: 'places_listing_mismatch', resolved: false },
+      select: { context: true },
+      take: 10,
+    })
+    if (open.some((row) => (row.context as { placeId?: string } | null)?.placeId === placeId)) return
+    await prisma.errorLog.create({
+      data: {
+        userId,
+        errorType: 'places_listing_mismatch',
+        errorMessage: `Google listing "${listing}" doesn't match brand "${brandName}" — probe ignored. Fix: paste the correct Maps link in Settings (or confirm the listing there).`,
+        context: { accountId, placeId, listing, brand: brandName },
+      },
+    })
+  } catch (err) {
+    logger.warn({ err, accountId }, '[agent] failed to record listing mismatch')
+  }
 }
 
 /** Per-turn open-now verdict (server-computed fact the model just phrases). */
 export function openStatusFor(ctx: AgentContext, now: Date = new Date()): OpenStatus {
-  return computeOpenStatus(ctx.periods, ctx.utcOffsetMinutes, ctx.weekdayText, now)
+  const offset = ctx.timezone ? offsetForZone(ctx.timezone, now) ?? ctx.utcOffsetMinutes : ctx.utcOffsetMinutes
+  return computeOpenStatus(ctx.periods, offset, ctx.weekdayText, now)
 }
 
 /** Test/ops hook. */

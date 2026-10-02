@@ -18,8 +18,18 @@ export interface IncomingReview {
   relativeTime?: string | null
 }
 
-/** Insert new reviews for an account; silently skips known fingerprints. Returns inserted count. */
-export async function ingestReviews(accountId: string, source: string, reviews: IncomingReview[]): Promise<number> {
+/**
+ * Insert new reviews for an account; silently skips known fingerprints.
+ * Returns inserted count. `sourcePlaceId` (Places probe/poll paths) records
+ * which listing the review came from, so a mis-resolved listing's rows can
+ * be purged by place (places-trust plan).
+ */
+export async function ingestReviews(
+  accountId: string,
+  source: string,
+  reviews: IncomingReview[],
+  sourcePlaceId?: string,
+): Promise<number> {
   let inserted = 0
   for (const r of reviews) {
     const text = r.text?.trim()
@@ -33,6 +43,7 @@ export async function ingestReviews(accountId: string, source: string, reviews: 
           reviewText: text,
           starRating: r.rating ?? undefined,
           relativeDate: r.relativeTime ?? undefined,
+          sourcePlaceId: sourcePlaceId ?? undefined,
         },
       })
       inserted++
