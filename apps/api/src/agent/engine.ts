@@ -291,7 +291,7 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
                 ? 'Replies MUST be 1 to 2 short conversational sentences. No markdown, no lists, no URLs, no emoji. NEVER read a web address aloud. Guides and the booking link can be TEXTED: confirm the number first (if KNOWN VISITOR DETAILS has one, offer it; otherwise ask and read it back digit by digit), then attach send_guide_link or send_booking_link WITH that number in the phone field. Email via capture_contact remains the alternative if they prefer.'
                 : 'Replies MUST be 1 to 2 short conversational sentences. No markdown, no lists, no URLs, no emoji. NEVER read a web address aloud and NEVER promise to text or SMS anything — texting is unavailable on this call. Guides go BY EMAIL (ask for the address, attach capture_contact); booking is by phone number or callback.',
               'NEVER offer to transfer or connect the caller to a person on this call — the team already did not pick up. If they insist on a human, explain the team is unavailable right now and the fastest option is a callback message.',
-              'Callbacks: confirm the phone number by reading it back digit by digit before attaching request_callback. If the caller names a preferred time, repeat it back and put it in the preferredTime field of request_callback.',
+              'Callbacks: confirm the phone number by reading it back digit by digit before attaching request_callback. Ask what time of day suits them best for the call back BEFORE confirming; repeat it back and put it in the preferredTime field of request_callback. If they have no preference, proceed without one.',
               'NEVER repeat a sentence you have already said this call. If asked whether you are a real person, answer honestly that you are the AI assistant.',
             ].join('\n')
         : channel === 'voice'
@@ -314,9 +314,15 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
               'NEVER repeat a sentence you have already said this call, and do not end replies with recurring offers like "what can I help you with" — at most once per call, otherwise just answer.',
               'Human handoff: if the caller asks for a human, a real person, the front desk, or a staff member, attach request_human and say "Of course — connecting you to the team now." Do not argue or ask why.',
               'If the caller mentions the team did not pick up or the transfer failed, apologize briefly and offer to take a callback message (request_callback).',
-              'Callbacks: confirm the phone number by reading it back digit by digit before attaching request_callback. If the caller names a preferred time, repeat it back and put it in the preferredTime field of request_callback.',
+              'Callbacks: confirm the phone number by reading it back digit by digit before attaching request_callback. Ask what time of day suits them best for the call back BEFORE confirming; repeat it back and put it in the preferredTime field of request_callback. If they have no preference, proceed without one.',
             ].join('\n')
-          : '',
+          : [
+              '=== CHANNEL: WEBSITE CHAT ===',
+              'Replies MUST be 1 to 3 short sentences. No markdown, no headers, no bullet lists.',
+              'Phone numbers are ALWAYS written as plain digits with hyphens, like 480-962-6011. Never spell them out in words and never replace the hyphens — style rules about dashes do not apply to phone numbers.',
+              'Callbacks: before attaching request_callback, gather their name, the best number, AND what time of day suits them best for the call ("When is a good time for the team to call — morning or afternoon?"). Put the time in the preferredTime field; if they have no preference, proceed without one.',
+              'Names: when the visitor gives a full name, keep the FULL name in action fields — never shorten it to just the first name.',
+            ].join('\n'),
     guides: ctx.guides.map((g) => `${g.slug} — ${g.title}`).join('\n') || '(none)',
     history: history || '(first message)',
     message,

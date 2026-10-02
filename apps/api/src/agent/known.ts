@@ -27,6 +27,19 @@ export function primaryEmailOf(k: KnownDetails): string | null {
   return k.preferredEmail ?? k.leadEmail
 }
 
+/**
+ * GHL name fields from a possibly-full name ("Jack El Vecino" was landing
+ * entirely in firstName, 2026-09-28): first token → firstName, the rest →
+ * lastName (multi-word surnames stay intact).
+ */
+export function splitFullName(name: string): { firstName?: string; lastName?: string } {
+  const trimmed = name.trim()
+  if (!trimmed) return {}
+  const parts = trimmed.split(/\s+/)
+  if (parts.length === 1) return { firstName: trimmed }
+  return { firstName: parts[0], lastName: parts.slice(1).join(' ') }
+}
+
 export async function knownDetailsFor(conversationId: string): Promise<KnownDetails> {
   const rows = await prisma.agentMessage.findMany({
     where: { conversationId, role: 'assistant' },

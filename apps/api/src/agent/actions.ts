@@ -39,7 +39,7 @@ import { recordLLMUsage } from '../lib/llm-usage'
 import { runNewsletterPrompt } from '../newsletter/llm'
 import type { AgentContext } from './context'
 import type { AgentAction } from './tools'
-import { knownDetailsFor, primaryEmailOf } from './known'
+import { knownDetailsFor, primaryEmailOf, splitFullName } from './known'
 import { normalizePhoneE164 } from './phone'
 
 /** The conversation's converged contact id, if one exists yet. */
@@ -165,14 +165,14 @@ async function executeCallback(
     // Converge: same contact the guide capture created — fields by id, tag-add.
     await updateGhlContact(creds.apiKey, existingId, {
       phone,
-      ...(action.name ? { firstName: action.name } : {}),
+      ...(action.name ? splitFullName(action.name) : {}),
       ...(customFieldsOrUndef ? { customFields: customFieldsOrUndef } : {}),
     })
     await addGhlContactTags(creds.apiKey, existingId, tags)
   } else {
     const result = await upsertGhlContact(creds.apiKey, creds.locationId, {
       phone,
-      firstName: action.name ?? known.name ?? undefined,
+      ...splitFullName(action.name ?? known.name ?? ''),
       // Carry the known email into creation so the contact starts complete.
       ...(primaryEmailOf(known) ? { email: primaryEmailOf(known)! } : {}),
       tags,
@@ -259,14 +259,14 @@ async function executeCapture(
     // the add_contact_email address always wins the primary slot).
     await updateGhlContact(creds.apiKey, existingId, {
       ...(known.preferredEmail ? {} : { email: action.email }),
-      ...(action.name ? { firstName: action.name } : {}),
+      ...(action.name ? splitFullName(action.name) : {}),
       ...(action.phone ? { phone: normalizePhoneE164(action.phone, ctx.countryCode) } : {}),
     })
     await addGhlContactTags(creds.apiKey, existingId, tags)
   } else {
     const result = await upsertGhlContact(creds.apiKey, creds.locationId, {
       email: action.email,
-      ...((action.name ?? known.name) ? { firstName: (action.name ?? known.name)! } : {}),
+      ...((action.name ?? known.name) ? splitFullName((action.name ?? known.name)!) : {}),
       ...(action.phone ?? known.phone
         ? { phone: normalizePhoneE164((action.phone ?? known.phone)!, ctx.countryCode) }
         : {}),
@@ -333,7 +333,7 @@ async function executeIntake(
   if (meta.ghlContactId) {
     if (action.name) {
       const creds = await getGhlCredentials(ctx.ownerUserId)
-      if (creds) await updateGhlContact(creds.apiKey, meta.ghlContactId, { firstName: action.name }).catch(() => {})
+      if (creds) await updateGhlContact(creds.apiKey, meta.ghlContactId, splitFullName(action.name)).catch(() => {})
     }
     return
   }
@@ -341,7 +341,7 @@ async function executeIntake(
   if (!creds) return
   const result = await upsertGhlContact(creds.apiKey, creds.locationId, {
     phone: normalizePhoneE164(action.phone, ctx.countryCode),
-    ...(action.name ? { firstName: action.name } : {}),
+    ...(action.name ? splitFullName(action.name) : {}),
     tags: ['chat-agent-lead'],
     source: 'chat-agent',
   })
@@ -417,7 +417,7 @@ async function executeVoiceSms(
     const known = await knownDetailsFor(conversationId)
     const result = await upsertGhlContact(creds.apiKey, creds.locationId, {
       phone,
-      ...(known.name ? { firstName: known.name } : {}),
+      ...(known.name ? splitFullName(known.name) : {}),
       tags: ['chat-agent-lead'],
       source: 'chat-agent',
     })

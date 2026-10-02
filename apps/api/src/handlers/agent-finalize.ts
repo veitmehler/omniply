@@ -3,7 +3,7 @@ import { prisma } from '@omniply/shared'
 import { logger } from '../lib/logger'
 import { getGhlCredentials } from '../lib/ghl/settings'
 import { createGhlContactNote, updateGhlContact } from '../lib/ghl/client'
-import { knownDetailsFor, primaryEmailOf } from '../agent/known'
+import { knownDetailsFor, primaryEmailOf, splitFullName } from '../agent/known'
 import { recordLLMUsage } from '../lib/llm-usage'
 import { runNewsletterPrompt } from '../newsletter/llm'
 
@@ -49,7 +49,7 @@ export async function agentFinalizeHandler(_jobs: PgBoss.Job<object>[]): Promise
           if (email || known.name || known.phone) {
             await updateGhlContact(creds.apiKey, convo.ghlContactId, {
               ...(email ? { email } : {}),
-              ...(known.name ? { firstName: known.name } : {}),
+              ...(known.name ? splitFullName(known.name) : {}),
               ...(known.phone ? { phone: known.phone } : {}),
             }).catch((err) => logger.warn({ err, conversationId: convo.id }, '[agent-finalize] reconcile failed'))
           }

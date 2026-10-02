@@ -104,16 +104,18 @@ export async function agentContextForAccount(accountId: string): Promise<AgentCo
     }
   }
   const probe = placeId ? await placesSnapshot(placeId) : null
-  const weekdayText = probe?.openingHours ?? brand.openingHours ?? null
+  // USER-SET data always beats the probe: the Places snapshot can belong to
+  // a mis-resolved listing (name+address Find Place matched a different
+  // business on the demo account — agent quoted a restaurant's hours,
+  // 2026-09-28), and Settings/kb_review corrections must stick.
+  const weekdayText = brand.openingHours ?? probe?.openingHours ?? null
 
   const practiceName = brand.organizationName ?? 'the practice'
   const phone = brand.organizationPhone ?? probe?.formattedPhone ?? null
-  const address =
-    probe?.formattedAddress ??
-    [brand.addressLine1, brand.addressLocality, brand.addressRegion, brand.postalCode]
-      .filter(Boolean)
-      .join(', ') ??
-    null
+  const brandAddress = [brand.addressLine1, brand.addressLocality, brand.addressRegion, brand.postalCode]
+    .filter(Boolean)
+    .join(', ')
+  const address = brandAddress || probe?.formattedAddress || null
 
   const corpus =
     typeof (session?.stepData as Record<string, unknown> | null)?.corpus === 'string'
