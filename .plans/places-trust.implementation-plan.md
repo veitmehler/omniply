@@ -46,20 +46,70 @@ benefit automatically):
    rely on it; drop the rung if it proves flaky.
 5. **Name+address text search** — current fallback, last resort only.
 
-### Provenance + guard interaction
+### Provenance + listing trust state (user decision 2026-10-02: a
+### link-derived mismatch is NEVER silently trusted — it must be confirmed)
 
-- New nullable column `BrandSettings.googlePlaceIdSource` (`'link' |
-  'search'`) + migration. Written wherever `googlePlaceId` is written
-  (probePlaceAndStore, lazy path in context.ts, backfill script).
-- The 9ff3484 name-mismatch guard changes behavior by provenance:
-  - `source='search'` → mismatch **discards** the probe (current behavior).
-  - `source='link'` → mismatch **logs + keeps** the probe. The clinic's own
-    link wins even when the listing name differs (rebrands, "Dr Smith t/a
-    Valley Chiro" cases) — but the discrepancy still surfaces via Item 3.
+- New columns on BrandSettings + migration:
+  - `googlePlaceIdSource String?` (`'link' | 'search'`)
+  - `googleListingConfirmedAt DateTime?` — set only by an explicit clinic
+    confirmation ("yes, that listing is us").
+- **One trust rule everywhere:** the listing is *trusted* iff the probe
+  name matches the brand (the 9ff3484 guard) **or**
+  `googleListingConfirmedAt` is set. Untrusted → probe fully discarded
+  (agent context), hours never seeded, reviews never ingested, trigger
+  link never pointed, weekly harvest skipped.
+- Mismatch on a **link-derived** ID → state `pending confirmation`:
+  probe stays discarded (same as a search mismatch), and the clinic is
+  asked to confirm or fix the link (see "Confirmation surfaces" below).
+  Name matches (the overwhelmingly common case) → silent trust, no
+  question asked.
+- `googleListingConfirmedAt` resets to null whenever
+  `googleBusinessProfileUrl` or `googlePlaceId` changes.
 - **Re-resolution hook:** when `googleBusinessProfileUrl` changes through
-  the brand-settings route, null `googlePlaceId`/`googlePlaceIdSource` and
-  `clearAgentContextFor(accountId)` — pasting a corrected link is the
-  self-service fix for a bad match (today a changed link does nothing).
+  the brand-settings route, null `googlePlaceId`/`googlePlaceIdSource`/
+  `googleListingConfirmedAt` and `clearAgentContextFor(accountId)` —
+  pasting a corrected link is the self-service fix for a bad match
+  (today a changed link does nothing).
+
+### Confirmation surfaces (mismatch-pending only)
+
+1. **Onboarding, gbp step** — two-phase commit via a stepData flag:
+   when `probePlaceAndStore` resolves the pasted link to a listing whose
+   name mismatches, the step re-prompts in place: *"That link points to a
+   Google listing called '<X>', but your practice is '<Y>'. If that
+   listing is yours, reply **yes** — otherwise paste the correct link
+   (Share button on your Google Business Profile), or type skip."*
+   'yes' → `googleListingConfirmedAt` set, probe re-run (24h Places cache
+   makes this free) and hours seeding / review ingest / trigger-link
+   pointing execute now, not before. New link → ladder re-runs. The
+   kb_review card additionally shows a passive identity line whenever a
+   listing is attached ("Google listing: <name>") as a trust touch.
+2. **Settings · ChatKnowledgeSection** — when state is mismatch-pending
+   (covers the lazy path and post-onboarding link edits, where no chat is
+   open): amber panel *"Your Google link points to a listing called '<X>',
+   which doesn't match '<Y>'"* with two actions: **That's us** (sets
+   confirmedAt, busts agent cache) / **Update link** (edits
+   googleBusinessProfileUrl → re-resolution hook).
+3. **Admin** — the Item 3 ErrorLog row carries the trust state.
+
+### Review-ingest trust gating (leak found during this scoping)
+
+A mis-resolved listing doesn't just leak hours: `probePlaceAndStore`
+ingests its **reviews** into RawReview immediately
+([commits.ts:856](../apps/api/src/onboarding/commits.ts)), and the weekly
+harvest cron re-ingests for *every* brand with a `googlePlaceId`
+([google-reviews.ts:21](../apps/api/src/handlers/google-reviews.ts)) —
+feeding another business's patients into the client-story pipeline.
+
+- Both call sites gate on the trust rule above.
+- RawReview gains a nullable `sourcePlaceId` column (written by both
+  Places ingest paths; GHL-webhook rows stay null) so a wrong listing's
+  rows can be purged by place, not by guesswork. Migration bundled with
+  the BrandSettings one.
+- **Demo-account cleanup:** check RawReview for rows ingested from the two
+  known-wrong place IDs (restaurant + "Advantage ADHD") and purge; rows
+  predating the provenance column are matched by harvest-date correlation
+  and eyeballed before deletion.
 
 ### Files
 
@@ -220,16 +270,26 @@ Accepts, high-confidence only:
 - **Any line it can't parse → return `null` for the whole text.** Partial
   guesses are worse than `{known:false}`; the agent still has the raw text.
 
-**b) Timezone** — user hours carry no UTC offset. Resolution chain:
+**b) Timezone** — user hours carry no UTC offset. RESOLVED 2026-10-02:
+the clinic **already confirms their timezone during onboarding** — the GHL
+prefill card has an editable Timezone field
+([cards.tsx:28](../apps/web/src/app/embed/cards.tsx), prefilled from their
+GHL location, which provisioning also seeds directly,
+[auto-provision.ts:143](../apps/api/src/lib/ghl/auto-provision.ts)) — and
+confirming it writes `settings.socialTimezone`
+([commits.ts:81](../apps/api/src/onboarding/commits.ts)). The
+newsletter/promo timezone fields from the first draft are UI-only defaults
+and are NOT used. Chain:
 
-1. IANA zone from `brand.newsletterTimezone ?? brand.promoEmailTimezone`
-   (both exist on BrandSettings, defaulted `America/New_York` — but use
-   only when *explicitly set*, the default would lie for non-US clinics) →
-   offset computed at call time via `Intl.DateTimeFormat` (DST-correct,
-   better than any stored fixed offset).
-2. `probe.utcOffsetMinutes` — only when the probe survived the guard
-   (matched or link-trusted listing).
+1. `settings.socialTimezone` — clinic-confirmed IANA zone. Validate at use
+   (`Intl.DateTimeFormat` throws on garbage — the card field is free text,
+   a typo must fall through, not crash); offset computed at call time
+   (DST-correct, better than any stored fixed offset).
+2. `probe.utcOffsetMinutes` — only from a *trusted* listing (Item 1 rule).
 3. Neither → `{known:false}`, as today.
+
+Optional polish (separate, not required): make the prefill card's Timezone
+field a validated IANA picker instead of free text.
 
 **c) Wiring** — context.ts: when `brand.openingHours` is set,
 `periods = parseWeekdayText(brand.openingHours) ?? undefined` and attach
@@ -259,13 +319,22 @@ today's behavior by construction.
 Total: ~2.5–3 days of build across two deploys (1+3 together, then 4, then
 2). Backfill + demo-account re-resolve after the first deploy.
 
-## Decisions needing sign-off
+## Decisions (user, 2026-10-02)
 
-1. **Link-trusted mismatches keep the probe** (Item 1) — clinic's own link
-   beats the name guard; warning still raised. Confirm.
-2. **Timezone sourcing** (Item 4) — reuse newsletter/promo IANA zones when
-   explicitly set. Alternative: a dedicated `clinicTimezone` field asked at
-   onboarding (cleaner, +1 onboarding question + migration). Default scope
-   is reuse; say the word for the dedicated field.
-3. **Discrepancy panel is warn-only, never blocking** (Item 2) — the
-   existing hours-confirm gate remains the only hard gate. Confirm.
+1. **Link mismatches are NOT auto-trusted** — a link-derived listing whose
+   name mismatches requires explicit clinic confirmation; probe discarded
+   until then. Designed above (trust state + three surfaces).
+2. **Timezone** — resolved by investigation: `settings.socialTimezone` is
+   already clinic-confirmed at onboarding; use it (validated), no new
+   onboarding question needed.
+3. **Discrepancy warnings are warn-only, never blocking** — CONFIRMED; the
+   existing hours-confirm gate remains the only hard gate.
+
+## Remaining open choice
+
+- Onboarding confirmation placement: scoped as an inline two-phase gbp
+  step (ask while the link is in front of them) + passive identity line on
+  kb_review. Alternative was an active block on kb_review only — rejected
+  as default because hours seeding / review ingest would stay deferred for
+  the whole intervening flow and the fix (re-pasting the link) belongs at
+  the gbp step. Flag if the kb_review-only variant is preferred.
