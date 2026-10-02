@@ -1,7 +1,17 @@
 # Places Trust: Link-First Resolution, Site-vs-Google Cross-Check, Admin Surfacing, Stated-Hours Open-Now
 
-**Status: BUILT — all four items implemented + tested 2026-10-02 (same-day
-as scoping); post-deploy backfill + demo RawReview purge tracked below.**
+**Status: COMPLETE — all four items implemented, tested (+69 tests, 1028
+green), DEPLOYED TO PROD 2026-10-02 (0803c85 + ab91fcc). Backfill run on
+all 3 placeId-bearing brands: Coast Kawana link-resolved+matched; Azavea's
+wrong listing ("5830 E 2nd St") now untrusted/discarded (0 reviews had
+leaked there); Demo had harvested 44 reviews from ≥5 WRONG businesses incl.
+a Thai restaurant — all purged (0 were story-linked), and the demo's GBP
+link (real Simon practice short link maps.app.goo.gl/7ttZdNm1KBCR851x8,
+recorded here for restoration) + placeId cleared so no real listing can
+surface during demo filming. Follow-up ab91fcc: the Settings mismatch panel
+only shows for clinic-PROVIDED links — a mismatched search guess is never
+shown to the clinic (admin ErrorLog only), which also keeps the demo's
+Settings clean on camera.**
 
 **Originally: SCOPED — 2026-10-02. Four items, user-requested ("a must for good
 usability") after the demo account's place resolution mis-matched twice
