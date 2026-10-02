@@ -184,6 +184,81 @@ months so seasons align). Import script: scratchpad import-all-calendars.js
 match → family_care same hemisphere) so a FUTURE registry addition without
 calendars can't re-open the trap — post-launch acceptable now.
 
+## 4d. Video completion → release critical path (added 2026-10-03)
+
+The demo video's insert kit is COMPLETE (31 clips, VO 12:49, script v4.1 —
+see `.documentation/marketing/` + the demo-video-production memory). What
+remains is production + the release ripple, in order:
+
+### Voice-AI demo setup (gates the Scene 11 call)
+- [ ] Set demo brand data in Settings: organization name **"Demo Practice"**,
+  an obviously-bogus 555 phone, realistic opening hours (user decision
+  2026-10-03: demo-obvious identity; the probe-precedence fix means
+  Settings values now stick). NOTE: chat + voice share ONE knowledge
+  bundle — the Scene 10 chat demo will also say "Demo Practice"; film
+  both demos under this identity.
+- [ ] Provision via Settings → Voice Assistant → Step 2 (mode: direct
+  line films simplest; transfer number; "Set up voice assistant").
+  Entirely UI — FILM IT as future tutorial footage. First run is the
+  cleanest take; the phone number may lag ("still pending" state).
+- [ ] Dry-run the call script: intake name+number → hours question →
+  "can I talk to someone?" → let transfer ring out → message with the
+  best-time ask (deployed 2026-10-02) → front-desk notification arrives.
+- [ ] Film the real call (Scene 11). SMS is NOT needed for the demo —
+  the no-SMS voice path is designed in; A2P ID-verify stays a separate,
+  non-blocking item (§3).
+
+### Remaining filming + assets
+- [ ] Veit: coffee insert (Scene 1 pivot), AI-search screens (AI-Mode
+  tab-flip + assistant shortlist), pricing/checkout flash, welcome
+  email, Scenes 5–8 product footage (LinkedIn & Medium modal is
+  un-hidden since 362a14e), Scene 8b phone-newsletter check, Scene 9
+  live SPINE run + kit + physical QR scan, Scene 10 chat demo (4-line
+  script agreed; verify the site widget renders — it did NOT render
+  headless 2026-10-02).
+- [ ] Veit in Flow: unanswered-ring (R1/R2), ping map + 11pm shot if
+  still pending (prompts all in cold-open-prompt-pack.md).
+- [ ] Claude: lit-pair card (YOUR PHONE ✓) once the call is recorded.
+
+### Edit → release ripple
+- [ ] Assemble the edit; publish to /walkthrough.
+- [ ] **Minute-claim sweep** (old walkthrough doc's standing order):
+  replace every "12-minute walkthrough" with the real runtime — master
+  pitch §7, both sales pages, /walkthrough hero+metadata, X-Ray results
+  CTA, debrief PDF template + static print HTML (+TEMPLATE_VERSION
+  bump), nurture emails 5/6/9/10 + SMS 3, outreach doc; then one email
+  rebuild + single GHL import.
+- [ ] **AI-hook pass in the same sweep** (approved 2026-09-25, deferred):
+  X-Ray report §2 technology-force extension, nurture email 3 two-wave
+  teach + email 7 bullet, X-Ray results-page bridge line. Outreach stays
+  on the leak hook.
+- [ ] Scene 12 is UNGATED (option B — no page capture in the video),
+  but the VO says "Omniply is open now": release the video only when
+  the site gate flips (real LAUNCH_TS in its 3 places, 584e0c5).
+
+### GHL / snapshot hygiene (before first real client)
+- [ ] Master snapshot: decide + set callback-notification type (keep SMS
+  for clients — staff-contacts provisioning 9e7cf8c handles the
+  auto-contact artifact; demo switched to Email for clean filming).
+- [ ] Master snapshot: add `staff-internal` tag-exclusion filters to all
+  marketing/drip workflows (review requests, reactivation).
+- [ ] Sweep snapshot for leftover placeholder values (the 809-555-5555
+  class) + the payment-workflow checklist items still unset (see
+  ghl-setup-guides memory / guide doc).
+
+### Final verification
+- [ ] Full prod pilot: the 19-step onboarding chat walkthrough
+  (.documentation/onboarding-testing-guide.md) — the one remaining item
+  from the GHL onboarding plan.
+- [ ] Live SMS leg after A2P ID-verify (from home).
+- [ ] Re-run the calendar seasonal audit before any future calendar
+  import (.documentation/calendar-fix-2026-09-30/verify-lite.js).
+
+### Marketing ops with lead time (start in parallel, non-blocking)
+- [ ] Cold-outreach prereqs: buy cold domain, mailbox + SPF/DKIM/DMARC,
+  ~2-week warm-up (xray-outreach.md) — needed only if outreach starts
+  at launch.
+
 ## 5. Post-launch backlog (small items, no launch impact)
 
 - [x] **Writing-sample step buttons** — MOVED to §4b (pre-filming batch,
