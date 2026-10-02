@@ -149,6 +149,9 @@ export async function agentRoutes(app: FastifyInstance) {
     // Listing trust status (places-trust plan Item 1, Settings surface):
     // mismatch-pending means a resolved listing's name doesn't match the
     // brand and the clinic hasn't confirmed it — probe data stays discarded.
+    // The confirm/fix panel only makes sense against a link the clinic
+    // provided; a mismatched SEARCH guess is never surfaced to them (admin
+    // sees it via the places_listing_mismatch ErrorLog instead).
     let listing: { state: 'none' | 'ok' | 'mismatch_pending'; listingName?: string } = { state: 'none' }
     let trustedProbe: Awaited<ReturnType<typeof placesSnapshot>> = null
     if (brand.googlePlaceId) {
@@ -156,8 +159,12 @@ export async function agentRoutes(app: FastifyInstance) {
       if (probe?.name) {
         const trusted =
           Boolean(brand.googleListingConfirmedAt) || listingMatchesBrand(probe.name, brand.organizationName)
-        listing = { state: trusted ? 'ok' : 'mismatch_pending', listingName: probe.name }
-        if (trusted) trustedProbe = probe
+        if (trusted) {
+          listing = { state: 'ok', listingName: probe.name }
+          trustedProbe = probe
+        } else if (brand.googleBusinessProfileUrl?.trim()) {
+          listing = { state: 'mismatch_pending', listingName: probe.name }
+        }
       }
     }
 
