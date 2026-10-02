@@ -37,19 +37,18 @@ production (env backup: `/opt/socioply/.env.production.bak-20260731`).
   detail changes, delivery-promise-without-attached-action. Precedes any clinic
   widget install; the week of varied user testing + the new test-practice
   onboarding (good KB) feeds it.
-- [ ] **Confirm the Azavea account's social timezone** before Fri Aug 7 (controls the
-  9/12/15 post slots). Approve article + social preview before 9am local for clean
-  spacing — late approval bunches past slots to ~10 min out.
+- [x] **Confirm the Azavea account's social timezone** — DONE: cadence live since
+  Fri Aug 7 (first cold run), slots spacing clean; on-the-day approval remains the
+  standing practice.
 - [ ] **Verify the Azavea account→calendar link before every cadence milestone**
   (`Account.articleCalendarId` → cmsgxchgk); it was found silently NULLed on
   2026-08-06 — cadence no-ops without error when unlinked.
-- [ ] **Decide: ElevenLabs voice for Azavea?** Without it all video social slots render
-  as accent-tint carousels; with it, reels + hook videos unlock. Config-only.
-- [ ] **Metered-overage billing rail: decide WITH the voice agent build.** Leading:
-  GHL marketplace-app usage billing against the location wallet (verify
-  availability + rev share while building the app); fallback: Stripe metered items
-  on the GHL-created customer. Launch ships fair-use clause + existing
-  instrumentation only.
+- [x] **Decide: ElevenLabs voice for Azavea?** DECIDED (2026-08): no Azavea
+  voiceover — verbatim-KT music-video design shipped instead (v8 specimen approved).
+- [x] **Metered-overage pricing: DECIDED 2026-09-14** — 200 free voice min/mo +
+  $50 unlimited upsell; ElevenLabs always on the clinic's own key. Remaining
+  (POST-LAUNCH): build the metering + pick the rail (GHL wallet vs Stripe
+  metered). Launch ships fair-use clause + existing instrumentation only.
 - [ ] Compile the LinkedIn personal-profile backlog (long-form texts ready in DB);
   sweep decision on the old pre-Omniply azavea.ai drafts; publish post 1402 when
   article 1 should go live.
@@ -60,10 +59,14 @@ production (env backup: `/opt/socioply/.env.production.bak-20260731`).
   built + deployed but DISARMED. Arm at launch (see ghl-billing-lifecycle plan).
 - [ ] **Flip `SCHEMA_MARKUP_AUTO=1`** after the fresh walkthrough against a real
   WordPress site verifies the schema ladder (body-ladder + micro-plugin path).
-- [ ] **Verify GHL billing workflows fire on the first real subscription** — the
-  workflows exist but have never seen a live payment event end-to-end.
+- [x] **Verify GHL billing workflows fire on a real subscription** — VERIFIED:
+  the demo accounts were live PURCHASED accounts (live-purchase E2E Jul 25–28;
+  user confirmation 2026-10-03 — payment flow checked end-to-end).
 - [ ] **Eyeball the first automated cadence run's captions** (de-AI hook/caption pass
-  ran clean in E2E; confirm the first unattended production run too).
+  ran clean in E2E; confirm the first unattended production run too). NOTE: Azavea
+  cadence has run since Aug 7 with on-the-day approvals — arguably covered; also
+  re-check once after the SPINE caption-hook change (6bd2ba3 era) on a client-style
+  account.
 - [ ] **Add staging droplet IP to the `GOOGLE_MAPS_API_KEY` restriction** (key is
   currently prod-IP-only; Tier-2 review pulls fail from staging).
 - [ ] Onboarding runbook note: `brandSettings.industry` is REQUIRED for the
@@ -103,68 +106,70 @@ production (env backup: `/opt/socioply/.env.production.bak-20260731`).
 - [ ] Confirm monitoring green: BetterStack `https://svc.omniply.io/health/deep`,
   Sentry envs now correctly split prod/staging, alert email = protonmail.
 
-## 4b. Onboarding-polish batch — AFTER simonchiro E2E, BEFORE filming (added 2026-09-14)
+## 4b. ✅ RESOLVED 2026-09-15: onboarding-polish batch LIVE ON PROD
 
-One batch, one API+web deploy (needs a migration — never mid-onboarding/burst).
-User-committed 2026-09-14 ("it will make it much easier for clients to be happy"):
+ALL batches (4b / 4b-2 / 4b-3 / 4d embed shell) shipped to prod 2026-09-15;
+demo account reset clean afterwards; onboarding run #2 (2026-09-25) exercised
+the new UI (both new steps, voice input, generators attempt-1). Items kept
+below for the record:
 
-- [ ] **FIX (bug): onboarding session lost-update race.** Background jobs
+- [x] **FIX (bug): onboarding session lost-update race.** Background jobs
   (onboarding-synthesis, onboarding-crawl) and submitStep all write the WHOLE
   stepData JSON back after seconds of work — concurrent writers clobber each
   other's keys. Hit the live E2E: synthesis wiped q_proof + logoChosen +
   logoVariants + logo_confirm (restored by hand via jsonb_set). Fix: every
   writer merges ONLY its own keys atomically (jsonb || / jsonb_set), never a
   full-object write.
-- [ ] **Template reveal card: header font color swatch** (+ new
+- [x] **Template reveal card: header font color swatch** (+ new
   nlHeaderTextColor brand field; renderer defaults to today's white).
-- [ ] **Template reveal card: logo layout option** — a) replace header name
+- [x] **Template reveal card: logo layout option** — a) replace header name
   (today's behavior = default), b) beside name, c) above name. New
   nlHeaderLogoLayout field (default 'replace' → zero change for existing
   accounts), email-safe table markup in newsletter render.ts, both preview
   builders (server synthesis.ts + client cards.tsx mirror) kept in LOCKSTEP
   with the renderer + render tests. (Light/dark logo toggle already exists.)
-- [ ] **Button/header text color rule: prefer white on mid/dark brand colors**
+- [x] **Button/header text color rule: prefer white on mid/dark brand colors**
   (labelColorFor currently picks black on teal #3aa6b9 by WCAG math; user
   design rule = white). Align preview + commitTemplateReveal + renderer.
-- [ ] **Preview honesty**: onboarding preview used extracted headerText
+- [x] **Preview honesty**: onboarding preview used extracted headerText
   (black) while real sends hardcode white — unify (covered by the two items
   above; add a test asserting preview palette == renderer output).
-- [ ] **Writing-sample step buttons** (moved from §5): "I wrote this ✓" /
+- [x] **Writing-sample step buttons** (moved from §5): "I wrote this ✓" /
   "Paste my article instead" / "Skip" when a scraped candidate exists —
   film the walkthrough with the NEW UI.
-- [ ] **Restore q_proof transcript** for the demo account: re-transcribe the
+- [x] **Restore q_proof transcript** for the demo account: re-transcribe the
   surviving S3 audio (onboarding/cmtxbfoi5000fmi014yx125bt/voice/q_proof-*)
   back into stepData (audio itself is safe; only the session reference was
   clobbered).
-- [ ] After approve: set nlButtonTextColor='#ffffff' on the demo account
+- [x] After approve: set nlButtonTextColor='#ffffff' on the demo account
   (commitTemplateReveal recomputes it dark — patch until the rule ships).
-- [ ] **FIX (bug): readiness validator still requires the REMOVED elevenlabs
+- [x] **FIX (bug): readiness validator still requires the REMOVED elevenlabs
   step** (generation-readiness.ts: `stepData.elevenlabs !== undefined`) —
   every P3-era client fails the finale gate. Drop the check (voice is a
   post-onboarding dashboard decision now). Demo account worked around via
   stepData patch 2026-09-14.
-- [ ] **Offer cards readability** (Veit, mid-E2E): offer text panels are hard
+- [x] **Offer cards readability** (Veit, mid-E2E): offer text panels are hard
   to read and scroll internally — auto-grow the textareas (or high min-height)
   so full offer text shows without inner scrolling.
-- [ ] **Lead Magnets view: post-finale notification + live compile status**
+- [x] **Lead Magnets view: post-finale notification + live compile status**
   (Veit requirement, mid-E2E): (1) banner "Your first month's content is being
   generated — it arrives for review shortly" after onboarding completes;
   (2) spinner + polling while any doc status='compiling' (currently a stale
   "compiling" flag until manual refresh, no approve buttons visible).
-- [ ] **FIX: PDF back-page offer must be EVERGREEN, never seasonal**
+- [x] **FIX: PDF back-page offer must be EVERGREEN, never seasonal**
   (compile.ts:138 picks the FIRST enabled newsletter offer by createdAt —
   demo got "New Year Posture Check" in September; PDFs live for months).
   Use the neutral fallback or a dedicated evergreen readerOffer field;
   seasonal offers stay newsletter-only.
-- [ ] **BUG: GHL Business Profile phone/email never reach BrandSettings** —
+- [x] **BUG: GHL Business Profile phone/email never reach BrandSettings** —
   demo has organizationPhone=null, organizationEmail=null (only the address
   landed in geolocation). Consequence: PDF back page says "Call our Mesa
   office" with NO number (contact line drops empty fields), and the chat KB
   has no phone. Fix the prefill→brand mapping in onboarding; backfill the
   demo account; recompile its PDFs.
-- [ ] **PDF phone numbers become clickable tel: links** (mobile launch-a-call)
+- [x] **PDF phone numbers become clickable tel: links** (mobile launch-a-call)
   — back-page contact block + footer strip.
-- [ ] **Onboarding chat: wider layout + larger base font** (Veit, mid-E2E):
+- [x] **Onboarding chat: wider layout + larger base font** (Veit, mid-E2E):
   widen the chat column inside the embed page and bump the font size —
   "look much easier and less tedious". Mind the GHL iframe viewport: keep it
   responsive, cap with a max-width, test at common CRM sidebar widths.
@@ -209,15 +214,14 @@ remains is production + the release ripple, in order:
   non-blocking item (§3).
 
 ### Remaining filming + assets
-- [ ] Veit: coffee insert (Scene 1 pivot), AI-search screens (AI-Mode
-  tab-flip + assistant shortlist), pricing/checkout flash, welcome
-  email, Scenes 5–8 product footage (LinkedIn & Medium modal is
-  un-hidden since 362a14e), Scene 8b phone-newsletter check, Scene 9
-  live SPINE run + kit + physical QR scan, Scene 10 chat demo (4-line
-  script agreed; verify the site widget renders — it did NOT render
-  headless 2026-10-02).
-- [ ] Veit in Flow: unanswered-ring (R1/R2), ping map + 11pm shot if
-  still pending (prompts all in cold-open-prompt-pack.md).
+- [x] Captures DONE (user 2026-10-03: "the last 2 scenes missing are the
+  coffee scene and the voice AI call demo"): AI-search screens,
+  pricing/checkout, welcome email, Scenes 3–8 footage, Scene 9 kit,
+  Scene 10 chat demo (filmed — widget renders fine live), Flow takes.
+- [ ] Veit: **coffee insert** (Scene 1 pivot) — one of the two remaining.
+- [ ] Veit: **re-film the Scene 10 callback TAIL** — the filmed take has
+  the coarse morning-or-afternoon ask; concrete-time ask deployed
+  6bd2ba3 (2026-10-03). Only the callback exchange needs redoing.
 - [ ] Claude: lit-pair card (YOUR PHONE ✓) once the call is recorded.
 
 ### Edit → release ripple
@@ -243,8 +247,8 @@ remains is production + the release ripple, in order:
 - [ ] Master snapshot: add `staff-internal` tag-exclusion filters to all
   marketing/drip workflows (review requests, reactivation).
 - [ ] Sweep snapshot for leftover placeholder values (the 809-555-5555
-  class) + the payment-workflow checklist items still unset (see
-  ghl-setup-guides memory / guide doc).
+  class). Payment-workflow checklist: VERIFIED 2026-10-03 — demo
+  accounts were live purchased accounts, billing flow fired end-to-end.
 
 ### Final verification
 - [ ] Full prod pilot: the 19-step onboarding chat walkthrough
