@@ -188,3 +188,36 @@ content, phone UI, brand logos, music, dialogue`
 - the mood plays as depressed rather than tired-but-dutiful
 - hands deform while typing (frame the hands soft or partially off-frame)
 - it reads "office" instead of "home after hours" — the kitchen is the point
+
+---
+
+## The unanswered ring — "calls you can't pick up" (Scene 11 opener, ~4s used)
+
+Plays under "And for the calls you can't pick up, this:" — the problem
+instant before the voice-receptionist explanation. No dialogue.
+
+### Variant R1 — empty front desk at night (default)
+
+> Cinematic medium shot, a small chiropractic clinic reception at night,
+> lights off except one dim lamp, empty waiting chairs. A phone on the
+> front desk lights up and rings, its screen glowing in the dark. It
+> keeps ringing. Nobody comes. Slow, almost imperceptible push-in toward
+> the ringing phone. Realistic, moody, shallow depth of field, quiet room
+> tone with a soft phone ring, no music, no dialogue, no subtitles, no
+> captions, no on-screen text, no visible phone interface details.
+
+### Variant R2 — owner mid-treatment, can't answer
+
+> Cinematic shot in a treatment room: a chiropractor in dark scrubs works
+> with a patient on the table, fully focused, hands occupied. In the
+> blurred foreground a phone on the counter buzzes and lights up,
+> unanswered. The practitioner glances toward it for half a second and
+> returns to the patient. Realistic, warm clinical light, shallow depth
+> of field, soft buzz and quiet room tone, no music, no dialogue, no
+> subtitles, no captions, no on-screen text.
+
+Negative prompt: `subtitles, captions, on-screen text, phone UI, brand
+logos, music, dialogue, extra fingers, deformed hands`
+
+Reject a take if the ring reads as answered, the phone screen shows
+readable UI, or the mood plays as alarming instead of quietly regretful.
