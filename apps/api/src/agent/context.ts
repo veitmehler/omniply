@@ -103,7 +103,18 @@ export async function agentContextForAccount(accountId: string): Promise<AgentCo
       }
     }
   }
-  const probe = placeId ? await placesSnapshot(placeId) : null
+  const probeRaw = placeId ? await placesSnapshot(placeId) : null
+  // Listing-match guard (the "verify listing match" the lazy resolution
+  // comment always demanded): a Find-Place match whose NAME doesn't
+  // resemble the brand is a different business — discard the whole probe
+  // (rating, periods, everything) rather than leak its facts into the KB.
+  const probe = probeRaw && listingMatchesBrand(probeRaw.name, brand.organizationName) ? probeRaw : null
+  if (probeRaw && !probe) {
+    logger.warn(
+      { accountId, placeId, listing: probeRaw.name, brand: brand.organizationName },
+      '[agent] places listing name mismatch — probe ignored',
+    )
+  }
   // USER-SET data always beats the probe: the Places snapshot can belong to
   // a mis-resolved listing (name+address Find Place matched a different
   // business on the demo account — agent quoted a restaurant's hours,
@@ -165,8 +176,13 @@ export async function agentContextForAccount(accountId: string): Promise<AgentCo
       accent: brand.nlLinkColor ?? '#2a6f97',
       logoUrl: brand.nlLogoLightUrl ?? brand.nlLogoUrl ?? null,
     },
-    periods: probe?.periods,
-    utcOffsetMinutes: probe?.utcOffsetMinutes,
+    // Same precedence rule as weekdayText: user-stated hours disable the
+    // probe's open-now computation too — a mis-resolved listing's periods
+    // must not produce "we're open right now" against the stated hours
+    // (the lazy place resolution can re-match a wrong business whenever
+    // the stored name is weak, seen twice on the demo account).
+    periods: brand.openingHours ? undefined : probe?.periods,
+    utcOffsetMinutes: brand.openingHours ? undefined : probe?.utcOffsetMinutes,
     weekdayText,
   }
 
@@ -177,6 +193,30 @@ export async function agentContextForAccount(accountId: string): Promise<AgentCo
   }
   logger.info({ accountId, guides: ctx.guides.length, hasPlaces: Boolean(probe) }, '[agent] context assembled')
   return ctx
+}
+
+/**
+ * Does the resolved Places listing plausibly belong to this brand?
+ * Compares distinctive name tokens (generic industry words dropped). When
+ * either side has no distinctive tokens we can't judge — keep the probe
+ * (legacy behavior) unless normalized containment also fails both ways.
+ */
+const GENERIC_NAME_TOKENS = new Set([
+  'the', 'and', 'of', 'at', 'dr', 'llc', 'inc', 'pllc', 'pc',
+  'chiropractic', 'chiropractor', 'clinic', 'center', 'centre', 'practice',
+  'family', 'care', 'health', 'wellness', 'spine', 'medical', 'office', 'group',
+])
+export function listingMatchesBrand(listingName?: string | null, brandName?: string | null): boolean {
+  if (!listingName?.trim() || !brandName?.trim()) return true
+  const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
+  const nl = norm(listingName)
+  const nb = norm(brandName)
+  if (nl === nb || nl.includes(nb) || nb.includes(nl)) return true
+  const distinct = (s: string) => s.split(' ').filter((w) => w.length >= 3 && !GENERIC_NAME_TOKENS.has(w))
+  const a = distinct(nl)
+  const b = new Set(distinct(nb))
+  if (!a.length || !b.size) return true
+  return a.some((w) => b.has(w))
 }
 
 /** Per-turn open-now verdict (server-computed fact the model just phrases). */

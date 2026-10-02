@@ -196,7 +196,11 @@ see `.documentation/marketing/` + the demo-video-production memory). What
 remains is production + the release ripple, in order:
 
 ### Voice-AI demo setup (gates the Scene 11 call)
-- [ ] Set demo brand data in Settings: organization name **"Demo Practice"**,
+- [x] Set demo brand data (done 2026-10-03 via DB on Veit's request —
+  "Demo Practice", +1-555-555-0100, Mon–Fri 8–6 / Sat 9–1 / Sun closed;
+  plus two agent hardenings shipped alongside: probe periods gated behind
+  user hours, and a listing-name mismatch guard that discards a
+  mis-resolved Places probe entirely): organization name **"Demo Practice"**,
   an obviously-bogus 555 phone, realistic opening hours (user decision
   2026-10-03: demo-obvious identity; the probe-precedence fix means
   Settings values now stick). NOTE: chat + voice share ONE knowledge
