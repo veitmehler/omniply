@@ -530,6 +530,7 @@ export async function upsertGhlContact(
     tags: string[]
     source?: string
     firstName?: string
+    lastName?: string
     phone?: string
     customFields?: { id: string; value: string }[]
   },
@@ -543,6 +544,7 @@ export async function upsertGhlContact(
       tags: input.tags,
       ...(input.source ? { source: input.source } : {}),
       ...(input.firstName ? { firstName: input.firstName } : {}),
+      ...(input.lastName ? { lastName: input.lastName } : {}),
       ...(input.phone ? { phone: input.phone } : {}),
       ...(input.customFields?.length ? { customFields: input.customFields } : {}),
     },
@@ -550,17 +552,31 @@ export async function upsertGhlContact(
   return { contactId: data.contact?.id ?? null }
 }
 
+/** Location staff users (id, name, email, phone) — staff-contact provisioning. */
+export async function listGhlLocationUsers(
+  apiKey: string,
+  locationId: string,
+): Promise<{ id: string; firstName?: string; lastName?: string; email?: string; phone?: string }[]> {
+  const data = await ghlRequest<{ users?: { id: string; firstName?: string; lastName?: string; email?: string; phone?: string }[] }>(
+    apiKey,
+    `/users/?locationId=${encodeURIComponent(locationId)}`,
+    { method: 'GET' },
+  )
+  return data.users ?? []
+}
+
 /** Patch fields onto an existing contact (chat-agent convergence flow). */
 export async function updateGhlContact(
   apiKey: string,
   contactId: string,
-  fields: { email?: string; firstName?: string; phone?: string; customFields?: { id: string; value: string }[] },
+  fields: { email?: string; firstName?: string; lastName?: string; phone?: string; customFields?: { id: string; value: string }[] },
 ): Promise<void> {
   await ghlRequest<unknown>(apiKey, `/contacts/${contactId}`, {
     method: 'PUT',
     body: {
       ...(fields.email ? { email: fields.email } : {}),
       ...(fields.firstName ? { firstName: fields.firstName } : {}),
+      ...(fields.lastName ? { lastName: fields.lastName } : {}),
       ...(fields.phone ? { phone: fields.phone } : {}),
       ...(fields.customFields?.length ? { customFields: fields.customFields } : {}),
     },

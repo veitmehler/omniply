@@ -13,6 +13,7 @@ import { randomBytes } from 'node:crypto'
 import { prisma, encrypt } from '@omniply/shared'
 import { mintLocationToken } from './app-oauth'
 import { logger } from '../logger'
+import { ensureStaffContacts } from './staff-contacts'
 
 const GHL_BASE = 'https://services.leadconnectorhq.com'
 const VERSION = '2021-07-28'
@@ -153,6 +154,12 @@ export async function provisionLocation(
     omniply_review_token: `${base}/api/ghl/reviews/${reviewToken}`,
     omniply_dm_webhook: `${base}/api/agent/ghl-dm/${dmToken}`,
   })
+
+  // Staff phones get pre-named contacts so internal SMS notifications never
+  // spawn nameless auto-contacts (see staff-contacts.ts).
+  await ensureStaffContacts(minted.token, locationId).catch((err) =>
+    logger.warn({ err, locationId }, '[auto-provision] staff contacts failed — provisioning continues'),
+  )
 
   logger.info({ locationId, accountId: account.id, source, ownerEmail }, '[auto-provision] account provisioned')
   return account.id
