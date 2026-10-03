@@ -96,6 +96,16 @@ page.tsx`, shared pieces in `components/marketing/Marketing.tsx`.
    hero+metadata (absorbed checklist list).
 
 ## Part 3 · Funnel assets (absorbed deferred sweep, re-aimed)
+**✅ COPY BUILT + COMPILED 2026-10-03** — E3 rewritten as the two-wave teach
+(calls now / AI-search behind it), E7 gains the AI-assistant prognosis
+bullet, every walkthrough minute-claim removed (E5/E6/E7/E9/E11 + SMS 3 —
+the claims lived in 11, not 10), outreach doc call-sharpened (5 edits,
+leak strategy unchanged), results-page bridge line now carries the call
+count into the notify box, webhook payload gains missedCallsWeekly
+(rounded, for a future GHL custom field — not yet referenced in copy).
+Emails recompiled to out/ (11 + sms.txt).
+**REMAINING (user, in GHL): re-import emails 3/5/6/7/9/11 + swap the
+SMS 3 body — the single import that closes Parts 1–3.**
 
 - Nurture email 3: two-wave teach (deferred AI-hook item) reframed to
   missed-calls-now / AI-search-soon.

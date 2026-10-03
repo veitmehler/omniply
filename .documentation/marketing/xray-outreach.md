@@ -29,16 +29,18 @@ outreach ends and the funnel (quiz → report → nurture) takes over.
 ### Touch 1 · Day 0 · the permission question (NO link)
 
 > Hey {{first_name}} — I built something for practice owners I'd genuinely
-> want your take on. It X-rays a chiro practice in 2 minutes... four system
-> scores and a dollar figure on what's quietly leaking. Want the link?
+> want your take on. It X-rays a chiro practice in 2 minutes... how many
+> calls a week go unanswered, four system scores, and a dollar figure on
+> what's quietly leaking. Want the link?
 
 *(The question earns the reply, makes the link requested instead of pushed,
 and sorts warm from cold before you've spent anything.)*
 
 ### Touch 2a · on reply · deliver
 
-> Here you go: https://omniply.io/x-ray — takes 2 minutes, and the drift
-> number is the one that surprises people. Curious what yours says.
+> Here you go: https://omniply.io/x-ray — takes 2 minutes, and the
+> missed-calls number is the one that surprises people. Curious what yours
+> says.
 
 *(Then: whatever they reply, answer like a human. If they run it, the funnel
 owns them now — say congrats on the score and stand down.)*
@@ -67,12 +69,14 @@ owns them now — say congrats on the score and stand down.)*
 
 Do you know what your practice leaks in a month... in dollars?
 
-Most owners guess low. The quiet one is patient drift: people finish a care
-plan, feel good, and fade — until the next flare-up, at whichever clinic
-answers first.
+Most owners guess low. The loud leak is the phone: the calls that ring out
+after hours and book with whoever answers. The quiet one is patient drift:
+people finish a care plan, feel good, and fade — until the next flare-up, at
+whichever clinic answers first.
 
-I built a 2-minute X-Ray that puts a number on it. Four system scores and a
-monthly dollar figure, computed from your own inputs... every assumption shown.
+I built a 2-minute X-Ray that puts a number on both. Your missed calls per
+week, four system scores and a monthly dollar figure, computed from your own
+inputs... every assumption shown.
 
 https://omniply.io/x-ray
 
@@ -84,7 +88,7 @@ Veit Mehler · Omniply · omniply.io
 
 ### Email 2 · Day 4
 
-**Subject:** the drift number
+**Subject:** the missed-call number
 
 {{first_name}} —
 

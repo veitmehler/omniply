@@ -342,7 +342,7 @@
 
     <div class="film" id="foundbox" style="display:none">
       <div style="text-align:center;font-size:26px;line-height:1.25;font-weight:700;color:var(--lime)">Omniply is opening soon</div>
-      <p style="padding:30px 0;margin:0;font-size:16px;line-height:1.6;text-align:center;color:#fff">Your X-Ray just showed you where patients quietly slip away. When Omniply goes live, the first twelve practices receive concierge onboarding: we build your entire system together in a live working session... your voice, your calendar, your first month of content... so you learn it while it takes shape. Those twelve also keep their monthly rate locked from day one, for as long as they stay. Once the twelve places are filled, the doors close while we get them up and running.</p>
+      <p style="padding:30px 0;margin:0;font-size:16px;line-height:1.6;text-align:center;color:#fff"><b id="bridgeline"></b>Your X-Ray just showed you where patients quietly slip away. When Omniply goes live, the first twelve practices receive concierge onboarding: we build your entire system together in a live working session... your voice, your calendar, your first month of content... so you learn it while it takes shape. Those twelve also keep their monthly rate locked from day one, for as long as they stay. Once the twelve places are filled, the doors close while we get them up and running.</p>
       <button class="btn" id="joinbtn" type="button" style="display:block;margin:0 auto">Please notify me when it goes live</button>
       <div id="joinunder" style="text-align:center;font-size:12px;opacity:.75;margin-top:10px">One click. We already have your report on file.</div>
     </div>
@@ -694,6 +694,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = XRAY
       driftLeak: result.driftLeak,
       responseLeak: result.responseLeak,
       totalLeak: result.totalLeak,
+      // rounded to one decimal so a GHL custom field can carry it later
+      missedCallsWeekly: Math.round(result.missedCallsWeekly * 10) / 10,
       answers: answers,
       utm: utmParams(),
       referrer: document.referrer || null,
@@ -812,6 +814,10 @@ if (typeof module !== 'undefined' && module.exports) module.exports = XRAY
     $('leakdrift').textContent = money(r.driftLeak)
     $('leaknum').innerHTML = money(r.totalLeak) + '<small>/mo</small>'
     $('punch').innerHTML = 'Recovering <b>one patient a month</b> would more than cover fixing this. The X-Ray shows you where to start.'
+    // Bridge line (missed-call sweep Part 3): carry the call count into the
+    // waitlist/notify box so the number follows them to the next step.
+    var bridge = $('bridgeline')
+    if (bridge) bridge.textContent = raw >= 1 ? big.replace('≈ ', '≈') + ' ' + unit + ' with nobody answering live. ' : ''
   }
 
   function animateNumber (el, target, ms) {

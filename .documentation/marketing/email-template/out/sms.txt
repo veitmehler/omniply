@@ -9,5 +9,6 @@ Quick question {{contact.first_name}} — did the ${{contact.xray_total_leak}}/m
 number in your X-Ray surprise you? (I read replies) — Veit
 
 ── SMS 3 · Day 22, midday (only if phone on file) ──
-12 minutes, no call, no pressure: omniply.io/walkthrough — the system that
-plugs the leak your X-Ray found. — Veit
+No call, no pressure: omniply.io/walkthrough — the system that plugs the
+leak your X-Ray found, on screen... including the receptionist that answers
+at 2am. — Veit

@@ -106,7 +106,7 @@ at 9-to-5 speed. Plug this leak, and your quarter picks up.
 ## EMAIL 3 · Day 3 · type: teach (the new physics)
 
 **Subject:** 78% book with whoever answers first
-**Preview:** Three numbers that explain why you lose patients.
+**Preview:** The wave hitting your phones now... and the one behind it.
 
 Three numbers, one story:
 
@@ -117,19 +117,27 @@ get them on the line than half an hour later.
 
 The average business takes **two days**.
 
-Your patients live in that world now... Amazon trained them, Uber trained
-them, and a decade of instant everything finished the job.
+That's wave one, and it's hitting your phones right now: every missed or
+slow-answered call quietly books somewhere else. Amazon trained your
+patients, Uber trained them... a decade of instant everything finished the
+job.
+
+And wave two is already rolling in behind it: patients asking AI assistants
+the question they used to type into Google... "who should I see about this?"
+The engines recommend practices they can read: reviews, real content, fast
+answers. Same signals, higher stakes... a practice they can't read never
+even comes up.
 
 Your X-Ray scored your practice **{{contact.xray_total_score}}/100** against
-that world... and flagged the one system doing the most damage. I recorded the
-exact fix for it:
+both waves... and flagged the one system doing the most damage. I recorded
+the exact fix for it:
 
 **[Click here to answer every call fast →]** (https://omniply.io/walkthrough)
 
 — Veit
 
 P.S. "We already post on social media." Posting isn't the test. Answering at
-2am is.
+2am is... and soon, being the practice the AI names.
 
 
 ---
@@ -188,7 +196,7 @@ a month.** That's the entire business case... your own numbers, doing
 arithmetic you can check... every assumption is in
 **[your report →]** ({{contact.xray_report_url}}).
 
-Twelve minutes, the actual system on screen, then decide like a doctor
+The actual system on screen, then decide like a doctor
 decides... based on the evidence:
 
 **[Watch the walkthrough →]** (https://omniply.io/walkthrough)
@@ -234,7 +242,7 @@ google, read reviews, message three clinics... and book whichever answers first.
 
 Still the same next step, still no call:
 
-**[Watch the 12-minute walkthrough →]** (https://omniply.io/walkthrough)
+**[Watch the walkthrough →]** (https://omniply.io/walkthrough)
 
 — Veit
 
@@ -253,13 +261,15 @@ Monday's schedule fills itself before your competitor's front desk even gets in.
 every week, without you typing a word of it.
 **+** Fresh Google reviews arriving quietly every week... the compounding kind
 your competitors can't fake and can't catch up to.
+**+** Your name coming up when patients ask an AI assistant who they should
+see... because the engines finally have something of yours to read.
 **+** Patients who "felt fine and faded" getting a reason to come back before
 the flare-up... not after they've already googled someone else.
 **+** Your name showing up between visits, so when the pain hits, there's no
 search... just "call my chiro."
 **+** And the one nobody puts on a features list: your evenings back.
 
-**[See it running... 12 minutes →]** (https://omniply.io/walkthrough)
+**[See it running →]** (https://omniply.io/walkthrough)
 
 — Veit
 
@@ -312,7 +322,7 @@ changed.
 The system that changes it sets up in hours, not weeks... and costs less than
 recovering one patient:
 
-**[Watch the 12-minute walkthrough →]** (https://omniply.io/walkthrough)
+**[Watch the walkthrough →]** (https://omniply.io/walkthrough)
 
 — Veit
 
@@ -330,8 +340,9 @@ number in your X-Ray surprise you? (I read replies) — Veit
 
 ## SMS 3 · Day 22, midday (only if phone on file)
 
-12 minutes, no call, no pressure: omniply.io/walkthrough — the system that
-plugs the leak your X-Ray found. — Veit
+No call, no pressure: omniply.io/walkthrough — the system that plugs the
+leak your X-Ray found, on screen... including the receptionist that answers
+at 2am. — Veit
 
 ---
 
@@ -383,7 +394,7 @@ Your report stays live **[right here →]** ({{contact.xray_report_url}}) — th
 numbers in it don't expire. Unfortunately... neither does the leak.
 
 And if a quarter from now the appointment book feels soft and you remember
-why, the walkthrough is still twelve minutes, still no salesperson:
+why, the walkthrough is still there, still no salesperson:
 
 **[Click here →]** (https://omniply.io/walkthrough)
 
