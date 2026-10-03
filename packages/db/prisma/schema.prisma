@@ -74,6 +74,11 @@ model Account {
   // ghlBillingToken/ghlReviewToken. Minted at provisioning.
   agentWidgetToken   String?             @unique
   agentConversations AgentConversation[]
+  // Direct appointment booking by the voice agent (missed-call sweep Part 4a):
+  // the GHL calendar it books into. Unset → booking disabled, callback flow
+  // unchanged. DB-set for the demo; Settings UI comes with client rollout.
+  agentBookingCalendarId String?
+  agentAppointments      AgentAppointment[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -86,6 +91,22 @@ model Account {
 
   @@index([articleCalendarId])
   @@map("accounts")
+}
+
+// One appointment the AI agent booked into GHL (missed-call sweep Part 4a).
+// Audit + the demo cleanup cron's work list (delete GHL event, keep contact).
+model AgentAppointment {
+  id             String   @id @default(cuid())
+  accountId      String
+  account        Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  conversationId String?
+  ghlEventId     String
+  ghlContactId   String?
+  startTime      DateTime
+  createdAt      DateTime @default(now())
+
+  @@index([accountId])
+  @@map("agent_appointments")
 }
 
 // Owner-managed roster of teammate emails (no invitations). A user whose email

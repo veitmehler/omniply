@@ -216,6 +216,20 @@ describe('action validation', () => {
     expect(validateAction({ type: 'send_booking_link' }, { ...CTX, bookingAvailable: false })).toBeNull()
   })
 
+  it('book_appointment only for a slot the server offered THIS turn', () => {
+    const slot = '2026-10-06T10:00:00-07:00'
+    const offered = { ...CTX, offeredSlots: [slot, '2026-10-06T14:00:00-07:00'] }
+    const good = { type: 'book_appointment', name: 'Jane Doe', phone: '480-962-6011', slotStart: slot }
+    expect(validateAction(good, offered)).toEqual({ type: 'book_appointment', name: 'Jane Doe', phone: '480-962-6011', slotStart: slot })
+    // Hallucinated / stale time → dropped.
+    expect(validateAction({ ...good, slotStart: '2026-10-06T11:00:00-07:00' }, offered)).toBeNull()
+    // Booking disabled (no offered slots passed at all) → dropped.
+    expect(validateAction(good, CTX)).toBeNull()
+    // Missing identity → dropped.
+    expect(validateAction({ ...good, name: '' }, offered)).toBeNull()
+    expect(validateAction({ ...good, phone: '12' }, offered)).toBeNull()
+  })
+
   it('guide offers only for live slugs', () => {
     expect(validateAction({ type: 'offer_guide', slug: 'desk-workers-survival-guide' }, CTX)).toEqual({
       type: 'offer_guide',

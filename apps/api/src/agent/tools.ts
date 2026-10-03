@@ -19,6 +19,9 @@ export type AgentAction =
   // Voice intake (start-of-call): name + disconnect callback number. INSERT
   // into GHL only (converge/create by phone) — never used to read data back.
   | { type: 'intake_details'; name: string | null; phone: string | null }
+  // Direct booking (missed-call sweep Part 4a): slotStart must be one of the
+  // EXACT ISO strings the server offered THIS turn — anything else drops.
+  | { type: 'book_appointment'; name: string; phone: string; slotStart: string }
 
 export interface ActionContext {
   /** Slugs of guides that are live AND deliverable for this account. */
@@ -27,6 +30,8 @@ export interface ActionContext {
   /** True once this conversation created a GHL contact (callback/capture) —
    * gates the email-afterward patch so it can't fire before a contact exists. */
   hasContact: boolean
+  /** ISO starts of the booking slots offered this turn ([] → booking off). */
+  offeredSlots?: string[]
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
@@ -86,6 +91,18 @@ export function validateAction(raw: unknown, ctx: ActionContext): AgentAction | 
       const preferredTime = str(a.preferredTime, 80)
       if (!name || !validPhone(phone)) return null
       return { type: 'request_callback', name, phone, reason, preferredTime: preferredTime || null }
+    }
+
+    case 'book_appointment': {
+      const name = str(a.name, 60)
+      const phone = str(a.phone, 30)
+      const slotStart = str(a.slotStart, 40)
+      // Deterministic guard (plan Part 4a): only a slot the server offered
+      // THIS turn is bookable — a hallucinated or stale time drops the action
+      // (reply ships, booking doesn't, action-dropped flag surfaces it).
+      if (!(ctx.offeredSlots ?? []).includes(slotStart)) return null
+      if (!name || !validPhone(phone)) return null
+      return { type: 'book_appointment', name, phone, slotStart }
     }
 
     case 'request_human':

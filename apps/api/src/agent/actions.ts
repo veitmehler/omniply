@@ -26,6 +26,7 @@ import { sendFailureAlert } from '../lib/alerts'
 import { getGhlCredentials } from '../lib/ghl/settings'
 import {
   addGhlContactTags,
+  createGhlAppointment,
   createGhlContactNote,
   getCallbackTimeFieldId,
   getChatSummaryFieldId,
@@ -33,6 +34,7 @@ import {
   updateGhlContact,
   upsertGhlContact,
 } from '../lib/ghl/client'
+import { clearBookingCacheFor } from './booking'
 import { buildBookingSms, buildGuideSms, SMS_PER_CONVERSATION_CAP } from './sms'
 import { driveConfigured, grantReader } from '../lib/gdrive/client'
 import { recordLLMUsage } from '../lib/llm-usage'
@@ -208,6 +210,80 @@ async function executeCallback(
     )
   }
   logger.info({ accountId: ctx.accountId, conversationId, converged: Boolean(existingId) }, '[agent] callback → GHL contact + tag')
+}
+
+/**
+ * Direct booking (missed-call sweep Part 4a): contact upsert (phone-first,
+ * same convergence rules as callbacks) → GHL appointment at the validated
+ * slot → audit row + note. No LLM call — the caller is live on the phone.
+ */
+async function executeBooking(
+  ctx: AgentContext,
+  conversationId: string,
+  action: Extract<AgentAction, { type: 'book_appointment' }>,
+): Promise<void> {
+  const creds = await getGhlCredentials(ctx.ownerUserId)
+  if (!creds) throw new Error('No GHL credentials for account owner')
+  const account = await prisma.account.findUnique({
+    where: { id: ctx.accountId },
+    select: { agentBookingCalendarId: true },
+  })
+  if (!account?.agentBookingCalendarId) throw new Error('Booking calendar not configured')
+
+  const phone = normalizePhoneE164(action.phone, ctx.countryCode)
+  const tags = ['appointment-booked', 'chat-agent-lead']
+  const known = await knownDetailsFor(conversationId)
+  const existingId = await contactIdFor(conversationId)
+  let contactId: string | null = existingId
+  if (existingId) {
+    await updateGhlContact(creds.apiKey, existingId, { phone, ...splitFullName(action.name) })
+    await addGhlContactTags(creds.apiKey, existingId, tags)
+  } else {
+    const result = await upsertGhlContact(creds.apiKey, creds.locationId, {
+      phone,
+      ...splitFullName(action.name),
+      ...(primaryEmailOf(known) ? { email: primaryEmailOf(known)! } : {}),
+      tags,
+      source: 'chat-agent',
+    })
+    contactId = result.contactId ?? null
+    if (contactId) {
+      await prisma.agentConversation.update({ where: { id: conversationId }, data: { ghlContactId: contactId } })
+    }
+  }
+  if (!contactId) throw new Error('Booking contact upsert returned no contact id')
+
+  const event = await createGhlAppointment(creds.apiKey, {
+    calendarId: account.agentBookingCalendarId,
+    locationId: creds.locationId,
+    contactId,
+    startTime: action.slotStart,
+    title: `${action.name} — booked by AI assistant`,
+  })
+  if (!event.id) throw new Error('GHL appointment creation returned no event id')
+
+  await prisma.agentAppointment.create({
+    data: {
+      accountId: ctx.accountId,
+      conversationId,
+      ghlEventId: event.id,
+      ghlContactId: contactId,
+      startTime: new Date(action.slotStart),
+    },
+  })
+  // The taken slot must vanish from the next turn's offer list immediately.
+  clearBookingCacheFor(ctx.accountId)
+
+  await createGhlContactNote(
+    creds.apiKey,
+    contactId,
+    ['📅 Appointment booked by the AI assistant on a live call', `Start: ${action.slotStart}`, `Caller: ${action.name} (${phone})`].join('\n'),
+  ).catch((err) => logger.warn({ err, conversationId }, '[agent] booking note failed (appointment landed)'))
+
+  logger.info(
+    { accountId: ctx.accountId, conversationId, eventId: event.id, slot: action.slotStart },
+    '[agent] appointment booked via voice',
+  )
 }
 
 async function executeCapture(
@@ -460,6 +536,9 @@ export async function executeAgentAction(
     switch (action.type) {
       case 'request_callback':
         await executeCallback(ctx, conversationId, action)
+        break
+      case 'book_appointment':
+        await executeBooking(ctx, conversationId, action)
         break
       case 'capture_contact':
         await executeCapture(ctx, conversationId, action)

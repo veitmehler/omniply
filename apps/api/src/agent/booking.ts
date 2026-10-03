@@ -1,0 +1,123 @@
+/**
+ * Voice-agent direct booking (missed-call sweep Part 4a).
+ *
+ * Per-turn slot offering: the SERVER fetches real free slots from the
+ * account's GHL booking calendar and injects them as plain facts — the model
+ * never invents times, and the validator rejects any book_appointment whose
+ * slotStart wasn't in the list offered that turn. Accounts without
+ * agentBookingCalendarId keep the callback-only behavior unchanged.
+ */
+import { prisma } from '@omniply/shared'
+import { logger } from '../lib/logger'
+import { getGhlCredentials } from '../lib/ghl/settings'
+import { getGhlFreeSlots } from '../lib/ghl/client'
+
+export interface OfferedSlot {
+  /** Exact ISO string from the free-slots endpoint — the book_appointment token. */
+  startIso: string
+  /** Clinic-local phrasing, e.g. "Tuesday, October 6 at 10:00 AM". */
+  label: string
+}
+
+export interface BookingInfo {
+  enabled: boolean
+  calendarId: string | null
+  slots: OfferedSlot[]
+}
+
+const DISABLED: BookingInfo = { enabled: false, calendarId: null, slots: [] }
+
+// Short cache: a live call makes a turn every few seconds — don't hit the
+// free-slots endpoint on each one, but stay fresh enough that a slot taken
+// mid-call usually disappears before it's offered again.
+const cache = new Map<string, { info: BookingInfo; expires: number }>()
+const CACHE_MS = 60 * 1000
+
+/** Earliest offerable slot: not within the next 2 hours (no ambush bookings). */
+const MIN_LEAD_MS = 2 * 60 * 60 * 1000
+const WINDOW_DAYS = 7
+const MAX_SLOTS = 3
+const MAX_PER_DAY = 2
+
+export function labelForSlot(startIso: string, timezone: string | null): string {
+  const d = new Date(startIso)
+  if (Number.isNaN(d.getTime())) return startIso
+  try {
+    return new Intl.DateTimeFormat('en-US', {
+      ...(timezone ? { timeZone: timezone } : {}),
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    }).format(d)
+  } catch {
+    return startIso
+  }
+}
+
+/** Pure slot selection: sorted ISO list → the few we actually offer. */
+export function pickSlots(all: string[], now: Date, timezone: string | null): OfferedSlot[] {
+  const perDay = new Map<string, number>()
+  const out: OfferedSlot[] = []
+  for (const iso of all) {
+    const t = Date.parse(iso)
+    if (Number.isNaN(t) || t - now.getTime() < MIN_LEAD_MS) continue
+    const day = iso.slice(0, 10)
+    const used = perDay.get(day) ?? 0
+    if (used >= MAX_PER_DAY) continue
+    perDay.set(day, used + 1)
+    out.push({ startIso: iso, label: labelForSlot(iso, timezone) })
+    if (out.length >= MAX_SLOTS) break
+  }
+  return out
+}
+
+export async function bookingInfoFor(accountId: string, ownerUserId: string): Promise<BookingInfo> {
+  const hit = cache.get(accountId)
+  if (hit && hit.expires > Date.now()) return hit.info
+
+  let info = DISABLED
+  try {
+    const account = await prisma.account.findUnique({
+      where: { id: accountId },
+      select: { agentBookingCalendarId: true },
+    })
+    const calendarId = account?.agentBookingCalendarId ?? null
+    if (calendarId) {
+      const [creds, settings] = await Promise.all([
+        getGhlCredentials(ownerUserId),
+        prisma.settings.findUnique({ where: { userId: ownerUserId }, select: { socialTimezone: true } }),
+      ])
+      if (creds) {
+        const now = Date.now()
+        const all = await getGhlFreeSlots(
+          creds.apiKey,
+          calendarId,
+          now,
+          now + WINDOW_DAYS * 24 * 60 * 60 * 1000,
+          settings?.socialTimezone ?? undefined,
+        )
+        const slots = pickSlots(all, new Date(now), settings?.socialTimezone ?? null)
+        // No free slots is still "enabled: false" for the PROMPT — the agent
+        // must not announce bookable times it cannot name. Callback flow holds.
+        info = slots.length ? { enabled: true, calendarId, slots } : DISABLED
+      }
+    }
+  } catch (err) {
+    logger.warn({ err, accountId }, '[agent] booking slot fetch failed — callback flow holds')
+    info = DISABLED
+  }
+
+  cache.set(accountId, { info, expires: Date.now() + CACHE_MS })
+  if (cache.size > 500) {
+    const oldest = cache.keys().next().value
+    if (oldest) cache.delete(oldest)
+  }
+  return info
+}
+
+/** Test/ops hook (and post-booking bust so the taken slot vanishes immediately). */
+export function clearBookingCacheFor(accountId: string): void {
+  cache.delete(accountId)
+}

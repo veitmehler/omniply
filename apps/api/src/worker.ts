@@ -50,6 +50,7 @@ import { onboardingSynthesisHandler } from './handlers/onboarding-synthesis'
 import { leadgenPollHandler } from './handlers/leadgen-poll'
 import { leadgenCompileHandler } from './handlers/leadgen-compile'
 import { placesReviewPollHandler, googleReviewsBackfillHandler } from './handlers/google-reviews'
+import { demoBookingCleanupHandler } from './handlers/demo-booking-cleanup'
 
 /**
  * Number of concurrent social-generation runs across ALL clients. Bounded to
@@ -112,6 +113,7 @@ async function main() {
   await boss.schedule(QUEUES.ACCOUNT_LIFECYCLE_CLOCK, '30 4 * * *', {}) // daily 04:30 UTC — 60/90d billing clocks
   await boss.schedule(QUEUES.LEADGEN_PROPOSAL_POLL, '*/2 * * * *', {}) // every 2 min — Drive access-proposal capture
   await boss.schedule(QUEUES.PLACES_REVIEW_POLL, '0 4 * * 1', {}) // Monday 04:00 UTC — weekly dual-sort review harvest
+  await boss.schedule(QUEUES.DEMO_BOOKING_CLEANUP, '30 8 * * *', {}) // daily 08:30 UTC (~1:30am Phoenix) — demo-line bookings swept
   await boss.schedule(QUEUES.AGENT_RETENTION_CLEANUP, '15 3 * * *', {}) // daily 03:15 UTC — 180d chat-transcript retention (decision D)
   await boss.schedule(QUEUES.AGENT_FINALIZE, '*/10 * * * *', {}) // every 10 min — idle-chat contact reconcile + summary note
   await boss.schedule(QUEUES.AZAVEA_CADENCE, '0 8 * * *', {}) // daily 08:00 UTC — azavea vertical MWF article cadence (no-op on non-slot days)
@@ -389,6 +391,11 @@ async function main() {
     QUEUES.PLACES_REVIEW_POLL,
     { batchSize: 1 },
     withSentry('places-review-poll', placesReviewPollHandler),
+  )
+  await boss.work(
+    QUEUES.DEMO_BOOKING_CLEANUP,
+    { batchSize: 1 },
+    withSentry('demo-booking-cleanup', demoBookingCleanupHandler),
   )
   await boss.work(
     QUEUES.GOOGLE_REVIEWS_BACKFILL,

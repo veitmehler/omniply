@@ -31,6 +31,7 @@ import {
 import { validateAction, type AgentAction } from './tools'
 import { executeAgentAction } from './actions'
 import { knownDetailsFor, knownDetailsPromptBlock } from './known'
+import { bookingInfoFor, type BookingInfo } from './booking'
 
 export const INCLUDED_DAILY_BUDGET_USD = 1.5
 export const ABUSE_CEILING_USD = 15
@@ -262,6 +263,21 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
 
   const known = await knownDetailsFor(conversation.id)
 
+  // Direct booking (Part 4a): voice standard-mode only in v1. Real free
+  // slots fetched server-side; disabled (empty) keeps callback flow intact.
+  const booking: BookingInfo =
+    channel === 'voice' && !messageMode
+      ? await bookingInfoFor(input.accountId, ctx.ownerUserId)
+      : { enabled: false, calendarId: null, slots: [] }
+  const bookingBlock = booking.enabled
+    ? [
+        'DIRECT BOOKING IS AVAILABLE ON THIS CALL. The ONLY bookable times right now (value = what you attach, phrase = what you say):',
+        ...booking.slots.map((s) => `  ${s.startIso} = ${s.label}`),
+        'When the caller wants an appointment: make sure you have their name and number first (reuse details already known; read a new number back digit by digit). Offer at most TWO of the times above in natural words — never read the raw values aloud, never list everything. When they choose one, attach book_appointment with slotStart set to the EXACT raw value for that time plus their name and phone, and confirm it aloud in the same reply ("You are booked for Tuesday, October sixth at ten A M — the team will see you then.").',
+        'NEVER invent, accept, or imply a time that is not in the list above. If none of the listed times suit the caller, do not negotiate other times — take a callback instead (request_callback) with their preferred time in their own words.',
+      ].join('\n')
+    : null
+
   const vars = {
     practiceName: ctx.practiceName,
     knowledge: ctx.knowledge,
@@ -299,6 +315,7 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
               '=== CHANNEL: PHONE CALL (live voice) ===',
               'You are SPEAKING to a caller. Everything you write is read aloud by text-to-speech.',
               'Replies MUST be 1 to 2 short conversational sentences. No markdown, no lists, no URLs, no emoji, no symbols. Spell nothing out in formatting — speak it.',
+              ...(bookingBlock ? [bookingBlock] : []),
               input.smsAvailable
                 ? 'NEVER read a web address aloud. Guides and the booking link can be TEXTED: confirm the number first (offer the one in KNOWN VISITOR DETAILS when present; otherwise ask and read it back digit by digit), then attach send_guide_link or send_booking_link WITH that number in the phone field. Email via capture_contact remains the alternative. When BOOKING says no online booking, book by phone number or callback.'
                 : 'NEVER read a web address aloud, and NEVER promise to text or SMS anything — texting is unavailable on this call. Guides: offer delivery BY EMAIL (ask for their email address and attach capture_contact). Booking: when BOOKING says online booking is available, offer to email the link; otherwise give the practice phone number naturally or arrange a callback.',
@@ -376,6 +393,7 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
         guideSlugs: ctx.guides.map((g) => g.slug),
         bookingAvailable: Boolean(ctx.bookingUrl),
         hasContact: Boolean(conversation.ghlContactId),
+        offeredSlots: booking.slots.map((s) => s.startIso),
       })
       // A dropped action means the reply may promise something that never
       // executed (e.g. "the guide is on its way") — flag it so the transcript

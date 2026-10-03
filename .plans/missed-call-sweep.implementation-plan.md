@@ -124,7 +124,29 @@ Today: voice takes `request_callback` and texts the booking link. For the
 results-page demo line to be the differentiator ("call it — it books you"),
 the demo instance books into a GHL calendar live.
 
-**4a · GHL calendar booking capability** (~2–3 days, the substantial piece)
+**4a · GHL calendar booking capability**
+**✅ CODE BUILT 2026-10-03** (all tests green, deployed with this commit):
+client calendar functions (list/free-slots/create/delete, Version
+2021-04-15), `agent/booking.ts` (60s-cached slot offering: 2h min lead,
+max 2/day, max 3, clinic-tz labels; zero slots → booking stays OFF in the
+prompt), `book_appointment` action + deterministic offered-this-turn
+validator guard, `executeBooking` (phone-first contact convergence, GHL
+appointment, AgentAppointment audit row, note, cache bust), voice-channel
+prompt block (offer two in words, never read raw values, no negotiation —
+callback fallback), nightly demo cleanup cron (deletes EVENTS only, never
+contacts — phone convergence could hit staff rows; gated on
+DEMO_BOOKING_CLEANUP_ACCOUNT_IDS env, unset = no-op).
+**BLOCKED ON (user)**: minted OAuth tokens lack calendar scopes (verified
+401). Demo path: create a Private Integration key on the DEMO location
+with ALL scopes the demo uses (contacts, conversations, social planner,
+users, custom fields/values, trigger links) PLUS calendars + calendar
+events (view/edit) — then Claude swaps the demo ghlSettings row to pi
+auth, creates/configures the "Demo Practice Bookings" calendar, sets
+account.agentBookingCalendarId + the cleanup env var, and dry-runs the
+booking flow server-side before any filming. Client rollout later = add
+calendar scopes to the marketplace app itself.
+
+(original scope, ~2–3 days, the substantial piece)
 1. `lib/ghl/client.ts`: add Calendars API — `listCalendars`,
    `getFreeSlots(calendarId, range, tz)`, `createAppointment(calendarId,
    contactId, slot)`.

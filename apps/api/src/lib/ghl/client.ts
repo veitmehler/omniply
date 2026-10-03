@@ -865,3 +865,88 @@ export async function sendGhlConversationMessage(
     return false
   }
 }
+
+// ── Calendars (missed-call sweep Part 4a: voice-agent direct booking) ───────
+// The Calendars API family pins Version 2021-04-15.
+
+const CALENDARS_VERSION = '2021-04-15'
+
+export interface GhlCalendar {
+  id: string
+  name: string
+  isActive?: boolean
+  calendarType?: string
+}
+
+export async function listGhlCalendars(apiKey: string, locationId: string): Promise<GhlCalendar[]> {
+  const data = await ghlRequest<{ calendars?: GhlCalendar[] }>(
+    apiKey,
+    `/calendars/?locationId=${encodeURIComponent(locationId)}`,
+    { version: CALENDARS_VERSION },
+  )
+  return data.calendars ?? []
+}
+
+/**
+ * Free slots for a calendar window, flattened + sorted ascending. GHL returns
+ * `{ "<date>": { slots: ["<iso-with-offset>", …] }, traceId }`; the timezone
+ * parameter localizes the slot strings. Conflict-checking against synced
+ * external calendars (e.g. the clinic's Google Calendar via GHL's native
+ * two-way sync) happens on GHL's side — verified per the plan's build gate.
+ */
+export async function getGhlFreeSlots(
+  apiKey: string,
+  calendarId: string,
+  startMs: number,
+  endMs: number,
+  timezone?: string,
+): Promise<string[]> {
+  const tz = timezone ? `&timezone=${encodeURIComponent(timezone)}` : ''
+  const data = await ghlRequest<Record<string, { slots?: string[] } | string>>(
+    apiKey,
+    `/calendars/${encodeURIComponent(calendarId)}/free-slots?startDate=${startMs}&endDate=${endMs}${tz}`,
+    { version: CALENDARS_VERSION },
+  )
+  const slots: string[] = []
+  for (const [key, value] of Object.entries(data)) {
+    if (key === 'traceId' || typeof value === 'string') continue
+    for (const s of value?.slots ?? []) slots.push(s)
+  }
+  return slots.sort()
+}
+
+export interface GhlAppointmentInput {
+  calendarId: string
+  locationId: string
+  contactId: string
+  /** ISO start with offset, exactly as the free-slots endpoint returned it. */
+  startTime: string
+  title?: string
+}
+
+export async function createGhlAppointment(
+  apiKey: string,
+  input: GhlAppointmentInput,
+): Promise<{ id: string | null }> {
+  const data = await ghlRequest<{ id?: string; event?: { id?: string } }>(apiKey, '/calendars/events/appointments', {
+    method: 'POST',
+    version: CALENDARS_VERSION,
+    body: {
+      calendarId: input.calendarId,
+      locationId: input.locationId,
+      contactId: input.contactId,
+      startTime: input.startTime,
+      ...(input.title ? { title: input.title.slice(0, 200) } : {}),
+      appointmentStatus: 'confirmed',
+    },
+  })
+  return { id: data.id ?? data.event?.id ?? null }
+}
+
+/** Delete one calendar event (demo cleanup cron). 404s are swallowed by callers. */
+export async function deleteGhlCalendarEvent(apiKey: string, eventId: string): Promise<void> {
+  await ghlRequest<unknown>(apiKey, `/calendars/events/${encodeURIComponent(eventId)}`, {
+    method: 'DELETE',
+    version: CALENDARS_VERSION,
+  })
+}
