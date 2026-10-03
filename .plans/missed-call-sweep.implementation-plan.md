@@ -136,15 +136,24 @@ prompt block (offer two in words, never read raw values, no negotiation —
 callback fallback), nightly demo cleanup cron (deletes EVENTS only, never
 contacts — phone convergence could hit staff rows; gated on
 DEMO_BOOKING_CLEANUP_ACCOUNT_IDS env, unset = no-op).
-**BLOCKED ON (user)**: minted OAuth tokens lack calendar scopes (verified
-401). Demo path: create a Private Integration key on the DEMO location
-with ALL scopes the demo uses (contacts, conversations, social planner,
-users, custom fields/values, trigger links) PLUS calendars + calendar
-events (view/edit) — then Claude swaps the demo ghlSettings row to pi
-auth, creates/configures the "Demo Practice Bookings" calendar, sets
-account.agentBookingCalendarId + the cleanup env var, and dry-runs the
-booking flow server-side before any filming. Client rollout later = add
-calendar scopes to the marketplace app itself.
+**✅ LIVE + DRY-RUN PASSED 2026-10-03 — via the REAL provisioning path**
+(user decision: no PI-key detour; "it makes no sense to test it in a way
+we will never use"). Marketplace app v5 adds all 8 calendar scopes;
+agency install re-authorized (new grant versionId 6ac13aa1…, 33 scopes);
+demo location token re-minted + persisted — OTHER locations self-heal on
+their next re-mint. "Demo Practice Bookings" calendar created VIA API
+(AC8kwVePco4ioT4xZjHm, round_robin, Dr Simon, hours matching the stated
+Mon–Fri 8–6 / Sat 9–1; note: openHours wants ONE day per entry — multi-day
+arrays 422). agentBookingCalendarId set; DEMO_BOOKING_CLEANUP_ACCOUNT_IDS
+in /opt/socioply/.env.production (root append; activates on next container
+recreate). Full engine dry-run PASSED first attempt: intake → caller says
+"Tuesday morning" → book_appointment with the exact offered ISO → GHL
+event verified (fetch 200) → audit row → cleanup. Write scopes proven.
+REMAINING: user deletes the now-unneeded PI key in GHL; Scene 11 VO chunk
+re-roll (revised narration in walkthrough-script.md, pending approval);
+4b demo block needs the demo voice NUMBER (exists after the user films
+the voice provisioning). Client rollout tail unchanged (Settings UI,
+per-clinic calendars, GCal-sync free-slots verify, pilot E2E).
 
 (original scope, ~2–3 days, the substantial piece)
 1. `lib/ghl/client.ts`: add Calendars API — `listCalendars`,

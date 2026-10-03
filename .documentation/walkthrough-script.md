@@ -449,20 +449,27 @@ itself to AI agents that will make inquiries soon."
 
 ## Scene 11 — The AI voice receptionist
 
-ON SCREEN: A phone dials the clinic's AI number. REAL call audio: the
+ON SCREEN (REVISED 2026-10-03, direct booking live — pending VO re-roll
+approval): A phone dials the clinic's AI number. REAL call audio: the
 greeting with the recording line and "Who am I speaking with?"; the
-caller asks a question; requests a callback time; cut to the CRM:
-contact, note with preferred time, front-desk notification.
+caller asks a question; asks for an appointment; the AI offers real
+times and BOOKS one; cut to the CRM: the appointment on the calendar,
+the contact, the confirmation.
 
-NARRATION:
+NARRATION (revised — re-roll ONLY this chunk; prior wording below for
+reference):
 "And for the calls you can't pick up, this: a receptionist that answers
 in your own cloned voice any hour of the day. It takes the name and
 number first in case the line drops.
 
 It then answers real questions. And if a caller asks to speak to a human,
 it tries to put the call through. But if you're busy, you're out of the
-office or you're closed, it takes a message with the best time to call
-them back and your team sees it instantly.
+office or you're closed... it books the appointment right on the call,
+straight into your calendar. And when no time suits, it takes a message
+with the best time to call them back and your team sees it instantly.
+
+PRIOR WORDING (recorded VO, superseded): "…it takes a message with the
+best time to call them back and your team sees it instantly."
 
 Listen to this, that's not me, that's the AI.
 
