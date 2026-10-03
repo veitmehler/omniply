@@ -215,12 +215,12 @@ having to be one.
 $397 a month. Everything in the loop. Cancel anytime. No setup fees, no
 lock-in, no salesperson.
 
-Which is why the next step isn't a call. It's twelve minutes of the actual
-system, on screen: what it posts, how it answers, what the recall messages
-look like. Watch it the way you'd read a scan. Then decide like a doctor
+Which is why the next step isn't a call. It's the actual system, on
+screen: how it answers, what it posts, what the recall messages look
+like. Watch it the way you'd read a scan. Then decide like a doctor
 decides: **on the evidence.**
 
-**→ Watch the 12-Minute Practice Autopilot Walkthrough**
+**→ Watch the Practice Autopilot Walkthrough**
 
 ---
 

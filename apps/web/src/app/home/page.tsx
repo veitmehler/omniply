@@ -27,13 +27,13 @@ import {
 export const metadata: Metadata = {
   title: 'Omniply... Marketing Autopilot for Local Practices',
   description:
-    'One loop, four systems: content in your voice, instant AI response, compounding Google reviews, and patient recall. You approve, it ships.',
+    'One loop, four systems: instant AI response to every call and message, content in your voice, compounding Google reviews, and client recall. You approve, it ships.',
 }
 
 const FAQ_ITEMS: FaqEntry[] = [
   {
     q: 'What exactly is Omniply?',
-    a: 'A marketing autopilot for local practices. It writes and publishes your content in your voice, answers inquiries instantly with AI chat and voice, grows your Google reviews automatically, and brings past clients back with systematic recall. Four systems, one loop, one flat price.',
+    a: 'A marketing autopilot for local practices. It answers inquiries instantly with AI chat and voice, writes and publishes your content in your voice, grows your Google reviews automatically, and brings past clients back with systematic recall. Four systems, one loop, one flat price.',
   },
   {
     q: 'Will it really sound like me?',
@@ -61,10 +61,11 @@ export default function HomePage() {
       <Section dark>
         <Eyebrow>Omniply</Eyebrow>
         <h1 className="mb-6 text-4xl font-extrabold leading-tight md:text-5xl" style={{ textWrap: 'balance' } as React.CSSProperties}>
-          Marketing on autopilot for local practices.
+          How many client calls did your practice miss this week?
         </h1>
         <P lead>
-          It writes in your voice, answers in seconds, asks for the review, and remembers every client who
+          Each one booked with whoever answered. Omniply is marketing on autopilot for local practices: it
+          answers in seconds, writes in your voice, asks for the review, and remembers every client who
           drifted... every week, while you run the practice. You approve. It ships.
         </P>
         <div className="mt-8 grid gap-4 sm:grid-cols-2">
@@ -116,9 +117,9 @@ export default function HomePage() {
         <LoopDiagram />
         <div className="grid gap-5 sm:grid-cols-2">
           {[
-            ['Presence', 'Real content, produced in your voice every week... so clients think of you before the pain does.'],
-            ['Response', 'AI chat and voice that answer in seconds, day and night, and book on the spot.'],
+            ['Response', 'An AI front desk: chat and voice that answer in two rings, day and night, and book on the spot or take a timed callback.'],
             ['Proof', 'Every happy client becomes public evidence. Reviews compound like interest.'],
+            ['Presence', 'Real content, produced in your voice every week... what keeps clients warm, and what Google and the AI assistants read when they recommend.'],
             ['Recall', 'Nobody drifts unnoticed. The ones who faded get a reason to come back.'],
           ].map(([head, body]) => (
             <div key={head}>
@@ -129,9 +130,9 @@ export default function HomePage() {
         </div>
         <P>
           <br />
-          It is not four tools. It is one flywheel: presence keeps clients warm, warm clients return and
-          leave reviews, reviews bring new inquiries, instant response converts them, recall keeps them.
-          Break any link and the leak reopens somewhere else.
+          It is not four tools, and it is not another AI content engine. It is one flywheel: instant response
+          converts the inquiry, happy clients leave reviews, reviews and presence bring the next inquiry,
+          recall keeps them all coming back. Break any link and the leak reopens somewhere else.
         </P>
       </Section>
 
@@ -202,7 +203,7 @@ export default function HomePage() {
           X-Ray My Practice
         </Cta>
         <p className="mt-6 text-center text-sm text-white/50">
-          Prefer to see the system first? <a href="/walkthrough" className="underline">Watch the 12-minute walkthrough</a>
+          Prefer to see the system first? <a href="/walkthrough" className="underline">Watch the walkthrough</a>
         </p>
       </Section>
 

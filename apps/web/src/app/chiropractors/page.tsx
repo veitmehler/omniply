@@ -31,7 +31,7 @@ import { FoundingNotify } from '@/components/marketing/FoundingNotify'
 export const metadata: Metadata = {
   title: 'Omniply for Chiropractors... Plug the Leak in Your Practice',
   description:
-    'Patients do not leave, they fade. Omniply runs the loop that stops it: content in your voice, AI response in seconds, compounding reviews, systematic recall. X-Ray your practice in 2 minutes.',
+    'How many patient calls did your practice miss this week? Each one booked with whoever answered. Omniply answers in seconds, day and night... then content, reviews and recall keep them. X-Ray your practice in 2 minutes.',
 }
 
 const FAQ_ITEMS: FaqEntry[] = [
@@ -85,17 +85,18 @@ export default function ChiropractorsPage() {
   return (
     <main>
       <SiteHeader vertical="For Chiropractors" />
-      {/* ── Hook: drift ── */}
+      {/* ── Hook: missed calls (sweep 2026-10-03; drift keeps the forces/drift sections) ── */}
       <Section dark>
         <Eyebrow>Omniply for Chiropractors</Eyebrow>
         <h1 className="mb-6 text-4xl font-extrabold leading-tight md:text-5xl" style={{ textWrap: 'balance' } as React.CSSProperties}>
-          Patients don&apos;t leave. They fade.
+          How many patient calls did your practice miss this week?
         </h1>
         <P lead>
-          And fading is invisible in the appointment book until the quarter is already soft. Your practice
-          has a leak... most do. The question is the size. There is a 2-minute way to find out, in dollars.
+          Every one of them was a person in pain who booked with whoever answered. And the calls are only the
+          loudest part of the leak... patients also fade between visits, invisibly, until the quarter is
+          already soft. There is a 2-minute way to put a number on all of it, in dollars.
         </P>
-        <Cta href={XRAY_URL} sub="12 questions · 2 minutes · your monthly leak, in dollars">
+        <Cta href={XRAY_URL} sub="12 questions · 2 minutes · your missed calls and your monthly leak, in dollars">
           X-Ray My Practice
         </Cta>
       </Section>
@@ -108,7 +109,10 @@ export default function ChiropractorsPage() {
           <strong>The technology force.</strong> Every patient in your town now carries every competitor&apos;s
           front desk in their pocket. When someone&apos;s back seizes at 9pm, they don&apos;t wait for your
           opening hours... they search, they message, and they book with whoever answers. Google decides who
-          exists. The map pack decides who gets the call.
+          exists. The map pack decides who gets the call. And a newer layer is settling on top: patients now
+          ask AI assistants the question they used to type into Google... &quot;who should I see about
+          this?&quot; The answer engines read the same signals: reviews, real content, responsiveness. A
+          practice those engines can&apos;t read doesn&apos;t lose the comparison. It never comes up.
         </P>
         <P>
           <strong>The social force.</strong> Patients stopped calling back. Not because they&apos;re rude...
@@ -186,9 +190,9 @@ export default function ChiropractorsPage() {
         <LoopDiagram />
         <div className="grid gap-6 sm:grid-cols-2">
           {[
-            ['Presence', 'Real content... posts, articles, a newsletter your patients actually read... produced in your voice every week, without you writing a word. So when the emergency strikes, they remember who to call: you.'],
-            ['Response', 'AI chat and voice that answer in seconds, at 2pm while you&rsquo;re adjusting or at 2am while you&rsquo;re asleep, and book the appointment on the spot. The inquiry you answer instantly is the patient your competitor never meets.'],
-            ['Proof', 'A review engine that turns every happy patient into public evidence, automatically. Reviews compound like interest: invisible week to week, undeniable year to year.'],
+            ['Response', 'An AI front desk that answers in two rings... at 2pm while you&rsquo;re adjusting or at 2am while you&rsquo;re asleep. Website chat and a phone voice that sound like your practice, send the booking link or take a callback for the exact time the patient names, with 200 voice minutes included. The inquiry answered instantly is the patient your competitor never meets.'],
+            ['Proof', 'A review engine that turns every happy patient into public evidence, automatically. Reviews compound like interest: invisible week to week, undeniable year to year... and they feed the map pack and the AI answers alike.'],
+            ['Presence', 'Real content... posts, articles, a newsletter your patients actually read... produced in your voice every week, without you writing a word. It keeps patients warm between visits, and it is what Google and the AI assistants read when they decide who to recommend.'],
             ['Recall', 'Reactivation that never forgets a patient. Care plan ends, contact continues... and the ones who faded get a reason to come back before the flare-up, not after.'],
           ].map(([head, body]) => (
             <div key={head}>
@@ -199,11 +203,13 @@ export default function ChiropractorsPage() {
         </div>
         <P>
           <br />
-          Presence keeps patients warm &rarr; warm patients return, and leave reviews &rarr; reviews bring new
-          inquiries &rarr; instant response converts them &rarr; recall keeps them.{' '}
-          <strong>It&apos;s not four tools. It&apos;s one flywheel.</strong> Break any link and the leak
-          reopens somewhere else... which is exactly why buying point-solutions has never fixed it, and why
-          coaching alone just hands the discipline problem back to you. The loop removes it.
+          Instant response converts the inquiry &rarr; happy patients leave reviews &rarr; reviews and
+          presence bring the next inquiry &rarr; recall keeps them all coming back.{' '}
+          <strong>It&apos;s not four tools. It&apos;s one flywheel.</strong> And it is not another AI content
+          tool... the content is the compounding layer behind a front desk that never misses a call. Break
+          any link and the leak reopens somewhere else... which is exactly why buying point-solutions has
+          never fixed it, and why coaching alone just hands the discipline problem back to you. The loop
+          removes it.
         </P>
       </Section>
 
@@ -291,9 +297,10 @@ export default function ChiropractorsPage() {
       <Section dark>
         <H2>Decide like a doctor decides: on the evidence.</H2>
         <P lead>
-          The X-Ray takes 2 minutes: four system scores and a dollar figure on what your practice is quietly
-          leaking every month. Then a 12-minute walkthrough shows the actual system on screen... what it
-          posts, how it answers, what the recall messages look like. No call. No salesperson.
+          The X-Ray takes 2 minutes: your missed calls per week, four system scores, and a dollar figure on
+          what your practice is quietly leaking every month. Then the walkthrough shows the actual system on
+          screen... how it answers, what it posts, what the recall messages look like. No call. No
+          salesperson.
         </P>
         <P>
           Everything in the loop, one flat monthly rate, cancel anytime. We&apos;re not asking you to become
@@ -303,7 +310,7 @@ export default function ChiropractorsPage() {
           X-Ray My Practice
         </Cta>
         <p className="mt-6 text-center text-sm text-white/50">
-          Or see the system first: <a href="/walkthrough" className="underline">the 12-minute walkthrough</a>
+          Or see the system first: <a href="/walkthrough" className="underline">watch the walkthrough</a>
         </p>
       </Section>
 

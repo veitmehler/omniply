@@ -61,6 +61,16 @@ the end of Parts 1–3 per sequencing.
 7. Minute-claims in the X-Ray results CTA (from the absorbed sweep list).
 
 ## Part 2 · Sales pages: hero + loop reorder + named fix
+**✅ BUILT 2026-10-03** — both heroes lead with the missed-call question
+(home generalized to "client calls"), Loop reordered Response→Proof→
+Presence→Recall on both pages with the concrete AI-front-desk copy (two
+rings, timed callback, 200 voice minutes) + the "not another AI content
+tool" contrast, AI-search layer added to the technology force, shared
+StatBand source line now carries the full HBR 2011 attribution (7×/60×)
++ adjustable-assumptions basis note, all 12-minute claims made
+minute-agnostic (both pages, /walkthrough hero+metadata, master pitch §7,
+launch-day restore doc updated so restoration can't revert the sweep —
+incl. the punch-line note: ONE render site now, paintLeakCard).
 
 Files: `apps/web/src/app/home/page.tsx`, `apps/web/src/app/chiropractors/
 page.tsx`, shared pieces in `components/marketing/Marketing.tsx`.

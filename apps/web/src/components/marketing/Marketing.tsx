@@ -419,7 +419,11 @@ export function StatBand({ onDark }: { onDark?: boolean }) {
         ))}
       </div>
       <p className="mt-3 text-xs" style={{ color: dim }}>
-        Sources: Oldroyd, Lead Response Management Study (InsideSales, 2007) &middot; Harvard Business Review (2011) &middot; Lead Connect survey
+        Sources: Oldroyd, Lead Response Management Study (InsideSales, 2007) &middot; Oldroyd, McElheran &amp;
+        Elkington, &ldquo;The Short Life of Online Sales Leads,&rdquo; Harvard Business Review, March 2011
+        (1.25M leads: responding within an hour made firms nearly 7&times; as likely to qualify the lead as
+        waiting an hour longer, 60&times;+ vs. a day) &middot; Lead Connect survey. Every Omniply leak
+        estimate is computed from your own answers and stated, adjustable assumptions.
       </p>
     </div>
   )

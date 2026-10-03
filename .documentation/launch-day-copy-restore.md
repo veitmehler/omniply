@@ -9,16 +9,17 @@ must be put back by hand where noted. Full diff reference:
 ## 1. apps/web/public/x-ray/index.html
 
 **Walkthrough CTA box** (restore inside `#s-results`, after the leakcard,
-once the video exists — independent of launch):
+once the video exists — independent of launch; wording updated 2026-10-03,
+minute-agnostic per the missed-call sweep):
 ```html
 <div class="ctabox">
-  <a class="btn" id="cta" href="/walkthrough">Watch the 12-minute Practice Autopilot Walkthrough &rarr;</a>
+  <a class="btn" id="cta" href="/walkthrough">Watch the Practice Autopilot Walkthrough &rarr;</a>
   <div class="under">No call. No pressure. The exact system, on screen.</div>
 </div>
 ```
 
-**Punch line** (both render sites, ~lines 784/850 — restore the price
-multiple):
+**Punch line** (ONE render site since the missed-call sweep merged them:
+`paintLeakCard()` — restore the price multiple there):
 ```js
 $('punch').innerHTML = 'That’s &asymp; <b>' + r.priceMultiple + '&times;</b> the monthly cost of fixing it. Recovering <b>one patient a month</b> pays for the whole system.'
 ```
@@ -61,9 +62,11 @@ marketer... we&apos;re asking you to stop having to be one.
 
 ## 4. apps/web/src/app/home/page.tsx
 
-**Meta description** (restore tail):
+**Meta description** (restore tail — base updated 2026-10-03 by the
+missed-call sweep, keep the new response-first wording and just append
+the price):
 ```
-'One loop, four systems: content in your voice, instant AI response, compounding Google reviews, and patient recall. You approve, it ships. $397/mo flat.'
+'One loop, four systems: instant AI response to every call and message, content in your voice, compounding Google reviews, and client recall. You approve, it ships. $397/mo flat.'
 ```
 
 **FAQ question**:
