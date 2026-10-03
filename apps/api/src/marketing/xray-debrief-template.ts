@@ -22,6 +22,14 @@ export interface DebriefTemplateData {
   totalLeak: string // formatted money
   driftLeak: string
   respLeak: string
+  /** Big call-count figure, e.g. "≈ 6" (missed-call sweep Part 1). */
+  missBig: string
+  /** Unit line under it, e.g. "calls a week". */
+  missUnit: string
+  /** One-line consequence or no-miss fallback (pre-escaped HTML, may contain <b>). */
+  missLine: string
+  /** Underestimate reframe or strong-practice softener. */
+  missReframe: string
   mult: number
   fee: string // formatted money (their visit fee)
   feeYear: string // formatted money (fee × 12)
@@ -227,12 +235,14 @@ ${d.barsHtml}
     <div class="verdict">${d.verdictHtml}</div>
   </div>
   <div class="film leakcard">
-    <div class="lbl">Estimated monthly leak</div>
-    <div class="leaknum">${d.totalLeak}<small> / month</small></div>
+    <div class="lbl">Calls &amp; messages nobody answers live</div>
+    <div class="leaknum">${d.missBig}<small> ${d.missUnit}</small></div>
     <div class="leakunder"></div>
+    <p style="margin: 0 0 4pt; font-size: 11.5pt; line-height: 1.5;">${d.missLine}</p>
+    <p style="margin: 0 0 14pt; font-size: 9.5pt; color: var(--dim);">${d.missReframe}</p>
     <div class="leaksplit">
-      <div>Patient drift<b>${d.driftLeak}</b></div>
-      <div>Missed inquiries<b>${d.respLeak}</b></div>
+      <div>Patient drift adds<b>${d.driftLeak}</b></div>
+      <div>Total monthly leak<b>${d.totalLeak}</b></div>
     </div>
     <p class="punch">That's &asymp; <b>${d.mult}&times;</b> the monthly cost of fixing it. The pages that follow are the treatment plan.</p>
   </div>
@@ -261,6 +271,7 @@ ${d.barsHtml}
   <div class="forcename">The technology force</div>
   <p class="body">Every patient in your town now carries every competitor's front desk in their pocket. When someone's back seizes at 9pm, they don't wait for your opening hours...</p>
   <p class="body">They search, they message, and they book with whoever answers. Google decides who exists. The map pack decides who gets the call.</p>
+  <p class="body">And a newer layer is settling on top: patients now ask AI assistants the question they used to type into Google... "who should I see about this?" The answer engines read the same signals, reviews, real content, responsiveness. A practice those engines can't read doesn't lose the comparison. It never comes up.</p>
   <div class="forcenum" style="margin-top: 0.58in;">02</div>
   <div class="forcename">The social force</div>
   <p class="body">Patients stopped calling back. Not because they're rude... because Amazon, Uber and a decade of instant everything trained them.</p>
@@ -456,10 +467,10 @@ ${d.barsHtml}
   <p class="body">The onboarding reads your website, your brand, your specialties, and the system starts producing in hours, not weeks.</p>
   <p class="body"><b>We're not asking you to become a marketer. We're asking you to stop having to be one.</b></p>
   <p class="body">$397 a month. Everything in the loop. Cancel anytime. No setup fees, no lock-in, no salesperson.</p>
-  <p class="body">Which is why the next step isn't a call. It's twelve minutes of the actual system, on screen: what it posts, how it answers, what the recall messages look like. Watch it the way you'd read a scan. Then decide like a doctor decides: <b>on the evidence.</b></p>
+  <p class="body">Which is why the next step isn't a call. It's the actual system, on screen: what it posts, how it answers, what the recall messages look like. Watch it the way you'd read a scan. Then decide like a doctor decides: <b>on the evidence.</b></p>
   <div class="ctabox">
     <div>
-      <div class="t">Watch the 12-Minute Practice Autopilot Walkthrough &rarr;</div>
+      <div class="t">Watch the Practice Autopilot Walkthrough &rarr;</div>
       <div class="u">omniply.io/walkthrough</div>
     </div>
     <img src="data:image/png;base64,${QR_B64}" alt="QR code to the walkthrough" />
@@ -475,7 +486,7 @@ ${d.barsHtml}
   <p class="body">You've watched it happen to patients who "felt fine."</p>
   <div class="big lime" style="margin: 0.4in 0 0.8in;">Treatment starts the day you decide it does.</div>
   <div class="srcs">
-    <b>* Sources:</b> Oldroyd, J. — Lead Response Management Study (InsideSales, 2007): 100&times; contact odds within 5 minutes vs. 30. &nbsp;&middot;&nbsp; Harvard Business Review, "The Short Life of Online Sales Leads" (2011): average response 42 hours. &nbsp;&middot;&nbsp; Lead Connect survey: 78% of customers buy from the first responder.<br /><br />
+    <b>* Sources:</b> Oldroyd, J. — Lead Response Management Study (InsideSales, 2007): 100&times; contact odds within 5 minutes vs. 30. &nbsp;&middot;&nbsp; Oldroyd, McElheran &amp; Elkington, "The Short Life of Online Sales Leads," Harvard Business Review, March 2011 (1.25M leads): firms responding within an hour were nearly 7&times; as likely to qualify the lead as those an hour slower, and 60&times;+ vs. a day; average response 42 hours. &nbsp;&middot;&nbsp; Lead Connect survey: 78% of customers buy from the first responder.<br /><br />
     Leak estimates in this document are computed from your own X-Ray answers and stated, adjustable assumptions. They are illustrations, not guarantees or income claims.<br /><br />
     &copy; Omniply &middot; omniply.io &middot; Built for chiropractic practices only.
   </div>

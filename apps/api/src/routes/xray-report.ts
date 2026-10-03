@@ -18,7 +18,7 @@ import { createHash } from 'node:crypto'
 import { readS3Object, uploadBufferWithKey } from '@omniply/shared'
 import { logger } from '../lib/logger'
 import { withRasterPage } from '../article-pipeline/enrichment/diagram-browser-pool'
-import { compute, scoreRead, verdictHtml, type XrayAnswers } from '../marketing/xray-math'
+import { compute, scoreRead, verdictHtml, missedCallsPhrase, type XrayAnswers } from '../marketing/xray-math'
 import { buildBarsHtml, buildDebriefHtml } from '../marketing/xray-debrief-template'
 
 const CHOICE_PTS = new Set([0, 3, 5, 7, 10])
@@ -117,6 +117,7 @@ async function renderDebriefPdf(dParam: string, parsed: NonNullable<ReturnType<t
   const now = new Date()
   const scanDate = `${String(now.getUTCDate()).padStart(2, '0')} ${MONTHS[now.getUTCMonth()]} ${now.getUTCFullYear()}`
 
+  const miss = missedCallsPhrase(r.missedCallsWeekly)
   const html = buildDebriefHtml({
     preparedFor,
     scanDate,
@@ -127,6 +128,16 @@ async function renderDebriefPdf(dParam: string, parsed: NonNullable<ReturnType<t
     totalLeak: money(r.totalLeak),
     driftLeak: money(r.driftLeak),
     respLeak: money(r.responseLeak),
+    missBig: miss.big,
+    missUnit: miss.unit,
+    missLine:
+      r.missedCallsWeekly <= 0
+        ? 'Based on your answers, inquiries get a live response... the leak below is what the remaining gaps cost.'
+        : 'That’s an estimated <b>' + money(r.responseLeak) + '/month</b> walking to whichever clinic answers first.',
+    missReframe:
+      answers.b1 === 10 && answers.b2 === 10
+        ? 'You’re tight... the numbers below show what closing the last gaps is worth.'
+        : 'Sound low? Most owners only ever see the missed calls that leave a voicemail.',
     mult: r.priceMultiple,
     fee: money(answers.visitFee),
     feeYear: money(answers.visitFee * 12),
@@ -158,7 +169,9 @@ const PDF_HEADERS = { type: 'application/pdf', disposition: 'inline; filename="X
 const S3_PREFIX = 'xray-reports/'
 // Bump on template design changes: it feeds the publish id so already-published
 // reports re-render with the new design instead of serving the old S3 object.
-const TEMPLATE_VERSION = '3'
+// v4: missed-call-first leak card + AI-search force extension + HBR basis
+// (missed-call sweep Part 1, 2026-10-03)
+const TEMPLATE_VERSION = '4'
 
 function publicApiBase(): string {
   return (process.env.XRAY_PUBLIC_API_BASE ?? 'https://svc.omniply.io').replace(/\/$/, '')

@@ -322,18 +322,21 @@
     </div>
 
     <div class="film leakcard">
-      <div class="lbl">Estimated monthly leak</div>
-      <div class="leaknum" id="leaknum"></div>
+      <div class="lbl">Calls &amp; messages nobody answers live</div>
+      <div class="leaknum" id="misscount"></div>
       <div class="leakunder"></div>
+      <p id="missline" style="margin:0 0 6px;font-size:16px;line-height:1.5"></p>
+      <p id="missreframe" style="margin:0 0 18px;font-size:13px;opacity:.75"></p>
       <div class="leaksplit">
-        <div>Patient drift<b id="leakdrift"></b></div>
-        <div>Missed inquiries<b id="leakresp"></b></div>
+        <div>Patient drift adds<b id="leakdrift"></b></div>
+        <div>Total monthly leak<b id="leaknum"></b></div>
       </div>
       <p class="punch" id="punch"></p>
       <details class="math">
         <summary>Check our math — adjust any assumption</summary>
         <div class="assump" id="assump"></div>
         <div class="formula" id="formula"></div>
+        <p id="basis" style="margin:14px 0 0;font-size:12px;line-height:1.6;opacity:.8">The one external number we lean on: a Harvard Business Review study of 1.25 million sales leads found that firms contacting a lead within an hour were nearly seven times as likely to qualify it as those that waited even an hour longer, and more than sixty times as likely as those that waited a day (Oldroyd, McElheran &amp; Elkington, &ldquo;The Short Life of Online Sales Leads,&rdquo; Harvard Business Review, March 2011). Every other number here is a stated, conservative assumption &mdash; and you can adjust each one above.</p>
       </details>
     </div>
 
@@ -458,6 +461,8 @@ var XRAY = (function () {
       totalLeak: roundDollars(total),
       priceMultiple: Math.max(1, Math.round(total / o.PRICE_MONTHLY)),
       missedShare: missedShare(a.b1, a.b2),
+      // The derived, visceral number: inquiries that get no live answer.
+      missedCallsWeekly: a.inquiriesWeekly * missedShare(a.b1, a.b2),
     }
   }
 
@@ -782,13 +787,31 @@ if (typeof module !== 'undefined' && module.exports) module.exports = XRAY
     })
 
     $('verdict').innerHTML = verdictText(r)
-    $('leaknum').innerHTML = money(r.totalLeak) + '<small> / month</small>'
-    $('leakdrift').textContent = money(r.driftLeak)
-    $('leakresp').textContent = money(r.responseLeak)
-    $('punch').innerHTML = 'Recovering <b>one patient a month</b> would more than cover fixing this. The X-Ray shows you where to start.'
+    paintLeakCard(r)
     if ($('cta')) $('cta').href = XRAY.CONFIG.VIDEO_URL
 
     renderAssumptions(r)
+  }
+
+  // Missed-call-first leak card (sweep plan Part 1): the derived call count
+  // leads, its dollar leak follows, drift compounds beneath. Keep the
+  // phrasing in lockstep with missedCallsPhrase() in the server port.
+  function paintLeakCard (r) {
+    var raw = r.missedCallsWeekly
+    var big, unit
+    if (raw <= 0) { big = '0'; unit = 'calls a week' }
+    else if (raw < 1) { big = '≈ 1'; unit = 'call most weeks' }
+    else { var n = Math.round(raw); big = '≈ ' + n; unit = n === 1 ? 'call a week' : 'calls a week' }
+    $('misscount').innerHTML = big + '<small> ' + unit + '</small>'
+    $('missline').innerHTML = raw <= 0
+      ? 'Based on your answers, inquiries get a live response — the leak below is what the remaining gaps cost.'
+      : 'That’s an estimated <b>' + money(r.responseLeak) + '/month</b> walking to whichever clinic answers first.'
+    $('missreframe').textContent = (answers.b1 === 10 && answers.b2 === 10)
+      ? 'You’re tight — the numbers below show what closing the last gaps is worth.'
+      : 'Sound low? Most owners only ever see the missed calls that leave a voicemail.'
+    $('leakdrift').textContent = money(r.driftLeak)
+    $('leaknum').innerHTML = money(r.totalLeak) + '<small>/mo</small>'
+    $('punch').innerHTML = 'Recovering <b>one patient a month</b> would more than cover fixing this. The X-Ray shows you where to start.'
   }
 
   function animateNumber (el, target, ms) {
@@ -848,10 +871,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = XRAY
 
   function recompute () {
     var r = XRAY.compute(answers, overrides)
-    $('leaknum').innerHTML = money(r.totalLeak) + '<small> / month</small>'
-    $('leakdrift').textContent = money(r.driftLeak)
-    $('leakresp').textContent = money(r.responseLeak)
-    $('punch').innerHTML = 'Recovering <b>one patient a month</b> would more than cover fixing this. The X-Ray shows you where to start.'
+    paintLeakCard(r)
     paintFormula()
   }
 

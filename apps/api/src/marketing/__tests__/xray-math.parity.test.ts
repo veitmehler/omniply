@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { compute, type XrayAnswers } from '../xray-math'
+import { compute, missedCallsPhrase, type XrayAnswers } from '../xray-math'
 import { parseReportPayload } from '../../routes/xray-report'
 
 /**
@@ -42,8 +42,19 @@ describe('server math parity with web quiz', () => {
       expect(server.responseLeak).toBe(client.responseLeak)
       expect(server.totalLeak).toBe(client.totalLeak)
       expect(server.priceMultiple).toBe(client.priceMultiple)
+      expect(server.missedCallsWeekly).toBe(client.missedCallsWeekly)
     })
   }
+})
+
+describe('missedCallsPhrase', () => {
+  it('phrases the derived count like the quiz page', () => {
+    expect(missedCallsPhrase(0)).toEqual({ big: '0', unit: 'calls a week' })
+    expect(missedCallsPhrase(0.4)).toEqual({ big: '≈ 1', unit: 'call most weeks' })
+    expect(missedCallsPhrase(1.2)).toEqual({ big: '≈ 1', unit: 'call a week' })
+    expect(missedCallsPhrase(5.5)).toEqual({ big: '≈ 6', unit: 'calls a week' })
+    expect(missedCallsPhrase(10 * 0.25)).toEqual({ big: '≈ 3', unit: 'calls a week' })
+  })
 })
 
 describe('report payload parsing', () => {

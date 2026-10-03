@@ -45,6 +45,8 @@ export interface XrayResult {
   totalLeak: number
   priceMultiple: number
   missedShare: number
+  /** Derived weekly count of inquiries that get no live answer (raw, unrounded). */
+  missedCallsWeekly: number
 }
 
 const TIEBREAK = ['retention', 'speed', 'reviews', 'content'] as const
@@ -109,7 +111,22 @@ export function compute(a: XrayAnswers): XrayResult {
     totalLeak: roundDollars(total),
     priceMultiple: Math.max(1, Math.round(total / XRAY_CONFIG.PRICE_MONTHLY)),
     missedShare: missedShare(a.b1, a.b2),
+    missedCallsWeekly: a.inquiriesWeekly * missedShare(a.b1, a.b2),
   }
+}
+
+/**
+ * The headline call-count phrasing (missed-call sweep Part 1). Mirrors the
+ * quiz page's display logic — update both together.
+ *  - ≥1   → "≈ N calls a week" (singular at 1)
+ *  - <1   → "about 1 call most weeks" (a 5% share still loses the odd patient)
+ *  - 0 inquiries → "0 calls a week"
+ */
+export function missedCallsPhrase(raw: number): { big: string; unit: string } {
+  if (raw <= 0) return { big: '0', unit: 'calls a week' }
+  if (raw < 1) return { big: '≈ 1', unit: 'call most weeks' }
+  const n = Math.round(raw)
+  return { big: '≈ ' + n, unit: n === 1 ? 'call a week' : 'calls a week' }
 }
 
 // ── Copy builders (mirror the app's results screen) ───────────────────────────

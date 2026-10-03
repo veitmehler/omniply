@@ -28,6 +28,14 @@ answering the phone.
 ---
 
 ## Part 1 · X-Ray: surface the call count, reorder the story
+**✅ BUILT + DEPLOYED 2026-10-03** — derived `missedCallsWeekly` in both math
+implementations (parity-tested), results card leads with the call count +
+reframe/softener, HBR basis line in "Check our math", debrief PDF reordered
+to match (TEMPLATE_VERSION 4), §2 technology-force AI-search extension,
+P14 CTA made minute-AGNOSTIC (no runtime claim to re-sweep later), P15
+HBR source line carries the 7×/60× qualification stats. The results CTA
+itself had no minute claim. Email rebuild + GHL import still pending at
+the end of Parts 1–3 per sequencing.
 
 1. **Derived count** (both math implementations + parity test):
    `missedCallsWeekly = inquiriesWeekly × missedShare(b1,b2)` — display
