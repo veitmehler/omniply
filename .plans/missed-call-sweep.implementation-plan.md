@@ -115,7 +115,23 @@ the demo instance books into a GHL calendar live.
    alert on the demo account (public phone number on a marketing page WILL
    get abused; EL stays on the demo's own key per standing rule — watch
    its balance).
-5. This is also the real product feature ("books them on the spot" becomes
+5. **Google Calendar: via GHL native sync, NOT a direct integration**
+   (user decision 2026-10-03). A clinic on Google Calendar connects it to
+   their Omniply CRM calendar (GHL's built-in two-way sync) and our single
+   GHL booking path covers them — contact record, confirmation SMS,
+   workflows, dashboard all intact; no Google OAuth sensitive-scope
+   verification tax; consistent with the earlier call that GCal is unfit
+   as a PMS/availability layer (one-way, hours-stale iCal). Two additions
+   in its place:
+   - **Verify item (build gate):** test that `getFreeSlots` actually
+     respects synced-Google-Calendar busy times with conflict-checking on
+     — it's the linchpin of the "connection for free" claim; test, don't
+     assume.
+   - **Runbook line:** onboarding docs get "run your schedule in Google
+     Calendar? Connect it to your Omniply calendar here" so the path is
+     discoverable. Revisit a direct integration only if a real pilot runs
+     bookings on raw GCal and refuses the sync.
+6. This is also the real product feature ("books them on the spot" becomes
    literal) — client rollout (Settings UI, per-clinic calendars, E2E on a
    pilot) is explicitly POST-demo-line, tracked as its own follow-up.
 
