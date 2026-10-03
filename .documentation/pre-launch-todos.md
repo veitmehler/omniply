@@ -230,16 +230,19 @@ remains is production + the release ripple, in order:
 
 ### Edit → release ripple
 - [ ] Assemble the edit; publish to /walkthrough.
-- [ ] **Minute-claim sweep** (old walkthrough doc's standing order):
-  replace every "12-minute walkthrough" with the real runtime — master
-  pitch §7, both sales pages, /walkthrough hero+metadata, X-Ray results
-  CTA, debrief PDF template + static print HTML (+TEMPLATE_VERSION
-  bump), nurture emails 5/6/9/10 + SMS 3, outreach doc; then one email
-  rebuild + single GHL import.
-- [ ] **AI-hook pass in the same sweep** (approved 2026-09-25, deferred):
-  X-Ray report §2 technology-force extension, nurture email 3 two-wave
-  teach + email 7 bullet, X-Ray results-page bridge line. Outreach stays
-  on the leak hook.
+- [ ] **Missed-call sweep** — ABSORBS the former minute-claim sweep AND
+  the deferred AI-hook pass (both approved earlier) into ONE funnel pass,
+  now repositioned around the AI front desk / missed-call leak (user
+  decisions 2026-10-03): derived missed-call count leads the X-Ray
+  results + debrief PDF (+TEMPLATE_VERSION bump), sales heroes become
+  "How many patient calls did your practice miss this week?", Omniply
+  Loop reordered speed-first, HBR 2011 lead-response study quoted as the
+  stated basis (everything else labeled adjustable assumption), nurture
+  3/7 AI-hook edits + 5/6/9/10 + SMS 3 minute-claims, then one email
+  rebuild + single GHL import. Includes the DEMO LINE with REAL GHL
+  calendar bookings (new book_appointment voice action + demo hardening;
+  build AFTER the Scene 11 call is filmed). Full plan:
+  .plans/missed-call-sweep.implementation-plan.md
 - [ ] Scene 12 is UNGATED (option B — no page capture in the video),
   but the VO says "Omniply is open now": release the video only when
   the site gate flips (real LAUNCH_TS in its 3 places, 584e0c5).
