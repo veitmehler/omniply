@@ -68,6 +68,33 @@ export function VoiceAssistantSection() {
     }
   }
 
+  // Fetch-based download: a plain <a href> navigation bypasses the embed
+  // shell's fetch bridge (which injects the bearer token), so the proxy saw
+  // an unauthenticated request → 401 (found live 2026-10-05). fetch() rides
+  // the bridge in the embed and Clerk cookies on the web app.
+  async function downloadRecordings() {
+    setBusy(true)
+    try {
+      const res = await fetch('/api/voice-assistant/recordings', { cache: 'no-store' })
+      if (!res.ok) {
+        const d = (await res.json().catch(() => null)) as { error?: string } | null
+        toast.error(d?.error ?? 'Download failed')
+        return
+      }
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'voice-recordings.zip'
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      URL.revokeObjectURL(url)
+    } finally {
+      setBusy(false)
+    }
+  }
+
   async function saveVoice() {
     if (!selectedVoice) return
     setBusy(true)
@@ -315,11 +342,9 @@ export function VoiceAssistantSection() {
           </p>
           <div className="flex flex-wrap gap-2 pt-1">
             {state.recordingsCount ? (
-              <Button size="sm" variant="outline" asChild>
-                <a href="/api/voice-assistant/recordings">
-                  <Download className="h-3.5 w-3.5 mr-1" />
-                  Download my recordings (ZIP)
-                </a>
+              <Button size="sm" variant="outline" onClick={downloadRecordings} disabled={busy}>
+                {busy ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Download className="h-3.5 w-3.5 mr-1" />}
+                Download my recordings (ZIP)
               </Button>
             ) : null}
             <Button size="sm" variant="outline" asChild>
