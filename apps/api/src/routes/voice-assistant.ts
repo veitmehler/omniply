@@ -101,7 +101,7 @@ export async function voiceAssistantRoutes(app: FastifyInstance) {
     if (match.category === 'cloned') {
       return reply.status(400).send({
         error:
-          'Instant voice clones can\'t be used with the AI receptionist (an ElevenLabs safety rule). Create a Professional Voice Clone in ElevenLabs — your onboarding recordings are downloadable above — and pick that instead.',
+          'Instant voice clones can\'t be used with the AI receptionist — ElevenLabs allows only identity-verified Professional Voice Clones on AI agents. Create one in ElevenLabs (about 30 minutes of audio plus a spoken verification; your onboarding recordings help), and pick it here once it finishes training.',
       })
     }
 

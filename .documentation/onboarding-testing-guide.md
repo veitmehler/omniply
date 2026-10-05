@@ -155,3 +155,24 @@ video slots and accent-tinted carousels instead (the conversion's first live tes
 - [ ] Marketplace app Custom Page URL → `https://chiro.omniply.io/embed`
 - [ ] The per-client onboarding runbook (provisioning + billing token + workflows + app
   install) gets finalized with whatever Part A/6 taught us about snapshot installs
+
+## Part F — Voice assistant setup requirements (clinic-side, added 2026-10-05)
+
+What a clinic needs for the AI receptionist (Settings → Voice Assistant):
+
+1. **ElevenLabs plan**: Creator ($22/mo) or higher — includes the call
+   minutes and Professional Voice Cloning.
+2. **API key permissions** (restricted keys default to too few; the key
+   validator passes on TTS alone but provisioning then 401s):
+   - **ElevenAgents: Write** ← the one everyone misses (ElevenLabs renamed
+     "Conversational AI" to ElevenAgents in the key UI)
+   - **Voices: Write**
+   - **Text to Speech: Access** · **Speech to Text: Access** · **User: Access**
+   - Everything else: No Access (least privilege).
+3. **Voice rules (ElevenLabs platform policy)**: AI agents may NOT use
+   Instant Voice Clones — only identity-verified **Professional Voice
+   Clones**, premade, or generated voices. Provisioning starts on the
+   standard receptionist voice; to use the owner's own voice they create a
+   PVC at elevenlabs.io/app/voice-lab (≈30 min of clean audio — the
+   onboarding recordings ZIP from Settings counts toward it — plus a spoken
+   verification; training takes hours), then pick it in the Voice panel.

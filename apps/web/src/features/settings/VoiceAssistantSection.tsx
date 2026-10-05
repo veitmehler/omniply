@@ -240,7 +240,8 @@ export function VoiceAssistantSection() {
           <p className="text-sm font-medium text-card-foreground mb-1">Step 1 — connect your ElevenLabs account</p>
           <p className="text-xs text-muted-foreground mb-2">
             Create an account at elevenlabs.io (the Creator plan, $22/month, is what we recommend — it includes
-            enough call minutes for most clinics). Then open Profile → API Keys and create a key.{' '}
+            enough call minutes for most clinics and Professional Voice Cloning). Then open Profile → API Keys
+            and create a key.{' '}
             <span className="font-medium text-card-foreground">
               Copy the key from the creation dialog — it starts with sk_ and is shown only once.
             </span>{' '}
@@ -324,7 +325,7 @@ export function VoiceAssistantSection() {
               {voices.map((v) => (
                 <option key={v.voiceId} value={v.voiceId} disabled={!v.usable}>
                   {v.name}
-                  {v.category === 'professional' ? ' — your professional clone' : v.category === 'cloned' ? ' — instant clone (not usable)' : ''}
+                  {v.category === 'professional' ? ' — your professional clone' : v.category === 'cloned' ? ' — instant clone (not allowed for AI agents)' : ''}
                 </option>
               ))}
             </select>
@@ -333,24 +334,27 @@ export function VoiceAssistantSection() {
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">
-            Want the receptionist to sound like you? ElevenLabs only allows identity-verified{' '}
-            <span className="font-medium text-card-foreground">Professional Voice Clones</span> here (instant
-            clones are blocked for AI agents — a safety rule).
-            {state.recordingsCount
-              ? ` Your ${state.recordingsCount} onboarding recording${state.recordingsCount === 1 ? '' : 's'} are a head start — download them, upload them when creating your clone in ElevenLabs, then pick it here.`
-              : ' Create one in your ElevenLabs account, then pick it here.'}
+            Want the receptionist to answer in <span className="font-medium text-card-foreground">your</span>{' '}
+            voice? ElevenLabs allows only identity-verified{' '}
+            <span className="font-medium text-card-foreground">Professional Voice Clones</span> on AI agents —
+            instant clones are blocked by their safety rules, which is why some voices above are marked not
+            usable. Creating one takes three steps in ElevenLabs: upload about 30 minutes of clean audio of
+            yourself{state.recordingsCount
+              ? ` (your ${state.recordingsCount} onboarding recording${state.recordingsCount === 1 ? '' : 's'} below count toward it)`
+              : ''}, read a short verification statement aloud, and let it train for a few hours. When it
+            finishes, it appears in the list above — pick it and your receptionist switches voices.
           </p>
           <div className="flex flex-wrap gap-2 pt-1">
             {state.recordingsCount ? (
               <Button size="sm" variant="outline" onClick={downloadRecordings} disabled={busy}>
                 {busy ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Download className="h-3.5 w-3.5 mr-1" />}
-                Download my recordings (ZIP)
+                Download my onboarding recordings (ZIP)
               </Button>
             ) : null}
             <Button size="sm" variant="outline" asChild>
-              <a href="https://elevenlabs.io/app/voices" target="_blank" rel="noopener noreferrer">
+              <a href="https://elevenlabs.io/app/voice-lab" target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="h-3.5 w-3.5 mr-1" />
-                Create my voice clone in ElevenLabs
+                Create a Professional Voice Clone
               </a>
             </Button>
           </div>
