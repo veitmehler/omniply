@@ -9,7 +9,7 @@
  * clinic must create their own ElevenLabs account first.
  */
 import { useEffect, useState } from 'react'
-import { Loader2, PhoneCall, RefreshCw } from 'lucide-react'
+import { Download, ExternalLink, Loader2, PhoneCall, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 
@@ -309,19 +309,26 @@ export function VoiceAssistantSection() {
             Want the receptionist to sound like you? ElevenLabs only allows identity-verified{' '}
             <span className="font-medium text-card-foreground">Professional Voice Clones</span> here (instant
             clones are blocked for AI agents — a safety rule).
-            {state.recordingsCount ? (
-              <>
-                {' '}Your {state.recordingsCount} onboarding recording{state.recordingsCount === 1 ? '' : 's'} are a
-                head start:{' '}
-                <a className="underline text-card-foreground" href="/api/voice-assistant/recordings">
-                  download them as a ZIP
-                </a>{' '}
-                and upload them when creating your Professional Voice Clone in ElevenLabs — then pick it here.
-              </>
-            ) : (
-              ' Create one in your ElevenLabs account, then pick it here.'
-            )}
+            {state.recordingsCount
+              ? ` Your ${state.recordingsCount} onboarding recording${state.recordingsCount === 1 ? '' : 's'} are a head start — download them, upload them when creating your clone in ElevenLabs, then pick it here.`
+              : ' Create one in your ElevenLabs account, then pick it here.'}
           </p>
+          <div className="flex flex-wrap gap-2 pt-1">
+            {state.recordingsCount ? (
+              <Button size="sm" variant="outline" asChild>
+                <a href="/api/voice-assistant/recordings">
+                  <Download className="h-3.5 w-3.5 mr-1" />
+                  Download my recordings (ZIP)
+                </a>
+              </Button>
+            ) : null}
+            <Button size="sm" variant="outline" asChild>
+              <a href="https://elevenlabs.io/app/voices" target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="h-3.5 w-3.5 mr-1" />
+                Create my voice clone in ElevenLabs
+              </a>
+            </Button>
+          </div>
         </div>
       )}
 
