@@ -17,6 +17,10 @@ export interface OfferedSlot {
   startIso: string
   /** Clinic-local phrasing, e.g. "Tuesday, October 6 at 10:00 AM". */
   label: string
+  /** Day heading for grouped prompt rendering, e.g. "Monday, October 5". */
+  dayLabel: string
+  /** Time-of-day within the group, e.g. "1:30 PM". */
+  timeLabel: string
 }
 
 export interface BookingInfo {
@@ -36,38 +40,61 @@ const CACHE_MS = 60 * 1000
 /** Earliest offerable slot: not within the next 2 hours (no ambush bookings). */
 const MIN_LEAD_MS = 2 * 60 * 60 * 1000
 const WINDOW_DAYS = 7
-const MAX_SLOTS = 3
-const MAX_PER_DAY = 2
+/**
+ * Inventory sizing (reworked 2026-10-05 after the first real caller
+ * negotiated: v1's 2-per-day teaser hid genuinely free afternoon slots and
+ * the agent could only repeat itself or take a callback). The model now sees
+ * the REAL near-term inventory: every slot on the first two bookable days,
+ * every second slot further out, capped overall. The exact-ISO validator
+ * still makes invented times impossible.
+ */
+const MAX_SLOTS = 48
+const FULL_DETAIL_DAYS = 2
+const LATER_DAY_STRIDE = 2
+const MAX_PER_LATER_DAY = 8
 
-export function labelForSlot(startIso: string, timezone: string | null): string {
+function fmtParts(startIso: string, timezone: string | null): { day: string; time: string } | null {
   const d = new Date(startIso)
-  if (Number.isNaN(d.getTime())) return startIso
+  if (Number.isNaN(d.getTime())) return null
   try {
-    return new Intl.DateTimeFormat('en-US', {
-      ...(timezone ? { timeZone: timezone } : {}),
-      weekday: 'long',
-      month: 'long',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-    }).format(d)
+    const fmt = (opts: Intl.DateTimeFormatOptions) =>
+      new Intl.DateTimeFormat('en-US', { ...(timezone ? { timeZone: timezone } : {}), ...opts }).format(d)
+    return {
+      day: fmt({ weekday: 'long', month: 'long', day: 'numeric' }),
+      time: fmt({ hour: 'numeric', minute: '2-digit' }),
+    }
   } catch {
-    return startIso
+    return null
   }
 }
 
-/** Pure slot selection: sorted ISO list → the few we actually offer. */
+export function labelForSlot(startIso: string, timezone: string | null): string {
+  const p = fmtParts(startIso, timezone)
+  return p ? `${p.day} at ${p.time}` : startIso
+}
+
+/** Pure slot selection: sorted ISO list → the inventory the model may offer. */
 export function pickSlots(all: string[], now: Date, timezone: string | null): OfferedSlot[] {
   const perDay = new Map<string, number>()
+  const dayOrder: string[] = []
   const out: OfferedSlot[] = []
   for (const iso of all) {
     const t = Date.parse(iso)
     if (Number.isNaN(t) || t - now.getTime() < MIN_LEAD_MS) continue
     const day = iso.slice(0, 10)
-    const used = perDay.get(day) ?? 0
-    if (used >= MAX_PER_DAY) continue
-    perDay.set(day, used + 1)
-    out.push({ startIso: iso, label: labelForSlot(iso, timezone) })
+    if (!dayOrder.includes(day)) dayOrder.push(day)
+    const dayIndex = dayOrder.indexOf(day)
+    const seen = perDay.get(day) ?? 0
+    perDay.set(day, seen + 1)
+    if (dayIndex >= FULL_DETAIL_DAYS) {
+      // Later days: thinned (every Nth slot, capped) — enough to negotiate a
+      // day change without ballooning the prompt.
+      if (seen % LATER_DAY_STRIDE !== 0) continue
+      if (out.filter((s) => s.startIso.slice(0, 10) === day).length >= MAX_PER_LATER_DAY) continue
+    }
+    const p = fmtParts(iso, timezone)
+    if (!p) continue
+    out.push({ startIso: iso, label: `${p.day} at ${p.time}`, dayLabel: p.day, timeLabel: p.time })
     if (out.length >= MAX_SLOTS) break
   }
   return out

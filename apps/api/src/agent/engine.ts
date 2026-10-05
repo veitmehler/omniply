@@ -271,10 +271,21 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
       : { enabled: false, calendarId: null, slots: [] }
   const bookingBlock = booking.enabled
     ? [
-        'DIRECT BOOKING IS AVAILABLE ON THIS CALL. The ONLY bookable times right now (value = what you attach, phrase = what you say):',
-        ...booking.slots.map((s) => `  ${s.startIso} = ${s.label}`),
-        'When the caller wants an appointment: make sure you have their name and number first (reuse details already known; read a new number back digit by digit). Offer at most TWO of the times above in natural words — never read the raw values aloud, never list everything. When they choose one, attach book_appointment with slotStart set to the EXACT raw value for that time plus their name and phone, and confirm it aloud in the same reply ("You are booked for Tuesday, October sixth at ten A M — the team will see you then.").',
-        'NEVER invent, accept, or imply a time that is not in the list above. If none of the listed times suit the caller, do not negotiate other times — take a callback instead (request_callback) with their preferred time in their own words.',
+        'DIRECT BOOKING IS AVAILABLE ON THIS CALL. The complete list of bookable times (the raw value before each time is what you attach — the time is what you say):',
+        ...(() => {
+          const lines: string[] = []
+          let day = ''
+          for (const s of booking.slots) {
+            if (s.dayLabel !== day) {
+              day = s.dayLabel
+              lines.push(`${day}:`)
+            }
+            lines.push(`  ${s.startIso} = ${s.timeLabel}`)
+          }
+          return lines
+        })(),
+        'When the caller wants an appointment: make sure you have their name and number first (reuse details already known; read a new number back digit by digit). Offer the TWO times closest to what they asked for, in natural words — never read the whole list aloud. When they ask about a specific time or day, check the list: if it is there, offer it; if not, offer the nearest listed time and say so plainly ("the closest I have is four o\'clock"). When they choose, attach book_appointment with slotStart set to the EXACT raw value for that time plus their name and phone, and confirm it aloud in the same reply ("You are booked for Tuesday, October sixth at ten A M — the team will see you then.").',
+        'NEVER invent, accept, or imply a time that is not in the list. Only when nothing listed suits the caller: offer a callback instead (request_callback) with their preferred time in their own words.',
       ].join('\n')
     : null
 
@@ -326,9 +337,10 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
                   ? `say "In case we get cut off, I will have the team use the number you are calling from, ${input.callerPhone.replace(/[^0-9]/g, '').split('').join(' ')} — does that work?". If they confirm, attach intake_details with their name and the number ${input.callerPhone}. If they give a different number instead, read the new one back digit by digit and attach intake_details with that one.`
                   : 'ask "In case we get disconnected, what is the best number for the team to call you back?" — read the number they give back digit by digit, and attach intake_details with their name and number.',
                 'ONE attempt only: if the caller skips the name or declines a number, say "no problem" and help them anyway — NEVER ask again and NEVER make help conditional on their details. If they lead with a question instead of a name, just answer it; you may fold the intake into a later natural moment, at most once.',
-                'intake_details is silent bookkeeping — never tell the caller they have been "saved" or "added to a system".',
+                'intake_details is silent bookkeeping — never tell the caller they have been "saved" or "added to a system". Attach it ONCE, the first time both name and number are known; never re-attach it on later turns.',
+                'When the caller merely confirms something ("yes", "that is right"), continue from where the conversation stood — do not re-ask how you can help or what brings them in.',
               ].join('\n'),
-              'NEVER repeat a sentence you have already said this call, and do not end replies with recurring offers like "what can I help you with" — at most once per call, otherwise just answer.',
+              'NEVER repeat a sentence you have already said this call, and do not end replies with recurring offers like "what can I help you with" — at most once per call, otherwise just answer. Vary acknowledgements too: never open two replies with the same phrase (one "I hear you" per call, maximum).',
               'Human handoff: if the caller asks for a human, a real person, the front desk, or a staff member, attach request_human and say "Of course — connecting you to the team now." Do not argue or ask why.',
               'If the caller mentions the team did not pick up or the transfer failed, apologize briefly and offer to take a callback message (request_callback).',
               'Callbacks: confirm the phone number by reading it back digit by digit before attaching request_callback. Ask what time works best for the call back BEFORE confirming — accept a clock time or a window, repeat it back, and put their words in the preferredTime field of request_callback. Never offer a coarse either-or like morning-or-afternoon yourself; if they have no preference, proceed without one.',
