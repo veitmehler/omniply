@@ -110,8 +110,9 @@ function agentConfigBody(spec: ConvAiAgentSpec, screening: boolean): Record<stri
       // model_id included explicitly: the bare { voice_id } shape was
       // silently DROPPED by the create endpoint once (agent shipped with the
       // default voice, found live 2026-10-05) — and provisioning now
-      // verifies the voice after every write regardless.
-      ...(spec.voiceId ? { tts: { voice_id: spec.voiceId, model_id: 'eleven_turbo_v2_5' } } : {}),
+      // verifies the voice after every write regardless. English-language
+      // agents must use turbo/flash v2 (NOT v2.5 — EL validation).
+      ...(spec.voiceId ? { tts: { voice_id: spec.voiceId, model_id: 'eleven_turbo_v2' } } : {}),
     },
     ...(spec.initWebhookUrl
       ? {
@@ -163,7 +164,7 @@ export async function getConvAiAgentVoice(apiKey: string, agentId: string): Prom
 export async function setConvAiAgentVoice(apiKey: string, agentId: string, voiceId: string): Promise<void> {
   await convaiFetch<unknown>(apiKey, `/convai/agents/${agentId}`, {
     method: 'PATCH',
-    body: JSON.stringify({ conversation_config: { tts: { voice_id: voiceId, model_id: 'eleven_turbo_v2_5' } } }),
+    body: JSON.stringify({ conversation_config: { tts: { voice_id: voiceId, model_id: 'eleven_turbo_v2' } } }),
   })
 }
 
