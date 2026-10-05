@@ -7,10 +7,11 @@
  * runs against the CLINIC's ElevenLabs key stored via POST /key.
  */
 import type { FastifyInstance } from 'fastify'
-import { prisma, encrypt, canonicalAccountUserId } from '@omniply/shared'
+import archiver from 'archiver'
+import { prisma, encrypt, canonicalAccountUserId, listS3Keys, readS3Object } from '@omniply/shared'
 import { requireAuth } from '../middleware/auth'
 import { logger } from '../lib/logger'
-import { verifyElevenLabsKey } from '../lib/elevenlabs/client'
+import { verifyElevenLabsKey, listElevenLabsVoices } from '../lib/elevenlabs/client'
 import { getElevenLabsUsage } from '../lib/elevenlabs/convai'
 import { clinicElevenLabsKey, provisionVoiceAgent } from '../lib/voice-agent/provision'
 
@@ -38,6 +39,11 @@ export async function voiceAssistantRoutes(app: FastifyInstance) {
       usage = await getElevenLabsUsage(apiKey).catch(() => null)
     }
 
+    // Download-link visibility: how many onboarding voice recordings exist.
+    const recordingsCount = await listS3Keys(`onboarding/${user.accountId}/voice/`)
+      .then((k) => k.length)
+      .catch(() => 0)
+
     return {
       dismissed: Boolean(account?.voiceAgentDismissedAt),
       hasApiKey: Boolean(apiKey),
@@ -47,8 +53,91 @@ export async function voiceAssistantRoutes(app: FastifyInstance) {
       mode: config?.mode ?? 'overflow',
       transferNumber: config?.transferNumber ?? null,
       lastError: config?.lastError ?? null,
+      recordingsCount,
       usage,
     }
+  })
+
+  // GET /api/voice-assistant/voices — the clinic's ElevenLabs voices for the
+  // selector. Instant clones (category 'cloned') are listed but NOT usable:
+  // ElevenLabs forbids custom-LLM agents with IVC voices (anti-impersonation).
+  app.get('/voice-assistant/voices', async (request, reply) => {
+    const clerkId = await requireAuth(request, reply)
+    if (!clerkId) return
+    const user = await resolveUser(clerkId)
+    if (!user?.accountId) return reply.status(404).send({ error: 'No account' })
+    const account = await prisma.account.findUnique({ where: { id: user.accountId }, select: { ownerUserId: true } })
+    const apiKey = await clinicElevenLabsKey(account?.ownerUserId ?? user.id)
+    if (!apiKey) return reply.status(400).send({ error: 'No ElevenLabs API key on file yet.' })
+
+    const order: Record<string, number> = { professional: 0, premade: 1, generated: 2, cloned: 3 }
+    const voices = (await listElevenLabsVoices(apiKey))
+      .map((v) => ({
+        voiceId: v.voice_id,
+        name: v.name,
+        category: v.category ?? 'premade',
+        usable: v.category !== 'cloned',
+      }))
+      .sort((a, b) => (order[a.category] ?? 9) - (order[b.category] ?? 9) || a.name.localeCompare(b.name))
+    return { voices }
+  })
+
+  // POST /api/voice-assistant/voice — pick the agent's voice. Re-syncs the
+  // live agent when one exists (provisioning is idempotent).
+  app.post<{ Body: { voiceId?: string } }>('/voice-assistant/voice', async (request, reply) => {
+    const clerkId = await requireAuth(request, reply)
+    if (!clerkId) return
+    const user = await resolveUser(clerkId)
+    if (!user?.accountId) return reply.status(404).send({ error: 'No account' })
+    const voiceId = request.body?.voiceId?.trim()
+    if (!voiceId) return reply.status(400).send({ error: 'voiceId is required' })
+
+    const account = await prisma.account.findUnique({ where: { id: user.accountId }, select: { ownerUserId: true } })
+    const apiKey = await clinicElevenLabsKey(account?.ownerUserId ?? user.id)
+    if (!apiKey) return reply.status(400).send({ error: 'No ElevenLabs API key on file yet.' })
+
+    const match = (await listElevenLabsVoices(apiKey)).find((v) => v.voice_id === voiceId)
+    if (!match) return reply.status(400).send({ error: 'That voice was not found in your ElevenLabs account.' })
+    if (match.category === 'cloned') {
+      return reply.status(400).send({
+        error:
+          'Instant voice clones can\'t be used with the AI receptionist (an ElevenLabs safety rule). Create a Professional Voice Clone in ElevenLabs — your onboarding recordings are downloadable above — and pick that instead.',
+      })
+    }
+
+    const config = await prisma.voiceAgentConfig.upsert({
+      where: { accountId: user.accountId },
+      create: { accountId: user.accountId, voiceId },
+      update: { voiceId },
+    })
+    // A live agent picks the new voice up via the idempotent re-sync.
+    if (config.agentId) await provisionVoiceAgent(user.id)
+    logger.info({ accountId: user.accountId, voiceId, name: match.name }, '[voice-assistant] agent voice selected')
+    return { ok: true, name: match.name }
+  })
+
+  // GET /api/voice-assistant/recordings — the clinic's onboarding voice
+  // recordings as one ZIP, for creating a Professional Voice Clone in their
+  // own ElevenLabs account.
+  app.get('/voice-assistant/recordings', async (request, reply) => {
+    const clerkId = await requireAuth(request, reply)
+    if (!clerkId) return
+    const user = await resolveUser(clerkId)
+    if (!user?.accountId) return reply.status(404).send({ error: 'No account' })
+
+    const keys = await listS3Keys(`onboarding/${user.accountId}/voice/`).catch(() => [] as string[])
+    if (keys.length === 0) return reply.status(404).send({ error: 'No onboarding voice recordings on file.' })
+
+    const archive = archiver('zip', { zlib: { level: 9 } })
+    for (const key of keys) {
+      const obj = await readS3Object(key)
+      archive.append(obj.body, { name: key.split('/').pop() ?? 'recording.webm' })
+    }
+    void archive.finalize()
+    return reply
+      .header('Content-Type', 'application/zip')
+      .header('Content-Disposition', 'attachment; filename="voice-recordings.zip"')
+      .send(archive)
   })
 
   // POST /api/voice-assistant/key — store the clinic's ElevenLabs key (owner row)

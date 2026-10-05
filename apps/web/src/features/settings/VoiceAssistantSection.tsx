@@ -22,7 +22,15 @@ interface VoiceStatus {
   mode: 'overflow' | 'direct'
   transferNumber: string | null
   lastError: string | null
+  recordingsCount?: number
   usage: { tier: string | null; characterCount: number | null; characterLimit: number | null } | null
+}
+
+interface VoiceOption {
+  voiceId: string
+  name: string
+  category: string
+  usable: boolean
 }
 
 export function VoiceAssistantSection() {
@@ -32,6 +40,8 @@ export function VoiceAssistantSection() {
   const [apiKey, setApiKey] = useState('')
   const [mode, setMode] = useState<'overflow' | 'direct'>('overflow')
   const [transferNumber, setTransferNumber] = useState('')
+  const [voices, setVoices] = useState<VoiceOption[]>([])
+  const [selectedVoice, setSelectedVoice] = useState('')
 
   async function refresh() {
     try {
@@ -44,8 +54,38 @@ export function VoiceAssistantSection() {
       setState(d)
       setMode(d.mode)
       setTransferNumber(d.transferNumber ?? '')
+      setSelectedVoice((prev) => prev || d.voiceId || '')
+      if (d.hasApiKey) {
+        void fetch('/api/voice-assistant/voices', { cache: 'no-store' })
+          .then((r) => (r.ok ? r.json() : null))
+          .then((v: { voices?: VoiceOption[] } | null) => {
+            if (v?.voices) setVoices(v.voices)
+          })
+          .catch(() => {})
+      }
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function saveVoice() {
+    if (!selectedVoice) return
+    setBusy(true)
+    try {
+      const res = await fetch('/api/voice-assistant/voice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ voiceId: selectedVoice }),
+      })
+      const d = (await res.json().catch(() => null)) as { error?: string; name?: string } | null
+      if (!res.ok) {
+        toast.error(d?.error ?? 'Could not set the voice')
+        return
+      }
+      toast.success(`Voice set to ${d?.name ?? 'the selected voice'}`)
+      await refresh()
+    } finally {
+      setBusy(false)
     }
   }
 
@@ -162,8 +202,9 @@ export function VoiceAssistantSection() {
         <h2 className="text-base font-semibold text-card-foreground">Voice Assistant (AI receptionist)</h2>
       </div>
       <p className="text-sm text-muted-foreground mb-4">
-        An AI phone receptionist in your own cloned voice, powered by your ElevenLabs account. It answers with the
-        same knowledge as your chat assistant, transfers to your team on request, and takes callback messages.
+        An AI phone receptionist powered by your ElevenLabs account — in a natural voice, or your own
+        professionally cloned one. It answers with the same knowledge as your chat assistant, transfers to your
+        team on request, and takes callback messages.
       </p>
 
       {/* Step 1 — ElevenLabs account + key */}
@@ -234,8 +275,9 @@ export function VoiceAssistantSection() {
             />
           </div>
           <p className="text-xs text-muted-foreground">
-            Setup clones your voice from your onboarding recordings, creates the phone agent in your ElevenLabs
-            account, and connects a dedicated phone number.
+            Setup creates the phone agent in your ElevenLabs account and connects a dedicated phone number. It
+            starts with a natural receptionist voice — you can switch it (or use your own professionally cloned
+            voice) in the Voice panel below, any time.
           </p>
           {state.lastError && <p className="text-xs text-destructive">Last attempt: {state.lastError}</p>}
           <Button size="sm" onClick={provision} disabled={busy}>
@@ -245,13 +287,54 @@ export function VoiceAssistantSection() {
         </div>
       )}
 
+      {/* Voice — selector + recordings download (needs the ElevenLabs key) */}
+      {state.hasApiKey && (
+        <div className="rounded-lg border border-border p-4 mb-4 space-y-2">
+          <p className="text-sm font-medium text-card-foreground">Voice</p>
+          <div className="flex gap-2">
+            <select className={input} value={selectedVoice} onChange={(e) => setSelectedVoice(e.target.value)}>
+              <option value="" disabled>Choose a voice…</option>
+              {voices.map((v) => (
+                <option key={v.voiceId} value={v.voiceId} disabled={!v.usable}>
+                  {v.name}
+                  {v.category === 'professional' ? ' — your professional clone' : v.category === 'cloned' ? ' — instant clone (not usable)' : ''}
+                </option>
+              ))}
+            </select>
+            <Button size="sm" onClick={saveVoice} disabled={busy || !selectedVoice || selectedVoice === state.voiceId}>
+              {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Use this voice'}
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Want the receptionist to sound like you? ElevenLabs only allows identity-verified{' '}
+            <span className="font-medium text-card-foreground">Professional Voice Clones</span> here (instant
+            clones are blocked for AI agents — a safety rule).
+            {state.recordingsCount ? (
+              <>
+                {' '}Your {state.recordingsCount} onboarding recording{state.recordingsCount === 1 ? '' : 's'} are a
+                head start:{' '}
+                <a className="underline text-card-foreground" href="/api/voice-assistant/recordings">
+                  download them as a ZIP
+                </a>{' '}
+                and upload them when creating your Professional Voice Clone in ElevenLabs — then pick it here.
+              </>
+            ) : (
+              ' Create one in your ElevenLabs account, then pick it here.'
+            )}
+          </p>
+        </div>
+      )}
+
       {/* Ready — management panel */}
       {ready && (
         <div className="rounded-lg border border-border p-4 space-y-3">
           <p className="text-sm text-card-foreground">
             <span className="font-medium">Live.</span> Your AI receptionist answers on{' '}
             <span className="font-mono">{state.phoneNumber}</span>
-            {state.voiceId ? ' in your cloned voice.' : ' (standard voice — no clone available yet).'}
+            {(() => {
+              const v = voices.find((x) => x.voiceId === state.voiceId)
+              return v ? ` with the voice "${v.name}".` : '.'
+            })()}
           </p>
           {state.mode === 'overflow' ? (
             <p className="text-xs text-muted-foreground">

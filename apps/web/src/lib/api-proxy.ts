@@ -90,11 +90,15 @@ export async function proxyToApi(
   const responseBody = await upstreamResponse.arrayBuffer()
   const responseContentType =
     upstreamResponse.headers.get('content-type') ?? 'application/json'
+  // File downloads (e.g. the voice-recordings ZIP) need the attachment
+  // filename to survive the proxy hop.
+  const disposition = upstreamResponse.headers.get('content-disposition')
 
   return new NextResponse(responseBody, {
     status: upstreamResponse.status,
     headers: {
       'Content-Type': responseContentType,
+      ...(disposition ? { 'Content-Disposition': disposition } : {}),
     },
   })
 }

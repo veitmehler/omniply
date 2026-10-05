@@ -9,7 +9,12 @@
  *
  * Steps:
  *   1. mint the custom-LLM secret (Account.voiceAgentSecret)
- *   2. instant voice clone from the archived onboarding recordings
+ *   2. voice selection: the stored voiceId, else the standard receptionist
+ *      voice. (Auto-IVC from onboarding recordings was REMOVED 2026-10-05:
+ *      ElevenLabs forbids custom-LLM agents with Instant Voice Clones —
+ *      anti-impersonation control. Clinics download their recordings from
+ *      Settings, create an identity-verified Professional Voice Clone in
+ *      their own ElevenLabs account, and pick it in the voice selector.)
  *   3. create/update the ConvAI agent (custom-LLM → our /agent/voice/:secret)
  *   4. number supply: per-clinic Twilio subaccount under OUR master account,
  *      buy a local voice number, import it into the clinic's ElevenLabs
@@ -19,13 +24,13 @@
  * route); partial progress persists so the next run resumes.
  */
 import { randomBytes } from 'node:crypto'
-import { prisma, decrypt, brandSettingsForUser, listS3Keys, readS3Object } from '@omniply/shared'
+import { prisma, decrypt, brandSettingsForUser } from '@omniply/shared'
 import { logger } from '../logger'
-import { cloneElevenLabsVoiceFromSamples } from '../elevenlabs/client'
 import { createConvAiAgent, updateConvAiAgent, importTwilioNumber, type ConvAiAgentSpec } from '../elevenlabs/convai'
 import { buyVoiceNumber, createTwilioSubaccount, getTwilioSubaccountToken, twilioConfigured, type TwilioAddress } from '../twilio'
 
-const MAX_CLONE_SAMPLES = 6
+/** ElevenLabs premade "Rachel" — calm, natural receptionist default. */
+export const DEFAULT_AGENT_VOICE_ID = '21m00Tcm4TlvDq8ikWAM'
 
 export async function ensureVoiceAgentSecret(accountId: string): Promise<string> {
   const account = await prisma.account.findUnique({ where: { id: accountId }, select: { voiceAgentSecret: true } })
@@ -100,24 +105,14 @@ export async function provisionVoiceAgent(
     const persist = (data: Record<string, unknown>) =>
       prisma.voiceAgentConfig.update({ where: { accountId }, data })
 
-    // ── Voice clone (reused when already cloned) ─────────────────────────────
+    // ── Voice selection (no auto-clone — see header) ─────────────────────────
     let voiceId = config.voiceId
     if (!voiceId) {
-      const keys = (await listS3Keys(`onboarding/${accountId}/voice/`)).slice(0, MAX_CLONE_SAMPLES)
-      if (keys.length === 0) {
-        notes.push('No onboarding voice recordings found — agent uses the ElevenLabs default voice until a clone is made.')
-      } else {
-        const samples = []
-        for (const key of keys) {
-          const obj = await readS3Object(key)
-          samples.push({ buffer: obj.body, filename: key.split('/').pop() ?? 'sample.webm' })
-        }
-        const clone = await cloneElevenLabsVoiceFromSamples({ apiKey, name: `${practiceName} — Omniply voice`, samples })
-        voiceId = clone.voice_id
-        await persist({ voiceId })
-        notes.push(`Voice cloned from ${samples.length} onboarding recording(s).`)
-        logger.info({ accountId, voiceId, samples: samples.length }, '[voice-agent] instant voice clone created')
-      }
+      voiceId = DEFAULT_AGENT_VOICE_ID
+      await persist({ voiceId })
+      notes.push(
+        'Using the standard receptionist voice. To use your own: download your onboarding recordings in Settings, create a Professional Voice Clone in ElevenLabs, then pick it in the voice selector.',
+      )
     }
 
     // ── Agent create/update ──────────────────────────────────────────────────
