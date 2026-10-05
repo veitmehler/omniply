@@ -107,7 +107,11 @@ function agentConfigBody(spec: ConvAiAgentSpec, screening: boolean): Record<stri
           },
         },
       },
-      ...(spec.voiceId ? { tts: { voice_id: spec.voiceId } } : {}),
+      // model_id included explicitly: the bare { voice_id } shape was
+      // silently DROPPED by the create endpoint once (agent shipped with the
+      // default voice, found live 2026-10-05) — and provisioning now
+      // verifies the voice after every write regardless.
+      ...(spec.voiceId ? { tts: { voice_id: spec.voiceId, model_id: 'eleven_turbo_v2_5' } } : {}),
     },
     ...(spec.initWebhookUrl
       ? {
@@ -143,6 +147,24 @@ export async function createConvAiAgent(apiKey: string, spec: ConvAiAgentSpec): 
       body: JSON.stringify(agentConfigBody(spec, false)),
     })
   }
+}
+
+/** The agent's configured TTS voice (null when ElevenLabs has none set). */
+export async function getConvAiAgentVoice(apiKey: string, agentId: string): Promise<string | null> {
+  const a = await convaiFetch<{ conversation_config?: { tts?: { voice_id?: string } } }>(
+    apiKey,
+    `/convai/agents/${agentId}`,
+    { method: 'GET' },
+  )
+  return a.conversation_config?.tts?.voice_id ?? null
+}
+
+/** Targeted voice patch — the verify-after-write repair path. */
+export async function setConvAiAgentVoice(apiKey: string, agentId: string, voiceId: string): Promise<void> {
+  await convaiFetch<unknown>(apiKey, `/convai/agents/${agentId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ conversation_config: { tts: { voice_id: voiceId, model_id: 'eleven_turbo_v2_5' } } }),
+  })
 }
 
 export async function updateConvAiAgent(apiKey: string, agentId: string, spec: ConvAiAgentSpec): Promise<void> {

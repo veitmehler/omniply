@@ -26,7 +26,14 @@
 import { randomBytes } from 'node:crypto'
 import { prisma, decrypt, brandSettingsForUser } from '@omniply/shared'
 import { logger } from '../logger'
-import { createConvAiAgent, updateConvAiAgent, importTwilioNumber, type ConvAiAgentSpec } from '../elevenlabs/convai'
+import {
+  createConvAiAgent,
+  updateConvAiAgent,
+  getConvAiAgentVoice,
+  setConvAiAgentVoice,
+  importTwilioNumber,
+  type ConvAiAgentSpec,
+} from '../elevenlabs/convai'
 import { buyVoiceNumber, createTwilioSubaccount, getTwilioSubaccountToken, twilioConfigured, type TwilioAddress } from '../twilio'
 
 /** ElevenLabs premade "Rachel" — calm, natural receptionist default. */
@@ -139,6 +146,24 @@ export async function provisionVoiceAgent(
       await persist({ agentId })
       notes.push('Agent created.')
       logger.info({ accountId, agentId }, '[voice-agent] ConvAI agent created')
+    }
+
+    // Verify-after-write: ElevenLabs silently DROPPED the tts block on
+    // create once (agent answered in the default voice, found live
+    // 2026-10-05). Read the agent back, repair with a targeted patch, and
+    // fail LOUDLY if the voice still doesn't stick — never ship a stranger's
+    // voice marked 'ready'.
+    const applied = await getConvAiAgentVoice(apiKey, agentId).catch(() => null)
+    if (applied !== voiceId) {
+      await setConvAiAgentVoice(apiKey, agentId, voiceId).catch(() => {})
+      const after = await getConvAiAgentVoice(apiKey, agentId).catch(() => null)
+      if (after !== voiceId) {
+        return await fail(
+          'ElevenLabs did not apply the selected voice to the agent. Check the API key still has the ElevenAgents (Conversational AI) WRITE permission in ElevenLabs, then retry.',
+        )
+      }
+      notes.push('Voice re-applied (ElevenLabs dropped it on the first write).')
+      logger.warn({ accountId, agentId, voiceId }, '[voice-agent] voice dropped by EL — repaired via targeted patch')
     }
 
     // ── Number supply (skipped gracefully until Twilio env is set) ───────────
