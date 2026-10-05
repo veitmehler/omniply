@@ -54,6 +54,36 @@ export function VoiceAssistantSection() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Dashboard "Set it up" lands on /settings#voice-assistant, but the
+  // browser's native hash-scroll fires at first paint — before the dozen
+  // async sections ABOVE this one finish loading and expand, which pushes
+  // this section far below the viewport (user reported landing on the chat
+  // embed area, 2026-10-05). Re-pin once our own fetch settles, and again
+  // after the slower sections above have grown.
+  useEffect(() => {
+    if (loading) return
+    if (typeof window === 'undefined' || window.location.hash !== '#voice-assistant') return
+    let cancelled = false
+    const pin = () => {
+      if (cancelled) return
+      document.getElementById('voice-assistant')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+    // A manual scroll (wheel/touch) hands control back to the user.
+    const cancel = () => { cancelled = true }
+    window.addEventListener('wheel', cancel, { once: true, passive: true })
+    window.addEventListener('touchmove', cancel, { once: true, passive: true })
+    pin()
+    const t1 = setTimeout(pin, 700)
+    const t2 = setTimeout(pin, 1600)
+    return () => {
+      cancelled = true
+      clearTimeout(t1)
+      clearTimeout(t2)
+      window.removeEventListener('wheel', cancel)
+      window.removeEventListener('touchmove', cancel)
+    }
+  }, [loading])
+
   async function saveKey() {
     if (!apiKey.trim()) return
     setBusy(true)
