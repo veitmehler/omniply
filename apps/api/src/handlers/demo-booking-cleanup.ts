@@ -17,6 +17,9 @@ import type PgBoss from 'pg-boss'
 import { prisma } from '@omniply/shared'
 import { getGhlCredentials } from '../lib/ghl/settings'
 import { deleteGhlCalendarEvent } from '../lib/ghl/client'
+import { getElevenLabsUsage } from '../lib/elevenlabs/convai'
+import { clinicElevenLabsKey } from '../lib/voice-agent/provision'
+import { sendFailureAlert } from '../lib/alerts'
 import { logger } from '../lib/logger'
 
 export async function demoBookingCleanupHandler(_jobs: PgBoss.Job<unknown>[]): Promise<void> {
@@ -25,6 +28,27 @@ export async function demoBookingCleanupHandler(_jobs: PgBoss.Job<unknown>[]): P
     .map((s) => s.trim())
     .filter(Boolean)
   if (!accountIds.length) return
+
+  // Spend tripwire (sweep Part 4b): the demo number is public and the
+  // ElevenLabs minutes run on the demo's own key — alert at 80% of the
+  // plan's monthly included usage so a prank wave can't silently drain it.
+  for (const accountId of accountIds) {
+    try {
+      const owner = (await prisma.account.findUnique({ where: { id: accountId }, select: { ownerUserId: true } }))?.ownerUserId
+      const key = owner ? await clinicElevenLabsKey(owner) : null
+      if (!key) continue
+      const usage = await getElevenLabsUsage(key)
+      if (usage?.characterLimit && (usage.characterCount ?? 0) / usage.characterLimit >= 0.8) {
+        await sendFailureAlert({
+          errorType: 'demo-elevenlabs-usage',
+          message: `Demo voice line has used ${Math.round(((usage.characterCount ?? 0) / usage.characterLimit) * 100)}% of the ElevenLabs plan's monthly included usage (account ${accountId}). Consider topping up or taking the public number off the X-Ray page until the cycle resets.`,
+          context: { accountId },
+        })
+      }
+    } catch (err) {
+      logger.warn({ err, accountId }, '[demo-cleanup] EL usage check failed')
+    }
+  }
 
   const cutoff = new Date(Date.now() - 60 * 60 * 1000)
   const rows = await prisma.agentAppointment.findMany({

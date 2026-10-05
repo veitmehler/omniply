@@ -36,6 +36,18 @@ import { bookingInfoFor, type BookingInfo } from './booking'
 export const INCLUDED_DAILY_BUDGET_USD = 1.5
 export const ABUSE_CEILING_USD = 15
 
+/** Demo-line hardening (sweep Part 4b): calls per caller per day on PUBLIC demo numbers. */
+export const DEMO_DAILY_CALL_CAP = 4
+
+function demoAccountIds(): Set<string> {
+  return new Set(
+    (process.env.DEMO_BOOKING_CLEANUP_ACCOUNT_IDS ?? '')
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean),
+  )
+}
+
 export interface TurnInput {
   accountId: string
   conversationId?: string | null
@@ -193,6 +205,35 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
     },
   })
 
+  // Demo-line call cap (sweep Part 4b): the demo number is PUBLIC on the
+  // X-Ray results page — the same caller gets a few calls a day, then a
+  // polite goodbye instead of LLM/ElevenLabs spend. Voice conversations are
+  // per-call (visitorKey = EL conversation id), so counting rows = calls.
+  if (
+    channel === 'voice' &&
+    input.callerPhone &&
+    demoAccountIds().has(input.accountId) &&
+    conversation.turnCount === 0
+  ) {
+    const dayStart = new Date()
+    dayStart.setUTCHours(0, 0, 0, 0)
+    const callsToday = await prisma.agentConversation.count({
+      where: { accountId: input.accountId, channel: 'voice', callerPhone: input.callerPhone, createdAt: { gte: dayStart } },
+    })
+    if (callsToday > DEMO_DAILY_CALL_CAP) {
+      const reply =
+        'Thanks for trying the demo again! To keep this line free for other visitors, it allows a few calls per caller each day. Everything else about Omniply is at omniply dot io, or call again tomorrow. Goodbye!'
+      await persistTurn({ conversationId: conversation.id, visitorText: message, reply, action: null, filtered: false, endedReason: 'demo-cap' })
+      logger.info({ accountId: input.accountId, callsToday }, '[agent] demo call cap reached')
+      return { conversationId: conversation.id, reply, action: null, bookingUrl: ctx.bookingUrl, guideTitle: null, guideLink: null, messageMode: false, ended: 'demo-cap' }
+    }
+  }
+  if (conversation.endedReason === 'demo-cap') {
+    const reply = 'This demo line allows a few calls per caller each day. See omniply dot io, or call again tomorrow. Goodbye!'
+    await persistTurn({ conversationId: conversation.id, visitorText: message, reply, action: null, filtered: false })
+    return { conversationId: conversation.id, reply, action: null, bookingUrl: ctx.bookingUrl, guideTitle: null, guideLink: null, messageMode: false, ended: 'demo-cap' }
+  }
+
   // Message mode: set by the initiation webhook pre-creating the rescue
   // conversation (one-number design), or explicitly by the transport.
   const messageMode = (channel === 'voice' && Boolean(conversation.rescueSourceId)) || input.voiceMode === 'message'
@@ -284,7 +325,7 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
           }
           return lines
         })(),
-        'When the caller wants an appointment: make sure you have their name and number first (reuse details already known; read a new number back digit by digit). Offer the TWO times closest to what they asked for, in natural words — never read the whole list aloud. When they ask about a specific time or day, check the list: if it is there, offer it; if not, offer the nearest listed time and say so plainly ("the closest I have is four o\'clock"). When they choose, attach book_appointment with slotStart set to the EXACT raw value for that time plus their name and phone, and confirm it aloud in the same reply ("You are booked for Tuesday, October sixth at ten A M — the team will see you then.").',
+        'When the caller wants an appointment: make sure you have their name and number first (reuse details already known; read a new number back digit by digit). Offer AT MOST THREE times in one reply, each at a DIFFERENT hour, spread across what is available (for example one morning, one midday, one late afternoon) — more than three spoken times in a row is impossible to follow on the phone, and NEVER read the whole list. When they ask about a specific time or day, answer just for that: offer it if listed, otherwise the nearest listed time, said plainly ("the closest I have is four o\'clock"). When they choose, attach book_appointment with slotStart set to the EXACT raw value for that time plus their name and phone, and confirm it aloud in the same reply ("You are booked for Tuesday, October sixth at ten A M — the team will see you then.").',
         'NEVER invent, accept, or imply a time that is not in the list. Only when nothing listed suits the caller: offer a callback instead (request_callback) with their preferred time in their own words.',
       ].join('\n')
     : null

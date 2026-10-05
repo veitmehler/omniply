@@ -194,7 +194,19 @@ per-clinic calendars, GCal-sync free-slots verify, pilot E2E).
    literal) — client rollout (Settings UI, per-clinic calendars, E2E on a
    pilot) is explicitly POST-demo-line, tracked as its own follow-up.
 
-**4b · Results-page demo block** (~0.25 day, after 4a)
+**4b · Results-page demo block**
+**✅ BUILT 2026-10-05** — "Don't take our word for it" block on the X-Ray
+results page with the live demo number (507) 483-5331 as a tel: button;
+go-public hardening shipped with it: per-caller cap of 4 calls/day on
+demo accounts (polite spoken goodbye, no LLM/EL spend; counts voice
+conversations per callerPhone, per-call visitorKeys verified), and an
+80%-of-plan ElevenLabs usage tripwire in the nightly demo cron. Same
+commit: first-offer rule tightened to ≤3 times at different hours (real
+call read 8 adjacent slots in one breath). Max-call-duration cap on the
+EL agent deferred (vendor-validation risk after the turbo-v2 episode;
+revisit at client rollout).
+
+(original scope: ~0.25 day, after 4a)
 Under their leak number: "Don't take our word — call our demo practice and
 watch the AI book you: (555) …" with the number styled as the proof moment.
 Page works fine if the line is down (block is static copy).
