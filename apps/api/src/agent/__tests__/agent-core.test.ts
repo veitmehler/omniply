@@ -160,7 +160,7 @@ describe('open-now computation', () => {
     expect(s.openNow).toBe(true)
     expect(s.verdict).toBe('Open now — closes at 6:00 PM.')
     expect(s.todayLine).toContain('Tuesday')
-    expect(s.localTime).toBe('Tuesday 2:00 PM')
+    expect(s.localTime).toBe('Tuesday, August 4, 2:00 PM')
   })
 
   it('closed evening → opens tomorrow', () => {

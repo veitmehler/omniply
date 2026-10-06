@@ -12,6 +12,7 @@
 import type { PlacePeriod } from '../lib/google/places'
 
 const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 const WEEK_MIN = 7 * 24 * 60
 
 export interface OpenStatus {
@@ -49,7 +50,9 @@ export function computeOpenStatus(
   const local = new Date(nowUtc.getTime() + utcOffsetMinutes * 60_000)
   const day = local.getUTCDay()
   const nowMin = toMinutes(day, `${String(local.getUTCHours()).padStart(2, '0')}${String(local.getUTCMinutes()).padStart(2, '0')}`)
-  const localTime = `${DAY_NAMES[day]} ${fmtTime(nowMin % (24 * 60))}`
+  // Full date included so "today"/"Thursday" questions never require the
+  // model to guess the calendar (negative-availability bug, 2026-10-06).
+  const localTime = `${DAY_NAMES[day]}, ${MONTH_NAMES[local.getUTCMonth()]} ${local.getUTCDate()}, ${fmtTime(nowMin % (24 * 60))}`
   // weekday_text is Monday-first; day 0=Sunday sits at index 6.
   const todayLine = weekdayText?.split('\n')[(day + 6) % 7]
 

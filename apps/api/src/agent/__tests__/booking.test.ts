@@ -43,11 +43,14 @@ describe('pickSlots', () => {
     expect(wednesday.length).toBeGreaterThan(0)
   })
 
-  it('carries day/time labels for grouped prompt rendering', () => {
-    const out = pickSlots(['2026-10-06T10:00:00-07:00'], NOW, TZ)
-    expect(out[0].dayLabel).toContain('Tuesday')
-    expect(out[0].timeLabel).toBe('10:00 AM')
-    expect(out[0].label).toBe(`${out[0].dayLabel} at ${out[0].timeLabel}`)
+  it('carries day/time labels + server-computed TODAY/TOMORROW markers', () => {
+    const out = pickSlots(['2026-10-05T13:00:00-07:00', '2026-10-06T10:00:00-07:00', '2026-10-08T10:00:00-07:00'], NOW, TZ)
+    expect(out[0].relative).toBe('TODAY') // Monday, NOW's clinic-local day
+    expect(out[1].dayLabel).toContain('Tuesday')
+    expect(out[1].relative).toBe('TOMORROW')
+    expect(out[2].relative).toBeNull()
+    expect(out[1].timeLabel).toBe('10:00 AM')
+    expect(out[1].label).toBe(`${out[1].dayLabel} at ${out[1].timeLabel}`)
   })
 
   it('empty input and all-too-soon input produce no slots', () => {

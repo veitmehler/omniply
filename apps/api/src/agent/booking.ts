@@ -18,6 +18,9 @@ export interface OfferedSlot {
   label: string
   /** Day heading for grouped prompt rendering, e.g. "Monday, October 5". */
   dayLabel: string
+  /** Clinic-local relative marker for the group header (date-mapping done
+   *  server-side so the model never derives which day "today" is). */
+  relative: 'TODAY' | 'TOMORROW' | null
   /** Time-of-day within the group, e.g. "1:30 PM". */
   timeLabel: string
 }
@@ -81,6 +84,8 @@ export function pickSlots(all: string[], now: Date, timezone: string | null): Of
   const perDay = new Map<string, number>()
   const dayOrder: string[] = []
   const out: OfferedSlot[] = []
+  const todayLabel = fmtParts(now.toISOString(), timezone)?.day ?? null
+  const tomorrowLabel = fmtParts(new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString(), timezone)?.day ?? null
   for (const iso of all) {
     const t = Date.parse(iso)
     if (Number.isNaN(t) || t - now.getTime() < MIN_LEAD_MS) continue
@@ -97,7 +102,13 @@ export function pickSlots(all: string[], now: Date, timezone: string | null): Of
     }
     const p = fmtParts(iso, timezone)
     if (!p) continue
-    out.push({ startIso: iso, label: `${p.day} at ${p.time}`, dayLabel: p.day, timeLabel: p.time })
+    out.push({
+      startIso: iso,
+      label: `${p.day} at ${p.time}`,
+      dayLabel: p.day,
+      timeLabel: p.time,
+      relative: p.day === todayLabel ? 'TODAY' : p.day === tomorrowLabel ? 'TOMORROW' : null,
+    })
     if (out.length >= MAX_SLOTS) break
   }
   return out

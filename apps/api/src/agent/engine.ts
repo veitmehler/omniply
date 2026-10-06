@@ -319,7 +319,7 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
     for (const s of booking.slots) {
       if (s.dayLabel !== day) {
         day = s.dayLabel
-        lines.push(`${day}:`)
+        lines.push(`${day}${s.relative ? ` (${s.relative})` : ''}:`)
       }
       lines.push(`  ${s.startIso} = ${s.timeLabel}`)
     }
@@ -333,6 +333,7 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
         ...groupedSlotLines(),
         'When the caller wants an appointment: make sure you have their name and number first (reuse details already known; read a new number back digit by digit). Offer AT MOST THREE times in one reply, each at a DIFFERENT hour, spread across what is available (for example one morning, one midday, one late afternoon) — more than three spoken times in a row is impossible to follow on the phone, and NEVER read the whole list. When they ask about a specific time or day, answer just for that: offer it if listed, otherwise the nearest listed time, said plainly ("the closest I have is four o\'clock"). When they choose, attach book_appointment with slotStart set to the EXACT raw value for that time plus their name and phone, and confirm it aloud in the same reply ("You are booked for Tuesday, October sixth at ten A M — the team will see you then.").',
         'NEVER invent, accept, or imply a time that is not in the list. Only when nothing listed suits the caller: offer a callback instead (request_callback) with their preferred time in their own words.',
+        'Day groups may be marked (TODAY) or (TOMORROW) — that mapping is authoritative. When the caller names a day (today, tomorrow, a weekday), offer times FROM THAT GROUP first. NEVER say a day is booked, full, or unavailable unless that day has NO group in the list: absence from the list is the ONLY evidence of unavailability.',
         'After confirming a booking, if no email is in KNOWN VISITOR DETAILS you may offer ONCE to email the appointment details — follow the EMAIL ADDRESSES BY VOICE procedure (spell-confirm before attaching add_contact_email); the confirmation email then sends automatically.',
       ].join('\n')
       : [
@@ -340,6 +341,7 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
           ...groupedSlotLines(),
           'When the visitor wants an appointment: collect their full name and best phone number first (plain digits with hyphens). Offer at most THREE times, each at a different hour, spread across what is available — never paste the whole list. When they ask about a specific time or day, answer just for that: offer it if listed, otherwise the nearest listed time. When they choose, attach book_appointment with slotStart set to the EXACT raw value for that time plus their name and phone, and confirm it in the same reply ("You\'re booked for Tuesday, October 6 at 10:00 AM — the team will see you then.").',
           'NEVER invent, accept, or imply a time that is not in the list. Only when nothing listed suits them: offer a callback instead (request_callback) with their preferred time in their own words.',
+          'Day groups may be marked (TODAY) or (TOMORROW) — that mapping is authoritative. When the caller names a day (today, tomorrow, a weekday), offer times FROM THAT GROUP first. NEVER say a day is booked, full, or unavailable unless that day has NO group in the list: absence from the list is the ONLY evidence of unavailability.',
           'After confirming a booking, if no email is known you may offer ONCE to email the appointment details; when they give an address, attach add_contact_email — the confirmation email then sends automatically. Never promise an email you were not given an address for.',
         ].join('\n')
     : booking.mode === 'advisory-gcal' && booking.slots.length
@@ -349,12 +351,14 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
           ...groupedSlotLines(),
           'When the caller asks about times: share AT MOST THREE of these, each at a different hour — and ALWAYS with this caveat, in your own natural words: you can currently see availability at those times, but the front desk may have recently booked one of them, so they should open the booking link you are sending, confirm the available times there, and book the appointment right on that page at their convenience. Then attach send_booking_link (texted on this call).',
           'NEVER present these times as guaranteed or "booked", NEVER attach book_appointment, and never skip the caveat. If the caller cannot use the link, take a callback instead (request_callback) with their preferred time in their own words.',
+          'Day groups may be marked (TODAY) or (TOMORROW) — that mapping is authoritative. When the caller names a day (today, tomorrow, a weekday), offer times FROM THAT GROUP first. NEVER say a day is booked, full, or unavailable unless that day has NO group in the list: absence from the list is the ONLY evidence of unavailability.',
         ].join('\n')
         : [
             'AVAILABILITY GUIDANCE — ADVISORY ONLY (you CANNOT book in this chat). Times currently visible on the practice calendar:',
             ...groupedSlotLines(),
             'When the visitor asks about times: share AT MOST THREE, each at a different hour — and ALWAYS with this caveat in your own words: you can currently see availability at those times, but the front desk may have recently booked one of them, so they should open the booking page (attach send_booking_link — it opens right here in the chat), confirm the available times there, and book at their convenience.',
             'NEVER present these times as guaranteed, NEVER attach book_appointment, never skip the caveat. If they prefer, take a callback instead (request_callback).',
+            'Day groups may be marked (TODAY) or (TOMORROW) — that mapping is authoritative. When the caller names a day (today, tomorrow, a weekday), offer times FROM THAT GROUP first. NEVER say a day is booked, full, or unavailable unless that day has NO group in the list: absence from the list is the ONLY evidence of unavailability.',
           ].join('\n')
       : booking.mode === 'patterns' && ctx.availabilityPatterns
         ? isVoiceBooking
