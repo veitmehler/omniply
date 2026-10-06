@@ -87,6 +87,7 @@ model Account {
   agentBookingConfig     Json?
   agentAppointments      AgentAppointment[]
   pmsSyncState           PmsSyncState?
+  pmsPatientIndex        PmsPatientIndex[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -127,10 +128,33 @@ model PmsSyncState {
   provider           String
   patientsCursor     DateTime?
   appointmentsCursor DateTime?
+  // Initial full-base backfill (seeds the phone index): next-page URL while
+  // in progress, null once complete.
+  backfillCursor     String?
   lastError          String?
   updatedAt          DateTime  @default(now()) @updatedAt
 
   @@map("pms_sync_state")
+}
+
+// Phone → PMS-patient index (PMS framework v2): Cliniko can't filter
+// patients by phone (official docs), so the poller/backfill builds our own
+// lookup — the voice agent identifies callers by caller-ID, so booking
+// matches phone-first (name disambiguates shared family numbers).
+model PmsPatientIndex {
+  id                String   @id @default(cuid())
+  accountId         String
+  account           Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  provider          String
+  externalPatientId String
+  phoneNormalized   String?
+  name              String?
+  email             String?
+  updatedAt         DateTime @default(now()) @updatedAt
+
+  @@unique([accountId, provider, externalPatientId])
+  @@index([accountId, provider, phoneNormalized])
+  @@map("pms_patient_index")
 }
 
 // Owner-managed roster of teammate emails (no invitations). A user whose email

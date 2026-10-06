@@ -12,7 +12,14 @@ import type PgBoss from 'pg-boss'
 import { prisma } from '@omniply/shared'
 import { logger } from '../lib/logger'
 import { intakeContacts, type IntakeRow } from '../lib/contacts/intake'
-import { clinicoApiKeyFor, fetchChangedPatients, fetchChangedAppointments, fetchPatientById } from '../lib/booking/cliniko'
+import {
+  clinicoApiKeyFor,
+  fetchChangedPatients,
+  fetchChangedAppointments,
+  fetchPatientById,
+  fetchPatientsPage,
+  upsertPatientIndexRows,
+} from '../lib/booking/cliniko'
 
 const BATCH = 100
 
@@ -39,14 +46,51 @@ export async function pmsContactPollHandler(_jobs: PgBoss.Job<unknown>[]): Promi
   }
 }
 
+/** Pages of the full-base backfill processed per 5-min tick (rate-friendly). */
+const BACKFILL_PAGES_PER_TICK = 5
+
 async function pollClinikoAccount(accountId: string, ownerUserId: string): Promise<void> {
   const apiKey = await clinicoApiKeyFor(ownerUserId)
   if (!apiKey) return
   const state = await prisma.pmsSyncState.findUnique({ where: { accountId } })
 
-  // Patients changed since cursor → demographics into the pipe.
+  // Initial full-base backfill: seeds the phone→patient index (booking
+  // match) AND the CRM with the clinic's existing patients. Runs in page
+  // budgets across ticks; cursor = Cliniko's own links.next URL.
+  const indexCount = await prisma.pmsPatientIndex.count({ where: { accountId, provider: 'cliniko' } })
+  const backfillDone = state?.patientsCursor != null && state?.backfillCursor == null && indexCount > 0
+  if (!backfillDone) {
+    let pageUrl = state?.backfillCursor ?? null
+    for (let i = 0; i < BACKFILL_PAGES_PER_TICK; i++) {
+      const page = await fetchPatientsPage(apiKey, pageUrl)
+      if (page.patients.length) {
+        await upsertPatientIndexRows(accountId, page.patients)
+        await intakeContacts(
+          accountId,
+          'cliniko',
+          page.patients.map((p) => ({
+            name: [p.firstName, p.lastName].filter(Boolean).join(' ') || null,
+            phone: p.phone,
+            email: p.email,
+          })),
+        )
+      }
+      pageUrl = page.next
+      if (!pageUrl) break
+    }
+    await prisma.pmsSyncState.upsert({
+      where: { accountId },
+      create: { accountId, provider: 'cliniko', backfillCursor: pageUrl, patientsCursor: pageUrl ? null : new Date(), lastError: null },
+      update: { backfillCursor: pageUrl, ...(pageUrl ? {} : { patientsCursor: new Date() }), lastError: null },
+    })
+    logger.info({ accountId, backfillComplete: !pageUrl, indexCount }, '[pms-poll] cliniko backfill tick')
+    if (pageUrl) return // keep backfilling next tick before incremental sync
+  }
+
+  // Patients changed since cursor → index + demographics into the pipe.
   const patients = await fetchChangedPatients(apiKey, state?.patientsCursor ?? null, BATCH)
   if (patients.length) {
+    await upsertPatientIndexRows(accountId, patients)
     const rows: IntakeRow[] = patients.map((p) => ({
       name: [p.firstName, p.lastName].filter(Boolean).join(' ') || null,
       phone: p.phone,

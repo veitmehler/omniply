@@ -149,10 +149,12 @@ export const clinikoProvider: BookingProvider = {
     }
     if (!practitionerId) throw new Error(`Cliniko slot no longer available: ${args.slotStart}`)
 
-    // Patient: match by email when we have one, else create (plan default:
-    // create-if-new, source-tagged; clinical record stays Cliniko's).
-    let patientId: string | null = null
-    if (args.email) {
+    // Patient matching, phone-FIRST (the voice agent identifies callers by
+    // caller-ID; Cliniko can't filter by phone, so we use our own index,
+    // fed by the poller/backfill). Shared family numbers disambiguate by
+    // the caller's name; email is the fallback; else create-if-new.
+    let patientId = await matchPatientByPhone(ctx.accountId, args.phone, args.name)
+    if (!patientId && args.email) {
       const found = await clinikoFetch<{ patients?: { id: number | string }[] }>(
         apiKey,
         `/patients?q[]=${encodeURIComponent(`email:=${args.email}`)}`,
@@ -172,6 +174,10 @@ export const clinikoProvider: BookingProvider = {
       })
       if (!created.id) throw new Error('Cliniko patient creation returned no id')
       patientId = String(created.id)
+      // Index immediately — a repeat caller must never create a duplicate.
+      await upsertPatientIndexRows(ctx.accountId, [
+        { externalId: patientId, firstName: args.name.split(/\s+/)[0] ?? null, lastName: args.name.split(/\s+/).slice(1).join(' ') || null, email: args.email, phone: args.phone, updatedAt: new Date().toISOString() },
+      ]).catch(() => {})
     }
 
     const type = await clinikoFetch<{ duration_in_minutes?: number }>(apiKey, `/appointment_types/${cfg.appointmentTypeId}`)
@@ -212,26 +218,47 @@ export interface ChangedPatient {
   updatedAt: string
 }
 
-export async function fetchChangedPatients(apiKey: string, since: Date | null, limit = 100): Promise<ChangedPatient[]> {
-  const q = since ? `&q[]=${encodeURIComponent(`updated_at:>${since.toISOString()}`)}` : ''
-  const data = await clinikoFetch<{
-    patients?: {
-      id: number | string
-      first_name?: string
-      last_name?: string
-      email?: string
-      updated_at?: string
-      patient_phone_numbers?: { number?: string }[]
-    }[]
-  }>(apiKey, `/patients?per_page=${limit}&sort=updated_at${q}`)
-  return (data.patients ?? []).map((p) => ({
+interface RawPatient {
+  id: number | string
+  first_name?: string
+  last_name?: string
+  email?: string
+  updated_at?: string
+  patient_phone_numbers?: { number?: string }[]
+}
+
+function toChangedPatient(p: RawPatient): ChangedPatient {
+  return {
     externalId: String(p.id),
     firstName: p.first_name ?? null,
     lastName: p.last_name ?? null,
     email: p.email ?? null,
     phone: p.patient_phone_numbers?.[0]?.number ?? null,
     updatedAt: p.updated_at ?? new Date().toISOString(),
-  }))
+  }
+}
+
+export async function fetchChangedPatients(apiKey: string, since: Date | null, limit = 100): Promise<ChangedPatient[]> {
+  const q = since ? `&q[]=${encodeURIComponent(`updated_at:>${since.toISOString()}`)}` : ''
+  const data = await clinikoFetch<{ patients?: RawPatient[] }>(apiKey, `/patients?per_page=${limit}&sort=updated_at${q}`)
+  return (data.patients ?? []).map(toChangedPatient)
+}
+
+/**
+ * One page of the full patient-base backfill (seeds the phone index).
+ * `pageUrl` null starts at page 1; the returned `next` is Cliniko's own
+ * links.next URL (null when the backfill is complete). The poller budgets
+ * a few pages per 5-minute tick and stores `next` as its cursor.
+ */
+export async function fetchPatientsPage(
+  apiKey: string,
+  pageUrl: string | null,
+): Promise<{ patients: ChangedPatient[]; next: string | null }> {
+  const data = await clinikoFetch<{ patients?: RawPatient[]; links?: { next?: string } }>(
+    apiKey,
+    pageUrl ?? '/patients?per_page=100&sort=id',
+  )
+  return { patients: (data.patients ?? []).map(toChangedPatient), next: data.links?.next ?? null }
 }
 
 export interface ChangedAppointment {
@@ -283,4 +310,63 @@ export async function fetchPatientById(apiKey: string, id: string): Promise<Chan
   } catch {
     return null
   }
+}
+
+// ── Phone → patient index (fed by the poller/backfill; used by book()) ──────
+
+/** Digits-only tail for tolerant phone comparison (last 9 digits). */
+export function phoneIndexKey(raw: string | null | undefined): string | null {
+  const digits = (raw ?? '').replace(/\D/g, '')
+  return digits.length >= 7 ? digits.slice(-9) : null
+}
+
+export async function upsertPatientIndexRows(accountId: string, patients: ChangedPatient[]): Promise<void> {
+  for (const p of patients) {
+    const name = [p.firstName, p.lastName].filter(Boolean).join(' ') || null
+    await prisma.pmsPatientIndex.upsert({
+      where: { accountId_provider_externalPatientId: { accountId, provider: 'cliniko', externalPatientId: p.externalId } },
+      create: {
+        accountId,
+        provider: 'cliniko',
+        externalPatientId: p.externalId,
+        phoneNormalized: phoneIndexKey(p.phone),
+        name,
+        email: p.email?.toLowerCase() ?? null,
+      },
+      update: { phoneNormalized: phoneIndexKey(p.phone), name, email: p.email?.toLowerCase() ?? null },
+    })
+  }
+}
+
+/**
+ * Pure disambiguation: candidates sharing the caller's phone → the one whose
+ * indexed name matches the caller's stated name (token overlap on first OR
+ * exact last name). Null when nothing matches confidently.
+ */
+export function pickPatientByName(
+  candidates: { externalPatientId: string; name: string | null }[],
+  callerName: string,
+): string | null {
+  if (candidates.length === 1) return candidates[0].externalPatientId
+  const tokens = callerName.toLowerCase().split(/\s+/).filter(Boolean)
+  if (!tokens.length) return null
+  const matches = candidates.filter((c) => {
+    const n = (c.name ?? '').toLowerCase()
+    return n && tokens.every((t) => n.includes(t))
+  })
+  if (matches.length === 1) return matches[0].externalPatientId
+  const firstOnly = candidates.filter((c) => (c.name ?? '').toLowerCase().startsWith(tokens[0]))
+  return firstOnly.length === 1 ? firstOnly[0].externalPatientId : null
+}
+
+async function matchPatientByPhone(accountId: string, phone: string, callerName: string): Promise<string | null> {
+  const key = phoneIndexKey(phone)
+  if (!key) return null
+  const rows = await prisma.pmsPatientIndex.findMany({
+    where: { accountId, provider: 'cliniko', phoneNormalized: key },
+    select: { externalPatientId: true, name: true },
+    take: 10,
+  })
+  if (!rows.length) return null
+  return pickPatientByName(rows, callerName)
 }

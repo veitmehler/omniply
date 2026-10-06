@@ -68,3 +68,44 @@ describe('csv intake', () => {
     expect(mapCsvToRows(parseCsv('Name,DOB\nJane,1980'))).toBeNull()
   })
 })
+
+describe('phone-first patient matching', () => {
+  it('phoneIndexKey normalizes to a tolerant digits tail', async () => {
+    const { phoneIndexKey } = await import('../booking/cliniko')
+    expect(phoneIndexKey('+61 400 123 456')).toBe('400123456')
+    expect(phoneIndexKey('(0400) 123-456')).toBe('400123456')
+    expect(phoneIndexKey('12')).toBeNull()
+    expect(phoneIndexKey(null)).toBeNull()
+  })
+
+  it('pickPatientByName disambiguates shared family numbers', async () => {
+    const { pickPatientByName } = await import('../booking/cliniko')
+    const family = [
+      { externalPatientId: '1', name: 'Jane Doe' },
+      { externalPatientId: '2', name: 'John Doe' },
+    ]
+    expect(pickPatientByName(family, 'Jane Doe')).toBe('1')
+    expect(pickPatientByName(family, 'jane')).toBe('1')
+    // Ambiguous (shared last name only) → null → create-if-new downstream.
+    expect(pickPatientByName(family, 'Doe')).toBeNull()
+    // Single candidate wins regardless of name.
+    expect(pickPatientByName([{ externalPatientId: '9', name: null }], 'Anyone')).toBe('9')
+  })
+
+  it('fetchPatientsPage follows Cliniko links.next', async () => {
+    const { fetchPatientsPage } = await import('../booking/cliniko')
+    vi.stubGlobal('fetch', vi.fn(async () =>
+      new Response(
+        JSON.stringify({
+          patients: [{ id: 7, first_name: 'A', last_name: 'B', patient_phone_numbers: [{ number: '0400111222' }] }],
+          links: { next: 'https://api.au2.cliniko.com/v1/patients?page=2' },
+        }),
+        { status: 200 },
+      ),
+    ))
+    const page = await fetchPatientsPage('MS-k-au2', null)
+    expect(page.patients[0].externalId).toBe('7')
+    expect(page.next).toContain('page=2')
+    vi.restoreAllMocks()
+  })
+})

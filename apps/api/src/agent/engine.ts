@@ -306,8 +306,11 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
 
   // Direct booking (Part 4a): voice standard-mode only in v1. Real free
   // slots fetched server-side; disabled (empty) keeps callback flow intact.
+  // Booking/availability tiers run on voice (standard mode) AND website
+  // chat (2026-10-06 — Scene 10 already filmed, no filming conflict).
+  // Social DMs and rescue calls stay tier-less.
   const booking: BookingInfo =
-    channel === 'voice' && !messageMode
+    (channel === 'voice' && !messageMode) || channel === 'web'
       ? await bookingInfoFor(input.accountId, ctx.ownerUserId)
       : { mode: 'off', bookable: false, slots: [] }
   const groupedSlotLines = (): string[] => {
@@ -322,26 +325,47 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
     }
     return lines
   }
+  const isVoiceBooking = channel === 'voice'
   const bookingBlock = booking.bookable
-    ? [
+    ? isVoiceBooking
+      ? [
         'DIRECT BOOKING IS AVAILABLE ON THIS CALL. The complete list of bookable times (the raw value before each time is what you attach — the time is what you say):',
         ...groupedSlotLines(),
         'When the caller wants an appointment: make sure you have their name and number first (reuse details already known; read a new number back digit by digit). Offer AT MOST THREE times in one reply, each at a DIFFERENT hour, spread across what is available (for example one morning, one midday, one late afternoon) — more than three spoken times in a row is impossible to follow on the phone, and NEVER read the whole list. When they ask about a specific time or day, answer just for that: offer it if listed, otherwise the nearest listed time, said plainly ("the closest I have is four o\'clock"). When they choose, attach book_appointment with slotStart set to the EXACT raw value for that time plus their name and phone, and confirm it aloud in the same reply ("You are booked for Tuesday, October sixth at ten A M — the team will see you then.").',
         'NEVER invent, accept, or imply a time that is not in the list. Only when nothing listed suits the caller: offer a callback instead (request_callback) with their preferred time in their own words.',
       ].join('\n')
+      : [
+          'DIRECT BOOKING IS AVAILABLE IN THIS CHAT. The complete list of bookable times (the raw value before each time is what you attach — the time is what you write):',
+          ...groupedSlotLines(),
+          'When the visitor wants an appointment: collect their full name and best phone number first (plain digits with hyphens). Offer at most THREE times, each at a different hour, spread across what is available — never paste the whole list. When they ask about a specific time or day, answer just for that: offer it if listed, otherwise the nearest listed time. When they choose, attach book_appointment with slotStart set to the EXACT raw value for that time plus their name and phone, and confirm it in the same reply ("You\'re booked for Tuesday, October 6 at 10:00 AM — the team will see you then.").',
+          'NEVER invent, accept, or imply a time that is not in the list. Only when nothing listed suits them: offer a callback instead (request_callback) with their preferred time in their own words.',
+        ].join('\n')
     : booking.mode === 'advisory-gcal' && booking.slots.length
-      ? [
+      ? isVoiceBooking
+        ? [
           'AVAILABILITY GUIDANCE — ADVISORY ONLY (you CANNOT book on this call). Times currently visible on the practice calendar (speak the time, never the raw value):',
           ...groupedSlotLines(),
           'When the caller asks about times: share AT MOST THREE of these, each at a different hour — and ALWAYS with this caveat, in your own natural words: you can currently see availability at those times, but the front desk may have recently booked one of them, so they should open the booking link you are sending, confirm the available times there, and book the appointment right on that page at their convenience. Then attach send_booking_link (texted on this call).',
           'NEVER present these times as guaranteed or "booked", NEVER attach book_appointment, and never skip the caveat. If the caller cannot use the link, take a callback instead (request_callback) with their preferred time in their own words.',
         ].join('\n')
+        : [
+            'AVAILABILITY GUIDANCE — ADVISORY ONLY (you CANNOT book in this chat). Times currently visible on the practice calendar:',
+            ...groupedSlotLines(),
+            'When the visitor asks about times: share AT MOST THREE, each at a different hour — and ALWAYS with this caveat in your own words: you can currently see availability at those times, but the front desk may have recently booked one of them, so they should open the booking page (attach send_booking_link — it opens right here in the chat), confirm the available times there, and book at their convenience.',
+            'NEVER present these times as guaranteed, NEVER attach book_appointment, never skip the caveat. If they prefer, take a callback instead (request_callback).',
+          ].join('\n')
       : booking.mode === 'patterns' && ctx.availabilityPatterns
-        ? [
+        ? isVoiceBooking
+          ? [
             'AVAILABILITY GUIDANCE — GENERAL PATTERNS ONLY (you cannot see the calendar and CANNOT book on this call). The practice describes its typical availability as:',
             `  ${ctx.availabilityPatterns.slice(0, 500)}`,
             'Share this ONLY as a general pattern in your own words ("we usually have..."), NEVER as specific times or dates, then attach send_booking_link so they can see the real times and book there — or take a callback (request_callback).',
           ].join('\n')
+          : [
+              'AVAILABILITY GUIDANCE — GENERAL PATTERNS ONLY (you cannot see the calendar and CANNOT book in this chat). The practice describes its typical availability as:',
+              `  ${ctx.availabilityPatterns.slice(0, 500)}`,
+              'Share this ONLY as a general pattern in your own words ("we usually have..."), NEVER as specific times or dates, then attach send_booking_link so the booking page opens right here and they can see the real times — or take a callback (request_callback).',
+            ].join('\n')
         : null
 
   const vars = {
@@ -406,6 +430,7 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
               'Phone numbers are ALWAYS written as plain digits with hyphens, like 480-962-6011. Never spell them out in words and never replace the hyphens — style rules about dashes do not apply to phone numbers.',
               'Callbacks: before attaching request_callback, gather their name, the best number, AND the best time for the call back. Ask for a concrete time ("What time works best for the call back?") and accept whatever precision they give — a clock time, "tomorrow morning", a weekday — putting their words verbatim in the preferredTime field. Never offer a coarse either-or like morning-or-afternoon yourself; if they have no preference, proceed without one.',
               'Names: when the visitor gives a full name, keep the FULL name in action fields — never shorten it to just the first name.',
+              ...(bookingBlock ? [bookingBlock] : []),
             ].join('\n'),
     guides: ctx.guides.map((g) => `${g.slug} — ${g.title}`).join('\n') || '(none)',
     history: history || '(first message)',
