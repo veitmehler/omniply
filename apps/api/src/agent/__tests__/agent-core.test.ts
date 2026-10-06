@@ -351,3 +351,17 @@ describe('stripPunctuationDashes', () => {
     )
   })
 })
+
+describe('normalizeSpokenEmail', () => {
+  it('cleans ASR artifacts and snaps near-miss domains', async () => {
+    const { normalizeSpokenEmail } = await import('../tools')
+    expect(normalizeSpokenEmail(' Jane.Doe@GMAIL.com. ')).toBe('jane.doe@gmail.com')
+    expect(normalizeSpokenEmail('jane doe at gmail dot com')).toBe('janedoe@gmail.com')
+    expect(normalizeSpokenEmail('aaron@gmall.com')).toBe('aaron@gmail.com')
+    expect(normalizeSpokenEmail('aaron@gmai.com')).toBe('aaron@gmail.com')
+    expect(normalizeSpokenEmail('a@hotmall.com')).toBe('a@hotmail.com')
+    // Exact and far-off domains stay untouched.
+    expect(normalizeSpokenEmail('a@gmail.com')).toBe('a@gmail.com')
+    expect(normalizeSpokenEmail('a@mycustomclinic.com')).toBe('a@mycustomclinic.com')
+  })
+})

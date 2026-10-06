@@ -36,6 +36,47 @@ export interface ActionContext {
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 
+/**
+ * Spoken-email normalization (voice ASR cleanup, 2026-10-06): lowercase,
+ * strip spaces/trailing punctuation, spoken "at"/"dot" fallbacks, and snap
+ * near-miss domains onto the closed set of common providers ("gmall.com",
+ * "gmai.com" → gmail.com). The local part can't be guessed — that's what
+ * the spell-back confirmation in the voice prompt is for.
+ */
+const COMMON_DOMAINS = [
+  'gmail.com', 'googlemail.com', 'hotmail.com', 'outlook.com', 'yahoo.com',
+  'icloud.com', 'protonmail.com', 'proton.me', 'aol.com', 'live.com',
+  'me.com', 'msn.com',
+]
+
+function editDistance(a: string, b: string): number {
+  const dp = Array.from({ length: a.length + 1 }, (_, i) => [i, ...Array<number>(b.length).fill(0)])
+  for (let j = 0; j <= b.length; j++) dp[0][j] = j
+  for (let i = 1; i <= a.length; i++)
+    for (let j = 1; j <= b.length; j++)
+      dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1))
+  return dp[a.length][b.length]
+}
+
+export function normalizeSpokenEmail(raw: string): string {
+  let e = raw.trim().toLowerCase().replace(/[.,;:!?]+$/, '')
+  if (!e.includes('@')) e = e.replace(/\s+at\s+/g, '@')
+  e = e.replace(/\s+dot\s+/g, '.').replace(/\s+/g, '')
+  const at = e.lastIndexOf('@')
+  if (at > 0) {
+    const local = e.slice(0, at)
+    const domain = e.slice(at + 1)
+    if (!COMMON_DOMAINS.includes(domain)) {
+      const near = COMMON_DOMAINS.find((d) => {
+        const dist = editDistance(domain, d)
+        return dist >= 1 && dist <= 2
+      })
+      if (near) return `${local}@${near}`
+    }
+  }
+  return e
+}
+
 function str(v: unknown, max: number): string {
   return typeof v === 'string' ? v.trim().slice(0, max) : ''
 }
@@ -65,7 +106,7 @@ export function validateAction(raw: unknown, ctx: ActionContext): AgentAction | 
 
     case 'capture_contact': {
       const name = str(a.name, 60)
-      const email = str(a.email, 254).toLowerCase()
+      const email = normalizeSpokenEmail(str(a.email, 254))
       const phone = str(a.phone, 30)
       const guideSlug = str(a.guideSlug, 80)
       // Email is the only hard requirement: an email-only capture still
@@ -116,7 +157,7 @@ export function validateAction(raw: unknown, ctx: ActionContext): AgentAction | 
     }
 
     case 'add_contact_email': {
-      const email = str(a.email, 254).toLowerCase()
+      const email = normalizeSpokenEmail(str(a.email, 254))
       if (!ctx.hasContact || !EMAIL_RE.test(email)) return null
       return { type: 'add_contact_email', email }
     }
