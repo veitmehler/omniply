@@ -643,6 +643,45 @@ export async function getGuideLinkFieldId(apiKey: string, locationId: string): P
  */
 const chatSummaryFieldCache = new Map<string, { id: string | null; at: number }>()
 
+const bookingTimeFieldCache = new Map<string, { id: string | null; at: number }>()
+
+/**
+ * "Booking Time" contact custom field (find-or-create, cached): written at
+ * book time with the human-readable slot so the TAG-triggered email
+ * confirmation workflow can merge {{contact.booking_time}} — tag workflows
+ * have no appointment merge-field context.
+ */
+export async function getBookingTimeFieldId(apiKey: string, locationId: string): Promise<string | null> {
+  const hit = bookingTimeFieldCache.get(locationId)
+  if (hit && Date.now() - hit.at < GUIDE_LINK_CACHE_MS) return hit.id
+  try {
+    const data = await ghlRequest<{ customFields?: { id: string; name?: string; fieldKey?: string }[] }>(
+      apiKey,
+      `/locations/${locationId}/customFields`,
+      { method: 'GET' },
+    )
+    let match = (data.customFields ?? []).find((f) => {
+      const key = (f.fieldKey ?? '').toLowerCase()
+      const name = (f.name ?? '').toLowerCase()
+      return key.includes('booking_time') || name.replace(/\s+/g, '_') === 'booking_time'
+    })
+    if (!match) {
+      const created = await ghlRequest<{ customField?: { id: string } }>(
+        apiKey,
+        `/locations/${locationId}/customFields`,
+        { method: 'POST', body: { name: 'Booking Time', dataType: 'TEXT' } },
+      )
+      match = created.customField ? { id: created.customField.id } : undefined
+    }
+    const id = match?.id ?? null
+    bookingTimeFieldCache.set(locationId, { id, at: Date.now() })
+    return id
+  } catch {
+    bookingTimeFieldCache.set(locationId, { id: null, at: Date.now() })
+    return null
+  }
+}
+
 export async function getChatSummaryFieldId(apiKey: string, locationId: string): Promise<string | null> {
   const hit = chatSummaryFieldCache.get(locationId)
   if (hit && Date.now() - hit.at < GUIDE_LINK_CACHE_MS) return hit.id

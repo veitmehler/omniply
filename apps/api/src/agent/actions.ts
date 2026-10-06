@@ -27,6 +27,7 @@ import { getGhlCredentials } from '../lib/ghl/settings'
 import {
   addGhlContactTags,
   createGhlContactNote,
+  getBookingTimeFieldId,
   getCallbackTimeFieldId,
   getChatSummaryFieldId,
   sendGhlConversationMessage,
@@ -286,6 +287,19 @@ async function executeBooking(
   // The taken slot must vanish from the next turn's offer list immediately.
   clearBookingCacheFor(ctx.accountId)
 
+  // "Booking Time" custom field (human-readable, clinic-local): the
+  // tag-triggered email-confirmation workflow merges {{contact.booking_time}}
+  // — tag workflows can't see appointment merge fields.
+  try {
+    const settings = await prisma.settings.findUnique({ where: { userId: ctx.ownerUserId }, select: { socialTimezone: true } })
+    const { labelForSlot } = await import('./booking')
+    const label = labelForSlot(action.slotStart, settings?.socialTimezone ?? null)
+    const fieldId = await getBookingTimeFieldId(creds.apiKey, creds.locationId)
+    if (fieldId) await updateGhlContact(creds.apiKey, contactId, { customFields: [{ id: fieldId, value: label }] })
+  } catch (err) {
+    logger.warn({ err, conversationId }, '[agent] booking-time field write failed (booking landed)')
+  }
+
   await createGhlContactNote(
     creds.apiKey,
     contactId,
@@ -392,6 +406,19 @@ async function executeAddEmail(
   if (!creds) throw new Error('No GHL credentials for account owner')
   await updateGhlContact(creds.apiKey, conversation.ghlContactId, { email: action.email })
   logger.info({ accountId: ctx.accountId, conversationId }, '[agent] backup email added to contact')
+
+  // Booking email confirmation (user design 2026-10-06): voice callers give
+  // their email AFTER booking, when the appointment-triggered workflow has
+  // already run (and skipped its email step). The tag fires the second,
+  // tag-triggered workflow — ONLY when this conversation actually booked,
+  // so callback-only visitors never get a phantom appointment email.
+  const booked = await prisma.agentAppointment.findFirst({ where: { conversationId }, select: { id: true } })
+  if (booked) {
+    await addGhlContactTags(creds.apiKey, conversation.ghlContactId, ['booking-email-confirm']).catch((err) =>
+      logger.warn({ err, conversationId }, '[agent] booking-email-confirm tag failed'),
+    )
+    logger.info({ accountId: ctx.accountId, conversationId }, '[agent] booking email confirmation tagged')
+  }
 }
 
 /**
