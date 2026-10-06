@@ -21,6 +21,7 @@ import { WordPressSection } from '@/features/settings/WordPressSection'
 import { ChatAssistantSection } from '@/features/settings/ChatAssistantSection'
 import { ChatKnowledgeSection } from '@/features/settings/ChatKnowledgeSection'
 import { VoiceAssistantSection } from '@/features/settings/VoiceAssistantSection'
+import { PmsSection } from '@/features/settings/PmsSection'
 import { ConnectedAccountsSection } from '@/features/settings/ConnectedAccountsSection'
 import { TeamSection } from '@/features/settings/TeamSection'
 import { useSettingsData } from '@/features/settings/useSettingsData'
@@ -70,6 +71,8 @@ export function SettingsView({ embedMode = false }: { embedMode?: boolean }) {
         <ChatKnowledgeSection />
 
         <VoiceAssistantSection />
+
+        <PmsSection />
 
         {!embedMode && <GhlSettingsPanel />}
 

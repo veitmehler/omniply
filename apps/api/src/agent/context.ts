@@ -48,6 +48,8 @@ export interface AgentContext {
   /** Clinic-confirmed IANA zone (settings.socialTimezone) — beats utcOffsetMinutes, DST-correct at call time. */
   timezone?: string
   weekdayText: string | null
+  /** Tier-3 availability patterns (PMS framework v2) — spoken as patterns, never times. */
+  availabilityPatterns: string | null
 }
 
 const bundleCache = new Map<string, { ctx: AgentContext; expires: number }>()
@@ -216,6 +218,7 @@ export async function agentContextForAccount(accountId: string): Promise<AgentCo
     periods: brand.openingHours ? statedHours?.periods : probe?.periods,
     utcOffsetMinutes: brand.openingHours ? (timezone ? undefined : probe?.utcOffsetMinutes) : probe?.utcOffsetMinutes,
     timezone,
+    availabilityPatterns: brand.availabilityPatterns?.trim() || null,
     // computeOpenStatus's today-line lookup needs Monday-first 7 lines; the
     // KB keeps the clinic's own wording above.
     weekdayText: statedHours?.canonicalWeekdayText ?? weekdayText,

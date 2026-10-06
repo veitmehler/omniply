@@ -117,6 +117,7 @@ export const QUEUES = {
   LEADGEN_COMPILE: 'leadgen-compile',
   PLACES_REVIEW_POLL: 'places-review-poll',
   DEMO_BOOKING_CLEANUP: 'demo-booking-cleanup',
+  PMS_CONTACT_POLL: 'pms-contact-poll',
   GOOGLE_REVIEWS_BACKFILL: 'google-reviews-backfill',
 } as const
 

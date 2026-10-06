@@ -309,26 +309,40 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
   const booking: BookingInfo =
     channel === 'voice' && !messageMode
       ? await bookingInfoFor(input.accountId, ctx.ownerUserId)
-      : { enabled: false, calendarId: null, slots: [] }
-  const bookingBlock = booking.enabled
+      : { mode: 'off', bookable: false, slots: [] }
+  const groupedSlotLines = (): string[] => {
+    const lines: string[] = []
+    let day = ''
+    for (const s of booking.slots) {
+      if (s.dayLabel !== day) {
+        day = s.dayLabel
+        lines.push(`${day}:`)
+      }
+      lines.push(`  ${s.startIso} = ${s.timeLabel}`)
+    }
+    return lines
+  }
+  const bookingBlock = booking.bookable
     ? [
         'DIRECT BOOKING IS AVAILABLE ON THIS CALL. The complete list of bookable times (the raw value before each time is what you attach — the time is what you say):',
-        ...(() => {
-          const lines: string[] = []
-          let day = ''
-          for (const s of booking.slots) {
-            if (s.dayLabel !== day) {
-              day = s.dayLabel
-              lines.push(`${day}:`)
-            }
-            lines.push(`  ${s.startIso} = ${s.timeLabel}`)
-          }
-          return lines
-        })(),
+        ...groupedSlotLines(),
         'When the caller wants an appointment: make sure you have their name and number first (reuse details already known; read a new number back digit by digit). Offer AT MOST THREE times in one reply, each at a DIFFERENT hour, spread across what is available (for example one morning, one midday, one late afternoon) — more than three spoken times in a row is impossible to follow on the phone, and NEVER read the whole list. When they ask about a specific time or day, answer just for that: offer it if listed, otherwise the nearest listed time, said plainly ("the closest I have is four o\'clock"). When they choose, attach book_appointment with slotStart set to the EXACT raw value for that time plus their name and phone, and confirm it aloud in the same reply ("You are booked for Tuesday, October sixth at ten A M — the team will see you then.").',
         'NEVER invent, accept, or imply a time that is not in the list. Only when nothing listed suits the caller: offer a callback instead (request_callback) with their preferred time in their own words.',
       ].join('\n')
-    : null
+    : booking.mode === 'advisory-gcal' && booking.slots.length
+      ? [
+          'AVAILABILITY GUIDANCE — ADVISORY ONLY (you CANNOT book on this call). Times currently visible on the practice calendar (speak the time, never the raw value):',
+          ...groupedSlotLines(),
+          'When the caller asks about times: share AT MOST THREE of these, each at a different hour — and ALWAYS with this caveat, in your own natural words: you can currently see availability at those times, but the front desk may have recently booked one of them, so they should open the booking link you are sending, confirm the available times there, and book the appointment right on that page at their convenience. Then attach send_booking_link (texted on this call).',
+          'NEVER present these times as guaranteed or "booked", NEVER attach book_appointment, and never skip the caveat. If the caller cannot use the link, take a callback instead (request_callback) with their preferred time in their own words.',
+        ].join('\n')
+      : booking.mode === 'patterns' && ctx.availabilityPatterns
+        ? [
+            'AVAILABILITY GUIDANCE — GENERAL PATTERNS ONLY (you cannot see the calendar and CANNOT book on this call). The practice describes its typical availability as:',
+            `  ${ctx.availabilityPatterns.slice(0, 500)}`,
+            'Share this ONLY as a general pattern in your own words ("we usually have..."), NEVER as specific times or dates, then attach send_booking_link so they can see the real times and book there — or take a callback (request_callback).',
+          ].join('\n')
+        : null
 
   const vars = {
     practiceName: ctx.practiceName,
@@ -446,7 +460,8 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
         guideSlugs: ctx.guides.map((g) => g.slug),
         bookingAvailable: Boolean(ctx.bookingUrl),
         hasContact: Boolean(conversation.ghlContactId),
-        offeredSlots: booking.slots.map((s) => s.startIso),
+        // book_appointment validates only in direct modes (Tier 1).
+        offeredSlots: booking.bookable ? booking.slots.map((s) => s.startIso) : [],
       })
       // A dropped action means the reply may promise something that never
       // executed (e.g. "the guide is on its way") — flag it so the transcript

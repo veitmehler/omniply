@@ -74,11 +74,19 @@ model Account {
   // ghlBillingToken/ghlReviewToken. Minted at provisioning.
   agentWidgetToken   String?             @unique
   agentConversations AgentConversation[]
-  // Direct appointment booking by the voice agent (missed-call sweep Part 4a):
-  // the GHL calendar it books into. Unset → booking disabled, callback flow
-  // unchanged. DB-set for the demo; Settings UI comes with client rollout.
+  // Voice-agent booking/availability (PMS framework v2, 2026-10-06):
+  // 'off' | 'direct-ghl' | 'direct-cliniko' | 'direct-nookal' |
+  // 'advisory-gcal' | 'patterns'. Tier semantics + invariants in
+  // .plans/pms-connector-framework.implementation-plan.md.
+  agentBookingMode       String  @default("off")
+  // GHL calendar: booked into (direct-ghl) or read-only availability
+  // mirror of the clinic's Google Calendar (advisory-gcal).
   agentBookingCalendarId String?
+  // Provider config (direct-cliniko/nookal): businessId, practitionerIds,
+  // appointmentTypeId, etc. Keys live in the ApiKey table.
+  agentBookingConfig     Json?
   agentAppointments      AgentAppointment[]
+  pmsSyncState           PmsSyncState?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -100,6 +108,9 @@ model AgentAppointment {
   accountId      String
   account        Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
   conversationId String?
+  // Booking provider ('ghl' | 'cliniko' | …) + its event id (column name
+  // kept from the GHL-only era; it is the provider-side external id).
+  provider       String  @default("ghl")
   ghlEventId     String
   ghlContactId   String?
   startTime      DateTime
@@ -107,6 +118,19 @@ model AgentAppointment {
 
   @@index([accountId])
   @@map("agent_appointments")
+}
+
+// Per-account PMS sync cursors (PMS framework v2 contact pipe).
+model PmsSyncState {
+  accountId          String    @id
+  account            Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  provider           String
+  patientsCursor     DateTime?
+  appointmentsCursor DateTime?
+  lastError          String?
+  updatedAt          DateTime  @default(now()) @updatedAt
+
+  @@map("pms_sync_state")
 }
 
 // Owner-managed roster of teammate emails (no invitations). A user whose email
@@ -1303,6 +1327,10 @@ model BrandSettings {
   openingHours             String? @db.Text
   clinicFaqs               Json? // logistics-only Q&A [{q,a}] for FAQPage schema (agent plan 3.1; never clinical)
   agentExtraKnowledge      String? @db.Text // freeform "anything else the assistant should know" (Settings KB editor; 5000-char cap; injected as reference data, never instructions)
+  // Tier-3 availability patterns (PMS framework v2): "we usually have
+  // afternoon openings Tuesdays and Thursdays" — spoken as patterns only,
+  // never specific times.
+  availabilityPatterns     String? @db.Text
   // Google Place ID (resolved once from googleBusinessProfileUrl or name+address).
   // Drives the review deep link (QR card) + the weekly Places review probe.
   googlePlaceId            String?

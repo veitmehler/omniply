@@ -1,10 +1,24 @@
 # PMS Integration Framework v2 — Availability Tiers, Booking, Contact Pipe
 
-**Status: PLANNED (v2, 2026-10-06) — supersedes the 2026-07-15 parked v1,
-whose core decisions are PRESERVED below. Direction + phrasing locked with
-Veit 2026-10-06. Build sits in the client-rollout lane: nothing here blocks
-filming or launch; Phase A–C are the first post-launch-prep engineering
-block, the Jane application is paperwork to file NOW.**
+**Status: PHASES A–D BUILT 2026-10-06 (same day as planning; deployed with
+this commit). Phase 0 (Jane JDP application) = Veit, in progress. Built:
+provider interface + registry (ghl live, cliniko full, nookal = loud stub
+pending trial-account verification), booking modes schema (migration sets
+existing calendar accounts to direct-ghl — demo unchanged), three-tier
+engine prompt blocks with the canonical advisory phrasing, validator gating
+(book_appointment only in direct modes), contact pipe (intakeContacts +
+RFC4180 CSV parser + header auto-mapping), 5-min PMS_CONTACT_POLL cron
+(Cliniko patients + completed-appointment → appointment-completed tag,
+cursors in pms_sync_state), /pms routes (import-csv, cliniko/key with
+capability-validating probe, status), Settings "Practice Management
+System" section (Cliniko connect + patient CSV upload), advisory setup
+guide (.documentation/setup_guides/pms-advisory-google-calendar.md).
+REMAINING: Cliniko live E2E (needs a trial/pilot account — plan gate),
+advisory-tier live verification (needs a clinic Google account), Nookal
+verification, Jane build post-approval, booking-mode Settings surface.**
+
+Original status: PLANNED (v2, 2026-10-06) — supersedes the 2026-07-15
+parked v1, whose core decisions are PRESERVED below.
 
 ## The two product problems this solves
 

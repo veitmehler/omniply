@@ -26,7 +26,6 @@ import { sendFailureAlert } from '../lib/alerts'
 import { getGhlCredentials } from '../lib/ghl/settings'
 import {
   addGhlContactTags,
-  createGhlAppointment,
   createGhlContactNote,
   getCallbackTimeFieldId,
   getChatSummaryFieldId,
@@ -226,9 +225,12 @@ async function executeBooking(
   if (!creds) throw new Error('No GHL credentials for account owner')
   const account = await prisma.account.findUnique({
     where: { id: ctx.accountId },
-    select: { agentBookingCalendarId: true },
+    select: { agentBookingMode: true, agentBookingCalendarId: true, agentBookingConfig: true },
   })
-  if (!account?.agentBookingCalendarId) throw new Error('Booking calendar not configured')
+  const { isDirectMode, providerFor } = await import('../lib/booking')
+  const mode = account?.agentBookingMode ?? 'off'
+  if (!isDirectMode(mode)) throw new Error(`Booking not enabled in direct mode (mode=${mode})`)
+  const provider = providerFor(mode)
 
   const phone = normalizePhoneE164(action.phone, ctx.countryCode)
   const tags = ['appointment-booked', 'chat-agent-lead']
@@ -253,20 +255,30 @@ async function executeBooking(
   }
   if (!contactId) throw new Error('Booking contact upsert returned no contact id')
 
-  const event = await createGhlAppointment(creds.apiKey, {
-    calendarId: account.agentBookingCalendarId,
-    locationId: creds.locationId,
-    contactId,
-    startTime: action.slotStart,
-    title: `${action.name} — booked by AI assistant`,
-  })
-  if (!event.id) throw new Error('GHL appointment creation returned no event id')
+  // Provider-side booking (ghl calendar / Cliniko diary / …). The GHL CRM
+  // contact above is universal; the provider owns its own system's records.
+  const booked = await provider.book(
+    {
+      accountId: ctx.accountId,
+      ownerUserId: ctx.ownerUserId,
+      config: account?.agentBookingConfig ?? null,
+      calendarId: account?.agentBookingCalendarId ?? null,
+    },
+    {
+      slotStart: action.slotStart,
+      name: action.name,
+      phone,
+      email: primaryEmailOf(known) ?? null,
+      ghlContactId: contactId,
+    },
+  )
 
   await prisma.agentAppointment.create({
     data: {
       accountId: ctx.accountId,
       conversationId,
-      ghlEventId: event.id,
+      provider: mode.replace('direct-', ''),
+      ghlEventId: booked.externalId,
       ghlContactId: contactId,
       startTime: new Date(action.slotStart),
     },
@@ -281,7 +293,7 @@ async function executeBooking(
   ).catch((err) => logger.warn({ err, conversationId }, '[agent] booking note failed (appointment landed)'))
 
   logger.info(
-    { accountId: ctx.accountId, conversationId, eventId: event.id, slot: action.slotStart },
+    { accountId: ctx.accountId, conversationId, provider: mode, externalId: booked.externalId, slot: action.slotStart },
     '[agent] appointment booked via voice',
   )
 }

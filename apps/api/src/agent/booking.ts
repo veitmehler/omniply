@@ -9,8 +9,7 @@
  */
 import { prisma } from '@omniply/shared'
 import { logger } from '../lib/logger'
-import { getGhlCredentials } from '../lib/ghl/settings'
-import { getGhlFreeSlots } from '../lib/ghl/client'
+import { providerFor, isDirectMode, normalizeBookingMode, type BookingMode } from '../lib/booking'
 
 export interface OfferedSlot {
   /** Exact ISO string from the free-slots endpoint — the book_appointment token. */
@@ -24,12 +23,16 @@ export interface OfferedSlot {
 }
 
 export interface BookingInfo {
-  enabled: boolean
-  calendarId: string | null
+  /** Tier semantics (PMS framework v2): direct-* may book; advisory-gcal
+   *  speaks slots with the canonical disclaimer + link; patterns speaks
+   *  general patterns only. 'off' = the link/callback behavior. */
+  mode: BookingMode
+  /** True when the agent may attach book_appointment (direct + slots). */
+  bookable: boolean
   slots: OfferedSlot[]
 }
 
-const DISABLED: BookingInfo = { enabled: false, calendarId: null, slots: [] }
+const DISABLED: BookingInfo = { mode: 'off', bookable: false, slots: [] }
 
 // Short cache: a live call makes a turn every few seconds — don't hit the
 // free-slots endpoint on each one, but stay fresh enough that a slot taken
@@ -104,32 +107,31 @@ export async function bookingInfoFor(accountId: string, ownerUserId: string): Pr
   const hit = cache.get(accountId)
   if (hit && hit.expires > Date.now()) return hit.info
 
-  let info = DISABLED
+  let info: BookingInfo = DISABLED
   try {
     const account = await prisma.account.findUnique({
       where: { id: accountId },
-      select: { agentBookingCalendarId: true },
+      select: { agentBookingMode: true, agentBookingCalendarId: true, agentBookingConfig: true },
     })
-    const calendarId = account?.agentBookingCalendarId ?? null
-    if (calendarId) {
-      const [creds, settings] = await Promise.all([
-        getGhlCredentials(ownerUserId),
-        prisma.settings.findUnique({ where: { userId: ownerUserId }, select: { socialTimezone: true } }),
-      ])
-      if (creds) {
-        const now = Date.now()
-        const all = await getGhlFreeSlots(
-          creds.apiKey,
-          calendarId,
-          now,
-          now + WINDOW_DAYS * 24 * 60 * 60 * 1000,
-          settings?.socialTimezone ?? undefined,
-        )
-        const slots = pickSlots(all, new Date(now), settings?.socialTimezone ?? null)
-        // No free slots is still "enabled: false" for the PROMPT — the agent
-        // must not announce bookable times it cannot name. Callback flow holds.
-        info = slots.length ? { enabled: true, calendarId, slots } : DISABLED
-      }
+    const mode = normalizeBookingMode(account?.agentBookingMode)
+    if (mode === 'patterns') {
+      // Tier 3: no slots ever — the engine speaks brand.availabilityPatterns.
+      info = { mode, bookable: false, slots: [] }
+    } else if (mode !== 'off') {
+      // Tier 1 (direct-*) and Tier 2 (advisory-gcal: READ side of the ghl
+      // provider against the Google-mirroring calendar; never books).
+      const provider = providerFor(isDirectMode(mode) ? mode : 'direct-ghl')
+      const settings = await prisma.settings.findUnique({ where: { userId: ownerUserId }, select: { socialTimezone: true } })
+      const now = Date.now()
+      const all = await provider.freeSlots(
+        { accountId, ownerUserId, config: account?.agentBookingConfig ?? null, calendarId: account?.agentBookingCalendarId ?? null },
+        now,
+        now + WINDOW_DAYS * 24 * 60 * 60 * 1000,
+      )
+      const slots = pickSlots(all, new Date(now), settings?.socialTimezone ?? null)
+      // No slots → the agent must not announce visible times at all:
+      // direct degrades to the callback flow, advisory to nothing.
+      info = slots.length ? { mode, bookable: isDirectMode(mode), slots } : DISABLED
     }
   } catch (err) {
     logger.warn({ err, accountId }, '[agent] booking slot fetch failed — callback flow holds')
