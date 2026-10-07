@@ -52,6 +52,11 @@
   .vc button:hover { color: var(--lime); }
   .vc button:focus-visible { outline: 1px solid var(--lime); }
   .vc .vc-spacer { flex: 1; }
+  .vc-speedwrap { position: relative; display: inline-flex; }
+  .vc-menu { position: absolute; right: 0; bottom: calc(100% + 8px); display: none; flex-direction: column; min-width: 110px; background: rgba(5, 34, 52, 0.96); border: 1px solid var(--line); border-radius: 8px; padding: 6px; }
+  .vc-menu.open { display: flex; }
+  .vc-menu button { text-align: left; font-size: 13px; padding: 7px 10px; }
+  .vc-menu button.active { color: var(--lime); }
   .vc-big { position: absolute; inset: 0; margin: auto; width: 88px; height: 88px; border-radius: 50%; background: rgba(5, 34, 52, 0.78); border: 1px solid var(--line); color: var(--lime); font-size: 30px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding-left: 7px; transition: background 0.15s ease; }
   .vc-big:hover { background: rgba(5, 34, 52, 0.95); }
   .frame.playing .vc-big { display: none; }
@@ -207,7 +212,10 @@
       '<button id="wt-play" aria-label="Play or pause">▶</button>' +
       '<span id="wt-time">0:00</span>' +
       '<span class="vc-spacer"></span>' +
-      '<button id="wt-speed" aria-label="Playback speed">Speed 1×</button>' +
+      '<span class="vc-speedwrap">' +
+      '<button id="wt-speed" aria-label="Playback speed" aria-haspopup="true" aria-expanded="false">Speed 1×</button>' +
+      '<span class="vc-menu" id="wt-speedmenu" role="menu"></span>' +
+      '</span>' +
       '<button id="wt-fs" aria-label="Fullscreen">⛶</button>' +
       '</div>'
     var vid = document.getElementById('wt-vid')
@@ -245,12 +253,34 @@
     vid.addEventListener('play', function () { f.classList.add('playing'); playBtn.textContent = '⏸' })
     vid.addEventListener('pause', function () { f.classList.remove('playing'); playBtn.textContent = '▶' })
     vid.addEventListener('ended', function () { atEnd = true; maxWatched = vid.duration || maxWatched })
-    var SPEEDS = [1, 1.25, 1.5]
-    var speedIx = 0
-    speedBtn.addEventListener('click', function () {
-      speedIx = (speedIx + 1) % SPEEDS.length
-      vid.playbackRate = SPEEDS[speedIx]
-      speedBtn.textContent = 'Speed ' + SPEEDS[speedIx] + '×'
+    var SPEEDS = [1, 1.25, 1.5, 1.75, 2]
+    var speedMenu = document.getElementById('wt-speedmenu')
+    SPEEDS.forEach(function (sp) {
+      var opt = document.createElement('button')
+      opt.type = 'button'
+      opt.setAttribute('role', 'menuitem')
+      opt.textContent = sp + '×'
+      if (sp === 1) opt.className = 'active'
+      opt.addEventListener('click', function () {
+        vid.playbackRate = sp
+        speedBtn.textContent = 'Speed ' + sp + '×'
+        var kids = speedMenu.children
+        for (var k = 0; k < kids.length; k++) kids[k].className = kids[k] === opt ? 'active' : ''
+        closeMenu()
+      })
+      speedMenu.appendChild(opt)
+    })
+    function closeMenu () {
+      speedMenu.classList.remove('open')
+      speedBtn.setAttribute('aria-expanded', 'false')
+    }
+    speedBtn.addEventListener('click', function (ev) {
+      ev.stopPropagation()
+      var open = speedMenu.classList.toggle('open')
+      speedBtn.setAttribute('aria-expanded', open ? 'true' : 'false')
+    })
+    document.addEventListener('click', function (ev) {
+      if (!speedMenu.contains(ev.target) && ev.target !== speedBtn) closeMenu()
     })
     if (f.requestFullscreen || f.webkitRequestFullscreen) {
       fsBtn.addEventListener('click', function () {
