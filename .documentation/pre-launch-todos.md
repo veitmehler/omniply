@@ -86,16 +86,16 @@ refactor risk during freeze week beats the threat model (authenticated tenants
 are concierge-onboarded). But four items are attacker-facing AND small, so they
 ride the pre-launch window as independent, revertable commits (~1 day total):
 
-- [ ] **Auth on `GET /api/google/oauth/start`** (google-oauth.ts) — currently
+- [x] **Auth on `GET /api/google/oauth/start`** DONE 1ed9b62 (google-oauth.ts) — currently
   unauthenticated: account-id oracle + lets an attacker bind THEIR Google
   account to a tenant. Was mis-binned into Theme C ops; it's a real hole.
-- [ ] **JSON-LD `</script>` escaping** on public article pages
+- [x] **JSON-LD `</script>` escaping** DONE 1ed9b62 on public article pages
   (articles/[slug]/page.tsx + schema-builder.ts) — closes the stored-XSS
   vector on publicly visited pages.
-- [ ] **Rate limit + length cap on the ghlReviewToken endpoint** — today an
+- [x] **Rate limit + length cap on the ghlReviewToken endpoint** DONE 1ed9b62 — today an
   unthrottled, uncapped write path into the client-story pipeline (DB fill +
   durable prompt-injection reservoir).
-- [ ] **Error-detail hygiene**: strip `details:`/err.message from the 14
+- [x] **Error-detail hygiene** DONE 1ed9b62 (safeErrorDetail redaction, toast UX kept): strip `details:`/err.message from the 14
   route-level 500 handlers (incl. the SSRF response oracle in social.ts and
   the resolved-IP leak in wp-connections.ts) + delete the apps/web OAuth
   console.log cluster that bypasses pino redaction.
