@@ -315,7 +315,7 @@ function AddConnectionForm({
             <li>Sign in to your WordPress admin dashboard.</li>
             <li>Go to <strong className="text-foreground">Users → Profile</strong> (or edit the user you want to use).</li>
             <li>Scroll down to the <strong className="text-foreground">Application Passwords</strong> section.</li>
-            <li>Type <code className="rounded bg-muted px-1 py-0.5 text-foreground">Levercast</code> in the &ldquo;New Application Password Name&rdquo; field.</li>
+            <li>Type <code className="rounded bg-muted px-1 py-0.5 text-foreground">Omniply</code> in the &ldquo;New Application Password Name&rdquo; field.</li>
             <li>Click <strong className="text-foreground">Add New Application Password</strong> and copy the generated value.</li>
           </ol>
           <p className="mt-1 text-xs text-muted-foreground">

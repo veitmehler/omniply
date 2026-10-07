@@ -200,7 +200,7 @@ export function BrandProfileSection({ settings }: { settings: SettingsData }) {
           <textarea
             value={businessDescription}
             onChange={(e) => setBusinessDescription(e.target.value)}
-            placeholder='e.g. "We are a CPA firm specializing in small business tax compliance and bookkeeping in the Denver metro area."'
+            placeholder='e.g. "We are a family chiropractic clinic focused on gentle, evidence-based care for desk workers and young families in the Denver metro area."'
             rows={3}
             className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 resize-y"
           />

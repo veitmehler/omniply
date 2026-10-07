@@ -3,7 +3,10 @@
 The definitive enable/disable + prebuild spec for the client subaccount snapshot
 (finalized 2026-07-15). Design principle: **the owner only sees surfaces where they act**
 — everything infrastructural exists but stays out of their face. International launch:
-no PMS integration, GHL never owns booking (see the PMS strategy in
+PMS integration is TIERED since 2026-10-06 (.plans/pms-connector-framework
+.implementation-plan.md): direct booking (GHL calendars or Cliniko),
+advisory (Google-calendar mirror + booking link), or patterns-only —
+GHL calendars own booking ONLY in direct-ghl mode (see the PMS strategy in
 `.plans/pms-connector-framework.implementation-plan.md`).
 
 ## A. Feature toggles

@@ -239,7 +239,7 @@ export function VoiceAssistantSection() {
         <div className="rounded-lg border border-border p-4 mb-4">
           <p className="text-sm font-medium text-card-foreground mb-1">Step 1 — connect your ElevenLabs account</p>
           <p className="text-xs text-muted-foreground mb-2">
-            Create an account at elevenlabs.io (the Creator plan, $22/month, is what we recommend — it includes
+            Create an account at elevenlabs.io (we recommend the Creator tier or higher — it includes
             enough call minutes for most clinics and Professional Voice Cloning). Then open Profile → API Keys
             and create a key.{' '}
             <span className="font-medium text-card-foreground">

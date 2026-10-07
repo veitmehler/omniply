@@ -1,6 +1,6 @@
 # Meta (Facebook & Instagram) Connection Guide
 
-This walkthrough covers connecting Facebook Pages (and Instagram Business accounts via Meta) to Socioply.
+This walkthrough covers connecting Facebook Pages (and Instagram Business accounts via Meta) to Omniply.
 
 ## Prerequisites
 - You must be an admin of the Facebook Page (and linked Instagram Business account, if applicable).
@@ -47,7 +47,7 @@ If you don't see product cards, check the **left sidebar menu**:
 - If you still can't find Instagram, your app might need to be in "Business" type (check App Settings > Basic)
 
 ## Step-by-Step
-1. **Open Settings in Socioply**
+1. **Open Settings in Omniply**
    - Visit `/settings`.
 
 2. **Connect Facebook**
@@ -57,20 +57,20 @@ If you don't see product cards, check the **left sidebar menu**:
 
 3. **Select Pages**
    - After granting permissions, Meta returns the list of pages you manage.
-   - In Socioply, choose which page to use for publishing.
+   - In Omniply, choose which page to use for publishing.
 
 4. **Instagram (optional)**
    - If your Instagram Business account is linked to that Facebook Page, the same connection works for Instagram publishing.
    - When connecting Instagram, you'll be asked to grant: `pages_show_list`, `pages_read_engagement`, `instagram_content_publish`, and `business_management` permissions.
    - Note: We use Instagram Graph API (for publishing), not Instagram Basic Display API (read-only). Do not mix scopes from both APIs.
-   - Set the post target accordingly in Socioply settings.
+   - Set the post target accordingly in Omniply settings.
 
 ## Troubleshooting
 
 ### General Issues
-- **Popup blocked:** allow pop-ups for Socioply and retry.
+- **Popup blocked:** allow pop-ups for Omniply and retry.
 - **No pages shown:** ensure you're a Page admin and granted all permissions when Meta prompted "What this app can do."
-- **Permissions missing:** if Meta revoked permissions, disconnect in Socioply and reconnect to refresh scopes.
+- **Permissions missing:** if Meta revoked permissions, disconnect in Omniply and reconnect to refresh scopes.
 - **Publishing failures:** verify the page remains connected in Facebook Business settings and regenerate the token by reconnecting.
 
 ### Instagram-Specific Issues
@@ -82,7 +82,7 @@ If you don't see product cards, check the **left sidebar menu**:
   2. Your Instagram account is a Business or Creator account
   3. Your Instagram account is linked to a Facebook Page
   4. The app has completed App Review for `instagram_content_publish` permission (if required)
-  5. You disconnect and reconnect Instagram in Socioply to get the correct scopes
+  5. You disconnect and reconnect Instagram in Omniply to get the correct scopes
 
 - **Note:** `instagram_basic` is part of Instagram Graph API and is designed to read profile metadata of Business accounts. It is compatible with `instagram_content_publish` and both can be requested together. The deprecated Basic Display API uses `user_profile` and `user_media` scopes, which are different.
 

@@ -45,7 +45,7 @@ const FAQ_ITEMS: FaqEntry[] = [
   },
   {
     q: 'Does it work with my booking system?',
-    a: 'Yes. Omniply does not replace your practice software. Every call to action, including the AI chat and voice, points patients at your existing online booking page, whatever system you use. No migrations, no double bookings, no IT project.',
+    a: 'Yes. Omniply works alongside your practice software, never instead of it. Depending on your system, the AI receptionist can book appointments directly into your calendar, or it shares current availability and sends patients your own booking link to confirm there. Either way: no migrations, no double bookings, no IT project.',
   },
   {
     q: 'Is my patient data involved?',

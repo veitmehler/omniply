@@ -315,8 +315,7 @@ export function GhlSettingsPanel() {
         </div>
         <p className="text-xs text-muted-foreground">
           When an article is published, automatically generate a promotional email and send it as an
-          Omniply Email Campaign to a tag (smart list) at a set time that day. Edit the email prompt under
-          Admin → Prompts (step 32).
+          Omniply Email Campaign to a tag (smart list) at a set time that day.
         </p>
 
         <label className="flex items-center gap-2 text-sm text-card-foreground">
