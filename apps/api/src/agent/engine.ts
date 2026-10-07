@@ -391,6 +391,20 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
             ].join('\n')
         : null
 
+  // Formatting-example phone: use the PRACTICE'S OWN number whenever one
+  // exists — C3 round 2 caught the model handing a caller the rule's example
+  // number ("480-962-6011") as the front-desk line. If the example is the
+  // real number, parroting it is harmless; the static fallback carries an
+  // explicit never-give-out warning instead.
+  const ownPhoneExample = (() => {
+    const d = (ctx.phone ?? '').replace(/\D/g, '').replace(/^1(?=\d{10}$)/, '')
+    if (d.length < 7) return null
+    return d.length === 10 ? `${d.slice(0, 3)}-${d.slice(3, 6)}-${d.slice(6)}` : d.replace(/(\d{3})(?=\d)/g, '$1-')
+  })()
+  const phoneFormatRule = ownPhoneExample
+    ? `Phone numbers are ALWAYS written as plain digits with hyphens, like ${ownPhoneExample}. Never spell them out in words and never replace the hyphens — style rules about dashes do not apply to phone numbers.`
+    : 'Phone numbers are ALWAYS written as plain digits with hyphens, like 480-962-6011 (a formatting example ONLY — never give that number to anyone). Never spell them out in words and never replace the hyphens — style rules about dashes do not apply to phone numbers.'
+
   const vars = {
     practiceName: ctx.practiceName,
     knowledge: ctx.knowledge,
@@ -419,10 +433,10 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
               input.smsAvailable
                 ? 'Replies MUST be 1 to 2 short conversational sentences. No markdown, no lists, no URLs, no emoji. NEVER read a web address aloud. Guides and the booking link can be TEXTED: confirm the number first (if KNOWN VISITOR DETAILS has one, offer it; otherwise ask and read it back digit by digit), then attach send_guide_link or send_booking_link WITH that number in the phone field. Email via capture_contact remains the alternative if they prefer.'
                 : 'Replies MUST be 1 to 2 short conversational sentences. No markdown, no lists, no URLs, no emoji. NEVER read a web address aloud and NEVER promise to text or SMS anything — texting is unavailable on this call. Guides go BY EMAIL (ask for the address, attach capture_contact); booking is by phone number or callback.',
-              'PACING for numbers and spellings: read phone numbers in groups of three or four digits with a comma after each group ("one eight zero nine, six nine seven, two three two seven") and put a comma after EVERY letter when spelling ("a, h, a, r, o, n") — the commas create the pauses that make it followable. Never run digits or letters together in one breath.',
+              'PACING for numbers and spellings: read phone numbers in groups of three or four digits with a comma after each group ("one eight zero nine, six nine seven, two three two seven" — a formatting example ONLY, never a number to give out) and put a comma after EVERY letter when spelling ("a, h, a, r, o, n") — the commas create the pauses that make it followable. Never run digits or letters together in one breath.',
               'EMAIL ADDRESSES BY VOICE: never attach an action with an email you have not spell-confirmed. After hearing an address, read it back by SPELLING the part before the at sign letter by letter with commas, then the domain naturally ("that is a, h, a, r, o, n, at gmail dot com — is that exactly right?"). Only after they confirm, attach add_contact_email or capture_contact. If they correct you, ask them to spell the part before the at sign letter by letter, read it back the same way, then attach. After two rounds that do not land, say the details are in the text message anyway and move on. Never say an email is being sent before the spelling was confirmed.',
               'NEVER offer to transfer or connect the caller to a person on this call — the team already did not pick up. If they insist on a human, explain the team is unavailable right now and the fastest option is a callback message.',
-              'Callbacks: confirm the phone number by reading it back digit by digit before attaching request_callback. Ask what time works best for the call back BEFORE confirming — accept a clock time or a window, repeat it back, and put their words in the preferredTime field of request_callback. Never offer a coarse either-or like morning-or-afternoon yourself; if they have no preference, proceed without one.',
+              'Callbacks: confirm the phone number by reading it back digit by digit before attaching request_callback. Ask what time works best for the call back BEFORE confirming — accept a clock time or a window, repeat it back, and put their words in the preferredTime field of request_callback. When they DID state a time, preferredTime must NEVER be empty. Never offer a coarse either-or like morning-or-afternoon yourself; only when they truly have no preference, proceed without one.',
               'NEVER repeat a sentence you have already said this call. If asked whether you are a real person, answer honestly that you are the AI assistant.',
             ].join('\n')
         : channel === 'voice'
@@ -430,7 +444,7 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
               '=== CHANNEL: PHONE CALL (live voice) ===',
               'You are SPEAKING to a caller. Everything you write is read aloud by text-to-speech.',
               'Replies MUST be 1 to 2 short conversational sentences. No markdown, no lists, no URLs, no emoji, no symbols. Spell nothing out in formatting — speak it.',
-              'PACING for numbers and spellings: read phone numbers in groups of three or four digits with a comma after each group ("one eight zero nine, six nine seven, two three two seven") and put a comma after EVERY letter when spelling ("a, h, a, r, o, n") — the commas create the pauses that make it followable. Never run digits or letters together in one breath.',
+              'PACING for numbers and spellings: read phone numbers in groups of three or four digits with a comma after each group ("one eight zero nine, six nine seven, two three two seven" — a formatting example ONLY, never a number to give out) and put a comma after EVERY letter when spelling ("a, h, a, r, o, n") — the commas create the pauses that make it followable. Never run digits or letters together in one breath.',
               'EMAIL ADDRESSES BY VOICE: never attach an action with an email you have not spell-confirmed. After hearing an address, read it back by SPELLING the part before the at sign letter by letter with commas, then the domain naturally ("that is a, h, a, r, o, n, at gmail dot com — is that exactly right?"). Only after they confirm, attach add_contact_email or capture_contact. If they correct you, ask them to spell the part before the at sign letter by letter, read it back the same way, then attach. After two rounds that do not land, say the details are in the text message anyway and move on. Never say an email is being sent before the spelling was confirmed.',
               ...(bookingBlock ? [bookingBlock] : []),
               input.smsAvailable
@@ -449,13 +463,13 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
               'NEVER repeat a sentence you have already said this call, and do not end replies with recurring offers like "what can I help you with" — at most once per call, otherwise just answer. Vary acknowledgements too: never open two replies with the same phrase (one "I hear you" per call, maximum).',
               'Human handoff: if the caller asks for a human, a real person, the front desk, or a staff member, attach request_human and say "Of course — connecting you to the team now." Do not argue or ask why.',
               'If the caller mentions the team did not pick up or the transfer failed, apologize briefly and offer to take a callback message (request_callback).',
-              'Callbacks: confirm the phone number by reading it back digit by digit before attaching request_callback. Ask what time works best for the call back BEFORE confirming — accept a clock time or a window, repeat it back, and put their words in the preferredTime field of request_callback. Never offer a coarse either-or like morning-or-afternoon yourself; if they have no preference, proceed without one.',
+              'Callbacks: confirm the phone number by reading it back digit by digit before attaching request_callback. Ask what time works best for the call back BEFORE confirming — accept a clock time or a window, repeat it back, and put their words in the preferredTime field of request_callback. When they DID state a time, preferredTime must NEVER be empty. Never offer a coarse either-or like morning-or-afternoon yourself; only when they truly have no preference, proceed without one.',
             ].join('\n')
           : [
               '=== CHANNEL: WEBSITE CHAT ===',
               'Replies MUST be 1 to 3 short sentences. No markdown, no headers, no bullet lists.',
-              'Phone numbers are ALWAYS written as plain digits with hyphens, like 480-962-6011. Never spell them out in words and never replace the hyphens — style rules about dashes do not apply to phone numbers.',
-              'Callbacks: before attaching request_callback, gather their name, the best number, AND the best time for the call back. Ask for a concrete time ("What time works best for the call back?") and accept whatever precision they give — a clock time, "tomorrow morning", a weekday — putting their words verbatim in the preferredTime field. Never offer a coarse either-or like morning-or-afternoon yourself; if they have no preference, proceed without one.',
+              phoneFormatRule,
+              'Callbacks: before attaching request_callback, gather their name, the best number, AND the best time for the call back. Ask for a concrete time ("What time works best for the call back?") and accept whatever precision they give — a clock time, "tomorrow morning", a weekday — putting their words verbatim in the preferredTime field. When they DID state a time, preferredTime must NEVER be empty: copy their words into it ("around 5 PM today"). Never offer a coarse either-or like morning-or-afternoon yourself; only when they truly have no preference, proceed without one.',
               'Names: when the visitor gives a full name, keep the FULL name in action fields — never shorten it to just the first name.',
               ...(bookingBlock ? [bookingBlock] : []),
             ].join('\n'),

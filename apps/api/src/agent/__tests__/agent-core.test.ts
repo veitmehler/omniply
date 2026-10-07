@@ -350,6 +350,20 @@ describe('stripPunctuationDashes', () => {
       'X-ray results in 2 to 3 days, call us',
     )
   })
+
+  // C3 round 2 (2026-10-07): "765-333-4455" was being read as ranges —
+  // "765 to 333 to 4455". Phone numbers keep their hyphens verbatim.
+  it('leaves phone numbers untouched', () => {
+    expect(stripPunctuationDashes('Your number on file is 765-333-4455.')).toBe(
+      'Your number on file is 765-333-4455.',
+    )
+    expect(stripPunctuationDashes('call us on 480-962-6011 today')).toBe('call us on 480-962-6011 today')
+    expect(stripPunctuationDashes('is 745-3214455 the best number?')).toBe('is 745-3214455 the best number?')
+  })
+
+  it('leaves date-like chains untouched while still converting adjacent ranges', () => {
+    expect(stripPunctuationDashes('ref 2026-10-08, open 2-6 PM')).toBe('ref 2026-10-08, open 2 to 6 PM')
+  })
 })
 
 describe('normalizeSpokenEmail', () => {

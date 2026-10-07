@@ -26,6 +26,7 @@ import { sendFailureAlert } from '../lib/alerts'
 import { getGhlCredentials } from '../lib/ghl/settings'
 import {
   addGhlContactTags,
+  removeGhlContactTags,
   createGhlContactNote,
   getBookingTimeFieldId,
   getCallbackTimeFieldId,
@@ -138,10 +139,26 @@ async function executeCallback(
   if (!creds) throw new Error('No GHL credentials for account owner')
 
   const summary = await callbackSummary(ctx, conversationId)
+  // Repeat callback in the SAME conversation = the visitor corrected a
+  // detail (number/name) after the first notification already fired. The
+  // tag-triggered workflow won't re-fire on an existing tag, so we remove +
+  // re-add it below and mark the summary as superseding (user decision
+  // 2026-10-07). The current turn's action is already persisted, so a count
+  // of 1 means "this is the first".
+  const callbackCount = await prisma.agentMessage.count({
+    where: { conversationId, role: 'assistant', action: { path: ['type'], equals: 'request_callback' } },
+  })
+  const isUpdatedCallback = callbackCount > 1
   // The summary also lands in the "Chat Summary" custom field (find-or-create)
   // so the snapshot's notification workflow can merge {{contact.chat_summary}}
   // straight into the front-desk SMS/email text.
-  const summaryText = [action.reason, summary].filter(Boolean).join(', ')
+  const summaryText = [
+    isUpdatedCallback ? 'UPDATED CALLBACK — replaces the earlier request, details changed; use THESE details' : null,
+    action.reason,
+    summary,
+  ]
+    .filter(Boolean)
+    .join(', ')
   const fieldId = summaryText
     ? await getChatSummaryFieldId(creds.apiKey, creds.locationId).catch(() => null)
     : null
@@ -170,6 +187,11 @@ async function executeCallback(
       ...(action.name ? splitFullName(action.name) : {}),
       ...(customFieldsOrUndef ? { customFields: customFieldsOrUndef } : {}),
     })
+    if (isUpdatedCallback) {
+      // Re-arm the tag-triggered notification workflow so the front desk
+      // hears about the corrected details; best-effort (add still runs).
+      await removeGhlContactTags(creds.apiKey, existingId, ['callback-requested']).catch(() => {})
+    }
     await addGhlContactTags(creds.apiKey, existingId, tags)
   } else {
     const result = await upsertGhlContact(creds.apiKey, creds.locationId, {

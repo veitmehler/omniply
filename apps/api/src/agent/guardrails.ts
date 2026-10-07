@@ -198,8 +198,12 @@ export function stripPunctuationDashes(text: string): string {
       // become "2, 6 PM" (live chat mangled the opening hours). A dash
       // between digits — en, em, or bare hyphen — reads as "to", which is
       // also the more natural conversational rendering. Times like "1:30"
-      // and trailing meridiems ride along untouched.
-      .replace(/(\d(?::\d{2})?\s*(?:[AaPp]\.?[Mm]\.?)?)\s*[—–-]\s*(?=\d)/g, '$1 to ')
+      // and trailing meridiems ride along untouched. BOTH sides must be
+      // 1-2 digit numbers (C3 round 2, 2026-10-07): hours and ranges never
+      // exceed two digits, while "765-333-4455" was being mangled into
+      // "765 to 333 to 4455" — phone numbers keep their hyphens. The
+      // lookbehind keeps date-ish chains ("2026-10-08") intact too.
+      .replace(/(?<![\d—–-])(\d{1,2}(?::\d{2})?\s*(?:[AaPp]\.?[Mm]\.?)?)\s*[—–-]\s*(?=\d{1,2}(?!\d))/g, '$1 to ')
       .replace(/\s*[—–]\s*/g, ', ') // remaining em/en dashes, any spacing
       .replace(/\s+-\s+/g, ', ') // spaced hyphen used as punctuation
       .replace(/,\s*,/g, ', ') // collapse accidental double commas

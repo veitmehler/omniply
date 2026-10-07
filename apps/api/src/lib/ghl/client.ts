@@ -592,6 +592,15 @@ export async function addGhlContactTags(apiKey: string, contactId: string, tags:
   })
 }
 
+/** Remove tags — used to re-arm tag-triggered workflows (remove + re-add). */
+export async function removeGhlContactTags(apiKey: string, contactId: string, tags: string[]): Promise<void> {
+  if (!tags.length) return
+  await ghlRequest<unknown>(apiKey, `/contacts/${contactId}/tags`, {
+    method: 'DELETE',
+    body: { tags },
+  })
+}
+
 /**
  * Attach a note to a contact — the chat-agent callback summary lands here so
  * the front desk opens the contact and sees the conversation context
