@@ -99,7 +99,7 @@ ride the pre-launch window as independent, revertable commits (~1 day total):
   route-level 500 handlers (incl. the SSRF response oracle in social.ts and
   the resolved-IP leak in wp-connections.ts) + delete the apps/web OAuth
   console.log cluster that bypasses pino redaction.
-- [ ] **USER (10 min, outranks all of the above): delete/rotate the old
+- [x] **USER: Supabase project DELETED 2026-10-07** — audit F1 fully closed. (Was: delete/rotate the old
   Supabase project** (gmjzvhviihsjpzipocxe) — its live Postgres password is
   in git history. The one remaining CRITICAL from the 2026-09 audit.
 
