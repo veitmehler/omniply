@@ -28,11 +28,20 @@ and 11:00 needs no action at all. Companion docs:
          purchase link (URL is stable even while the orderform is off).
 - [ ] GHL W2 "Launch Blast" prep: real checkout link into all three
       emails, spot count [N] into Email 2, waits back at 2 days,
-      workflow PUBLISHED (but no one tagged yet).
-- [ ] LinkedIn story-window: UNSET `linkedinPersonal` on the azavea
-      account (launch-arc posts own the profile through launch week);
-      per copy-restore §5, restore + re-add the 3 parked beats after the
-      arc completes.
+      workflow PUBLISHED (but no one tagged yet). ⚠️ The emails still
+      carry SEPTEMBER dates (Sep 22/24/26 wording) from the postponed
+      launch — re-date all date mentions for the Oct 13 window (W1 copy
+      + "Send Info 1" too).
+- [ ] LinkedIn story-window: VERIFY `linkedinPersonal` state on the
+      azavea account — it was unset 2026-09-16 for the September launch
+      and parked, so it is LIKELY STILL UNSET (automated story beats
+      have skipped the personal profile since). If unset: leave it (the
+      launch arc owns the profile through launch week). Restore + re-add
+      the 3 parked narrator beats after the arc completes
+      (copy-restore §5).
+- [ ] Optional hygiene while in dashboards: rotate the demo ElevenLabs
+      key (prefix appeared in working transcripts) and the Resend key
+      (parked-for-launch item).
 - [ ] Stage announcement posts from `launch-arc-posts.md`.
 - [ ] Dry-read this runbook end to end.
 
