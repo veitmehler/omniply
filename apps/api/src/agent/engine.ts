@@ -111,6 +111,10 @@ async function persistTurn(opts: {
   flagReason?: string | null
   endedReason?: string | null
   costUsd?: number
+  /** Action type the model attempted that validation DROPPED this turn —
+   * persisted as a `_dropped` marker so later turns see the rejection and
+   * can't claim the action happened (C3 phantom-booking fix, 2026-10-07). */
+  droppedType?: string | null
 }): Promise<void> {
   await prisma.$transaction([
     prisma.agentMessage.create({
@@ -121,7 +125,7 @@ async function persistTurn(opts: {
         conversationId: opts.conversationId,
         role: 'assistant',
         content: opts.reply,
-        action: opts.action ?? undefined,
+        action: opts.action ?? (opts.droppedType ? { type: '_dropped', attempted: opts.droppedType } : undefined),
         filtered: opts.filtered,
       },
     }),
@@ -288,11 +292,20 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
     where: { conversationId: conversation.id },
     orderBy: { createdAt: 'desc' },
     take: 20,
-    select: { role: true, content: true },
+    select: { role: true, content: true, action: true },
   })
   const history = historyRows
     .reverse()
-    .map((m) => `${m.role === 'visitor' ? 'Visitor' : 'Assistant'}: ${m.content}`)
+    .map((m) => {
+      const line = `${m.role === 'visitor' ? 'Visitor' : 'Assistant'}: ${m.content}`
+      // Surface rejected actions to the model: without this it assumes its
+      // attempt worked and confidently "confirms" it turns later.
+      const a = m.action as { type?: string; attempted?: string } | null
+      if (a?.type === '_dropped') {
+        return `${line}\n[SYSTEM: the ${a.attempted ?? 'action'} attempted in that reply was REJECTED and did NOT happen. Nothing was booked or sent by it — tell the visitor plainly if they ask, and never claim it succeeded.]`
+      }
+      return line
+    })
     .join('\n')
 
   const open = openStatusFor(ctx)
@@ -333,6 +346,8 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
         ...groupedSlotLines(),
         'When the caller wants an appointment: make sure you have their name and number first (reuse details already known; read a new number back digit by digit). Offer AT MOST THREE times in one reply, each at a DIFFERENT hour, spread across what is available (for example one morning, one midday, one late afternoon) — more than three spoken times in a row is impossible to follow on the phone, and NEVER read the whole list. When they ask about a specific time or day, answer just for that: offer it if listed, otherwise the nearest listed time, said plainly ("the closest I have is four o\'clock"). When they choose, attach book_appointment with slotStart set to the EXACT raw value for that time plus their name and phone, and confirm it aloud in the same reply ("You are booked for Tuesday, October sixth at ten A M — the team will see you then.").',
         'NEVER invent, accept, or imply a time that is not in the list. Only when nothing listed suits the caller: offer a callback instead (request_callback) with their preferred time in their own words.',
+        'You can only book for the PERSON ON THIS CALL. You CANNOT book for a spouse, child, or anyone else: for additional people, collect their names and take a front-desk callback (request_callback) to set those up — and NEVER say or imply that another person\'s appointment is booked.',
+        'An appointment exists ONLY when you attached book_appointment for it with a listed raw value. Never claim, confirm, or imply a booking you did not attach that way — if one did not go through, say so plainly and offer a callback.',
         'Day groups may be marked (TODAY) or (TOMORROW) — that mapping is authoritative. When the caller names a day (today, tomorrow, a weekday), offer times FROM THAT GROUP first. NEVER say a day is booked, full, or unavailable unless that day has NO group in the list: absence from the list is the ONLY evidence of unavailability.',
         'After confirming a booking, if no email is in KNOWN VISITOR DETAILS you may offer ONCE to email the appointment details — follow the EMAIL ADDRESSES BY VOICE procedure (spell-confirm before attaching add_contact_email); the confirmation email then sends automatically.',
       ].join('\n')
@@ -341,6 +356,8 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
           ...groupedSlotLines(),
           'When the visitor wants an appointment: collect their full name and best phone number first (plain digits with hyphens). Offer at most THREE times, each at a different hour, spread across what is available — never paste the whole list. When they ask about a specific time or day, answer just for that: offer it if listed, otherwise the nearest listed time. When they choose, attach book_appointment with slotStart set to the EXACT raw value for that time plus their name and phone, and confirm it in the same reply ("You\'re booked for Tuesday, October 6 at 10:00 AM — the team will see you then.").',
           'NEVER invent, accept, or imply a time that is not in the list. Only when nothing listed suits them: offer a callback instead (request_callback) with their preferred time in their own words.',
+          'You can only book for the PERSON IN THIS CHAT. You CANNOT book for a spouse, child, or anyone else: for additional people, collect their names and take a front-desk callback (request_callback) to set those up — and NEVER say or imply that another person\'s appointment is booked.',
+          'An appointment exists ONLY when you attached book_appointment for it with a listed raw value. Never claim, confirm, or imply a booking you did not attach that way — if one did not go through, say so plainly and offer a callback.',
           'Day groups may be marked (TODAY) or (TOMORROW) — that mapping is authoritative. When the caller names a day (today, tomorrow, a weekday), offer times FROM THAT GROUP first. NEVER say a day is booked, full, or unavailable unless that day has NO group in the list: absence from the list is the ONLY evidence of unavailability.',
           'After confirming a booking, if no email is known you may offer ONCE to email the appointment details; when they give an address, attach add_contact_email — the confirmation email then sends automatically. Never promise an email you were not given an address for.',
         ].join('\n')
@@ -478,6 +495,7 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
   let filtered = false
   let flagReason: string | null = null
   let action: AgentAction | null = null
+  let droppedType: string | null = null
 
   if (reply !== null) reply = stripPunctuationDashes(reply)
 
@@ -504,12 +522,13 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
       const attempted = (rawAction as { type?: unknown } | null)?.type
       if (rawAction && !action && typeof attempted === 'string') {
         flagReason = `action-dropped:${attempted}`
+        droppedType = attempted
         logger.warn({ accountId: input.accountId, conversationId: conversation.id, attempted }, '[agent] model action failed validation and was dropped')
       }
     }
   }
 
-  await persistTurn({ conversationId: conversation.id, visitorText: message, reply, action, filtered, flagReason, costUsd })
+  await persistTurn({ conversationId: conversation.id, visitorText: message, reply, action, filtered, flagReason, costUsd, droppedType })
 
   // Execute server-side effects (GHL contact/tags/note, Drive grants) AFTER
   // the turn is persisted — never throws, failures alert + flag.

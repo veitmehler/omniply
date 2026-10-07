@@ -65,6 +65,12 @@ export async function knownDetailsFor(conversationId: string): Promise<KnownDeta
         known.phone = str(a.phone) ?? known.phone
         known.name = str(a.name) ?? known.name
         break
+      // The booking action carries name+phone too — without this, a visitor
+      // who only ever booked gets "I don't have your name" (C3 probe 11).
+      case 'book_appointment':
+        known.phone = str(a.phone) ?? known.phone
+        known.name = str(a.name) ?? known.name
+        break
       case 'add_contact_email':
         known.preferredEmail = str(a.email) ?? known.preferredEmail
         break
