@@ -98,7 +98,9 @@
   'use strict'
   var CONFIG = {
     CHECKOUT_URL: '',   // GHL SaaS-configurator purchase link — set before launch
-    VIDEO_EMBED_URL: '', // video embed URL once recorded
+    // Self-hosted final cut (v1, 2026-10-06, ~13 min) + poster frame.
+    VIDEO_URL: 'https://cdn.omniply.io/system/walkthrough/omniply-demo-video-v1.mp4',
+    POSTER_URL: 'https://cdn.omniply.io/system/walkthrough/omniply-demo-video-v1-poster.jpg',
   }
   // Gate held closed until the demo video is ready (launch extended past
   // 2026-09-22) — set the real opening timestamp here when it's locked in.
@@ -172,12 +174,20 @@
     btn.style.opacity = '0.5'
     btn.style.cursor = 'default'
   }
-  if (CONFIG.VIDEO_EMBED_URL) {
+  // The video stays behind the SAME launch gate as the buy box: its closing
+  // scene says "Omniply is open now", so it must never be public while the
+  // site still says "opening soon". ?preview=1 is the pre-launch check
+  // (unlisted; harmless if shared early — it's the sales video).
+  var showVideo = Date.now() >= LAUNCH_TS || /[?&]preview=1/.test(location.search)
+  if (CONFIG.VIDEO_URL && showVideo) {
     var f = document.getElementById('frame')
-    f.innerHTML = '<iframe src="' + CONFIG.VIDEO_EMBED_URL + '" allow="autoplay; fullscreen" allowfullscreen></iframe>'
+    f.innerHTML =
+      '<video controls playsinline preload="metadata" poster="' + CONFIG.POSTER_URL + '">' +
+      '<source src="' + CONFIG.VIDEO_URL + '" type="video/mp4" />' +
+      '</video>'
   } else {
-    // No video yet: hide the empty placeholder + chapter list — the page IS
-    // the notify pitch until the video exists.
+    // Pre-launch: hide the player + chapter list — the page IS the notify
+    // pitch until the doors open.
     var fr = document.getElementById('frame')
     if (fr) fr.style.display = 'none'
     var ch = document.querySelector('.chapters')
