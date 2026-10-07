@@ -24,8 +24,20 @@ interface ReviewPayload {
   name?: string
 }
 
+// Real reviews are rare events — 60/min absorbs any legitimate GHL burst
+// while closing the unthrottled write path into the client-story pipeline.
+const MAX_TEXT_CHARS = 8000
+const MAX_AUTHOR_CHARS = 200
+
+function asCappedString(v: unknown, max: number): string {
+  return typeof v === 'string' ? v.slice(0, max) : ''
+}
+
 export async function ghlReviewRoutes(app: FastifyInstance): Promise<void> {
-  app.post<{ Params: { token: string }; Body: ReviewPayload }>('/ghl/reviews/:token', async (request, reply) => {
+  app.post<{ Params: { token: string }; Body: ReviewPayload }>(
+    '/ghl/reviews/:token',
+    { config: { rateLimit: { max: 60, timeWindow: '1 minute' } } },
+    async (request, reply) => {
     const account = await prisma.account.findUnique({
       where: { ghlReviewToken: request.params.token },
       select: { id: true },
@@ -33,8 +45,8 @@ export async function ghlReviewRoutes(app: FastifyInstance): Promise<void> {
     if (!account) return reply.status(404).send({ error: 'Unknown token' })
 
     const b = request.body ?? {}
-    const text = b.review?.body ?? b.body ?? b.text ?? b.comment ?? ''
-    const author = b.review?.reviewer ?? b.reviewer ?? b.author ?? b.name ?? null
+    const text = asCappedString(b.review?.body ?? b.body ?? b.text ?? b.comment, MAX_TEXT_CHARS)
+    const author = asCappedString(b.review?.reviewer ?? b.reviewer ?? b.author ?? b.name, MAX_AUTHOR_CHARS) || null
     const ratingRaw = b.review?.rating ?? b.rating
     const rating = ratingRaw !== undefined ? Number(ratingRaw) || null : null
 
@@ -45,5 +57,6 @@ export async function ghlReviewRoutes(app: FastifyInstance): Promise<void> {
     }
     const inserted = await ingestReviews(account.id, 'ghl-webhook', [{ authorName: author, rating, text }])
     return reply.send({ ok: true, ingested: inserted })
-  })
+    },
+  )
 }

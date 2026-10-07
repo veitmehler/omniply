@@ -78,6 +78,31 @@ production (env backup: `/opt/socioply/.env.production.bak-20260731`).
   (patient-tagged + quiet ~90 days → personal-tone win-back sequence).
   Emails to be written (copy task), then workflow added to master snapshot.
 
+## 2b. Security cherry-picks (pulled forward from post-launch Themes B–D, 2026-10-07)
+
+Decision 2026-10-07: the big Theme B/D work (Fastify schema layer on the 19 raw
+casts, guardedFetch consolidation, eslint/coverage/tests) stays POST-LAUNCH —
+refactor risk during freeze week beats the threat model (authenticated tenants
+are concierge-onboarded). But four items are attacker-facing AND small, so they
+ride the pre-launch window as independent, revertable commits (~1 day total):
+
+- [ ] **Auth on `GET /api/google/oauth/start`** (google-oauth.ts) — currently
+  unauthenticated: account-id oracle + lets an attacker bind THEIR Google
+  account to a tenant. Was mis-binned into Theme C ops; it's a real hole.
+- [ ] **JSON-LD `</script>` escaping** on public article pages
+  (articles/[slug]/page.tsx + schema-builder.ts) — closes the stored-XSS
+  vector on publicly visited pages.
+- [ ] **Rate limit + length cap on the ghlReviewToken endpoint** — today an
+  unthrottled, uncapped write path into the client-story pipeline (DB fill +
+  durable prompt-injection reservoir).
+- [ ] **Error-detail hygiene**: strip `details:`/err.message from the 14
+  route-level 500 handlers (incl. the SSRF response oracle in social.ts and
+  the resolved-IP leak in wp-connections.ts) + delete the apps/web OAuth
+  console.log cluster that bypasses pino redaction.
+- [ ] **USER (10 min, outranks all of the above): delete/rotate the old
+  Supabase project** (gmjzvhviihsjpzipocxe) — its live Postgres password is
+  in git history. The one remaining CRITICAL from the 2026-09 audit.
+
 ## 3. External clocks (start early — not under our control)
 
 - [ ] **Trademark**: USPTO filing for OMNIPLY classes 35 + 42 via IP attorney

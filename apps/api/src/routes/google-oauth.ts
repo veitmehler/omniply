@@ -6,12 +6,15 @@
  * Business Profile API access application are LONG-LEAD external items). The
  * onboarding step auto-degrades while unset; these routes 503.
  *
- * Flow: popup → /start?account=… (state row, CSRF-safe) → Google consent
- * (business.manage, offline access) → /callback → encrypted refresh token in
- * the apiKey table (provider 'google_business', owner user) → backfill job.
+ * Flow: onboarding step mints the state row (authenticated context) → popup
+ * → /start?state=… → Google consent (business.manage, offline access) →
+ * /callback → encrypted refresh token in the apiKey table (provider
+ * 'google_business', owner user) → backfill job. /start deliberately does
+ * NOT take an account id: popup navigations can't carry auth, and a bare
+ * ?account= param was an account-id oracle + let anyone bind their own
+ * Google account to a tenant (2026-10-07 security cherry-pick).
  */
 import type { FastifyInstance } from 'fastify'
-import { randomBytes } from 'node:crypto'
 import { prisma, encrypt } from '@omniply/shared'
 import { getBoss, QUEUES } from '../queues/index'
 import { logger } from '../lib/logger'
@@ -25,22 +28,14 @@ function configured(): boolean {
 }
 
 export async function googleOauthRoutes(app: FastifyInstance): Promise<void> {
-  app.get<{ Querystring: { account?: string } }>('/google/oauth/start', async (request, reply) => {
+  app.get<{ Querystring: { state?: string } }>('/google/oauth/start', async (request, reply) => {
     if (!configured()) return reply.status(503).send({ error: 'Google OAuth not configured' })
-    const accountId = request.query.account
-    if (!accountId) return reply.status(400).send({ error: 'account required' })
-    const account = await prisma.account.findUnique({ where: { id: accountId }, select: { ownerUserId: true } })
-    if (!account?.ownerUserId) return reply.status(404).send({ error: 'Unknown account' })
-
-    const state = randomBytes(24).toString('base64url')
-    await prisma.oAuthState.create({
-      data: {
-        state,
-        clerkId: `google_business:${accountId}:${account.ownerUserId}`,
-        platform: 'google_business',
-        expiresAt: new Date(Date.now() + 15 * 60 * 1000),
-      },
-    })
+    const state = request.query.state
+    if (!state) return reply.status(400).send({ error: 'state required' })
+    const row = await prisma.oAuthState.findUnique({ where: { state } })
+    if (!row || row.platform !== 'google_business' || row.expiresAt < new Date()) {
+      return reply.status(403).send({ error: 'Invalid or expired link — please retry from onboarding' })
+    }
     const url =
       'https://accounts.google.com/o/oauth2/v2/auth' +
       `?client_id=${encodeURIComponent(process.env.GOOGLE_OAUTH_CLIENT_ID!)}` +

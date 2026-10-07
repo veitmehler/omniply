@@ -11,6 +11,7 @@
  * data-heavy prepare/commit bodies (crawl, vision, synthesis, offers,
  * connections) are filled in by Phases 2–7 behind the same interface.
  */
+import { randomBytes } from 'node:crypto'
 import { prisma } from '@omniply/shared'
 import { logger } from '../lib/logger'
 import {
@@ -452,6 +453,29 @@ const STEPS: StepDef[] = [
     kind: 'choice',
     prepare: async (ctx) => {
       const configured = Boolean(process.env.GOOGLE_OAUTH_CLIENT_ID)
+      // The CSRF state is minted HERE, inside the authenticated onboarding
+      // session, because the popup navigation to /google/oauth/start can't
+      // carry auth — so that endpoint only accepts a pre-minted state and
+      // never a raw account id (which made it an account-id oracle).
+      let card: { type: 'google_oauth'; startPath: string } | undefined
+      if (configured) {
+        const account = await prisma.account.findUnique({
+          where: { id: ctx.accountId },
+          select: { ownerUserId: true },
+        })
+        if (account?.ownerUserId) {
+          const state = randomBytes(24).toString('base64url')
+          await prisma.oAuthState.create({
+            data: {
+              state,
+              clerkId: `google_business:${ctx.accountId}:${account.ownerUserId}`,
+              platform: 'google_business',
+              expiresAt: new Date(Date.now() + 30 * 60 * 1000),
+            },
+          })
+          card = { type: 'google_oauth', startPath: `/api/google/oauth/start?state=${state}` }
+        }
+      }
       return {
         messages: [
           configured
@@ -464,7 +488,7 @@ const STEPS: StepDef[] = [
               { value: 'skip', label: 'Skip for now' },
             ]
           : [{ value: 'skip', label: 'Continue' }],
-        card: configured ? { type: 'google_oauth', startPath: `/api/google/oauth/start?account=${ctx.accountId}` } : undefined,
+        card,
       }
     },
     commit: async (ctx, answer) => {

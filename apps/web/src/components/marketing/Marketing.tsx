@@ -315,7 +315,12 @@ export function FaqJsonLd({ items }: { items: FaqEntry[] }) {
       acceptedAnswer: { '@type': 'Answer', text: i.a },
     })),
   }
-  return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }} />
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(data).replace(/</g, '\\u003c') }}
+    />
+  )
 }
 
 /* ── Diagram 6: the Google map pack ─────────────────────────────────────── */

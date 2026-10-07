@@ -10,6 +10,7 @@ import {
 } from '@omniply/shared'
 import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
 import { requireAuth } from '../middleware/auth'
+import { safeErrorDetail } from '../lib/safe-error'
 import { sniffImageMime, extForImageMime } from '../lib/image-sniff'
 
 // ─── S3 helpers ──────────────────────────────────────────────────────────────
@@ -257,7 +258,7 @@ export async function imageRoutes(app: FastifyInstance) {
       request.log.error({ err }, 'Error in /images/generate')
       return reply.status(500).send({
         error: 'Failed to generate image',
-        details: err instanceof Error ? err.message : String(err),
+        details: safeErrorDetail(err),
       })
     }
   })
@@ -304,9 +305,9 @@ export async function imageRoutes(app: FastifyInstance) {
             else if (err.message.includes('rate limit')) msg = 'Rate limit exceeded. Please try again later.'
             else if (err.message.includes('invalid')) msg = 'Invalid API key or model. Please check your settings.'
             else if (err.message.includes('503')) msg = 'Service temporarily unavailable. Please try again later.'
-            else msg = err.message
+            else msg = safeErrorDetail(err)
           }
-          return reply.status(500).send({ error: msg, details: String(err) })
+          return reply.status(500).send({ error: msg, details: safeErrorDetail(err) })
         }
       } else {
         prompt = generateSimpleImagePrompt(postContent, styleInstructions)
@@ -317,7 +318,7 @@ export async function imageRoutes(app: FastifyInstance) {
       request.log.error({ err }, 'Error in /images/generate-prompt')
       return reply.status(500).send({
         error: 'Failed to generate prompt',
-        details: err instanceof Error ? err.message : String(err),
+        details: safeErrorDetail(err),
       })
     }
   })
@@ -375,7 +376,7 @@ export async function imageRoutes(app: FastifyInstance) {
       request.log.error({ err }, 'Error in /images/upload')
       return reply.status(500).send({
         error: 'Failed to upload image',
-        details: err instanceof Error ? err.message : String(err),
+        details: safeErrorDetail(err),
       })
     }
   })
@@ -408,7 +409,7 @@ export async function imageRoutes(app: FastifyInstance) {
       request.log.error({ err }, 'Error in DELETE /images/upload')
       return reply.status(500).send({
         error: 'Failed to delete image',
-        details: err instanceof Error ? err.message : String(err),
+        details: safeErrorDetail(err),
       })
     }
   })

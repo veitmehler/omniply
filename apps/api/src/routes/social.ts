@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import { prisma, accountMemberIdsForUser } from '@omniply/shared'
 import { requireAuth } from '../middleware/auth'
+import { safeErrorDetail } from '../lib/safe-error'
 import {
   generateCarouselAssets,
   generatePitchStoryAssets,
@@ -57,7 +58,7 @@ export async function socialRoutes(app: FastifyInstance) {
       request.log.error({ err }, 'Error in /social/generate/quote')
       return reply.status(500).send({
         error: 'Failed to generate quote card',
-        details: err instanceof Error ? err.message : String(err),
+        details: safeErrorDetail(err),
       })
     }
   })
@@ -105,7 +106,7 @@ export async function socialRoutes(app: FastifyInstance) {
       request.log.error({ err }, 'Error in /social/generate/carousel')
       return reply.status(500).send({
         error: 'Failed to generate carousel',
-        details: err instanceof Error ? err.message : String(err),
+        details: safeErrorDetail(err),
       })
     }
   })
@@ -145,7 +146,7 @@ export async function socialRoutes(app: FastifyInstance) {
       request.log.error({ err }, 'Error in /social/generate/carousel/regenerate-slide')
       return reply.status(500).send({
         error: 'Failed to regenerate carousel slide',
-        details: err instanceof Error ? err.message : String(err),
+        details: safeErrorDetail(err),
       })
     }
   })
@@ -183,7 +184,7 @@ export async function socialRoutes(app: FastifyInstance) {
       request.log.error({ err }, 'Error in /social/generate/pitch')
       return reply.status(500).send({
         error: 'Failed to generate pitch story',
-        details: err instanceof Error ? err.message : String(err),
+        details: safeErrorDetail(err),
       })
     }
   })
@@ -212,7 +213,7 @@ export async function socialRoutes(app: FastifyInstance) {
       request.log.error({ err }, 'Error enqueuing video reel')
       return reply.status(500).send({
         error: 'Failed to start video reel generation',
-        details: err instanceof Error ? err.message : String(err),
+        details: safeErrorDetail(err),
       })
     }
   })
@@ -242,7 +243,7 @@ export async function socialRoutes(app: FastifyInstance) {
       request.log.error({ err }, 'Error enqueuing hook video')
       return reply.status(500).send({
         error: 'Failed to start hook video generation',
-        details: err instanceof Error ? err.message : String(err),
+        details: safeErrorDetail(err),
       })
     }
   })
@@ -271,7 +272,7 @@ export async function socialRoutes(app: FastifyInstance) {
       request.log.error({ err }, 'Error enqueuing quote video')
       return reply.status(500).send({
         error: 'Failed to start quote video generation',
-        details: err instanceof Error ? err.message : String(err),
+        details: safeErrorDetail(err),
       })
     }
   })
@@ -324,7 +325,7 @@ export async function socialRoutes(app: FastifyInstance) {
       request.log.error({ err }, 'Error in /social/generate/loop-video')
       return reply.status(500).send({
         error: 'Failed to loop video',
-        details: err instanceof Error ? err.message : String(err),
+        details: safeErrorDetail(err),
       })
     }
   })

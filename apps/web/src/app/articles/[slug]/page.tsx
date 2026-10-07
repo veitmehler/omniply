@@ -174,7 +174,12 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
         )}
       </article>
       {article.schemaJson && (
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: article.schemaJson }} />
+        // <-escape at render too (not just in the builder): rows stored
+        // before the builder escaped could still carry "</script>".
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: article.schemaJson.replace(/</g, '\\u003c') }}
+        />
       )}
       <MarketingFooter />
       <DiagramLightbox />

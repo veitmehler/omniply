@@ -100,7 +100,7 @@ export async function assertSafeWpUrl(rawUrl: string): Promise<void> {
 
   for (const addr of addresses) {
     if (isBlockedIp(addr)) {
-      throw new SsrfError(`Refusing to connect to non-public address for ${host} (${addr})`)
+      throw new SsrfError(`Refusing to connect to non-public address for ${host}`)
     }
   }
 }
@@ -137,7 +137,7 @@ export async function assertSafePublicUrl(rawUrl: string): Promise<void> {
   }
   for (const addr of addresses) {
     if (isBlockedIp(addr)) {
-      throw new SsrfError(`Refusing to connect to non-public address for ${host} (${addr})`)
+      throw new SsrfError(`Refusing to connect to non-public address for ${host}`)
     }
   }
 }

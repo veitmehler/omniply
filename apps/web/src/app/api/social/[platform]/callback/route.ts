@@ -118,22 +118,14 @@ export async function GET(
     }
 
     if (!stateVerification.valid) {
-      console.error(`[OAuth Callback] Invalid state token for ${platform}`, {
-        state,
-        clerkId,
-        platform,
-        cookieState: stateCookieData?.state,
-      })
+      // No state/clerkId payload here: console.* bypasses pino redaction and
+      // lands verbatim in Vercel logs (2026-10-07 security cherry-pick).
+      console.error(`[OAuth Callback] Invalid state token for ${platform}`)
       return redirectWithCleanup('/settings?error=invalid_state')
     }
 
     // Get target type from state verification (for LinkedIn)
     const targetType = stateVerification.target
-    console.log(`[OAuth Callback] State verified for ${platform}`, {
-      targetType,
-      hasTarget: targetType !== undefined,
-      platform,
-    })
 
     const user = await getOrCreateUser(clerkId)
 
@@ -308,7 +300,7 @@ export async function GET(
                 platformUsername: username,
               },
             })
-            console.log('[Instagram OAuth] Successfully updated username in background:', username)
+            console.log('[Instagram OAuth] Successfully updated username in background')
           }
         }).catch((error) => {
           console.error('[Instagram OAuth] Failed to fetch username in background:', error)

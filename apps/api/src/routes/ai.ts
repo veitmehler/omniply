@@ -5,6 +5,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 import { prisma } from '@omniply/shared'
 import { cleanText } from '../lib/utils'
 import { requireAuth } from '../middleware/auth'
+import { safeErrorDetail } from '../lib/safe-error'
 import { getSystemApiKey } from '../lib/system-keys'
 import { weeklyExtraPostQuota, quotaExceededMessage } from '../lib/extra-post-cap'
 import { generationGateForUser } from '../lib/account-billing'
@@ -470,7 +471,7 @@ export async function aiRoutes(app: FastifyInstance) {
       request.log.error({ err }, 'Error in /ai/generate')
       return reply.status(500).send({
         error: 'Failed to generate content',
-        details: err instanceof Error ? err.message : String(err),
+        details: safeErrorDetail(err),
       })
     }
   })
@@ -593,7 +594,7 @@ CRITICAL: Do NOT quote, excerpt, or paraphrase ANY specific phrases, sentences, 
       request.log.error({ err }, 'Error in /ai/analyze-writing-style')
       return reply.status(500).send({
         error: 'Failed to analyze writing style',
-        details: err instanceof Error ? err.message : String(err),
+        details: safeErrorDetail(err),
       })
     }
   })

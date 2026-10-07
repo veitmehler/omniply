@@ -129,5 +129,7 @@ export function buildArticleSchema(opts: BuildSchemaOpts): string {
 
   if (opts.citationUrls.length > 0) schema.citation = opts.citationUrls
 
-  return JSON.stringify(schema, null, 2)
+  // <-escape so content containing "</script>" can't break out of the
+  // inline <script type="application/ld+json"> tag it's rendered into.
+  return JSON.stringify(schema, null, 2).replace(/</g, '\\u003c')
 }
