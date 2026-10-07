@@ -67,8 +67,8 @@ production (env backup: `/opt/socioply/.env.production.bak-20260731`).
   cadence has run since Aug 7 with on-the-day approvals — arguably covered; also
   re-check once after the SPINE caption-hook change (6bd2ba3 era) on a client-style
   account.
-- [ ] **Add staging droplet IP to the `GOOGLE_MAPS_API_KEY` restriction** (key is
-  currently prod-IP-only; Tier-2 review pulls fail from staging).
+- [x] **Add staging droplet IP to the `GOOGLE_MAPS_API_KEY` restriction** DONE 2026-10-07
+  (68.183.56.177 added alongside prod 104.131.61.206; Places API scope verified).
 - [ ] Onboarding runbook note: `brandSettings.industry` is REQUIRED for the
   plain-language feature — confirm the onboarding flow always sets it.
 - [ ] **Onboarding: import the clinic's patient list into their GHL sub-account**
@@ -276,8 +276,10 @@ remains is production + the release ripple, in order:
 - [ ] Master snapshot: decide + set callback-notification type (keep SMS
   for clients — staff-contacts provisioning 9e7cf8c handles the
   auto-contact artifact; demo switched to Email for clean filming).
-- [ ] Master snapshot: add `staff-internal` tag-exclusion filters to all
-  marketing/drip workflows (review requests, reactivation).
+- [x] Master snapshot staff-exclusion: RESOLVED 2026-10-07 by DESIGN not filters —
+  GHL allows one Doesnt-include slot (kept on ai-off); marketing sends go only to
+  explicit lists/tags and staff are never on them. Residual: tag-TRIGGERED drips
+  (review requests) still fire on staff test behavior — known, acceptable.
 - [ ] Sweep snapshot for leftover placeholder values (the 809-555-5555
   class). Payment-workflow checklist: VERIFIED 2026-10-03 — demo
   accounts were live purchased accounts, billing flow fired end-to-end.
