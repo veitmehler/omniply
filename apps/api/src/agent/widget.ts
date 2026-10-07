@@ -278,18 +278,56 @@ export const AGENT_LOADER_JS = `(function () {
 
   function mobile() { return window.innerWidth < 480; }
 
+  // Cookie-banner avoidance (2026-10-07): consent banners (Cookiebot,
+  // Complianz, OneTrust, …) are fixed to the viewport bottom with extreme
+  // z-indexes — exactly where the launcher lives. Instead of fighting them
+  // (covering a consent control is the one thing a widget must not do), we
+  // probe what is actually rendered at the launcher's corner and LIFT the
+  // whole closed-state UI above any bottom-anchored overlay; when the banner
+  // is dismissed the probe re-runs and everything slides back down.
+  var lift = 0;
+  function probeOverlay() {
+    try {
+      if (open && mobile()) return; // full-screen panel: nothing to avoid
+      var sz = mobile() ? 68 : 58;
+      var x = window.innerWidth - 20 - sz / 2;
+      var y = window.innerHeight - 20 - sz / 2;
+      var ours = [bub, pill, teaser, frame];
+      var prev = ours.map(function (el) { var p = el.style.pointerEvents; el.style.pointerEvents = 'none'; return p; });
+      var hit = document.elementFromPoint(x, y);
+      ours.forEach(function (el, i) { el.style.pointerEvents = prev[i] || ''; });
+      var next = 0;
+      var n = hit;
+      while (n && n !== document.body && n !== document.documentElement) {
+        var cs = getComputedStyle(n);
+        if (cs.position === 'fixed' || cs.position === 'sticky') {
+          var r = n.getBoundingClientRect();
+          var h = window.innerHeight - r.top;
+          // Bottom-anchored bar covering our corner — but not a full-page
+          // modal/interstitial (lifting above those is pointless).
+          if (r.bottom > window.innerHeight - 8 && h > 0 && h <= window.innerHeight * 0.45) next = Math.ceil(h) + 12;
+          break;
+        }
+        n = n.parentElement;
+      }
+      if (next !== lift) { lift = next; layout(); }
+    } catch (e) {}
+  }
+
   // Closed-state sizing (user-locked): the launcher must be bigger on phones —
   // 68px bubble + 15px pill/teaser text vs 58px/13px on desktop.
   function applyClosedSizes() {
     var m = mobile();
     var sz = m ? 68 : 58;
     bub.style.width = sz + 'px'; bub.style.height = sz + 'px';
+    bub.style.bottom = (20 + lift) + 'px';
     var right = (20 + sz + 10) + 'px';
     pill.style.right = right;
     pill.style.font = '600 ' + (m ? 15 : 13) + 'px/1 -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif';
     pill.style.padding = m ? '11px 16px' : '8px 14px';
-    pill.style.bottom = m ? '42px' : '36px';
+    pill.style.bottom = ((m ? 42 : 36) + lift) + 'px';
     teaser.style.right = right;
+    teaser.style.bottom = (24 + lift) + 'px';
     teaser.style.maxWidth = 'min(250px,calc(100vw - ' + (20 + sz + 10 + 14) + 'px))';
     teaser.style.font = '400 ' + (m ? 15 : 13) + 'px/1.45 -apple-system,BlinkMacSystemFont,Segoe UI,sans-serif';
   }
@@ -316,7 +354,7 @@ export const AGENT_LOADER_JS = `(function () {
     applyClosedSizes();
     if (!open) return;
     if (mobile()) { frame.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;border:0;z-index:2147483001;display:block;background:#fff;'; lockScroll(true); }
-    else { frame.style.cssText = 'position:fixed;right:20px;bottom:90px;width:380px;height:600px;max-height:calc(100vh - 110px);border:0;border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,.28);z-index:2147483000;display:block;background:#fff;'; lockScroll(false); }
+    else { frame.style.cssText = 'position:fixed;right:20px;bottom:' + (90 + lift) + 'px;width:380px;height:600px;max-height:calc(100vh - ' + (110 + lift) + 'px);border:0;border-radius:16px;box-shadow:0 8px 40px rgba(0,0,0,.28);z-index:2147483000;display:block;background:#fff;'; lockScroll(false); }
   }
   function toggle(to) {
     open = typeof to === 'boolean' ? to : !open;
@@ -331,7 +369,20 @@ export const AGENT_LOADER_JS = `(function () {
     if (e.data.type === 'op-agent-theme' && e.data.headerBg) bub.style.background = String(e.data.headerBg).slice(0, 20);
   });
 
-  function mount() { document.body.appendChild(bub); document.body.appendChild(pill); document.body.appendChild(teaser); document.body.appendChild(frame); applyClosedSizes(); }
+  function mount() {
+    document.body.appendChild(bub); document.body.appendChild(pill); document.body.appendChild(teaser); document.body.appendChild(frame);
+    applyClosedSizes();
+    // Banners inject late and disappear on consent: probe now, a few times
+    // over the first seconds, and (debounced) on DOM changes + resizes.
+    probeOverlay();
+    [600, 1600, 3500, 7000].forEach(function (ms) { setTimeout(probeOverlay, ms); });
+    window.addEventListener('resize', probeOverlay);
+    try {
+      var moT = null;
+      new MutationObserver(function () { clearTimeout(moT); moT = setTimeout(probeOverlay, 350); })
+        .observe(document.body, { childList: true, subtree: true });
+    } catch (e) {}
+  }
   if (document.body) mount(); else document.addEventListener('DOMContentLoaded', mount);
 })();
 `
