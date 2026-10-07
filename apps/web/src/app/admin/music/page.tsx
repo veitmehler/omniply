@@ -1,9 +1,15 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useAuth } from '@clerk/nextjs'
 import { Loader2, Music, Trash2, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
+
+// Uploads bypass the Vercel proxy (4.5 MB request-body cap — far too small
+// for WAV) and POST straight to the API, which accepts 100 MB and is CORS-
+// allowlisted for the admin hosts. Same base-URL pattern as embedSession.ts.
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'https://svc.omniply.io'
 
 type MusicTrack = {
   id: string
@@ -21,6 +27,7 @@ function formatDuration(seconds: number): string {
 }
 
 export default function AdminMusicPage() {
+  const { getToken } = useAuth()
   const [tracks, setTracks] = useState<MusicTrack[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number } | null>(null)
@@ -60,7 +67,15 @@ export default function AdminMusicPage() {
         try {
           const formData = new FormData()
           formData.append('file', files[i])
-          const res = await fetch('/api/admin/music', { method: 'POST', body: formData })
+          // Fresh token per file: big uploads on slow links can outlive the
+          // ~60s Clerk session-token window.
+          const token = await getToken()
+          if (!token) throw new Error('Session expired — reload and sign in again')
+          const res = await fetch(`${API_BASE}/api/admin/music`, {
+            method: 'POST',
+            body: formData,
+            headers: { Authorization: `Bearer ${token}` },
+          })
           const data = await res.json().catch(() => ({}))
           if (!res.ok) throw new Error(data.error ?? `Upload failed (${res.status})`)
           succeeded++
@@ -157,7 +172,7 @@ export default function AdminMusicPage() {
         <div className="rounded-lg border border-dashed border-border p-10 text-center text-muted-foreground">
           <Music className="w-8 h-8 mx-auto mb-3 opacity-40" />
           <p className="text-sm">
-            No tracks yet. Upload MP3, M4A, or WAV (max 25 MB). Videos generate without music
+            No tracks yet. Upload MP3, M4A, or WAV (max 100 MB). Videos generate without music
             while the library is empty.
           </p>
         </div>

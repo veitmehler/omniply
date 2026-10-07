@@ -6,7 +6,10 @@ import { requireAdmin } from '../../middleware/admin'
 import { prisma, uploadBufferWithKey, deleteS3Keys } from '@omniply/shared'
 import { withTempDir, runFfmpeg, probeVideo } from '../../social/video/ffmpeg'
 
-const MAX_FILE_BYTES = 25 * 1024 * 1024
+// Music uploads go DIRECT from the admin browser to this API (the Vercel
+// proxy caps request bodies at 4.5 MB — unusable for WAV). 100 MB covers
+// ~10 min of raw stereo WAV; everything is transcoded to AAC on arrival.
+const MAX_FILE_BYTES = 100 * 1024 * 1024
 
 /** Magic-number sniff (L4 convention) — never trust the multipart mimetype. */
 function sniffAudioFormat(buf: Buffer): 'mp3' | 'm4a' | 'wav' | null {
@@ -39,12 +42,19 @@ export async function musicAdminRoutes(app: FastifyInstance) {
     const admin = await requireAdmin(request, reply)
     if (!admin) return
 
-    const data = await request.file()
+    // Per-request override of the global 25 MB multipart cap (sized for
+    // voice samples); toBuffer() throws when the stream exceeds it.
+    const data = await request.file({ limits: { fileSize: MAX_FILE_BYTES } })
     if (!data) return reply.status(400).send({ error: 'No file uploaded (field "file")' })
 
-    const buf = await data.toBuffer()
+    let buf: Buffer
+    try {
+      buf = await data.toBuffer()
+    } catch {
+      return reply.status(400).send({ error: 'File too large (max 100 MB)' })
+    }
     if (buf.length > MAX_FILE_BYTES) {
-      return reply.status(400).send({ error: 'File too large (max 25 MB)' })
+      return reply.status(400).send({ error: 'File too large (max 100 MB)' })
     }
 
     const format = sniffAudioFormat(buf)
