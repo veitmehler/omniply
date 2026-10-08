@@ -29,7 +29,7 @@ const md = readFileSync(SRC, 'utf8')
 const layout = readFileSync(LAYOUT, 'utf8')
 mkdirSync(OUT, { recursive: true })
 
-const P_STYLE = 'margin:0 0 18px 0;'
+const P_STYLE = 'margin:0 0 33px 0;'
 const LINK_STYLE = 'color:#65A30D; text-decoration:underline;'
 
 /**
@@ -98,7 +98,7 @@ function compileBody(body) {
   // 70px below the P.S. link).
   if (html.length) {
     html[html.length - 1] = html[html.length - 1]
-      .replace('style="margin:0 0 18px 0;"', 'style="margin:0 0 70px 0;"')
+      .replace('style="margin:0 0 33px 0;"', 'style="margin:0 0 70px 0;"')
       .replace('style="margin:35px 0 0 0;', 'style="margin:35px 0 70px 0;')
       .replace('style="margin:26px 0 4px 0;', 'style="margin:26px 0 70px 0;')
   }
