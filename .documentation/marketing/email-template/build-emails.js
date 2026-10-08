@@ -29,7 +29,7 @@ const md = readFileSync(SRC, 'utf8')
 const layout = readFileSync(LAYOUT, 'utf8')
 mkdirSync(OUT, { recursive: true })
 
-const P_STYLE = 'margin:0 0 33px 0;'
+const P_STYLE = 'margin:0 0 25px 0;'
 const LINK_STYLE = 'color:#65A30D; text-decoration:underline;'
 
 /**
@@ -76,7 +76,7 @@ function compileBody(body) {
       }
       const items = bullets.map((text) =>
         `<tr><td valign="top" style="font-family:'Courier New',monospace; font-weight:700; color:#7CA023; padding:0 10px 12px 0;">+</td>` +
-        `<td style="font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; font-size:15.5px; line-height:1.6; color:#1A1A1C; padding:0 0 12px 0;">${inline(text)}</td></tr>`,
+        `<td style="font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; font-size:15.5px; line-height:1.25; color:#1A1A1C; padding:0 0 12px 0;">${inline(text)}</td></tr>`,
       )
       html.push(`<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 10px 0;">${items.join('')}</table>`)
       continue
@@ -98,7 +98,7 @@ function compileBody(body) {
   // 70px below the P.S. link).
   if (html.length) {
     html[html.length - 1] = html[html.length - 1]
-      .replace('style="margin:0 0 33px 0;"', 'style="margin:0 0 70px 0;"')
+      .replace('style="margin:0 0 25px 0;"', 'style="margin:0 0 70px 0;"')
       .replace('style="margin:35px 0 0 0;', 'style="margin:35px 0 70px 0;')
       .replace('style="margin:26px 0 4px 0;', 'style="margin:26px 0 70px 0;')
   }
