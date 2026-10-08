@@ -69,11 +69,8 @@ production (env backup: `/opt/socioply/.env.production.bak-20260731`).
   account.
 - [x] **Add staging droplet IP to the `GOOGLE_MAPS_API_KEY` restriction** DONE 2026-10-07
   (68.183.56.177 added alongside prod 104.131.61.206; Places API scope verified).
-- [ ] Onboarding runbook note: `brandSettings.industry` is REQUIRED for the
-  plain-language feature — confirm the onboarding flow always sets it.
-- [ ] **Onboarding: import the clinic's patient list into their GHL sub-account**
-  (CSV import; the newsletter needs an audience on day one — fastest win for
-  new clients). Add as an explicit onboarding-checklist step.
+- [x] Onboarding runbook note: brandSettings.industry — DONE 2026-10-08 (guide Part G).
+- [x] **Onboarding patient-list CSV import** — DONE 2026-10-08 as explicit step (guide Part G; PMS section CSV import is the mechanism).
 - [ ] **Win-back workflow in the snapshot**: engagement-based reactivation
   (patient-tagged + quiet ~90 days → personal-tone win-back sequence).
   Emails to be written (copy task), then workflow added to master snapshot.

@@ -176,3 +176,16 @@ What a clinic needs for the AI receptionist (Settings → Voice Assistant):
    PVC at elevenlabs.io/app/voice-lab (≈30 min of clean audio — the
    onboarding recordings ZIP from Settings counts toward it — plus a spoken
    verification; training takes hours), then pick it in the Voice panel.
+
+## Part G — Operator checklist additions (2026-10-08, from pre-launch todos §2)
+
+1. **Patient-list CSV import is an explicit onboarding step.** The newsletter
+   needs an audience on day one — fastest win for a new clinic. Mechanism:
+   Settings → PMS section → "Import patients (CSV)" (header auto-mapping;
+   demographics only; contacts get `pms-import-csv` service tags and are
+   NEVER auto-subscribed to marketing — see the PMS framework plan). Cliniko
+   clinics connect the API key instead and the poller backfills.
+2. **`brandSettings.industry` is REQUIRED** for the plain-language feature
+   (metaphor glosses in articles/newsletters silently skip without it).
+   Confirm the onboarding flow set it before the first content run; patch in
+   Settings → Brand Profile if empty.
