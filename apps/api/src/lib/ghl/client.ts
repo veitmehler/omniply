@@ -917,6 +917,33 @@ export async function findGhlConversationChannel(
 }
 
 /** Send an outbound conversation message on a native channel (IG/FB/SMS…). */
+/** SMS send that returns the message id (self-test probe needs to poll the
+ * delivery status; the boolean wrapper below stays for fire-and-forget). */
+export async function sendGhlSmsGetMessageId(
+  apiKey: string,
+  contactId: string,
+  message: string,
+): Promise<string | null> {
+  const data = await ghlRequest<{ messageId?: string; message?: { id?: string } }>(apiKey, '/conversations/messages', {
+    method: 'POST',
+    body: { type: 'SMS', contactId, message },
+  })
+  return data.messageId ?? data.message?.id ?? null
+}
+
+/** Carrier-level delivery status for one message (delivered | failed | …). */
+export async function getGhlMessageStatus(
+  apiKey: string,
+  messageId: string,
+): Promise<{ status: string | null; error: string | null }> {
+  const data = await ghlRequest<{ message?: { status?: string; meta?: { error?: string } } } & { status?: string; meta?: { error?: string } }>(
+    apiKey,
+    `/conversations/messages/${encodeURIComponent(messageId)}`,
+  )
+  const m = data.message ?? data
+  return { status: m.status ?? null, error: m.meta?.error ?? null }
+}
+
 export async function sendGhlConversationMessage(
   apiKey: string,
   opts: { type: string; contactId: string; message: string },

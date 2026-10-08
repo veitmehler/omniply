@@ -24,6 +24,8 @@ interface VoiceStatus {
   lastError: string | null
   recordingsCount?: number
   usage: { tier: string | null; characterCount: number | null; characterLimit: number | null } | null
+  smsAvailable?: boolean
+  smsProbeStatus?: string | null
 }
 
 interface VoiceOption {
@@ -371,6 +373,14 @@ export function VoiceAssistantSection() {
               const v = voices.find((x) => x.voiceId === state.voiceId)
               return v ? ` with the voice "${v.name}".` : '.'
             })()}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Texting:{' '}
+            {state.smsAvailable
+              ? '✓ live — your assistants can text booking links and guides'
+              : state.smsProbeStatus === 'a2p-pending'
+                ? '⏳ pending carrier registration (A2P) — checked daily, switches on automatically once approved'
+                : 'not yet verified — checked daily once your texting number is set up'}
           </p>
           {state.mode === 'overflow' ? (
             <p className="text-xs text-muted-foreground">

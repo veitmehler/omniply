@@ -1,6 +1,6 @@
 # SMS Capability Self-Test + Text-a-Guide — Implementation Plan
 
-**Status: PLANNED (post-launch build; design LOCKED with Veit 2026-10-08).**
+**Status: BUILT 2026-10-08 (user pulled it pre-launch; status-poll verification primary, Twilio receipt deferred).**
 Builds the automatic answer to "can this clinic actually deliver SMS?" and
 unlocks the web-chat "text it or email it?" guide offer. Origin: C3 red-team
 probe 16 discussion + the two live deliverability tests of 2026-10-08.

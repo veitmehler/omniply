@@ -687,7 +687,11 @@ async function executeVoiceSms(
   action: Extract<AgentAction, { type: 'send_guide_link' } | { type: 'send_booking_link' }>,
 ): Promise<void> {
   const meta = await conversationMeta(conversationId)
-  if (meta.channel !== 'voice') return
+  // Voice texts links by design; web does too once the SMS self-test flag is
+  // on — but ONLY when the model attached a phone (a phoneless web
+  // send_guide_link is the normal in-chat card, not an SMS). DM stays
+  // excluded — links go in-thread there.
+  if (meta.channel !== 'voice' && !(meta.channel === 'web' && action.phone)) return
 
   const rawPhone = action.phone ?? meta.callerPhone
   if (!rawPhone) {

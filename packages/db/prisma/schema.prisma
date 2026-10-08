@@ -569,10 +569,15 @@ model VoiceAgentConfig {
   rescueNumberId      String? // ElevenLabs phone-number import id
   mode                String   @default("overflow") // overflow (conditional forwarding) | direct (published number)
   transferNumber      String? // clinic's real line for human hand-off
-  // SMS delivery (voice-sms plan): true until a send FAILS (location without
-  // LeadConnector SMS) — then latched false and the voice overlay falls back
-  // to email delivery (attempt-and-latch probe; no clean pre-probe exists).
-  voiceSmsAvailable   Boolean  @default(true)
+  // SMS capability (self-test plan, .plans/sms-capability-selftest…md):
+  // voiceSmsAvailable is the account-wide "texting works" flag consumed by
+  // voice AND web chat; the daily probe (sms-capability-probe handler) sends
+  // a self-test SMS to our sink number and maintains it from real delivery
+  // status. Default false since 2026-10-08: capability is EARNED by a
+  // delivered probe (or set manually by an admin).
+  voiceSmsAvailable   Boolean  @default(false)
+  smsProbeStatus      String? // delivered | a2p-pending | no-number | error
+  smsProbeAt          DateTime?
   lastError           String?
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt

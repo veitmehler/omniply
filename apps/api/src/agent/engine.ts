@@ -490,6 +490,11 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
               phoneFormatRule,
               'Callbacks: before attaching request_callback, gather their name, the best number, AND the best time for the call back. Ask for a concrete time ("What time works best for the call back?") and accept whatever precision they give — a clock time, "tomorrow morning", a weekday — putting their words verbatim in the preferredTime field. When they DID state a time, preferredTime must NEVER be empty: copy their words into it ("around 5 PM today"). Never offer a coarse either-or like morning-or-afternoon yourself; only when they truly have no preference, proceed without one.',
               'Human handoff: when the visitor asks for a real person, FIRST make sure you have their name and best phone number (reuse KNOWN VISITOR DETAILS instead of re-asking), THEN attach request_human and tell them the team will reach OUT to them at that number shortly. NEVER say someone will take over this chat — nobody joins this chat window. If they will not share a number, give them the practice phone number to call instead.',
+              ...(input.smsAvailable
+                ? [
+                    'TEXTING IS AVAILABLE on this account: guides can ALSO be texted. When offering guide delivery, ask "Shall I text it or email it?" — for text, confirm their mobile number (plain digits with hyphens) and attach send_guide_link with that number in the phone field; the link arrives by SMS. Email via the normal guide flow stays the default when they have no preference.',
+                  ]
+                : []),
               'Names: when the visitor gives a full name, keep the FULL name in action fields — never shorten it to just the first name.',
               ...(bookingBlock ? [bookingBlock] : []),
             ].join('\n'),

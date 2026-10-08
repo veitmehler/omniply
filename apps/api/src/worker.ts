@@ -52,6 +52,7 @@ import { leadgenCompileHandler } from './handlers/leadgen-compile'
 import { placesReviewPollHandler, googleReviewsBackfillHandler } from './handlers/google-reviews'
 import { demoBookingCleanupHandler } from './handlers/demo-booking-cleanup'
 import { pmsContactPollHandler } from './handlers/pms-contact-poll'
+import { smsCapabilityProbeHandler } from './handlers/sms-capability-probe'
 
 /**
  * Number of concurrent social-generation runs across ALL clients. Bounded to
@@ -116,6 +117,7 @@ async function main() {
   await boss.schedule(QUEUES.PLACES_REVIEW_POLL, '0 4 * * 1', {}) // Monday 04:00 UTC — weekly dual-sort review harvest
   await boss.schedule(QUEUES.DEMO_BOOKING_CLEANUP, '30 8 * * *', {}) // daily 08:30 UTC (~1:30am Phoenix) — demo-line bookings swept
   await boss.schedule(QUEUES.PMS_CONTACT_POLL, '*/5 * * * *', {}) // every 5 min — PMS→GHL demographics sync (updated_since cursors)
+  await boss.schedule(QUEUES.SMS_CAPABILITY_PROBE, '0 15 * * *', {}) // daily 15:00 UTC (~8am Phoenix) — texting self-test vs sink number
   await boss.schedule(QUEUES.AGENT_RETENTION_CLEANUP, '15 3 * * *', {}) // daily 03:15 UTC — 180d chat-transcript retention (decision D)
   await boss.schedule(QUEUES.AGENT_FINALIZE, '*/10 * * * *', {}) // every 10 min — idle-chat contact reconcile + summary note
   await boss.schedule(QUEUES.AZAVEA_CADENCE, '0 8 * * *', {}) // daily 08:00 UTC — azavea vertical MWF article cadence (no-op on non-slot days)
@@ -403,6 +405,11 @@ async function main() {
     QUEUES.PMS_CONTACT_POLL,
     { batchSize: 1 },
     withSentry('pms-contact-poll', pmsContactPollHandler),
+  )
+  await boss.work(
+    QUEUES.SMS_CAPABILITY_PROBE,
+    { batchSize: 1 },
+    withSentry('sms-capability-probe', smsCapabilityProbeHandler),
   )
   await boss.work(
     QUEUES.GOOGLE_REVIEWS_BACKFILL,

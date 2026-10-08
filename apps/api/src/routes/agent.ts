@@ -120,11 +120,18 @@ export async function agentRoutes(app: FastifyInstance) {
       if (!visitorKey || !message) return reply.status(400).send({ error: 'Bad request' })
 
       try {
+        // Texting capability (SMS self-test plan): the probe-maintained flag
+        // lets web chat offer "text it or email it?" for guides.
+        const vconfig = await prisma.voiceAgentConfig.findUnique({
+          where: { accountId: account.id },
+          select: { voiceSmsAvailable: true },
+        })
         const result = await runAgentTurn({
           accountId: account.id,
           conversationId,
           visitorKey,
           message: message.slice(0, MAX_MESSAGE_CHARS),
+          smsAvailable: vconfig?.voiceSmsAvailable ?? false,
         })
         return result
       } catch (err) {

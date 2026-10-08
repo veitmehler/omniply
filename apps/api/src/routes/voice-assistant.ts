@@ -55,6 +55,9 @@ export async function voiceAssistantRoutes(app: FastifyInstance) {
       lastError: config?.lastError ?? null,
       recordingsCount,
       usage,
+      // Texting capability (SMS self-test plan): probe-maintained.
+      smsAvailable: config?.voiceSmsAvailable ?? false,
+      smsProbeStatus: config?.smsProbeStatus ?? null,
     }
   })
 

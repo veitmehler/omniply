@@ -118,6 +118,7 @@ export const QUEUES = {
   PLACES_REVIEW_POLL: 'places-review-poll',
   DEMO_BOOKING_CLEANUP: 'demo-booking-cleanup',
   PMS_CONTACT_POLL: 'pms-contact-poll',
+  SMS_CAPABILITY_PROBE: 'sms-capability-probe',
   GOOGLE_REVIEWS_BACKFILL: 'google-reviews-backfill',
 } as const
 
