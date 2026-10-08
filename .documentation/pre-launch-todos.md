@@ -6,22 +6,21 @@ freeze week → vacation → launch). Check items off as they land; don't delete
 
 ## 1. Database / infrastructure (defer ≈1–2 weeks before launch — before the rehearsal purchase)
 
-- [ ] **Upsize the DO Postgres cluster (B4).** Current node: 1 GB → `max_connections = 25`,
+- [x] **Upsize the DO Postgres cluster — DONE 2026-10-08** (2GB/1vCPU/30GiB; max_connections 50; failover invisible at 15s sampling; headroom 48%; re-upsize trigger: alerts at steady state or ~5 clients). Original item: Current node: 1 GB → `max_connections = 25`,
   shared by prod + staging + Vercel webs + DO system workers (~8 slots). We hit the cap
   2026-07-30 (Sentry `dbe546db…`, "connection slots reserved for SUPERUSER").
   Recommendation: **4 GB node (~97 connections)**; 2 GB (~47) is the minimum acceptable.
   Resize in the DO dashboard; brief failover, no data migration. Do it on a quiet day,
   check for in-flight jobs first (see `staging-deploy-inflight-check` runbook).
-- [ ] **Add a DO connection pool (PgBouncer) for staging** — staging connects DIRECT
+- [x] **Staging PgBouncer pool — DONE 2026-10-08** (socioply_staging pool, transaction, size 5, user doadmin [pool user MUST match connecting user]; droplet DATABASE_URL→25061, DIRECT_URL stays 25060 for pg-boss; env backup .env.staging.bak-20261008). Original item: — staging connects DIRECT
   (port 25060, db `socioply_staging`); prod already routes through the `socioply-pool`
   pool (port 25061). Create the staging pool in the DO dashboard, point the staging
   droplet `DATABASE_URL` at it.
-- [ ] **Vercel web → pool ("Option B" from the staging-web incident).** Staging web's
+- [x] **Vercel web → pool (Option B) — DONE 2026-10-08** (prod was already on socioply-pool:25061; Preview DATABASE_URL now same pool w/ connection_limit=1; both admin surfaces verified through pools; env vars now Sensitive, no rotation by decision). Original item: Staging web's
   direct-Prisma server components read the PROD DB with `connection_limit=1` (Option A
   band-aid). Point both Vercel projects' `DATABASE_URL`s at DO pools so serverless
   bursts can't eat droplet slots.
-- [ ] Re-check connection headroom after the upsize: run the `pg_stat_activity` group-by
-  (see §Appendix) and confirm idle baseline ≤ ~50% of `max_connections`.
+- [x] Headroom re-checked 2026-10-08: ~24/50 = 48% ≤ the 50% target.
 
 Done already (2026-07-31, context for the above): prod `PGBOSS_MAX_CONNECTIONS` 8→3,
 prod Prisma `connection_limit=4&pool_timeout=20`; staging was already at 2/2;
