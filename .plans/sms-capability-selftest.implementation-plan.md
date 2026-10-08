@@ -19,12 +19,12 @@ probe 16 discussion + the two live deliverability tests of 2026-10-08.
 
 ## Locked design (Veit, 2026-10-08)
 
-**Sink number: `+1 210-960-8078`** — our own inbound-capable number, the
-single probe target for every clinic.
-> TO CONFIRM at build time: where this number is homed (Twilio account vs an
-> LC Phone number on our own sub-account) — it decides how receipts are read
-> (Twilio inbound-messages API/webhook vs GHL conversations search). Either
-> works; the plan below is home-agnostic.
+**Sink number: `+1 210-960-8070`** — our own inbound-capable number, the
+single probe target for every clinic. CONFIRMED (Veit 2026-10-08): it is a
+**Twilio number on the Twilio account we are already connected to**, so
+receipts are read via the Twilio inbound-messages API (poll
+`Messages.list({ to: sink })` after each probe, or a webhook later if volume
+ever warrants it) using the existing Twilio credentials.
 
 1. **Pre-gate:** location has no SMS-capable number at all (numbers API) →
    `smsAvailable = false`, no probing.
