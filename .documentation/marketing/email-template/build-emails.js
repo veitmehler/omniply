@@ -30,7 +30,7 @@ const layout = readFileSync(LAYOUT, 'utf8')
 mkdirSync(OUT, { recursive: true })
 
 const P_STYLE = 'margin:0 0 18px 0;'
-const LINK_STYLE = 'color:#15803D; text-decoration:underline;'
+const LINK_STYLE = 'color:#65A30D; text-decoration:underline;'
 
 /**
  * Hard-wrapped source lines reflow (join with a space); intentional stacks
@@ -49,7 +49,7 @@ function inline(text) {
   let t = text
   // named links FIRST (before bold would eat the ** markers)
   t = t.replace(/\*\*\[(.+?)\]\*\*\s*\(([^)\s]+)\)/g,
-    `<a href="$2" style="color:#15803D; font-weight:700; text-decoration:underline;">$1</a>`)
+    `<a href="$2" style="color:#65A30D; font-weight:700; text-decoration:underline;">$1</a>`)
   // bold, then single-asterisk italics
   t = t.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
   t = t.replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, '<em>$1</em>')
@@ -92,6 +92,15 @@ function compileBody(body) {
       continue
     }
     html.push(`<p style="${P_STYLE}">${inline(reflow(block))}</p>`)
+  }
+  // The final element (the P.S. link — standalone paragraph OR inside the
+  // P.S. itself) gets breathing room before the card edge (Veit 2026-10-08:
+  // 70px below the P.S. link).
+  if (html.length) {
+    html[html.length - 1] = html[html.length - 1]
+      .replace('style="margin:0 0 18px 0;"', 'style="margin:0 0 70px 0;"')
+      .replace('style="margin:35px 0 0 0;', 'style="margin:35px 0 70px 0;')
+      .replace('style="margin:26px 0 4px 0;', 'style="margin:26px 0 70px 0;')
   }
   return html.join('\n')
 }
