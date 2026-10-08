@@ -245,11 +245,23 @@ async function executeCallback(
 
   const known = await knownDetailsFor(conversationId)
   const existingId = await contactIdFor(conversationId)
+  // Third-party callback (C3 2026-10-08: Sarah's callback RENAMED Steve's
+  // converged contact): when the callback names someone OTHER than the
+  // conversation's primary person, it gets its OWN contact — the primary
+  // record is never touched. Name mismatch DOMINATES phone match: family
+  // members routinely share a number, and the front desk simply asks for
+  // the named person on the shared line.
+  const isThirdParty = Boolean(
+    existingId &&
+      curName &&
+      nameOf(known.name) &&
+      curName !== nameOf(known.name),
+  )
   // Normalize to E.164 with the CLINIC's country — GHL otherwise guesses
   // from the location default and can misfile foreign formats (+1074… bug).
   const phone = normalizePhoneE164(action.phone, ctx.countryCode)
   let contactId: string | null = existingId
-  if (existingId) {
+  if (existingId && !isThirdParty) {
     // Converge: same contact the guide capture created — fields by id, tag-add.
     await updateGhlContact(creds.apiKey, existingId, {
       phone,
@@ -263,21 +275,32 @@ async function executeCallback(
     }
     await addGhlContactTags(creds.apiKey, existingId, tags)
   } else {
+    // No primary yet (this callback establishes it) OR a third party
+    // (dedicated contact; phone-first upsert converges onto an existing
+    // patient record for that person when one exists).
     const result = await upsertGhlContact(creds.apiKey, creds.locationId, {
       phone,
       ...splitFullName(action.name ?? known.name ?? ''),
-      // Carry the known email into creation so the contact starts complete.
-      ...(primaryEmailOf(known) ? { email: primaryEmailOf(known)! } : {}),
+      // Carry the known email into creation so the contact starts complete
+      // — but ONLY for the primary person; a third party never inherits the
+      // visitor's email.
+      ...(!isThirdParty && primaryEmailOf(known) ? { email: primaryEmailOf(known)! } : {}),
       tags,
       source: 'chat-agent',
       ...(customFieldsOrUndef ? { customFields: customFieldsOrUndef } : {}),
     })
     contactId = result.contactId ?? null
-    if (contactId) {
+    if (contactId && !isThirdParty) {
       await prisma.agentConversation.update({
         where: { id: conversationId },
         data: { ghlContactId: contactId },
       })
+    }
+    if (contactId && isThirdParty && isUpdatedCallback) {
+      // Corrected third-party details: re-arm the notification workflow on
+      // THEIR contact (upsert alone won't re-trigger an existing tag).
+      await removeGhlContactTags(creds.apiKey, contactId, ['callback-requested']).catch(() => {})
+      await addGhlContactTags(creds.apiKey, contactId, tags)
     }
   }
   if (contactId) {

@@ -57,10 +57,20 @@ export async function knownDetailsFor(conversationId: string): Promise<KnownDeta
         known.name = str(a.name) ?? known.name
         known.phone = str(a.phone) ?? known.phone
         break
-      case 'request_callback':
-        known.phone = str(a.phone) ?? known.phone
-        known.name = str(a.name) ?? known.name
+      case 'request_callback': {
+        // Third-party callbacks (a spouse, a child) must NOT overwrite the
+        // VISITOR's identity (C3 2026-10-08: after arranging Sarah's
+        // callback, "what's my number?" answered with hers). Fold only when
+        // the name matches the known visitor — or when nothing is known yet
+        // (the callback establishes the primary identity).
+        const n = str(a.name)
+        const matchesVisitor = !known.name || !n || n.toLowerCase() === known.name.toLowerCase()
+        if (matchesVisitor) {
+          known.phone = str(a.phone) ?? known.phone
+          known.name = n ?? known.name
+        }
         break
+      }
       case 'intake_details':
         known.phone = str(a.phone) ?? known.phone
         known.name = str(a.name) ?? known.name
