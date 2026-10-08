@@ -18,6 +18,11 @@ const BUNDLE_TTL_MS = 15 * 60 * 1000
 const PLACES_TTL_MS = 24 * 60 * 60 * 1000
 const CORPUS_MAX_CHARS = 8_000
 
+// Live lead-gen documents that are NOT patient-facing guides (C3 2026-10-08:
+// the front-desk Review QR card was being offered to chat visitors). Shared
+// by the context guide list and the capture grant/redeliver loops.
+export const NON_PATIENT_DOC_SLUGS = ['review-counter-card']
+
 export interface AgentGuide {
   slug: string
   title: string
@@ -87,7 +92,7 @@ export async function agentContextForAccount(accountId: string): Promise<AgentCo
     brandSettingsForUser(ownerUserId),
     prisma.onboardingSession.findUnique({ where: { accountId }, select: { stepData: true } }),
     prisma.leadGenDocument.findMany({
-      where: { accountId, status: 'live', driveFileId: { not: null } },
+      where: { accountId, status: 'live', driveFileId: { not: null }, slug: { notIn: NON_PATIENT_DOC_SLUGS } },
       select: { slug: true, title: true, driveLink: true },
     }),
     prisma.settings.findUnique({ where: { userId: ownerUserId }, select: { socialTimezone: true } }),

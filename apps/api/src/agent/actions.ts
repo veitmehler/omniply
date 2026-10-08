@@ -40,7 +40,7 @@ import { buildBookingSms, buildGuideSms, SMS_PER_CONVERSATION_CAP } from './sms'
 import { driveConfigured, grantReader } from '../lib/gdrive/client'
 import { recordLLMUsage } from '../lib/llm-usage'
 import { runNewsletterPrompt } from '../newsletter/llm'
-import type { AgentContext } from './context'
+import { NON_PATIENT_DOC_SLUGS, type AgentContext } from './context'
 import type { AgentAction } from './tools'
 import { knownDetailsFor, primaryEmailOf, splitFullName } from './known'
 import { normalizePhoneE164 } from './phone'
@@ -432,7 +432,7 @@ async function executeCapture(
   action: Extract<AgentAction, { type: 'capture_contact' }>,
 ): Promise<void> {
   const docs = await prisma.leadGenDocument.findMany({
-    where: { accountId: ctx.accountId, status: 'live', driveFileId: { not: null } },
+    where: { accountId: ctx.accountId, status: 'live', driveFileId: { not: null }, slug: { notIn: NON_PATIENT_DOC_SLUGS } },
     select: { id: true, slug: true, driveFileId: true, ghlTagNames: true },
   })
   const matched = docs.find((d) => d.slug === action.guideSlug) ?? null
@@ -520,6 +520,57 @@ async function executeAddEmail(
   if (!creds) throw new Error('No GHL credentials for account owner')
   await updateGhlContact(creds.apiKey, conversation.ghlContactId, { email: action.email })
   logger.info({ accountId: ctx.accountId, conversationId }, '[agent] backup email added to contact')
+
+  // Guide-email correction (C3 2026-10-08): the Drive grant AND the drip's
+  // first email (the one carrying the guide link) went to the ORIGINAL
+  // capture address — a misspelled address means the lead never got the
+  // guide. When this conversation captured a guide and the address CHANGED:
+  // re-grant Drive to the new address and remove+re-add the guide tags so
+  // the drip (re-entry is enabled on those workflows) re-delivers from
+  // email 1 to the corrected inbox. Sends to the old misspelled address
+  // just bounce; duplication is a non-issue.
+  const captureRows = await prisma.agentMessage.findMany({
+    where: { conversationId, role: 'assistant', action: { path: ['type'], equals: 'capture_contact' } },
+    select: { action: true },
+  })
+  const captured = captureRows
+    .map((r) => r.action as { email?: unknown; guideSlug?: unknown } | null)
+    .filter((a): a is { email?: unknown; guideSlug?: unknown } => Boolean(a))
+  const capturedEmails = captured
+    .map((a) => (typeof a.email === 'string' ? a.email.toLowerCase() : ''))
+    .filter(Boolean)
+  if (capturedEmails.length && !capturedEmails.includes(action.email.toLowerCase())) {
+    const docs = await prisma.leadGenDocument.findMany({
+      where: { accountId: ctx.accountId, status: 'live', driveFileId: { not: null }, slug: { notIn: NON_PATIENT_DOC_SLUGS } },
+      select: { id: true, slug: true, driveFileId: true, ghlTagNames: true },
+    })
+    if (driveConfigured()) {
+      for (const doc of docs) {
+        await grantReader(doc.driveFileId!, action.email, false).catch((err) =>
+          logger.warn({ documentId: doc.id, err }, '[agent] re-grant after email correction failed'),
+        )
+      }
+    }
+    const capturedSlugs = captured.map((a) => (typeof a.guideSlug === 'string' ? a.guideSlug : null)).filter(Boolean)
+    const dripTags = docs
+      .filter((d) => capturedSlugs.includes(d.slug))
+      .flatMap((d) => (d.ghlTagNames.length ? d.ghlTagNames : [`leadgen-${d.slug}`]))
+    if (dripTags.length) {
+      await removeGhlContactTags(creds.apiKey, conversation.ghlContactId, dripTags).catch(() => {})
+      await addGhlContactTags(creds.apiKey, conversation.ghlContactId, dripTags)
+      logger.info(
+        { accountId: ctx.accountId, conversationId, dripTags },
+        '[agent] guide email corrected — drip re-fired to the new address',
+      )
+    }
+    // Audit trail: point the capture rows at the corrected address.
+    await prisma.leadCapture
+      .updateMany({
+        where: { accountId: ctx.accountId, requesterEmail: { in: capturedEmails }, proposalId: { startsWith: 'chat-agent:' } },
+        data: { requesterEmail: action.email },
+      })
+      .catch(() => {})
+  }
 
   // Booking email confirmation (user design 2026-10-06): voice callers give
   // their email AFTER booking, when the appointment-triggered workflow has
