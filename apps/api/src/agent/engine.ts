@@ -304,7 +304,7 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
       const a = m.action as { type?: string; attempted?: string } | null
       if (a?.type === '_dropped' || a?.type === '_failed') {
         const verb = a.type === '_dropped' ? 'was REJECTED' : 'FAILED while executing'
-        return `${line}\n[SYSTEM: the ${a.attempted ?? 'action'} attempted in that reply ${verb} and did NOT take effect. Nothing was booked, sent, or updated by it — tell the visitor plainly, correct course, and never claim it succeeded.]`
+        return `${line}\n[SYSTEM: the ${a.attempted ?? 'action'} attempted in that reply ${verb} and did NOT take effect. Nothing was booked, sent, or updated by it — never claim it succeeded. If the visitor's request still stands, attach a corrected version of that action NOW (complete fields, correct shape); otherwise tell the visitor plainly it did not go through.]`
       }
       return line
     })
