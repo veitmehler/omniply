@@ -30,7 +30,11 @@ production (env backup: `/opt/socioply/.env.production.bak-20260731`).
 
 ## 1b. Chat agent + Azavea (added 2026-08-06)
 
-- [ ] **C3 red-team — THE clinic-widget gate.** Suite must cover the rules locked in
+- [x] **C3 red-team MANUAL PASS COMPLETE 2026-10-08** — 27 probes run by Veit over
+  Oct 7-8, ~6 fix batches shipped (full inventory: launch-date memory + commits
+  of Oct 7-8). AUTOMATED suite remains the post-launch gate before the first
+  clinic-widget install. Original scope kept below for the suite build:
+  Suite must cover the rules locked in
   testing: refusal under rephrasing, insurance boundaries, free-assessment terms,
   dash-free output, KB-edit propagation, known-details memory + claim-possession
   probes ("what's my number?"), multi-action contact convergence with mid-flow
@@ -123,7 +127,11 @@ ride the pre-launch window as independent, revertable commits (~1 day total):
   Ops note: run upgrades via `systemd-run` on the host, NOT from an SSH/docker-attached
   shell — the docker-ce upgrade restarts the daemon and kills attached sessions mid-apt.
 - [ ] Final rehearsal purchase through the live funnel (Stripe → provision → onboard →
-  first content run).
+  first content run). INCLUDES (added 2026-10-08): one VOICE SMOKE CALL to the demo
+  line (book + family callback + a correction) — this week's agent fixes are
+  channel-shared but only chat-verified; and the WordPress connect doubles as the
+  SCHEMA_MARKUP_AUTO verification. Orderform must be temporarily re-enabled for
+  the purchase.
 - [ ] Snapshot frozen + re-exported after the last workflow/asset change.
 - [ ] Confirm monitoring green: BetterStack `https://svc.omniply.io/health/deep`,
   Sentry envs now correctly split prod/staging, alert email = protonmail.
@@ -251,7 +259,8 @@ remains is production + the release ripple, in order:
 - [ ] Claude: lit-pair card (YOUR PHONE ✓) once the call is recorded.
 
 ### Edit → release ripple
-- [ ] Assemble the edit; publish to /walkthrough.
+- [x] Assemble the edit; publish to /walkthrough — DONE 2026-10-07 (334MB self-hosted
+  on cdn.omniply.io, custom no-seek player, LAUNCH_TS-gated, ?preview=1).
 - [ ] **Missed-call sweep** — ABSORBS the former minute-claim sweep AND
   the deferred AI-hook pass (both approved earlier) into ONE funnel pass,
   now repositioned around the AI front desk / missed-call leak (user
@@ -285,7 +294,11 @@ remains is production + the release ripple, in order:
 - [ ] Full prod pilot: the 19-step onboarding chat walkthrough
   (.documentation/onboarding-testing-guide.md) — the one remaining item
   from the GHL onboarding plan.
-- [ ] Live SMS leg after A2P ID-verify (from home).
+- [~] Live SMS leg: AUTO-VERIFIED by the sms-capability-probe cron (daily 15:00 UTC,
+  built 2026-10-08) — the day the demo location's A2P registration clears, the probe
+  flips voiceSmsAvailable on and texts the owner "✓ Texting is now live". Remaining
+  USER action: complete the A2P registration in GHL Trust Center (proven blocker:
+  Error 30034, 2026-10-08).
 - [ ] Re-run the calendar seasonal audit before any future calendar
   import (.documentation/calendar-fix-2026-09-30/verify-lite.js).
 
