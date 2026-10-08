@@ -74,6 +74,12 @@ export async function knownDetailsFor(conversationId: string): Promise<KnownDeta
       case 'add_contact_email':
         known.preferredEmail = str(a.email) ?? known.preferredEmail
         break
+      // Silent corrections must update what the agent "knows" too, or it
+      // would keep repeating the superseded details.
+      case 'update_contact_details':
+        known.phone = str(a.phone) ?? known.phone
+        known.name = str(a.name) ?? known.name
+        break
     }
   }
   return known

@@ -14,6 +14,10 @@ export type AgentAction =
   | { type: 'capture_contact'; name: string | null; email: string; phone: string | null; guideSlug: string | null }
   | { type: 'request_callback'; name: string; phone: string; reason: string; preferredTime: string | null }
   | { type: 'add_contact_email'; email: string }
+  // Silent correction of details already on file (C3 2026-10-08): updates
+  // the converged contact WITHOUT the callback tag — a booking correction
+  // must never fire a "Call Request" notification.
+  | { type: 'update_contact_details'; name: string | null; phone: string | null }
   | { type: 'send_guide_link'; slug: string; phone: string | null }
   | { type: 'request_human' }
   // Voice intake (start-of-call): name + disconnect callback number. INSERT
@@ -160,6 +164,15 @@ export function validateAction(raw: unknown, ctx: ActionContext): AgentAction | 
       const email = normalizeSpokenEmail(str(a.email, 254))
       if (!ctx.hasContact || !EMAIL_RE.test(email)) return null
       return { type: 'add_contact_email', email }
+    }
+
+    case 'update_contact_details': {
+      if (!ctx.hasContact) return null
+      const name = str(a.name, 60)
+      const phone = str(a.phone, 30)
+      const validP = phone && validPhone(phone) ? phone : null
+      if (!name && !validP) return null
+      return { type: 'update_contact_details', name: name || null, phone: validP }
     }
 
     case 'intake_details': {

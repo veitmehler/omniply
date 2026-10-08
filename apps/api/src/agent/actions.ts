@@ -87,6 +87,29 @@ async function executeDmGuideTags(
   logger.info({ conversationId, slug }, '[agent] dm guide link → drip tags applied')
 }
 
+/** Silent detail correction (C3 2026-10-08): update the converged contact's
+ * name/phone with NO tags — nothing fires, nobody is asked to call. A note
+ * lands on the record so the correction is visible in the contact history. */
+async function executeUpdateContactDetails(
+  ctx: AgentContext,
+  conversationId: string,
+  action: Extract<AgentAction, { type: 'update_contact_details' }>,
+): Promise<void> {
+  const contactId = await contactIdFor(conversationId)
+  if (!contactId) return
+  const creds = await getGhlCredentials(ctx.ownerUserId)
+  if (!creds) return
+  await updateGhlContact(creds.apiKey, contactId, {
+    ...(action.phone ? { phone: normalizePhoneE164(action.phone, ctx.countryCode) } : {}),
+    ...(action.name ? splitFullName(action.name) : {}),
+  })
+  await createGhlContactNote(
+    creds.apiKey,
+    contactId,
+    `✏️ Visitor corrected their details in chat: ${[action.name, action.phone].filter(Boolean).join(' · ')}`,
+  ).catch(() => {})
+}
+
 /** Visitor asked for a human: pause the AI (ai-off) + leave a handover note.
  * The snapshot's tag-triggered workflow notifies the front desk. */
 async function executeRequestHuman(ctx: AgentContext, conversationId: string): Promise<void> {
@@ -171,16 +194,30 @@ async function executeCallback(
   if (!creds) throw new Error('No GHL credentials for account owner')
 
   const summary = await callbackSummary(ctx, conversationId)
-  // Repeat callback in the SAME conversation = the visitor corrected a
-  // detail (number/name) after the first notification already fired. The
-  // tag-triggered workflow won't re-fire on an existing tag, so we remove +
-  // re-add it below and mark the summary as superseding (user decision
-  // 2026-10-07). The current turn's action is already persisted, so a count
-  // of 1 means "this is the first".
-  const callbackCount = await prisma.agentMessage.count({
+  // Repeat callback for the SAME PERSON = corrected details after the first
+  // notification already fired. The tag-triggered workflow won't re-fire on
+  // an existing tag, so we remove + re-add it below and mark the summary as
+  // superseding (user decision 2026-10-07). Same-PERSON scoping added
+  // 2026-10-08: a conversation can hold callbacks for different people
+  // (visitor + spouse), and the spouse's FIRST request must not say
+  // "UPDATED". Match by phone tail or name. The current turn's action is
+  // already persisted, so >1 same-person occurrences means a true repeat.
+  const priorCallbackRows = await prisma.agentMessage.findMany({
     where: { conversationId, role: 'assistant', action: { path: ['type'], equals: 'request_callback' } },
+    select: { action: true },
   })
-  const isUpdatedCallback = callbackCount > 1
+  const digitsOf = (v: unknown): string => (typeof v === 'string' ? v.replace(/\D/g, '') : '')
+  const nameOf = (v: unknown): string => (typeof v === 'string' ? v.trim().toLowerCase() : '')
+  const curPhone = digitsOf(action.phone)
+  const curName = nameOf(action.name)
+  const samePersonCount = priorCallbackRows.filter((r) => {
+    const a = r.action as Record<string, unknown> | null
+    if (!a) return false
+    const p = digitsOf(a.phone)
+    const n = nameOf(a.name)
+    return (p && curPhone && p.slice(-9) === curPhone.slice(-9)) || (n && curName && n === curName)
+  }).length
+  const isUpdatedCallback = samePersonCount > 1
   // The summary also lands in the "Chat Summary" custom field (find-or-create)
   // so the snapshot's notification workflow can merge {{contact.chat_summary}}
   // straight into the front-desk SMS/email text.
@@ -649,6 +686,9 @@ export async function executeAgentAction(
         break
       case 'request_human':
         await executeRequestHuman(ctx, conversationId)
+        break
+      case 'update_contact_details':
+        await executeUpdateContactDetails(ctx, conversationId, action)
         break
       case 'intake_details':
         await executeIntake(ctx, conversationId, action)

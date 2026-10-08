@@ -286,6 +286,20 @@ describe('action validation', () => {
     expect(validateAction({ type: 'add_contact_email', email: 'junk' }, { ...CTX, hasContact: true })).toBeNull()
   })
 
+  it('update_contact_details needs a contact and at least one real field', () => {
+    expect(validateAction({ type: 'update_contact_details', name: 'Steve Test' }, CTX)).toBeNull()
+    expect(validateAction({ type: 'update_contact_details' }, { ...CTX, hasContact: true })).toBeNull()
+    expect(validateAction({ type: 'update_contact_details', phone: 'abc' }, { ...CTX, hasContact: true })).toBeNull()
+    expect(
+      validateAction({ type: 'update_contact_details', name: 'Steve Test', phone: '666-555-4422' }, { ...CTX, hasContact: true }),
+    ).toEqual({ type: 'update_contact_details', name: 'Steve Test', phone: '666-555-4422' })
+    expect(validateAction({ type: 'update_contact_details', phone: '666-555-4422' }, { ...CTX, hasContact: true })).toEqual({
+      type: 'update_contact_details',
+      name: null,
+      phone: '666-555-4422',
+    })
+  })
+
   it('rejects unknown types, injection-shaped and non-object input', () => {
     expect(validateAction({ type: 'delete_all_data' }, CTX)).toBeNull()
     expect(validateAction({ type: 'send_booking_link; DROP TABLE' }, CTX)).toBeNull()
