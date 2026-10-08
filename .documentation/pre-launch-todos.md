@@ -299,6 +299,11 @@ remains is production + the release ripple, in order:
 
 ## 5. Post-launch backlog (small items, no launch impact)
 
+- [ ] **SMS capability self-test + text-a-guide** — design LOCKED 2026-10-08, sink
+  number +1 210-960-8078: .plans/sms-capability-selftest.implementation-plan.md
+  (sink-probe verification, daily retry until A2P clears, fire-and-forget owner
+  confirmation, patient-send-only downgrade, web-chat text-or-email guide offer).
+
 - [x] **Writing-sample step buttons** — MOVED to §4b (pre-filming batch,
   user-committed 2026-09-14).
 
