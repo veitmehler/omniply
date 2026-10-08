@@ -90,15 +90,47 @@ async function executeDmGuideTags(
 /** Visitor asked for a human: pause the AI (ai-off) + leave a handover note.
  * The snapshot's tag-triggered workflow notifies the front desk. */
 async function executeRequestHuman(ctx: AgentContext, conversationId: string): Promise<void> {
-  const meta = await conversationMeta(conversationId)
-  if (!meta.ghlContactId) return
   const creds = await getGhlCredentials(ctx.ownerUserId)
   if (!creds) return
-  await addGhlContactTags(creds.apiKey, meta.ghlContactId, ['ai-off', 'human-requested'])
+  const meta = await conversationMeta(conversationId)
+  let contactId = meta.ghlContactId
+  if (!contactId) {
+    // C3 probe 27 (2026-10-08): this used to bail silently when the
+    // conversation had no contact yet — the visitor was promised a human
+    // and NOTHING happened. The prompt now gathers name+number before
+    // attaching request_human; create/converge the contact here so the
+    // handover actually reaches the front desk.
+    const known = await knownDetailsFor(conversationId)
+    const knownEmail = primaryEmailOf(known)
+    if (known.phone || knownEmail) {
+      const result = await upsertGhlContact(creds.apiKey, creds.locationId, {
+        ...(known.phone ? { phone: normalizePhoneE164(known.phone, ctx.countryCode) } : {}),
+        ...splitFullName(known.name ?? ''),
+        ...(knownEmail ? { email: knownEmail } : {}),
+        tags: ['chat-agent-lead'],
+        source: 'chat-agent',
+      })
+      contactId = result.contactId ?? null
+      if (contactId) {
+        await prisma.agentConversation.update({ where: { id: conversationId }, data: { ghlContactId: contactId } })
+      }
+    }
+  }
+  if (!contactId) {
+    // No contact AND no known details: surface it for review instead of
+    // letting the handover vanish.
+    await prisma.agentConversation.update({
+      where: { id: conversationId },
+      data: { flagged: true, flagReason: 'human-requested-no-contact' },
+    })
+    logger.warn({ accountId: ctx.accountId, conversationId }, '[agent] human requested but no contact details — flagged')
+    return
+  }
+  await addGhlContactTags(creds.apiKey, contactId, ['ai-off', 'human-requested'])
   const summary = await callbackSummary(ctx, conversationId)
   await createGhlContactNote(
     creds.apiKey,
-    meta.ghlContactId,
+    contactId,
     ['🙋 Visitor asked for a HUMAN — AI is paused on this conversation.', summary ? `Chat summary: ${summary}` : null]
       .filter(Boolean)
       .join('\n'),
