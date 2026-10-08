@@ -30,7 +30,7 @@ const layout = readFileSync(LAYOUT, 'utf8')
 mkdirSync(OUT, { recursive: true })
 
 const P_STYLE = 'margin:0 0 18px 0;'
-const LINK_STYLE = 'color:#3B6E1F; text-decoration:underline;'
+const LINK_STYLE = 'color:#15803D; text-decoration:underline;'
 
 /**
  * Hard-wrapped source lines reflow (join with a space); intentional stacks
@@ -49,7 +49,7 @@ function inline(text) {
   let t = text
   // named links FIRST (before bold would eat the ** markers)
   t = t.replace(/\*\*\[(.+?)\]\*\*\s*\(([^)\s]+)\)/g,
-    `<a href="$2" style="color:#3B6E1F; font-weight:700; text-decoration:underline;">$1</a>`)
+    `<a href="$2" style="color:#15803D; font-weight:700; text-decoration:underline;">$1</a>`)
   // bold, then single-asterisk italics
   t = t.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
   t = t.replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, '<em>$1</em>')
@@ -88,7 +88,7 @@ function compileBody(body) {
     }
     // postscript
     if (/^P\.S\./.test(block)) {
-      html.push(`<p style="margin:22px 0 0 0; padding-top:16px; border-top:1px solid #ECEDEF; font-size:14.5px; color:#55555C;">${inline(reflow(block))}</p>`)
+      html.push(`<p style="margin:35px 0 0 0; padding-top:16px; border-top:1px solid #ECEDEF; font-size:18px; color:#55555C;">${inline(reflow(block))}</p>`)
       continue
     }
     html.push(`<p style="${P_STYLE}">${inline(reflow(block))}</p>`)
