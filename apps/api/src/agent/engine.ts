@@ -31,7 +31,7 @@ import {
 import { validateAction, type AgentAction } from './tools'
 import { executeAgentAction } from './actions'
 import { knownDetailsFor, knownDetailsPromptBlock } from './known'
-import { bookingInfoFor, type BookingInfo } from './booking'
+import { bookingInfoFor, labelForSlot, type BookingInfo } from './booking'
 
 export const INCLUDED_DAILY_BUDGET_USD = 1.5
 export const ABUSE_CEILING_USD = 15
@@ -317,6 +317,23 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
 
   const known = await knownDetailsFor(conversation.id)
 
+  // Successful bookings are as invisible to the model as dropped ones were
+  // (history renders text only) — and once a slot is booked it vanishes from
+  // the availability list, so the model concluded its own booking "was never
+  // available" and DENIED it to the visitor (C3 retest, 2026-10-08). Surface
+  // confirmed bookings explicitly, mirroring the _dropped marker.
+  const confirmedAppts = await prisma.agentAppointment.findMany({
+    where: { conversationId: conversation.id },
+    orderBy: { startTime: 'asc' },
+    select: { startTime: true },
+  })
+  const bookedBlock = confirmedAppts.length
+    ? [
+        'CONFIRMED BOOKINGS IN THIS CONVERSATION (REAL, already in the calendar — their slots NO LONGER appear in the availability list BECAUSE they are taken; NEVER deny these bookings, and answer confirmation questions from this list):',
+        ...confirmedAppts.map((a) => `- ${labelForSlot(a.startTime.toISOString(), ctx.timezone ?? null)}`),
+      ].join('\n')
+    : null
+
   // Direct booking (Part 4a): voice standard-mode only in v1. Real free
   // slots fetched server-side; disabled (empty) keeps callback flow intact.
   // Booking/availability tiers run on voice (standard mode) AND website
@@ -349,7 +366,7 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
         'You can only book for the PERSON ON THIS CALL. You CANNOT book for a spouse, child, or anyone else: for additional people, collect their names and take a front-desk callback (request_callback) to set those up — and NEVER say or imply that another person\'s appointment is booked.',
         'An appointment exists ONLY when you attached book_appointment for it with a listed raw value. Never claim, confirm, or imply a booking you did not attach that way — if one did not go through, say so plainly and offer a callback.',
         'Day groups may be marked (TODAY) or (TOMORROW) — that mapping is authoritative. When the caller names a day (today, tomorrow, a weekday), offer times FROM THAT GROUP first. NEVER say a day is booked, full, or unavailable unless that day has NO group in the list: absence from the list is the ONLY evidence of unavailability.',
-        'After confirming a booking, if no email is in KNOWN VISITOR DETAILS you may offer ONCE to email the appointment details — follow the EMAIL ADDRESSES BY VOICE procedure (spell-confirm before attaching add_contact_email); the confirmation email then sends automatically.',
+        'After confirming a booking, if no email is in KNOWN VISITOR DETAILS, ALWAYS offer ONCE — in the same reply as the booking confirmation — to email the appointment details; follow the EMAIL ADDRESSES BY VOICE procedure (spell-confirm before attaching add_contact_email); the confirmation email then sends automatically.',
       ].join('\n')
       : [
           'DIRECT BOOKING IS AVAILABLE IN THIS CHAT. The complete list of bookable times (the raw value before each time is what you attach — the time is what you write):',
@@ -359,7 +376,7 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
           'You can only book for the PERSON IN THIS CHAT. You CANNOT book for a spouse, child, or anyone else: for additional people, collect their names and take a front-desk callback (request_callback) to set those up — and NEVER say or imply that another person\'s appointment is booked.',
           'An appointment exists ONLY when you attached book_appointment for it with a listed raw value. Never claim, confirm, or imply a booking you did not attach that way — if one did not go through, say so plainly and offer a callback.',
           'Day groups may be marked (TODAY) or (TOMORROW) — that mapping is authoritative. When the caller names a day (today, tomorrow, a weekday), offer times FROM THAT GROUP first. NEVER say a day is booked, full, or unavailable unless that day has NO group in the list: absence from the list is the ONLY evidence of unavailability.',
-          'After confirming a booking, if no email is known you may offer ONCE to email the appointment details; when they give an address, attach add_contact_email — the confirmation email then sends automatically. Never promise an email you were not given an address for.',
+          'After confirming a booking, if no email is known, ALWAYS offer ONCE — in the same reply as the booking confirmation — to email the appointment details; when they give an address, attach add_contact_email — the confirmation email then sends automatically. Never promise an email you were not given an address for.',
         ].join('\n')
     : booking.mode === 'advisory-gcal' && booking.slots.length
       ? isVoiceBooking
@@ -413,7 +430,7 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
     // extra known-details block (per-conversation layer, never the cached
     // KB). Read from the ROW (persisted at create) so turns 2+ keep it —
     // the pending stamp behind seedKnownBlock is consume-once.
-    knownDetails: [knownDetailsPromptBlock(known), conversation.rescueContext?.trim() || input.seedKnownBlock?.trim() || null]
+    knownDetails: [knownDetailsPromptBlock(known), bookedBlock, conversation.rescueContext?.trim() || input.seedKnownBlock?.trim() || null]
       .filter(Boolean)
       .join('\n\n'),
     channelStyle:
