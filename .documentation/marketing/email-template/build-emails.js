@@ -88,7 +88,7 @@ function compileBody(body) {
     }
     // postscript
     if (/^P\.S\./.test(block)) {
-      html.push(`<p style="margin:35px 0 0 0; padding-top:16px; border-top:1px solid #ECEDEF; font-size:18px; color:#55555C;">${inline(reflow(block))}</p>`)
+      html.push(`<p style="margin:35px 0 0 0; padding-top:16px; border-top:1px solid #ECEDEF; color:#55555C;">${inline(reflow(block))}</p>`)
       continue
     }
     html.push(`<p style="${P_STYLE}">${inline(reflow(block))}</p>`)
