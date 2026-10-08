@@ -592,6 +592,24 @@ export async function addGhlContactTags(apiKey: string, contactId: string, tags:
   })
 }
 
+/** Find a contact by phone (GHL duplicate-search endpoint) — used to follow
+ * a third party's number CHANGE to the contact their old number created. */
+export async function findGhlContactIdByPhone(
+  apiKey: string,
+  locationId: string,
+  phone: string,
+): Promise<string | null> {
+  try {
+    const data = await ghlRequest<{ contact?: { id?: string } }>(
+      apiKey,
+      `/contacts/search/duplicate?locationId=${encodeURIComponent(locationId)}&number=${encodeURIComponent(phone)}`,
+    )
+    return data.contact?.id ?? null
+  } catch {
+    return null
+  }
+}
+
 /** Remove tags — used to re-arm tag-triggered workflows (remove + re-add). */
 export async function removeGhlContactTags(apiKey: string, contactId: string, tags: string[]): Promise<void> {
   if (!tags.length) return

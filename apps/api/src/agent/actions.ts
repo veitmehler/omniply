@@ -27,6 +27,7 @@ import { getGhlCredentials } from '../lib/ghl/settings'
 import {
   addGhlContactTags,
   removeGhlContactTags,
+  findGhlContactIdByPhone,
   createGhlContactNote,
   getBookingTimeFieldId,
   getCallbackTimeFieldId,
@@ -221,8 +222,34 @@ async function executeCallback(
   // The summary also lands in the "Chat Summary" custom field (find-or-create)
   // so the snapshot's notification workflow can merge {{contact.chat_summary}}
   // straight into the front-desk SMS/email text.
+  const known = await knownDetailsFor(conversationId)
+  const existingId = await contactIdFor(conversationId)
+  const primaryName = nameOf(known.name)
+  const primaryPhone = digitsOf(known.phone)
+  // Shared family number (user design 2026-10-08): "one person per phone
+  // number" — a family member giving the VISITOR's own number stays on the
+  // visitor's contact (the visitor remains the main contact until the front
+  // desk meets the family in person). The mismatched name is NEVER applied
+  // to the primary record; the family context rides in the summary.
+  const sharedPhoneFamily = Boolean(
+    existingId &&
+      curName &&
+      primaryName &&
+      curName !== primaryName &&
+      curPhone &&
+      primaryPhone &&
+      curPhone.slice(-9) === primaryPhone.slice(-9),
+  )
+  // Third-party callback (C3 2026-10-08: Sarah's callback RENAMED Steve's
+  // converged contact): a callback naming someone OTHER than the primary,
+  // on a DIFFERENT number, gets its OWN contact — the primary record is
+  // never touched.
+  const isThirdParty = Boolean(
+    existingId && curName && primaryName && curName !== primaryName && !sharedPhoneFamily,
+  )
   const summaryText = [
     isUpdatedCallback ? 'UPDATED CALLBACK — replaces the earlier request, details changed; use THESE details' : null,
+    sharedPhoneFamily ? `Family callback on the shared number — this call is FOR ${action.name}` : null,
     action.reason,
     summary,
   ]
@@ -243,29 +270,17 @@ async function executeCallback(
   const customFieldsOrUndef = customFields.length > 0 ? customFields : undefined
   const tags = ['callback-requested', 'chat-agent-lead']
 
-  const known = await knownDetailsFor(conversationId)
-  const existingId = await contactIdFor(conversationId)
-  // Third-party callback (C3 2026-10-08: Sarah's callback RENAMED Steve's
-  // converged contact): when the callback names someone OTHER than the
-  // conversation's primary person, it gets its OWN contact — the primary
-  // record is never touched. Name mismatch DOMINATES phone match: family
-  // members routinely share a number, and the front desk simply asks for
-  // the named person on the shared line.
-  const isThirdParty = Boolean(
-    existingId &&
-      curName &&
-      nameOf(known.name) &&
-      curName !== nameOf(known.name),
-  )
   // Normalize to E.164 with the CLINIC's country — GHL otherwise guesses
   // from the location default and can misfile foreign formats (+1074… bug).
   const phone = normalizePhoneE164(action.phone, ctx.countryCode)
   let contactId: string | null = existingId
   if (existingId && !isThirdParty) {
     // Converge: same contact the guide capture created — fields by id, tag-add.
+    // sharedPhoneFamily: the family member's name must NEVER overwrite the
+    // primary's (the original Sarah-renamed-Steve bug, upsert flavor).
     await updateGhlContact(creds.apiKey, existingId, {
       phone,
-      ...(action.name ? splitFullName(action.name) : {}),
+      ...(action.name && !sharedPhoneFamily ? splitFullName(action.name) : {}),
       ...(customFieldsOrUndef ? { customFields: customFieldsOrUndef } : {}),
     })
     if (isUpdatedCallback) {
@@ -278,18 +293,46 @@ async function executeCallback(
     // No primary yet (this callback establishes it) OR a third party
     // (dedicated contact; phone-first upsert converges onto an existing
     // patient record for that person when one exists).
-    const result = await upsertGhlContact(creds.apiKey, creds.locationId, {
-      phone,
-      ...splitFullName(action.name ?? known.name ?? ''),
-      // Carry the known email into creation so the contact starts complete
-      // — but ONLY for the primary person; a third party never inherits the
-      // visitor's email.
-      ...(!isThirdParty && primaryEmailOf(known) ? { email: primaryEmailOf(known)! } : {}),
-      tags,
-      source: 'chat-agent',
-      ...(customFieldsOrUndef ? { customFields: customFieldsOrUndef } : {}),
-    })
-    contactId = result.contactId ?? null
+    // Third-party CORRECTION (C3 2026-10-08: duplicate Henrikes): when this
+    // person's number CHANGED, a phone-keyed upsert would mint a second
+    // contact — find the contact their PRIOR number created and update it.
+    let correctedId: string | null = null
+    if (isThirdParty && isUpdatedCallback) {
+      const priorPhone = priorCallbackRows
+        .map((r) => r.action as Record<string, unknown> | null)
+        .filter((a): a is Record<string, unknown> => Boolean(a))
+        .filter((a) => nameOf(a.name) === curName && digitsOf(a.phone) && digitsOf(a.phone).slice(-9) !== curPhone.slice(-9))
+        .map((a) => a.phone as string)
+        .pop()
+      if (priorPhone) {
+        correctedId = await findGhlContactIdByPhone(
+          creds.apiKey,
+          creds.locationId,
+          normalizePhoneE164(priorPhone, ctx.countryCode),
+        )
+      }
+    }
+    if (correctedId) {
+      await updateGhlContact(creds.apiKey, correctedId, {
+        phone,
+        ...splitFullName(action.name ?? ''),
+        ...(customFieldsOrUndef ? { customFields: customFieldsOrUndef } : {}),
+      })
+      contactId = correctedId
+    } else {
+      const result = await upsertGhlContact(creds.apiKey, creds.locationId, {
+        phone,
+        ...splitFullName(action.name ?? known.name ?? ''),
+        // Carry the known email into creation so the contact starts complete
+        // — but ONLY for the primary person; a third party never inherits the
+        // visitor's email.
+        ...(!isThirdParty && primaryEmailOf(known) ? { email: primaryEmailOf(known)! } : {}),
+        tags,
+        source: 'chat-agent',
+        ...(customFieldsOrUndef ? { customFields: customFieldsOrUndef } : {}),
+      })
+      contactId = result.contactId ?? null
+    }
     if (contactId && !isThirdParty) {
       await prisma.agentConversation.update({
         where: { id: conversationId },
@@ -735,6 +778,7 @@ export async function executeAgentAction(
   ctx: AgentContext,
   conversationId: string,
   action: AgentAction,
+  assistantMessageId?: string,
 ): Promise<void> {
   try {
     switch (action.type) {
@@ -776,6 +820,16 @@ export async function executeAgentAction(
     await prisma.agentConversation
       .update({ where: { id: conversationId }, data: { flagged: true, flagReason: `action-failed:${action.type}` } })
       .catch(() => {})
+    // Make the failure visible to the MODEL too (C3 2026-10-08: the visitor
+    // was told "corrected" twice while GHL refused both updates): overwrite
+    // the persisted action with a _failed marker — the history renderer
+    // turns it into a SYSTEM note, same as _dropped, and known-details stop
+    // deriving from an action that never took effect.
+    if (assistantMessageId) {
+      await prisma.agentMessage
+        .update({ where: { id: assistantMessageId }, data: { action: { type: '_failed', attempted: action.type } } })
+        .catch(() => {})
+    }
     await sendFailureAlert({
       errorType: 'agent-action-failed',
       message: `Chat-agent ${action.type} failed for account ${ctx.accountId}: ${err instanceof Error ? err.message : String(err)}. The visitor was told it succeeded — follow up via the flagged transcript.`,

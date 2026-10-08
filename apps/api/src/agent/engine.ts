@@ -115,8 +115,8 @@ async function persistTurn(opts: {
    * persisted as a `_dropped` marker so later turns see the rejection and
    * can't claim the action happened (C3 phantom-booking fix, 2026-10-07). */
   droppedType?: string | null
-}): Promise<void> {
-  await prisma.$transaction([
+}): Promise<string> {
+  const [, assistantMsg] = await prisma.$transaction([
     prisma.agentMessage.create({
       data: { conversationId: opts.conversationId, role: 'visitor', content: opts.visitorText },
     }),
@@ -139,6 +139,7 @@ async function persistTurn(opts: {
       },
     }),
   ])
+  return assistantMsg.id
 }
 
 function guideFor(ctx: AgentContext, action: AgentAction | null): { title: string | null; link: string | null } {
@@ -301,8 +302,9 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
       // Surface rejected actions to the model: without this it assumes its
       // attempt worked and confidently "confirms" it turns later.
       const a = m.action as { type?: string; attempted?: string } | null
-      if (a?.type === '_dropped') {
-        return `${line}\n[SYSTEM: the ${a.attempted ?? 'action'} attempted in that reply was REJECTED and did NOT happen. Nothing was booked or sent by it — tell the visitor plainly if they ask, and never claim it succeeded.]`
+      if (a?.type === '_dropped' || a?.type === '_failed') {
+        const verb = a.type === '_dropped' ? 'was REJECTED' : 'FAILED while executing'
+        return `${line}\n[SYSTEM: the ${a.attempted ?? 'action'} attempted in that reply ${verb} and did NOT take effect. Nothing was booked, sent, or updated by it — tell the visitor plainly, correct course, and never claim it succeeded.]`
       }
       return line
     })
@@ -560,11 +562,11 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
     }
   }
 
-  await persistTurn({ conversationId: conversation.id, visitorText: message, reply, action, filtered, flagReason, costUsd, droppedType })
+  const assistantMessageId = await persistTurn({ conversationId: conversation.id, visitorText: message, reply, action, filtered, flagReason, costUsd, droppedType })
 
   // Execute server-side effects (GHL contact/tags/note, Drive grants) AFTER
   // the turn is persisted — never throws, failures alert + flag.
-  if (action) await executeAgentAction(ctx, conversation.id, action)
+  if (action) await executeAgentAction(ctx, conversation.id, action, assistantMessageId)
 
   if (spentToday + costUsd >= INCLUDED_DAILY_BUDGET_USD && spentToday < INCLUDED_DAILY_BUDGET_USD) {
     logger.warn({ accountId: input.accountId, spentToday: spentToday + costUsd }, '[agent] included daily budget crossed — overage accruing')
