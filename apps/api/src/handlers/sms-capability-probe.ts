@@ -22,7 +22,8 @@ import type PgBoss from 'pg-boss'
 import { prisma } from '@omniply/shared'
 import { getGhlCredentials } from '../lib/ghl/settings'
 import { upsertGhlContact, sendGhlSmsGetMessageId, getGhlMessageStatus } from '../lib/ghl/client'
-import { sendFailureAlert } from '../lib/alerts'
+import { sendFailureAlert, sendTransactionalEmail } from '../lib/alerts'
+import { twilioConfigured, listInboundMessages } from '../lib/twilio'
 import { logger } from '../lib/logger'
 
 export const SMS_SINK_NUMBER = '+12109608070'
@@ -79,7 +80,19 @@ async function probeAccount(accountId: string, ownerUserId: string): Promise<voi
     error: 'status fetch failed',
   }))
 
-  if (status === 'delivered') {
+  // Receipt verification (belt + braces, 2026-10-08): the sink is a Twilio
+  // number on OUR master account — if the probe body physically arrived
+  // there, delivery is proven regardless of what the status API says.
+  // Anything at the sink NOT carrying this account's token is ignored.
+  let receiptSeen = false
+  if (twilioConfigured()) {
+    receiptSeen = await listInboundMessages(SMS_SINK_NUMBER, new Date(Date.now() - 60 * 60 * 1000).toISOString())
+      .then((ms) => ms.some((m) => m.body.includes(accountId)))
+      .catch(() => false)
+  }
+
+  if (status === 'delivered' || receiptSeen) {
+    logger.info({ accountId, status, receiptSeen }, '[sms-probe] delivery confirmed')
     const before = await prisma.voiceAgentConfig.findUnique({
       where: { accountId },
       select: { voiceSmsAvailable: true },
@@ -87,8 +100,25 @@ async function probeAccount(accountId: string, ownerUserId: string): Promise<voi
     await stamp('delivered', true)
     logger.info({ accountId }, '[sms-probe] delivered — texting capability ON')
     if (!before?.voiceSmsAvailable) {
-      // First flip: the owner-facing confirmation (user's design, verbatim).
-      // Fire-and-forget by decision — a landline here must change nothing.
+      // First flip: the owner-facing confirmation (user's design). BOTH
+      // channels so neither gets missed (decision 2026-10-08): email always
+      // lands; the SMS — sent from the clinic's own number — is the nice
+      // moment on a mobile and fails silently on a landline. Both are
+      // fire-and-forget and NEVER touch the just-proven flag.
+      const CONFIRM = '✓ - Texting is now live for your chat and voice AI assistants!'
+      try {
+        const owner = await prisma.user.findUnique({ where: { id: ownerUserId }, select: { email: true } })
+        if (owner?.email) {
+          await sendTransactionalEmail({
+            to: owner.email,
+            subject: '✓ Texting is now live for your AI assistants',
+            text: `${CONFIRM}\n\nYour practice's number passed its texting self-test: booking links, appointment confirmations, and guides can now reach patients by SMS. Nothing to set up — it's already on.`,
+            html: `<p><strong>${CONFIRM}</strong></p><p>Your practice's number passed its texting self-test: booking links, appointment confirmations, and guides can now reach patients by SMS. Nothing to set up — it's already on.</p>`,
+          })
+        }
+      } catch (err) {
+        logger.info({ accountId, err }, '[sms-probe] owner confirmation email failed (fine)')
+      }
       try {
         const brand = await prisma.brandSettings.findFirst({
           where: { userId: ownerUserId },
@@ -101,15 +131,11 @@ async function probeAccount(accountId: string, ownerUserId: string): Promise<voi
             source: 'sms-self-test',
           })
           if (owner.contactId) {
-            await sendGhlSmsGetMessageId(
-              creds.apiKey,
-              owner.contactId,
-              '✓ - Texting is now live for your chat and voice AI assistants!',
-            )
+            await sendGhlSmsGetMessageId(creds.apiKey, owner.contactId, CONFIRM)
           }
         }
       } catch (err) {
-        logger.info({ accountId, err }, '[sms-probe] owner confirmation not delivered (fine)')
+        logger.info({ accountId, err }, '[sms-probe] owner confirmation SMS not delivered (fine)')
       }
     }
     return

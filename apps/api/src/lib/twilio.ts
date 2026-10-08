@@ -195,3 +195,22 @@ export async function buyVoiceNumber(
     return { phoneNumber: bought.phone_number, numberSid: bought.sid }
   }
 }
+
+/**
+ * Inbound messages at a master-account number (SMS capability self-test
+ * receipts): everything NOT matching our probe token is simply ignored by
+ * the caller — stray texts to the sink never influence anything.
+ */
+export async function listInboundMessages(
+  to: string,
+  sinceIso: string,
+): Promise<Array<{ body: string; from: string }>> {
+  const auth = masterAuth()
+  const data = await twilioFetch<{ messages?: Array<{ body?: string; from?: string; direction?: string }> }>(
+    auth,
+    `/Accounts/${auth.sid}/Messages.json?To=${encodeURIComponent(to)}&DateSent%3E=${sinceIso.slice(0, 10)}&PageSize=50`,
+  )
+  return (data.messages ?? [])
+    .filter((m) => (m.direction ?? '').startsWith('inbound'))
+    .map((m) => ({ body: m.body ?? '', from: m.from ?? '' }))
+}
