@@ -84,13 +84,18 @@ function compileBody(body) {
     // signature: sign-off line above, SINGLE dash (house de-AI style — the
     // source's em-dash is rewritten)
     if (/^— Veit/.test(block)) {
-      html.push(`<p style="margin:26px 0 0 0; color:#1A1A1C;">To more patients,</p>`)
-      html.push(`<p style="margin:6px 0 4px 0; color:#1A1A1C;">${inline(block.replace(/^—\s*/, '- '))}</p>`)
+      html.push(`<p style="margin:26px 0 25px 0; color:#1A1A1C;">To more patients,</p>`)
+      html.push(`<p style="margin:0 0 4px 0; color:#1A1A1C;">${inline(block.replace(/^—\s*/, '- '))}</p>`)
       continue
     }
     // postscript (25px bottom = one blank line before a following link)
     if (/^P\.S\./.test(block)) {
       html.push(`<p style="margin:35px 0 25px 0; padding-top:16px; border-top:1px solid #ECEDEF; color:#55555C;">${inline(reflow(block))}</p>`)
+      continue
+    }
+    // Lone-link blocks are CTAs: double gap below (extra empty line).
+    if (/^\*\*\[.+?\]\*\*\s*\([^)\s]+\)$/.test(block.trim())) {
+      html.push(`<p style="margin:0 0 50px 0;">${inline(block.trim())}</p>`)
       continue
     }
     html.push(`<p style="${P_STYLE}">${inline(reflow(block))}</p>`)
@@ -101,8 +106,9 @@ function compileBody(body) {
   if (html.length) {
     html[html.length - 1] = html[html.length - 1]
       .replace('style="margin:0 0 25px 0;"', 'style="margin:0 0 70px 0;"')
+      .replace('style="margin:0 0 50px 0;"', 'style="margin:0 0 70px 0;"')
       .replace('style="margin:35px 0 25px 0;', 'style="margin:35px 0 70px 0;')
-      .replace('style="margin:6px 0 4px 0;', 'style="margin:6px 0 70px 0;')
+      .replace('style="margin:0 0 4px 0;', 'style="margin:0 0 70px 0;')
   }
   return html.join('\n')
 }
