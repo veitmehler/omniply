@@ -277,8 +277,9 @@ export async function agentRoutes(app: FastifyInstance) {
         },
       })
       if (user.accountId) clearAgentContextFor(user.accountId)
-      if (body.bookingUrl?.trim()) {
-        // Keep the DM-reply "Send Info" trigger link in step with the new URL.
+      if (body.bookingUrl !== undefined) {
+        // Keep the DM-reply "Send Info" trigger link in step: a new URL takes
+        // over; a cleared one drops the link back to the link-in-bio page.
         void import('../leadgen/compile').then((m) => m.repointBookingTriggerLink(ownerId))
       }
       return { ok: true, faqCount: faqs.length }
