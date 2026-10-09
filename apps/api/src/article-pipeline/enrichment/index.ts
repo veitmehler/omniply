@@ -15,6 +15,7 @@ import { Sentry } from '../../lib/sentry'
 import { decrypt } from '@omniply/shared'
 import { uploadBufferWithKey, deleteS3Prefix, downloadImageFromUrl } from '@omniply/shared'
 import { getSystemApiKey } from '../../lib/system-keys'
+import { recordLLMUsage } from '../../lib/llm-usage'
 import { specializationLabel } from '../../newsletter/calendar-routing'
 import { getBoss, QUEUES } from '../../queues/index'
 import {
@@ -1169,6 +1170,19 @@ async function finishEnrichment(
       totalTokens: { increment: inputTokens + outputTokens },
       currentStep: 25,
     },
+  })
+
+  // Bridge to the admin cost ledger (audit 2026-10-09): enrichment spend
+  // previously lived ONLY in ArticleJob.totalCost, structurally invisible
+  // to admin/costs. One aggregate row per enrichment run.
+  const ledgerOwner = await prisma.articleJob.findUnique({ where: { id: jobId }, select: { userId: true } })
+  await recordLLMUsage(ledgerOwner?.userId, 'article_enrichment', {
+    content: '',
+    tokens: { input: inputTokens, output: outputTokens, total: inputTokens + outputTokens },
+    cost,
+    model: 'enrichment-aggregate',
+    provider: 'gemini',
+    finishReason: 'stop',
   })
 
   // Final Google-guidelines check on the ENRICHED body (parity batch B) —

@@ -1,5 +1,6 @@
 import { fal } from '@fal-ai/client'
 import { getSystemApiKey } from '../../lib/system-keys'
+import { recordMediaCost } from '../../lib/media-costs'
 import { logger } from '../../lib/logger'
 import { withTimeout } from '../../lib/net/with-timeout'
 import { withRetry } from '../../lib/net/retry'
@@ -23,6 +24,8 @@ export interface SeedanceOptions {
   resolution?: '480p' | '720p'
   aspectRatio?: '1:1' | '9:16' | '16:9'
   jobId?: string
+  /** Cost attribution (audit 2026-10-09) — the clip's owner. */
+  userId?: string | null
   /** Override the Fal.ai model slug. Defaults to the appropriate Seedance T2V or I2V model. */
   model?: string
 }
@@ -83,6 +86,7 @@ export async function generateSeedanceClip(opts: SeedanceOptions): Promise<strin
   if (!url) throw new Error('Seedance returned no video URL')
 
   logger.info({ jobId: opts.jobId, model }, '[seedance] clip generated')
+  await recordMediaCost(opts.userId, 'social_video_clip', 'fal-seedance-video', model)
   return url
 }
 

@@ -17,6 +17,7 @@ import { processLogo } from '../newsletter/logo-process'
 import { maybeEnqueueNewsletterSocialAutomation } from '../social/automation/enqueue'
 import { generateWithGeminiImage, uploadBufferWithKey, deleteOldVersions, deleteS3Keys } from '@omniply/shared'
 import { getSystemApiKey } from '../lib/system-keys'
+import { recordMediaCost } from '../lib/media-costs'
 import { vtoken } from '../newsletter/image-overlay'
 import { runNewsletterPrompt } from '../newsletter/llm'
 import { cleanTextOutput } from '../article-pipeline/output-cleaner'
@@ -779,6 +780,7 @@ export async function newsletterRoutes(app: FastifyInstance) {
     const prompt = `High-quality, eye-catching advertising banner photo for this promotional offer: "${offer.title}". ${offer.body}. Industry: ${brand?.industry || 'wellness'}. A clean, modern, inviting promotional visual with a strong focal subject and professional lighting. NO text, NO words, NO letters, NO logos in the image — purely a visual. 16:9 banner.`
     try {
       const buf = await generateWithGeminiImage(geminiKey, prompt, 'gemini-3.1-flash-image', '16:9')
+      await recordMediaCost(userId, 'newsletter_offer_image', 'gemini-image', 'gemini-3.1-flash-image')
       const base = `newsletter/offers/${userId}/${offer.id}-`
       const key = `${base}${vtoken()}.jpg`
       const { url } = await uploadBufferWithKey(key, buf, 'image/jpeg')

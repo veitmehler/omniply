@@ -9,6 +9,7 @@
 import { resolvePromptByStep } from '../../lib/prompt-resolver'
 import { prisma } from '@omniply/shared'
 import { getLLMAdapter } from '../llm/factory'
+import { recordLLMUsage } from '../../lib/llm-usage'
 import { logger } from '../../lib/logger'
 import { sanitizeDashesText } from '../../lib/text/dash-sanitizer'
 
@@ -167,6 +168,7 @@ export async function generateSyndicationArticles(
       temperature:  0.7,
     })
 
+    await recordLLMUsage(userId, `syndication_${platform}`, response)
     const extracted = extractTitleAndContent(response.content, articleTitle)
     const title = await sanitizeDashesText(extracted.title, { jobId, surface: `syndication_${platform}_title` })
     const content = await sanitizeDashesText(extracted.content, { jobId, surface: `syndication_${platform}` })

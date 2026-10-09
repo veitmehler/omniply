@@ -721,7 +721,7 @@ export async function generateCarouselBackground(
   const url = data?.images?.[0]?.url
   if (!url) {
     logger.warn({ jobId }, '[carousel] fal returned no URL, falling back to flux-pro')
-    const fallbackUrl = await generateFeaturedImage(prompt, jobId)
+    const fallbackUrl = await generateFeaturedImage(prompt, jobId, userId)
     return downloadImage(fallbackUrl)
   }
 
@@ -731,7 +731,7 @@ export async function generateCarouselBackground(
   if (await isNearlyBlack(buffer)) {
     logger.warn({ jobId }, '[carousel] fal returned a black image, falling back to flux-pro')
     try {
-      const fallbackUrl = await generateFeaturedImage(prompt, jobId)
+      const fallbackUrl = await generateFeaturedImage(prompt, jobId, userId)
       return await downloadImage(fallbackUrl)
     } catch (err) {
       logger.error({ jobId, err }, '[carousel] flux-pro fallback also failed; using black frame')

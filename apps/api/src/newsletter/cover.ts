@@ -7,6 +7,7 @@
  * the text is composited, not generated). Returns the S3 URL.
  */
 import { resolvePromptByKey } from '../lib/prompt-resolver'
+import { recordMediaCost } from '../lib/media-costs'
 import { prisma } from '@omniply/shared'
 import { generateWithFalAI, generateWithGeminiImage, uploadBufferWithKey, deleteOldVersions } from '@omniply/shared'
 import { withRasterPage } from '../article-pipeline/enrichment/diagram-browser-pool'
@@ -261,6 +262,8 @@ export async function generateCoverImage(
     try {
       const prompt = buildCoverPrompt(items, params.industry, params.who, styleGuide)
       const buf = await generateWithGeminiImage(geminiKey, prompt, model, '1:1')
+      // keyPrefix = `${topicId}/${userId}` — second segment is the owner.
+      await recordMediaCost(params.keyPrefix.split('/')[1] ?? null, 'newsletter_cover', 'gemini-image', model)
       const base = `newsletter/${params.keyPrefix}-cover-`
       const key = `${base}${vtoken()}.png`
       const { url } = await uploadBufferWithKey(key, buf, 'image/png')

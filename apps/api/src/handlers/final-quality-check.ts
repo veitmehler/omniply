@@ -14,6 +14,7 @@ import { prisma } from '@omniply/shared'
 import { logger } from '../lib/logger'
 import { Sentry } from '../lib/sentry'
 import { evaluateArticleQuality, judgeQualityVerdict } from '../article-pipeline/quality-gate'
+import { recordLLMUsage } from '../lib/llm-usage'
 import { triggerArticleRewrite } from '../article-pipeline/rewrite-trigger'
 
 export interface FinalQualityCheckJobData {
@@ -31,6 +32,7 @@ export async function finalQualityCheckHandler(jobs: PgBoss.Job<FinalQualityChec
       select: {
         id: true,
         status: true,
+        userId: true,
         finalQualityAttempts: true,
         sitePage: { select: { bodyHtml: true } },
       },
@@ -51,6 +53,16 @@ export async function finalQualityCheckHandler(jobs: PgBoss.Job<FinalQualityChec
 
     try {
       const evalRes = await evaluateArticleQuality(bodyHtml)
+      // Bridge to the admin cost ledger (audit 2026-10-09): this spend
+      // previously only incremented ArticleJob.totalCost.
+      await recordLLMUsage(articleJob.userId, 'article_quality_gate', {
+        content: '',
+        tokens: { input: 0, output: 0, total: 0 },
+        cost: evalRes.cost,
+        model: 'quality-gate-aggregate',
+        provider: 'gemini',
+        finishReason: 'stop',
+      })
       const verdict = await judgeQualityVerdict(evalRes.text)
       const attempt = articleJob.finalQualityAttempts
       const stored = { ...verdict, attempt } as unknown as Prisma.InputJsonValue

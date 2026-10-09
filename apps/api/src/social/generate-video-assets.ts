@@ -148,6 +148,7 @@ export async function generateVideoReelAsset(opts: {
   return withTempDir('video-reel-', async (tmpDir) => {
     const outputPath = path.join(tmpDir, 'reel.mp4')
     const probe = await buildVideoReel({
+      userId: opts.userId,
       prompt: videoPrompt,
       headline,
       bullets,
@@ -249,6 +250,7 @@ export async function generateKtMusicVideoAsset(opts: {
   return withTempDir('kt-music-video-', async (tmpDir) => {
     const seedanceUrl = await generateSeedanceClip({
       prompt: videoPrompt,
+      userId: opts.userId,
       duration: '6',
       resolution: '720p',
       aspectRatio: '9:16',
@@ -486,6 +488,7 @@ export async function generateHookVideoAsset(opts: {
       'generateHookVideoAsset: calling buildHookVideo',
     )
     const { probe, hookRawPath, introDuration } = await buildHookVideo({
+      userId: opts.userId,
       title,
       hookPrompt: hookVideoPrompt,
       falModel: hookVideoModel,

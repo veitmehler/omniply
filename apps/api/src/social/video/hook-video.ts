@@ -15,6 +15,7 @@ import { slideshowDimensions } from './slideshow-video'
 import { logger } from '../../lib/logger'
 
 export interface HookVideoOptions {
+  userId?: string | null
   title: string
   hookPrompt: string
   hookImageUrl?: string
@@ -65,6 +66,7 @@ export async function buildHookVideo(opts: HookVideoOptions): Promise<HookVideoR
     'buildHookVideo: start — generating Seedance clip',
   )
   const hookUrl = await generateSeedanceClip({
+    userId: opts.userId,
     prompt: opts.hookPrompt,
     imageUrl: opts.hookImageUrl,
     duration: opts.hookDuration ?? '5',
@@ -157,6 +159,7 @@ export async function buildHookVideo(opts: HookVideoOptions): Promise<HookVideoR
 }
 
 export interface VideoReelOptions {
+  userId?: string | null
   prompt: string
   /** Optional background image sent to Seedance for image-to-video. Omit for pure text-to-video. */
   backgroundImageUrl?: string
@@ -172,6 +175,7 @@ export interface VideoReelOptions {
 /** F2/S2: 9:16 Seedance background + dark veil + headline + ✓ bullet list. */
 export async function buildVideoReel(opts: VideoReelOptions): Promise<VideoProbe> {
   const seedanceUrl = await generateSeedanceClip({
+    userId: opts.userId,
     prompt: opts.prompt,
     imageUrl: opts.backgroundImageUrl,
     duration: '6',

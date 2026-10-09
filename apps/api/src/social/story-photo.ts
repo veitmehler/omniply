@@ -4,6 +4,7 @@
  * Client accounts only (the azavea motif design is exempt at the call site).
  */
 import { getSystemApiKey } from '../lib/system-keys'
+import { recordMediaCost } from '../lib/media-costs'
 import { generateWithGeminiImage } from '@omniply/shared'
 import { registerSocialMedia } from './media-register'
 import { logger } from '../lib/logger'
@@ -23,6 +24,7 @@ export async function generateStoryPhoto(
     'STRICTLY: no text, no letters, no captions, no logos, no watermarks, no medical gore, tasteful and family-friendly.'
   try {
     const buffer = await generateWithGeminiImage(key, prompt, STORY_PHOTO_MODEL, '1:1')
+    await recordMediaCost(userId, 'social_story_photo', 'gemini-image', STORY_PHOTO_MODEL)
     const reg = await registerSocialMedia({
       userId,
       buffer,

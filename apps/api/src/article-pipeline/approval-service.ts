@@ -249,7 +249,7 @@ export async function approveArticleJob(jobId: string): Promise<void> {
   let mediaId: string | null = null
   try {
     logger.info({ jobId }, '[approval] generating featured image with Fal.ai')
-    const falImageUrl = await generateFeaturedImage(imagePromptText, jobId)
+    const falImageUrl = await generateFeaturedImage(imagePromptText, jobId, userId)
 
     const altText = seo.metaTitle || topic.topic
     const upload = await uploadFeaturedImageToS3WithRetry(falImageUrl, userId, jobId, altText)

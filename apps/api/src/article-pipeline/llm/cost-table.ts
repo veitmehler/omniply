@@ -4,6 +4,10 @@ const COST_TABLE: Record<string, { input: number; output: number }> = {
   'gemini-2.5-flash': { input: 0.075, output: 0.30 },
   'gemini-2.5-pro': { input: 1.25, output: 5.00 },
   'gemini-3-flash': { input: 0.50, output: 3.00 },
+  // Preview alias of 3-flash — the most-used hardcoded model in the repo;
+  // without this row it silently hit the $0.50/$1.50 fallback (cost audit
+  // 2026-10-09).
+  'gemini-3-flash-preview': { input: 0.50, output: 3.00 },
   'gemini-3.5-flash': { input: 1.50, output: 9.00 },
   'gemini-3.1-flash-lite': { input: 0.25, output: 1.50 },
   'gemini-3.1-pro': { input: 2.00, output: 12.00 },
@@ -38,3 +42,11 @@ export function calculateCost(model: string, inputTokens: number, outputTokens: 
   const outputCost = (outputTokens / 1_000_000) * getCostPerToken(model, 'output')
   return Number((inputCost + outputCost).toFixed(8))
 }
+
+/**
+ * Gemini "Grounding with Google Search" bills a PER-REQUEST fee on top of
+ * tokens ($35 per 1,000 grounded requests on the paid tier) — invisible to
+ * token math, so every grounded call adds it explicitly (cost audit
+ * 2026-10-09: 11 grounded call sites across articles + newsletters).
+ */
+export const GROUNDED_SEARCH_FEE_USD = 0.035

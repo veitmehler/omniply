@@ -12,6 +12,7 @@ import { withTimeout } from '../lib/net/with-timeout'
 import { isRetryableNetworkError } from '../lib/net/retry'
 import { instrumentCall } from '../lib/net/instrument'
 import { generateWithGeminiImage, uploadBufferWithKey } from '@omniply/shared'
+import { recordMediaCost } from '../lib/media-costs'
 
 const DEFAULT_FAL_MODEL = 'fal-ai/flux-pro'
 const MAX_RETRIES = 3
@@ -59,6 +60,7 @@ function extractImageUrl(result: FalResult): string | null {
 export async function generateFeaturedImage(
   imagePrompt: string,
   jobId: string,
+  userId?: string | null,
 ): Promise<string> {
   let falModel = await resolveImageModel()
 
@@ -79,6 +81,7 @@ export async function generateFeaturedImage(
         const key = `tmp/featured/${jobId}-${Date.now()}.png`
         const { url } = await uploadBufferWithKey(key, buf, 'image/png')
         logger.info({ jobId, model: falModel }, '[image-gen] featured image generated (gemini direct)')
+        await recordMediaCost(userId, 'article_featured_image', 'gemini-image', falModel)
         return url
       } catch (err) {
         logger.warn({ jobId, model: falModel, err }, '[image-gen] gemini featured image failed — falling back to fal')
@@ -120,6 +123,12 @@ export async function generateFeaturedImage(
       if (!imageUrl) throw new Error('Fal.ai returned no image URL in response')
 
       logger.info({ jobId, attempt, model: falModel }, '[image-gen] featured image generated')
+      await recordMediaCost(
+        userId,
+        'article_featured_image',
+        falModel.includes('schnell') ? 'fal-flux-schnell' : falModel.includes('recraft') ? 'fal-recraft' : 'fal-flux-pro',
+        falModel,
+      )
       return imageUrl
     } catch (err) {
       lastErr = err

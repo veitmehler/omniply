@@ -12,6 +12,7 @@
 import { prisma } from '@omniply/shared'
 import { logger } from '../lib/logger'
 import { getLLMAdapter } from './llm/factory'
+import { recordLLMUsage } from '../lib/llm-usage'
 import { getSystemApiKey } from '../lib/system-keys'
 
 const ASSIGNMENT_PROVIDER = 'openai' as const
@@ -100,6 +101,9 @@ Rules:
       temperature: 0,
       maxTokens: 10,
     })
+
+    const owner = await prisma.topic.findUnique({ where: { id: topicId }, select: { userId: true } })
+    await recordLLMUsage(owner?.userId, 'outline_assignment', response)
 
     const rawNumber = parseInt(response.content.trim(), 10)
     const chosen = isNaN(rawNumber) ? null : frameworks.find((f) => f.number === rawNumber)

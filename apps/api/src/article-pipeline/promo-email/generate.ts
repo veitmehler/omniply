@@ -10,6 +10,7 @@
 import { resolvePromptByStep } from '../../lib/prompt-resolver'
 import { prisma, brandSettingsForUser } from '@omniply/shared'
 import { getLLMAdapter } from '../llm/factory'
+import { recordLLMUsage } from '../../lib/llm-usage'
 import { logger } from '../../lib/logger'
 import { sanitizeDashesText } from '../../lib/text/dash-sanitizer'
 
@@ -159,6 +160,7 @@ export async function generatePromoEmail(jobId: string, userId: string): Promise
     temperature: 0.7,
   })
 
+  await recordLLMUsage(userId, 'promo_email', response)
   const parsed = parsePromoEmail(response.content, articleTitle)
   const subject = await sanitizeDashesText(parsed.subject, { jobId, surface: 'promo_subject' })
   const bodyHtml = await sanitizeDashesText(parsed.bodyHtml, { jobId, surface: 'promo_body' })
