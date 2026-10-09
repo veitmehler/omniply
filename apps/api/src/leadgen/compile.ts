@@ -83,8 +83,14 @@ export async function regrantActiveCohort(accountId: string, newFileId: string, 
 export async function repointBookingTriggerLink(userId: string): Promise<void> {
   try {
     const { prisma } = await import('@omniply/shared')
-    const brand = await prisma.brandSettings.findUnique({ where: { userId }, select: { bookingUrl: true } })
-    const url = brand?.bookingUrl?.trim()
+    const brand = await prisma.brandSettings.findUnique({
+      where: { userId },
+      select: { bookingUrl: true, socialBioUrl: true },
+    })
+    // Phone-only clinics have no booking page — their "Send Info" link goes
+    // to the link-in-bio page instead (call button lives there), so the
+    // trigger link is never a dead placeholder for anyone.
+    const url = brand?.bookingUrl?.trim() || brand?.socialBioUrl?.trim()
     if (!url) return
     const { getGhlCredentials } = await import('../lib/ghl/settings')
     const creds = await getGhlCredentials(userId)
