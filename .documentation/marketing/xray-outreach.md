@@ -1,6 +1,6 @@
 # X-Ray Outreach — LinkedIn + Cold Email (Copy Master)
 
-**Status: DRAFT v1 for review — 2026-08-05**
+**Status: v2 AI-FIRST — 2026-10-09 (angle sweep; v1 2026-08-05)**
 
 Warm-ish outreach to first-degree LinkedIn chiro connections + low-volume cold
 email. ONE job: get them to run the Practice X-Ray. The moment they engage,
@@ -29,18 +29,19 @@ outreach ends and the funnel (quiz → report → nurture) takes over.
 ### Touch 1 · Day 0 · the permission question (NO link)
 
 > Hey {{first_name}} — I built something for practice owners I'd genuinely
-> want your take on. It X-rays a chiro practice in 2 minutes... how many
-> calls a week go unanswered, four system scores, and a dollar figure on
-> what's quietly leaking. Want the link?
+> want your take on. It X-rays a chiro practice in 2 minutes... whether AI
+> assistants like ChatGPT can even find you when patients ask them, how many
+> calls a week go unanswered, and a dollar figure on what's quietly leaking.
+> Want the link?
 
 *(The question earns the reply, makes the link requested instead of pushed,
 and sorts warm from cold before you've spent anything.)*
 
 ### Touch 2a · on reply · deliver
 
-> Here you go: https://omniply.io/x-ray — takes 2 minutes, and the
-> missed-calls number is the one that surprises people. Curious what yours
-> says.
+> Here you go: https://omniply.io/x-ray — takes 2 minutes. The AI-visibility
+> read is the one that surprises people... most owners have no idea whether
+> an assistant can find them at all. Curious what yours says.
 
 *(Then: whatever they reply, answer like a human. If they run it, the funnel
 owns them now — say congrats on the score and stand down.)*
@@ -48,14 +49,17 @@ owns them now — say congrats on the score and stand down.)*
 ### Touch 2b · Day 5, no reply · the bump (link included)
 
 > No worries if this isn't your season — the 2-minute version of the pitch:
-> most practices leak more every month than they'd ever spend fixing it.
-> The X-Ray puts your number on it: https://omniply.io/x-ray
+> 132 million Americans now ask AI assistants before they book, and most
+> practices have no idea whether one can even find them. The X-Ray answers
+> that, plus your missed calls and your monthly leak in dollars:
+> https://omniply.io/x-ray
 
 ### Touch 3 · Day 10, still nothing · the close
 
-> Last one from me on this... if the appointment book ever feels softer than
-> the reviews say it should, the X-Ray is where I'd start:
-> https://omniply.io/x-ray — door's open.
+> Last one from me on this... when the first patient in your town books a
+> chiro through an AI assistant, somebody's practice gets that booking. The
+> X-Ray shows whether it could be yours: https://omniply.io/x-ray — door's
+> open.
 
 ---
 
@@ -67,16 +71,21 @@ owns them now — say congrats on the score and stand down.)*
 
 {{first_name}} — quick question, then I'm out of your inbox.
 
-Do you know what your practice leaks in a month... in dollars?
+When a patient asks an AI assistant about a chiro in your town... can it
+even find {{practice}}?
 
-Most owners guess low. The loud leak is the phone: the calls that ring out
-after hours and book with whoever answers. The quiet one is patient drift:
-people finish a care plan, feel good, and fade — until the next flare-up, at
-whichever clinic answers first.
+132 million Americans now research with AI assistants before they book. If
+one can't find your practice, understand your website, or talk to it, it
+simply books the next practice down the road. And that's only the newest
+leak. The loud one is still the phone: calls that ring out after hours and
+book with whoever answers. The quiet one is patient drift: people finish a
+care plan, feel good, and fade — until the next flare-up, at whichever
+clinic answers first.
 
-I built a 2-minute X-Ray that puts a number on both. Your missed calls per
-week, four system scores and a monthly dollar figure, computed from your own
-inputs... every assumption shown.
+I built a 2-minute X-Ray that puts a number on all of it. Whether AI
+assistants can find you, your missed calls per week, four system scores and
+a monthly dollar figure, computed from your own inputs... every assumption
+shown.
 
 https://omniply.io/x-ray
 
@@ -97,12 +106,13 @@ One stat from the research, one from your world:
 78% of patients book with whoever answers first. And the average business
 takes two days to respond.
 
-That gap is where practices leak... not from bad care, from silence. The
-X-Ray measures your four systems against it in 2 minutes:
+That gap is where practices leak... not from bad care, from silence. And a
+second jury now reads the same signals: patients asking AI assistants who
+to see. The X-Ray measures your four systems against both in 2 minutes:
 
 https://omniply.io/x-ray
 
-The drift number is the one that surprises people.
+The AI-visibility read is the one that surprises people.
 
 — Veit
 
@@ -114,7 +124,8 @@ The drift number is the one that surprises people.
 
 Maybe everything's airtight at {{practice}}... genuinely, good. Most
 practices I scan aren't leaking because anyone did something wrong — they're
-leaking because nothing changed while patients did.
+leaking because nothing changed while patients did. Right down to asking
+ChatGPT who they should see.
 
 If the quarter ever feels soft, the X-Ray takes 2 minutes and the report is
 yours to keep: https://omniply.io/x-ray
