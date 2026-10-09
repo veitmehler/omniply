@@ -43,3 +43,20 @@ describe('list markers are structure, not facts (live E2E 2026-09-15)', () => {
     expect(rewriteWithinGuards(original, rewritten)).toBe(true)
   })
 })
+
+describe('cover contrast (light-palette fix 2026-10-09)', () => {
+  it('classifies light and dark headers correctly', async () => {
+    const { headerIsLight, relativeLuminance } = await import('../compile')
+    expect(headerIsLight('#e0e0e0')).toBe(true) // the test clinic's extracted header
+    expect(headerIsLight('#FAF4EB')).toBe(true) // warm cream
+    expect(headerIsLight('#0b2545')).toBe(false) // default navy
+    expect(headerIsLight('#B4572E')).toBe(false) // terracotta — white ink holds
+    expect(relativeLuminance('#ffffff')).toBeCloseTo(1, 5)
+    expect(relativeLuminance('#000000')).toBeCloseTo(0, 5)
+  })
+
+  it('treats an unparseable color as the dark default (white ink)', async () => {
+    const { headerIsLight } = await import('../compile')
+    expect(headerIsLight('not-a-color')).toBe(false)
+  })
+})

@@ -46,6 +46,8 @@ export interface BrandTokens {
   headerColor: string
   accentColor: string
   fontColor: string
+  /** Contrast-computed ink for anything rendered ON headerColor (cover, strip). */
+  coverInk: string
 }
 
 /** ROTATION support: grant the recent capture cohort on a fresh file (silent). */
@@ -157,8 +159,27 @@ export async function repointGuideTriggerLink(
   }
 }
 
+/**
+ * WCAG relative luminance of a hex color (sRGB-linearized). Covers assumed a
+ * DARK header and hardcoded white ink + the white logo variant — a light
+ * extracted palette (e.g. #e0e0e0 from a light-themed site, 2026-10-09 test
+ * clinic) made the whole title page vanish. Everything rendered ON
+ * headerColor now contrast-computes instead.
+ */
+export function relativeLuminance(hex: string): number {
+  const { r, g, b } = hexToRgb01(hex)
+  const lin = (c: number) => (c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4))
+  return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b)
+}
+
+export function headerIsLight(headerColor: string): boolean {
+  return relativeLuminance(headerColor) > 0.45
+}
+
 async function brandTokensFor(userId: string): Promise<BrandTokens> {
   const brand = await prisma.brandSettings.findUnique({ where: { userId } })
+  const headerColor = brand?.nlHeaderBgColor ?? brand?.diagramPrimaryColor ?? '#0b2545'
+  const lightHeader = headerIsLight(headerColor)
   return {
     organizationName: brand?.organizationName ?? 'Your Practice',
     phone: brand?.organizationPhone ?? '',
@@ -180,16 +201,21 @@ async function brandTokensFor(userId: string): Promise<BrandTokens> {
     // the first-created one put "New Year" on a September guide. Seasonal
     // offers stay newsletter-only; guides always carry the evergreen line.
     readerOffer: 'Ask about our new-patient assessment when you book',
-    // Cover renders on the dark brand color → the light (white-on-transparent)
-    // processed variant; legacy single-logo field and org logo as fallbacks.
-    logoUrl: brand?.nlLogoLightUrl ?? brand?.nlLogoUrl ?? brand?.organizationLogoUrl ?? '',
+    // The cover renders on headerColor: dark headers get the light
+    // (white-on-transparent) logo variant, LIGHT headers get the dark one —
+    // same contrast rule as the ink below. Legacy single-logo + org logo as
+    // fallbacks either way.
+    logoUrl: lightHeader
+      ? (brand?.nlLogoDarkUrl ?? brand?.nlLogoUrl ?? brand?.organizationLogoUrl ?? '')
+      : (brand?.nlLogoLightUrl ?? brand?.nlLogoUrl ?? brand?.organizationLogoUrl ?? ''),
     // Back page renders on white → the dark (navy-on-transparent) variant.
     logoDarkUrl: brand?.nlLogoDarkUrl ?? brand?.organizationLogoUrl ?? '',
     // Platform convention (matches social/carousel theming): newsletter palette
     // first, then the settings-page brand colors (diagram* fields), then defaults.
-    headerColor: brand?.nlHeaderBgColor ?? brand?.diagramPrimaryColor ?? '#0b2545',
+    headerColor,
     accentColor: brand?.nlLinkColor ?? brand?.diagramSecondaryColor ?? '#2a6f97',
     fontColor: brand?.nlFontColor ?? brand?.diagramTextColor ?? '#222222',
+    coverInk: lightHeader ? (brand?.nlFontColor ?? '#1f2937') : '#ffffff',
   }
 }
 
@@ -254,6 +280,9 @@ async function assemblePdf(coverPdf: Buffer, contentPdf: Buffer, t: BrandTokens)
   const content = await PDFDocument.load(contentPdf)
   const font = await merged.embedFont(StandardFonts.Helvetica)
   const navy = hexToRgb01(t.headerColor)
+  // Strip text sits ON headerColor — same contrast rule as the cover.
+  const inkRgb = hexToRgb01(t.coverInk)
+  const ink = rgb(inkRgb.r, inkRgb.g, inkRgb.b)
 
   for (const pg of await merged.copyPages(cover, cover.getPageIndices())) merged.addPage(pg)
   const contentPages = await merged.copyPages(content, content.getPageIndices())
@@ -265,10 +294,10 @@ async function assemblePdf(coverPdf: Buffer, contentPdf: Buffer, t: BrandTokens)
     const fontSize = 8.5
     const baseline = (STRIP_MM * MM) / 2 - fontSize * 0.36
     try {
-      pg.drawText(t.organizationName, { x: SIDE_INSET_MM * MM, y: baseline, size: fontSize, font, color: rgb(1, 1, 1) })
+      pg.drawText(t.organizationName, { x: SIDE_INSET_MM * MM, y: baseline, size: fontSize, font, color: ink })
       const lw = font.widthOfTextAtSize(line, fontSize)
       const lineX = width - SIDE_INSET_MM * MM - lw
-      pg.drawText(line, { x: lineX, y: baseline, size: fontSize, font, color: rgb(1, 1, 1) })
+      pg.drawText(line, { x: lineX, y: baseline, size: fontSize, font, color: ink })
       // Tappable phone (Veit 2026-09-14): Chromium's print pass does not
       // reliably export <a href="tel:"> annotations, so stamp a real link
       // annotation over the strip's phone segment — exact coords are known
@@ -306,9 +335,13 @@ export function splitAtCover(html: string): { coverHtml: string; contentHtml: st
 }
 
 function applyBrandTokens(html: string, t: BrandTokens): string {
-  return dropEmptyOptionalBlocks(html, t).replace(/\{\{brand\.(\w+)\}\}/g, (_m, key: string) =>
+  const out = dropEmptyOptionalBlocks(html, t).replace(/\{\{brand\.(\w+)\}\}/g, (_m, key: string) =>
     String((t as unknown as Record<string, string>)[key] ?? ''),
   )
+  // The master templates hardcode `color: #fff` on .cover (dark-header
+  // assumption). Override with the contrast-computed ink so light palettes
+  // stay readable — injected here so every template is fixed centrally.
+  return out.replace('<div class="cover"', `<style>.cover { color: ${t.coverInk} !important; }</style><div class="cover"`)
 }
 
 /** Numeric tokens (claims, dosages, stats) must survive a rewrite verbatim. */
@@ -511,7 +544,7 @@ function customCoverHtml(title: string, t: BrandTokens): string {
   return `<!doctype html><html><head><meta charset="utf-8"/><style>
   @page { size: A4; margin: 0; }
   * { box-sizing: border-box; margin: 0; }
-  .cover { width: 210mm; height: 297mm; background: ${t.headerColor}; color: #fff; display: flex; flex-direction: column; justify-content: space-between; padding: 28mm 22mm; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
+  .cover { width: 210mm; height: 297mm; background: ${t.headerColor}; color: ${t.coverInk}; display: flex; flex-direction: column; justify-content: space-between; padding: 28mm 22mm; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
   .logo img { max-height: 22mm; max-width: 60mm; }
   .logo-fallback { font-size: 20px; font-weight: 700; }
   h1 { font-size: 40px; line-height: 1.15; max-width: 150mm; }
