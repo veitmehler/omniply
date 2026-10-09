@@ -172,12 +172,20 @@ export async function onboardingRoutes(app: FastifyInstance) {
       // Omniply Connect plugin: install/activate + widget token + head
       // JSON-LD (all best-effort, logs its own failures).
       .then(() => (consented('chatWidget') ? installOmniplyConnect(r.account.ownerUserId) : null))
+      .catch(() => null)
+      // Clinic entity schema is a core promise ("AI can FIND you" — Veit
+      // 2026-10-09): ALWAYS automatic. The plugin's head JSON-LD covers every
+      // page when it installed; the page-level fenced blocks are the fallback
+      // when the plugin was declined or its head push failed (double-emitting
+      // both paths was verified live on the 2026-10-09 test clinic — skip the
+      // fallback when the head push succeeded). SCHEMA_MARKUP_AUTO=0 is the
+      // emergency opt-out.
+      .then((connect) => {
+        if (process.env.SCHEMA_MARKUP_AUTO === '0') return null
+        if (connect && (connect as { headPushed?: boolean }).headPushed) return null
+        return publishClinicSchema(r.account.ownerUserId)
+      })
       .catch(() => {})
-    // Clinic entity schema onto their editable WP pages (agent plan 3.1) —
-    // env-flagged rollout: verify on the test account before enabling broadly.
-    if (process.env.SCHEMA_MARKUP_AUTO === '1') {
-      void publishClinicSchema(r.account.ownerUserId).catch(() => {})
-    }
 
     // Starter lead-magnet library (leadgen plan Phase 7): compile every active
     // template for this account — lands review-gated, never blocks generation.
