@@ -160,6 +160,14 @@ rework (AI-visibility lead — DONE early 2026-10-09), article WRITING (Monday =
 topics only), azavea.ai polish, cold-domain warmup start.
 
 ### Post-launch backlog (from the 2026-10-09 test purchase)
+- Lighter-cadence offer (Veit 2026-10-09): clinics who feel full cadence is
+  too much can choose 1–2 articles/wk and 1–4 newsletters/wk. Framed as
+  customization; every step down is margin (content COGS ~$55/mo full →
+  ~$21/mo at 1+1). Mostly calendar routing, not new plumbing. Diagrams are
+  NOT a cost lever — too valuable (Veit).
+- Per-content cost attribution: stamp jobId on diagram-restyle / social /
+  syndication llm_usage rows (or add a rollup) — the admin article page
+  shows ~$1.35 while true all-in is ~$3.30/article.
 - PDF guide style selector: cover color + logo-variant picker with a
   "Regenerate guides" button, mirroring the newsletter template builder
   (per-account overrides + recompile of the library). The automatic
