@@ -73,6 +73,36 @@ export async function regrantActiveCohort(accountId: string, newFileId: string, 
  * workflows DM this link — the quiz is the funnel's front door (P3
  * 2026-09-09). Non-fatal like the guide repoints.
  */
+/**
+ * Repoint the location's omniply-booking trigger link at the clinic's online
+ * booking URL (wired 2026-10-09: the snapshot's DM-reply "Send Info" step
+ * sends this link to turn social users into bookings — it shipped as a
+ * /pendingv placeholder with NO repoint, i.e. a dead link in every account).
+ * Non-fatal like the other repoints.
+ */
+export async function repointBookingTriggerLink(userId: string): Promise<void> {
+  try {
+    const { prisma } = await import('@omniply/shared')
+    const brand = await prisma.brandSettings.findUnique({ where: { userId }, select: { bookingUrl: true } })
+    const url = brand?.bookingUrl?.trim()
+    if (!url) return
+    const { getGhlCredentials } = await import('../lib/ghl/settings')
+    const creds = await getGhlCredentials(userId)
+    if (!creds) return
+    const { listTriggerLinks, updateTriggerLink } = await import('../lib/ghl/client')
+    const links = await listTriggerLinks(creds.apiKey, creds.locationId)
+    const match = links.find((l) => l.name === 'omniply-booking')
+    if (!match?.id) {
+      logger.info({ userId }, '[leadgen-compile] omniply-booking link not found (older snapshot) — skipped')
+      return
+    }
+    const ok = await updateTriggerLink(creds.apiKey, match.id, 'omniply-booking', url)
+    logger.info({ userId, ok, url }, '[leadgen-compile] booking trigger link repointed')
+  } catch (err) {
+    logger.warn({ userId, err }, '[leadgen-compile] booking trigger-link repoint failed — non-fatal')
+  }
+}
+
 export async function repointSpineCheckTriggerLink(userId: string): Promise<void> {
   try {
     const { spineCheckUrlForUser } = await import('../spine-check/generate')

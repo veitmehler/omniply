@@ -768,6 +768,9 @@ export async function commitBookingUrl(ctx: StepContext, answer: unknown): Promi
     // destination takes effect immediately without touching those call sites.
     ...(brand?.socialBioUrl?.trim() ? {} : { socialBioUrl: url }),
   })
+  // The DM-reply "Send Info" step sends the omniply-booking trigger link —
+  // point it at the just-committed URL (fire-and-forget, non-fatal).
+  void import('../leadgen/compile').then((m) => m.repointBookingTriggerLink(ctx.userId))
   return null
 }
 

@@ -277,6 +277,10 @@ export async function agentRoutes(app: FastifyInstance) {
         },
       })
       if (user.accountId) clearAgentContextFor(user.accountId)
+      if (body.bookingUrl?.trim()) {
+        // Keep the DM-reply "Send Info" trigger link in step with the new URL.
+        void import('../leadgen/compile').then((m) => m.repointBookingTriggerLink(ownerId))
+      }
       return { ok: true, faqCount: faqs.length }
     },
   )

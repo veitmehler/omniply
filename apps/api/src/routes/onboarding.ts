@@ -164,6 +164,9 @@ export async function onboardingRoutes(app: FastifyInstance) {
       : Promise.resolve(null)
     )
       .catch(() => null)
+    // Belt: the booking trigger link follows the committed booking URL (also
+    // fired at the booking-URL commit itself and on Settings KB updates).
+    void import('../leadgen/compile').then((m) => m.repointBookingTriggerLink(r.account.ownerUserId)).catch(() => null)
       .then(() => (consented('linktree') ? publishLinktreePage(r.account.ownerUserId) : null))
       .catch(() => {})
       // Omniply Connect plugin: install/activate + widget token + head
