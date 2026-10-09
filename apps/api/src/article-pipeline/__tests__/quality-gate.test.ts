@@ -114,3 +114,30 @@ describe('validateSchemaJsonLd', () => {
     expect(validateSchemaJsonLd(null).ok).toBe(false)
   })
 })
+
+describe('prepareEvalText (truncation bug, live test 2026-10-09)', () => {
+  it('passes a normal-length article through untouched', async () => {
+    const { prepareEvalText } = await import('../quality-gate')
+    const html = '<p>' + 'Strong spine content. '.repeat(1500) + 'The end.</p>'
+    const out = prepareEvalText(html)
+    expect(out.endsWith('The end.')).toBe(true)
+    expect(out).not.toContain('omitted for length')
+  })
+
+  it('a 34k-char article (the osteoporosis case) is NOT truncated', async () => {
+    const { prepareEvalText } = await import('../quality-gate')
+    const html = '<p>' + 'x'.repeat(34_000) + ' FINAL SENTENCE.</p>'
+    const out = prepareEvalText(html)
+    expect(out.endsWith('FINAL SENTENCE.')).toBe(true)
+    expect(out).not.toContain('omitted for length')
+  })
+
+  it('an over-cap article keeps its true ending and declares the cut', async () => {
+    const { prepareEvalText, EVAL_INPUT_CAP } = await import('../quality-gate')
+    const html = '<p>' + 'y'.repeat(EVAL_INPUT_CAP + 50_000) + ' THE REAL ENDING.</p>'
+    const out = prepareEvalText(html)
+    expect(out.endsWith('THE REAL ENDING.')).toBe(true)
+    expect(out).toContain('omitted for length')
+    expect(out.length).toBeLessThan(EVAL_INPUT_CAP + 500)
+  })
+})

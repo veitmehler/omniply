@@ -82,6 +82,10 @@ export async function sendFailureAlert(input: FailureAlertInput): Promise<void> 
       })
       if (!response.ok) {
         logger.warn({ to, status: response.status }, '[alerts] Resend API error')
+      } else {
+        // Successes were silent — impossible to tell "sent but in spam" from
+        // "never sent" when an alert goes missing (live test 2026-10-09).
+        logger.info({ to, errorType: input.errorType }, '[alerts] email sent')
       }
     } catch (err) {
       logger.error({ err, to }, '[alerts] failed to send email')

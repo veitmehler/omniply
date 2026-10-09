@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import { requireAdmin } from '../../middleware/admin'
 import { prisma } from '@omniply/shared'
+import { logger } from '../../lib/logger'
 
 export async function articlesAdminRoutes(app: FastifyInstance) {
   app.get<{ Querystring: { page?: string; status?: string; userId?: string } }>(
@@ -59,5 +60,28 @@ export async function articlesAdminRoutes(app: FastifyInstance) {
 
     if (!job) return reply.status(404).send({ error: 'Not found' })
     return reply.send(job)
+  })
+
+  // Release a quality-gate-held article into the normal flow (Phase B +
+  // enrichment → client review). The ONE human action a needs_review article
+  // requires — before this, flagged articles were a dead end: no approve
+  // control on any surface (live test 2026-10-09).
+  app.post<{ Params: { jobId: string } }>('/articles/:jobId/release', async (request, reply) => {
+    const admin = await requireAdmin(request, reply)
+    if (!admin) return
+
+    const job = await prisma.articleJob.findUnique({
+      where: { id: request.params.jobId },
+      select: { id: true, status: true },
+    })
+    if (!job) return reply.status(404).send({ error: 'Not found' })
+    if (job.status !== 'needs_review') {
+      return reply.status(409).send({ error: `Article is not held for review (status: ${job.status})` })
+    }
+
+    const { approveArticleJob } = await import('../../article-pipeline/approval-service')
+    await approveArticleJob(job.id)
+    logger.info({ jobId: job.id, adminId: admin.id }, '[admin] needs_review article released')
+    return reply.send({ ok: true })
   })
 }

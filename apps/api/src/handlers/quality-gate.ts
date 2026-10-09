@@ -87,7 +87,11 @@ export async function qualityGateHandler(jobs: PgBoss.Job<QualityGateJobData>[])
         jobId,
         errorType: 'article_needs_review',
         message: `Article failed the quality gate after ${attempts} attempts — needs human review.`,
-        context: { verdict: verdict.verdict, reasons: verdict.reasons },
+        context: {
+          verdict: verdict.verdict,
+          reasons: verdict.reasons,
+          releaseAt: `https://chiro.omniply.io/admin/articles/${jobId}`,
+        },
       }).catch(() => {})
       logger.info({ jobId, attempts }, '[quality-gate] max attempts reached — needs_review')
       continue
@@ -108,7 +112,10 @@ export async function qualityGateHandler(jobs: PgBoss.Job<QualityGateJobData>[])
         jobId,
         errorType: 'article_needs_review',
         message: 'Article needs revision but the automatic rewrite failed — needs human review.',
-        context: { reasons: verdict.reasons },
+        context: {
+          reasons: verdict.reasons,
+          releaseAt: `https://chiro.omniply.io/admin/articles/${jobId}`,
+        },
       }).catch(() => {})
       continue
     }

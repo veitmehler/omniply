@@ -58,11 +58,32 @@ function htmlToText(html: string): string {
     .trim()
 }
 
+/**
+ * Evaluator input (truncation bug, live test 2026-10-09): the old flat
+ * .slice(0, 24000) amputated every article longer than ~24k chars MID-BODY,
+ * so the judge read a cut-off text and verdicted "incomplete ending" —
+ * deterministically, on exactly the longest articles. One wasted full-body
+ * rewrite + re-gate + needs_review per long article ($0.91 + a stuck review).
+ * The cap is now generous (Gemini's context dwarfs any article) and if it
+ * EVER trips, the ending is preserved and the cut is declared to the judge.
+ */
+export const EVAL_INPUT_CAP = 150_000
+const EVAL_TAIL_KEEP = 8_000
+export function prepareEvalText(articleHtml: string): string {
+  const text = htmlToText(articleHtml)
+  if (text.length <= EVAL_INPUT_CAP) return text
+  return (
+    text.slice(0, EVAL_INPUT_CAP - EVAL_TAIL_KEEP) +
+    '\n\n[middle of the article omitted for length — the true ENDING follows; do not judge completeness from the omission]\n\n' +
+    text.slice(-EVAL_TAIL_KEEP)
+  )
+}
+
 /** Gemini 3.1 Pro evaluation — returns the reviewer's prose verdict. */
 export async function evaluateArticleQuality(
   articleHtml: string,
 ): Promise<{ text: string; cost: number; tokens: number }> {
-  const text = htmlToText(articleHtml).slice(0, 24000) // cap for token safety
+  const text = prepareEvalText(articleHtml)
   // The evaluator must know today's date: without it, models with older
   // knowledge cutoffs flag legitimately recent statistics (e.g. "2025 data"
   // read in 2026) as unverifiable "future-dated" claims — observed on the

@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
 import { PollRefresh } from './PollRefresh'
+import { ReleaseButton } from './ReleaseButton'
 
 /** Total number of prompt-template steps in the full pipeline (Phase A + B). */
 const TOTAL_PIPELINE_STEPS = 25
@@ -87,6 +88,7 @@ export default async function ArticleJobDetailPage({
           </p>
         </div>
         <StatusBadge status={job.status} enrichmentStatus={job.sitePage?.enrichmentStatus ?? null} />
+        {job.status === 'needs_review' && <ReleaseButton jobId={job.id} />}
       </div>
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
