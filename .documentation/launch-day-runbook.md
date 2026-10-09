@@ -101,3 +101,51 @@ and 11:00 needs no action at all. Companion docs:
   first widget install, not launch), voice metering, pg-boss retention
   tuning, Theme B–D refactors, notify-block code removal (harmless,
   self-hidden; remove at leisure).
+
+## REVISED FINAL BOARD (agreed 2026-10-08 late — supersedes the T-1 list above where they differ)
+
+### Friday Oct 9
+1. PARALLEL: Claude = cost-tracking audit+fix (recordLLMUsage coverage all
+   pipelines; Gemini token pricing current; GROUNDED-SEARCH per-request fees;
+   image gen; Places in-or-documented-out) · Veit = snapshot freeze+re-export
+   (pre-freeze sweep: callback-notification type, placeholder sweep, workflows
+   Published → Agency Snapshots → Refresh → verify SaaS-plan linkage →
+   timestamp). Snapshot BEFORE the purchase; orderform re-enabled.
+2. Angle one-liners discussion (10 min) → Veit runs test purchase + 19-step
+   onboarding SOLO (incl. VOICE SMOKE CALL to demo line + WordPress connect =
+   SCHEMA_MARKUP_AUTO verification) · Claude plans copy sweep + X-Ray
+   AI-inquiry metric (formula: weekly inquiries × AI-research share
+   [conservative default ~20-25%; Adyen 2026: 42-51% of shoppers research via
+   AI; Visa/Finextra: 25% daily / 72% ever] × not-AI-visible loss → $ via
+   existing close-rate × patient-value; all adjustable, cited basis line) +
+   watches costs populate live during the content run.
+3. Write + implement the ANGLE SWEEP (hierarchy: 1. AI assistants will book
+   appointments soon — be the practice they find · 2. missed calls, quantified
+   · 3. reviews = visibility to people AND AI · 4. rest supports): X-Ray
+   landing/results/debrief + new metric, both sales heroes, nurture email
+   leads (re-push templates via fresh PI key, delete after), W2 drafts.
+   Marketing surfaces only — platform backend untouched (freeze intact).
+
+### Weekend — Veit OFF. True freeze.
+
+### Monday Oct 12 (T-1)
+1. Finish any angle-sweep remainder.
+2. Video v2 (Veit edits Zoom errors) → Claude uploads NEW S3 key + flips
+   walkthrough config.
+3. GHL block: W2 Launch Blast (re-DATE from Sept wording + checkout links +
+   AI-led copy + publish check), system-email brand alignment (Claude's audit
+   list; slides to Wed if tight), A2P registration, demo CRM contact cleanup.
+4. Draft content topics: website articles + LinkedIn articles (AI-first angle).
+5. Rebuild azavea.ai as the marketing agency behind Omniply (Claude builds,
+   Veit reviews).
+6. Standard T-1: launch-commit prep (LAUNCH_TS ×3 + price/CTA restores ON TOP
+   of new-angle pages), linkedinPersonal verify, monitoring green,
+   announcements staged, help-doc parked decisions.
+
+### Tuesday Oct 13 (launch — per the timeline above, verification now ALSO
+checks: heroes lead AI-first, X-Ray shows the AI-inquiry metric, video v2
+playing).
+
+### Deliberately launch-week (recorded, not forgotten): outreach email/message
+rework (AI-visibility lead), article WRITING (Monday = topics only), azavea.ai
+polish, cold-domain warmup start.
