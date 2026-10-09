@@ -105,39 +105,39 @@ at 9-to-5 speed. Plug this leak, and your quarter picks up.
 
 ## EMAIL 3 · Day 3 · type: teach (the new physics)
 
-**Subject:** 78% book with whoever answers first
-**Preview:** The wave hitting your phones now... and the one behind it.
+**Subject:** 132 million patients just changed how they find you
+**Preview:** Can an AI assistant even find your practice? Plus the wave still hitting your phones.
 
-Three numbers, one story:
+132 million Americans now use AI assistants to research and compare before
+they book. So when a patient asks one about a chiro in your town... can it
+even find you?
+
+If you don't know the answer... probably not. The engines recommend
+practices they can read: reviews, real content, fast answers. And if an AI
+assistant can't understand your website, or talk to it, it simply books the
+next practice down the road. A practice it can't read never even comes up.
+
+That's the new wave. The old one is still hitting your phones:
 
 **78%** of customers buy from whoever answers first.
 
 Reach an inquiry inside five minutes and you're **100×** more likely to even
-get them on the line than half an hour later.
-
-The average business takes **two days**.
-
-That's wave one, and it's hitting your phones right now: every missed or
-slow-answered call quietly books somewhere else. Amazon trained your
-patients, Uber trained them... a decade of instant everything finished the
-job.
-
-And wave two is already rolling in behind it: patients asking AI assistants
-the question they used to type into Google... "who should I see about this?"
-The engines recommend practices they can read: reviews, real content, fast
-answers. Same signals, higher stakes... a practice they can't read never
-even comes up.
+get them on the line than half an hour later. The average business takes
+**two days**. Every missed or slow-answered call quietly books somewhere
+else... Amazon trained your patients, Uber trained them, a decade of instant
+everything finished the job.
 
 Your X-Ray scored your practice **{{contact.xray_total_score}}/100** against
 both waves... and flagged the one system doing the most damage. I recorded
 the exact fix for it:
 
-**[Click here to answer every call fast →]** (https://omniply.io/walkthrough)
+**[Click here to become the practice they find →]** (https://omniply.io/walkthrough)
 
 — Veit
 
-P.S. "We already post on social media." Posting isn't the test. Answering at
-2am is... and soon, being the practice the AI names.
+P.S. "We already post on social media." Posting isn't the test. Being the
+practice the AI names is... and answering at 2am when it sends someone your
+way.
 
 
 ---
@@ -282,14 +282,16 @@ a contract's.
 ## EMAIL 8 · Day 17 · type: proof (reviews compound)
 
 **Subject:** the review gap compounds (like interest)
-**Preview:** Who owns the Map Pack, owns the town.
+**Preview:** Who owns the Map Pack... and the AI's answer... owns the town.
 
 Reviews compound like interest: invisible week to week, undeniable year to
 year.
 
 And fresh reviews are one of the strongest signals that decide who ranks
 first and gets the top spot in Google's Map Pack... which is where your next
-hundred patients will make their choice.
+hundred patients will make their choice. The same board now gets read twice:
+when a patient asks an AI assistant instead, it weighs the same reviews to
+decide which practice to name. One signal, two juries.
 
 Here's the uncomfortable part: the clinic above you isn't better than you.
 It's louder. Every week you ask for reviews "when you remember," their engine

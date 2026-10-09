@@ -18,6 +18,11 @@ export const XRAY_CONFIG = {
   FIRST_YEAR_VISITS: 12,
   WEEKS_PER_MONTH: 4.33,
   ROUND_TO: 50,
+  // AI-inquiry projection (angle sweep 2026-10-09) — a stated, adjustable
+  // PROJECTION rendered separately, never folded into totalLeak.
+  AI_RESEARCH_SHARE: 0.22,
+  AI_INVISIBLE_MAX: 0.85,
+  AI_INVISIBLE_MIN: 0.15,
 } as const
 
 export interface XrayAnswers {
@@ -47,6 +52,12 @@ export interface XrayResult {
   missedShare: number
   /** Derived weekly count of inquiries that get no live answer (raw, unrounded). */
   missedCallsWeekly: number
+  /** AI-era projection (raw weekly count of AI-started inquiries, unrounded). */
+  aiResearchedWeekly: number
+  /** Share of AI-started inquiries the practice is invisible to (0.15–0.85). */
+  aiInvisibleShare: number
+  /** Projected monthly dollars lost to AI invisibility — separate from totalLeak. */
+  aiLeak: number
 }
 
 const TIEBREAK = ['retention', 'speed', 'reviews', 'content'] as const
@@ -89,6 +100,29 @@ export function responseLeak(a: XrayAnswers): number {
   )
 }
 
+// AI visibility derives from the signals the answer engines actually read —
+// reviews + real content (our own copy's claim) — NOT from a new question;
+// "12 questions · 2 minutes" stays true.
+export function aiInvisibleShare(scores: XrayResult['scores']): number {
+  const visibility = (scores.reviews + scores.content) / 200
+  return (
+    XRAY_CONFIG.AI_INVISIBLE_MAX -
+    (XRAY_CONFIG.AI_INVISIBLE_MAX - XRAY_CONFIG.AI_INVISIBLE_MIN) * visibility
+  )
+}
+
+export function aiLeak(a: XrayAnswers): number {
+  const firstYearValue = a.visitFee * XRAY_CONFIG.FIRST_YEAR_VISITS
+  return (
+    a.inquiriesWeekly *
+    XRAY_CONFIG.AI_RESEARCH_SHARE *
+    XRAY_CONFIG.WEEKS_PER_MONTH *
+    aiInvisibleShare(axisScores(a)) *
+    XRAY_CONFIG.WOULD_CONVERT *
+    firstYearValue
+  )
+}
+
 function roundDollars(x: number): number {
   return Math.round(x / XRAY_CONFIG.ROUND_TO) * XRAY_CONFIG.ROUND_TO
 }
@@ -112,6 +146,9 @@ export function compute(a: XrayAnswers): XrayResult {
     priceMultiple: Math.max(1, Math.round(total / XRAY_CONFIG.PRICE_MONTHLY)),
     missedShare: missedShare(a.b1, a.b2),
     missedCallsWeekly: a.inquiriesWeekly * missedShare(a.b1, a.b2),
+    aiResearchedWeekly: a.inquiriesWeekly * XRAY_CONFIG.AI_RESEARCH_SHARE,
+    aiInvisibleShare: aiInvisibleShare(scores),
+    aiLeak: roundDollars(aiLeak(a)),
   }
 }
 
@@ -170,7 +207,7 @@ export function verdictHtml(a: XrayAnswers, r: XrayResult, money: (n: number) =>
     case 'reviews':
       return (
         '<b>The scan shows an invisible practice.</b> With ' + reviewBandText(a.c1) +
-        ' Google reviews, you’re outranked by clinics that are no better than you — just louder. Reviews are the first thing a new patient judges you on, and yours aren’t compounding.'
+        ' Google reviews, you’re outranked by clinics that are no better than you — just louder. Reviews are the first thing a new patient judges you on, and yours aren’t compounding. And it’s no longer just people reading them: AI assistants weigh the same reviews when they decide which practice to name.'
       )
     default:
       return (

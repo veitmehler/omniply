@@ -38,19 +38,28 @@ and living with one.
 First, understand that the leak is not your fault. Three forces created it,
 none of them asked your permission, and all three are permanent.
 
-**The technology force.** Every patient in your town now carries every
-competitor's front desk in their pocket. When someone's back seizes at 9pm,
-they don't wait for your opening hours... 
+**The technology force.** 132 million Americans now use AI assistants to
+research and compare before they book. So when a patient asks one about a
+chiro in your town... can it even find you? If you don't know the answer...
+probably not. And if an AI assistant can't understand your website, or talk
+to it, it will simply book the next practice down the road.
 
-They search, they message, and they book with whoever answers. Google decides 
-who exists. The map pack decides who gets the call.
+And underneath that newest layer, the old one still runs: every patient in
+your town carries every competitor's front desk in their pocket. When
+someone's back seizes at 9pm, they don't wait for your opening hours...
+
+They search, they message, and they book with whoever answers. Google decides
+who exists. The map pack decides who gets the call. And now the answer
+engines read the same board.
 
 **The social force.** Patients stopped calling back. Not because they're rude...
 because Amazon, Uber and a decade of instant everything trained them. 
 
 78% of customers buy from whoever answers first. Reach an inquiry within five minutes 
 and you're 100× more likely to even connect than half an hour later. The average business 
-takes two days... 
+takes two days... and 25% of consumers already ask an AI assistant daily instead of 
+waiting on anyone at all (Adyen Retail Report 2026: 132M Americans / 42–51% of online 
+shoppers; Visa: 25% daily, 72% ever).
 
 And loyalty quietly became a subscription that simply gets canceled by silence.
 

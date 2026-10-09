@@ -31,7 +31,7 @@ import { FoundingNotify } from '@/components/marketing/FoundingNotify'
 export const metadata: Metadata = {
   title: 'Omniply for Chiropractors... Plug the Leak in Your Practice',
   description:
-    'How many patient calls did your practice miss this week? Each one booked with whoever answered. Omniply answers in seconds, day and night... then content, reviews and recall keep them. X-Ray your practice in 2 minutes.',
+    '132 million Americans now ask AI assistants before they book. Can one even find your practice? Omniply makes you the practice AI and people find, answers every call in seconds, and keeps patients with content, reviews and recall. X-Ray your practice in 2 minutes.',
 }
 
 const FAQ_ITEMS: FaqEntry[] = [
@@ -46,6 +46,10 @@ const FAQ_ITEMS: FaqEntry[] = [
   {
     q: 'Does it work with my booking system?',
     a: 'Yes. Omniply works alongside your practice software, never instead of it. Depending on your system, the AI receptionist can book appointments directly into your calendar, or it shares current availability and sends patients your own booking link to confirm there. Either way: no migrations, no double bookings, no IT project.',
+  },
+  {
+    q: 'Can AI assistants really find my practice? How does Omniply help?',
+    a: 'When a patient asks ChatGPT, Siri or Google’s AI who to see about their back, the assistant reads the same public signals a careful human would: your reviews, your content, your website’s structure, and whether anyone answers when it reaches out. Omniply builds exactly those signals every week, adds the structured markup AI engines parse, and its chat and voice front desk means an assistant that calls or messages your practice gets an instant answer and a booking... instead of a voicemail.',
   },
   {
     q: 'Is my patient data involved?',
@@ -85,18 +89,20 @@ export default function ChiropractorsPage() {
   return (
     <main>
       <SiteHeader vertical="For Chiropractors" />
-      {/* ── Hook: missed calls (sweep 2026-10-03; drift keeps the forces/drift sections) ── */}
+      {/* ── Hook: AI booking (angle sweep 2026-10-09; missed calls is the second beat) ── */}
       <Section dark>
         <Eyebrow>Omniply for Chiropractors</Eyebrow>
         <h1 className="mb-6 text-4xl font-extrabold leading-tight md:text-5xl" style={{ textWrap: 'balance' } as React.CSSProperties}>
-          How many patient calls did your practice miss this week?
+          When a patient asks an AI assistant about a chiro in your town... can it even find you?
         </h1>
         <P lead>
-          Every one of them was a person in pain who booked with whoever answered. And the calls are only the
-          loudest part of the leak... patients also fade between visits, invisibly, until the quarter is
-          already soft. There is a 2-minute way to put a number on all of it, in dollars.
+          132 million Americans now use AI assistants to research and compare before they book. If you
+          don&apos;t know the answer... probably not. And if an AI assistant can&apos;t understand your
+          website, or talk to it, it will simply book the next practice down the road. Meanwhile the calls
+          you miss keep booking with whoever answered, and patients fade between visits, invisibly, until
+          the quarter is already soft. There is a 2-minute way to put a number on all of it, in dollars.
         </P>
-        <Cta href={XRAY_URL} sub="12 questions · 2 minutes · your missed calls and your monthly leak, in dollars">
+        <Cta href={XRAY_URL} sub="12 questions · 2 minutes · your missed calls, your AI visibility, and your monthly leak in dollars">
           X-Ray My Practice
         </Cta>
       </Section>
@@ -106,13 +112,16 @@ export default function ChiropractorsPage() {
         <Eyebrow>Why this is happening to good practices</Eyebrow>
         <H2>Three forces created the leak. None of them asked your permission.</H2>
         <P>
-          <strong>The technology force.</strong> Every patient in your town now carries every competitor&apos;s
-          front desk in their pocket. When someone&apos;s back seizes at 9pm, they don&apos;t wait for your
-          opening hours... they search, they message, and they book with whoever answers. Google decides who
-          exists. The map pack decides who gets the call. And a newer layer is settling on top: patients now
-          ask AI assistants the question they used to type into Google... &quot;who should I see about
-          this?&quot; The answer engines read the same signals: reviews, real content, responsiveness. A
-          practice those engines can&apos;t read doesn&apos;t lose the comparison. It never comes up.
+          <strong>The technology force.</strong> Patients now ask AI assistants the question they used to
+          type into Google... &quot;who should I see about this?&quot; For the assistant to send them your
+          way, it has to <em>find</em> your practice, <em>understand</em> your website, and increasingly it
+          wants to <em>talk</em> to it... and book. The answer engines read the same signals a careful human
+          would: reviews, real content, responsiveness. A practice those engines can&apos;t read doesn&apos;t
+          lose the comparison. It never comes up. And underneath that newest layer, the old one still runs:
+          every patient in your town carries every competitor&apos;s front desk in their pocket. When
+          someone&apos;s back seizes at 9pm, they don&apos;t wait for your opening hours... they search, they
+          message, and they book with whoever answers. Google decides who exists. The map pack decides who
+          gets the call.
         </P>
         <P>
           <strong>The social force.</strong> Patients stopped calling back. Not because they&apos;re rude...
@@ -213,20 +222,23 @@ export default function ChiropractorsPage() {
         </P>
       </Section>
 
-      {/* ── Proof / map pack ── */}
+      {/* ── Proof / map pack (reviews = visibility to people AND AI: third angle) ── */}
       <Section>
         <Eyebrow>Getting found</Eyebrow>
         <H2>Three practices get shown on the map. The rest get scrolled past.</H2>
         <P>
           When someone in pain types <strong>chiropractor near me</strong>, Google shows three practices above
-          the fold, and fresh reviews are one of the strongest signals that decide who gets those spots.
+          the fold, and fresh reviews are one of the strongest signals that decide who gets those spots. And
+          the same board now gets read twice: when a patient asks an AI assistant instead, it weighs the same
+          reviews to decide which practice to name.
         </P>
         <MapPackDiagram />
         <P>
           A practice collecting reviews <strong>systematically, every single week,</strong> outranks the
           practice with a burst from two years ago. Same law as your content: consistency beats bursts,
-          except here the prize is the most valuable screen real estate in your town... and Omniply makes the
-          asking automatic, from the front-desk QR card to the well-timed follow-up.
+          except here the prize is the most valuable screen real estate in your town... and, increasingly,
+          the one answer an AI assistant gives. Omniply makes the asking automatic, from the front-desk QR
+          card to the well-timed follow-up.
         </P>
       </Section>
 
@@ -297,10 +309,10 @@ export default function ChiropractorsPage() {
       <Section dark>
         <H2>Decide like a doctor decides: on the evidence.</H2>
         <P lead>
-          The X-Ray takes 2 minutes: your missed calls per week, four system scores, and a dollar figure on
-          what your practice is quietly leaking every month. Then the walkthrough shows the actual system on
-          screen... how it answers, what it posts, what the recall messages look like. No call. No
-          salesperson.
+          The X-Ray takes 2 minutes: your missed calls per week, four system scores, a dollar figure on what
+          your practice is quietly leaking every month, and a projection of what staying invisible to AI
+          assistants will cost you. Then the walkthrough shows the actual system on screen... how it answers,
+          what it posts, what the recall messages look like. No call. No salesperson.
         </P>
         <P>
           Everything in the loop, one flat monthly rate, cancel anytime. We&apos;re not asking you to become

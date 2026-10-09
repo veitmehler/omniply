@@ -33,6 +33,8 @@ export interface DebriefTemplateData {
   mult: number
   fee: string // formatted money (their visit fee)
   feeYear: string // formatted money (fee × 12)
+  /** AI-era projection line (pre-escaped HTML, may contain <b>) — angle sweep 2026-10-09. */
+  aiLine: string
 }
 
 export function buildBarsHtml(
@@ -245,6 +247,9 @@ ${d.barsHtml}
       <div>Total monthly leak<b>${d.totalLeak}</b></div>
     </div>
     <p class="punch">That's &asymp; <b>${d.mult}&times;</b> the monthly cost of fixing it. The pages that follow are the treatment plan.</p>
+    <div class="scanline" style="margin: 14pt 0 10pt;"></div>
+    <div class="lbl">The AI-era projection<span class="fnmark">*</span></div>
+    <p style="margin: 8pt 0 0; font-size: 10.5pt; line-height: 1.55;">${d.aiLine}</p>
   </div>
   <div class="foot"><span>${P(2)}</span><span>omniply.io</span></div>
 </div>
@@ -269,9 +274,9 @@ ${d.barsHtml}
   <div class="head"><span><b>X-Ray Debrief</b></span><span>02 &middot; The Big Change</span></div>
   <div class="forcenum" style="margin-top: 0;">01</div>
   <div class="forcename">The technology force</div>
-  <p class="body">Every patient in your town now carries every competitor's front desk in their pocket. When someone's back seizes at 9pm, they don't wait for your opening hours...</p>
-  <p class="body">They search, they message, and they book with whoever answers. Google decides who exists. The map pack decides who gets the call.</p>
-  <p class="body">And a newer layer is settling on top: patients now ask AI assistants the question they used to type into Google... "who should I see about this?" The answer engines read the same signals, reviews, real content, responsiveness. A practice those engines can't read doesn't lose the comparison. It never comes up.</p>
+  <p class="body">132 million Americans<span class="fnmark">*</span> now use AI assistants to research and compare before they book. Patients ask them the question they used to type into Google... "who should I see about this?" The answer engines read the same signals a careful human would: reviews, real content, responsiveness. A practice those engines can't read doesn't lose the comparison. It never comes up.</p>
+  <p class="body">And underneath that newest layer, the old one still runs: every patient in your town carries every competitor's front desk in their pocket. When someone's back seizes at 9pm, they don't wait for your opening hours...</p>
+  <p class="body">They search, they message, and they book with whoever answers. Google decides who exists. The map pack decides who gets the call. And now the answer engines read the same board.</p>
   <div class="forcenum" style="margin-top: 0.58in;">02</div>
   <div class="forcename">The social force</div>
   <p class="body">Patients stopped calling back. Not because they're rude... because Amazon, Uber and a decade of instant everything trained them.</p>
@@ -486,7 +491,7 @@ ${d.barsHtml}
   <p class="body">You've watched it happen to patients who "felt fine."</p>
   <div class="big lime" style="margin: 0.4in 0 0.8in;">Treatment starts the day you decide it does.</div>
   <div class="srcs">
-    <b>* Sources:</b> Oldroyd, J. — Lead Response Management Study (InsideSales, 2007): 100&times; contact odds within 5 minutes vs. 30. &nbsp;&middot;&nbsp; Oldroyd, McElheran &amp; Elkington, "The Short Life of Online Sales Leads," Harvard Business Review, March 2011 (1.25M leads): firms responding within an hour were nearly 7&times; as likely to qualify the lead as those an hour slower, and 60&times;+ vs. a day; average response 42 hours. &nbsp;&middot;&nbsp; Lead Connect survey: 78% of customers buy from the first responder.<br /><br />
+    <b>* Sources:</b> Adyen Retail Report 2026: 132 million Americans — 42&ndash;51% of online shoppers — research purchases with AI assistants; Visa: 25% use one daily. The AI-era projection is a stated, adjustable projection computed from your own answers, never a measured fact. &nbsp;&middot;&nbsp; Oldroyd, J. — Lead Response Management Study (InsideSales, 2007): 100&times; contact odds within 5 minutes vs. 30. &nbsp;&middot;&nbsp; Oldroyd, McElheran &amp; Elkington, "The Short Life of Online Sales Leads," Harvard Business Review, March 2011 (1.25M leads): firms responding within an hour were nearly 7&times; as likely to qualify the lead as those an hour slower, and 60&times;+ vs. a day; average response 42 hours. &nbsp;&middot;&nbsp; Lead Connect survey: 78% of customers buy from the first responder.<br /><br />
     Leak estimates in this document are computed from your own X-Ray answers and stated, adjustable assumptions. They are illustrations, not guarantees or income claims.<br /><br />
     &copy; Omniply &middot; omniply.io &middot; Built for chiropractic practices only.
   </div>

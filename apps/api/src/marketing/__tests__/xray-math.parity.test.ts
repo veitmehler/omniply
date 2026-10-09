@@ -43,8 +43,28 @@ describe('server math parity with web quiz', () => {
       expect(server.totalLeak).toBe(client.totalLeak)
       expect(server.priceMultiple).toBe(client.priceMultiple)
       expect(server.missedCallsWeekly).toBe(client.missedCallsWeekly)
+      expect(server.aiResearchedWeekly).toBe(client.aiResearchedWeekly)
+      expect(server.aiInvisibleShare).toBe(client.aiInvisibleShare)
+      expect(server.aiLeak).toBe(client.aiLeak)
     })
   }
+})
+
+describe('AI-era projection bounds', () => {
+  it('caps invisibility at 85% for a zero-visibility practice', () => {
+    const r = compute(FIXTURES[2][1]) // worst path: all-zero scores
+    expect(r.aiInvisibleShare).toBe(0.85)
+    expect(r.aiLeak).toBe(0) // zero weekly inquiries → zero projection
+  })
+  it('floors invisibility at 15% for a perfect-visibility practice', () => {
+    const r = compute(FIXTURES[1][1]) // best path: all-100 scores
+    expect(r.aiInvisibleShare).toBeCloseTo(0.15, 10)
+    expect(r.aiLeak).toBeGreaterThan(0) // even strong practices see a nonzero projection
+  })
+  it('keeps the projection OUT of totalLeak by design', () => {
+    const r = compute(FIXTURES[0][1])
+    expect(r.totalLeak).toBe(r.driftLeak + r.responseLeak)
+  })
 })
 
 describe('missedCallsPhrase', () => {

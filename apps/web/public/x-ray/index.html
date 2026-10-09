@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>The Practice X-Ray — See the revenue your practice can't</title>
-<meta name="description" content="You X-ray patients before treating them. Nobody's ever X-rayed your practice. 12 questions, 2 minutes — your Practice Autopilot Score and the monthly revenue your practice is leaking." />
+<meta name="description" content="You X-ray patients before treating them. Nobody's ever X-rayed your practice. 12 questions, 2 minutes — your Practice Autopilot Score, the monthly revenue your practice is leaking, and whether AI assistants can even find you." />
 <meta property="og:title" content="The Practice X-Ray" />
 <meta property="og:description" content="See the revenue your practice can't. 12 questions, 2 minutes." />
 <meta property="og:type" content="website" />
@@ -254,7 +254,7 @@
   <section class="screen hook active" id="s-hook">
     <div class="meta">Radiographic assessment · Chiropractic practices</div>
     <h1>You X-ray patients before treating them. Nobody's ever X-rayed <em>your practice</em>.</h1>
-    <p class="tagline">See the revenue your practice can't. Answer 12 quick questions and get your Practice Autopilot Score — plus the monthly figure your practice is silently leaking.</p>
+    <p class="tagline">See the revenue your practice can't. Answer 12 quick questions and get your Practice Autopilot Score, the monthly figure your practice is silently leaking — and whether the new wave of AI assistants can even find you.</p>
     <div class="contract">
       <span>12 questions</span>
       <span>2 minutes</span>
@@ -336,8 +336,19 @@
         <summary>Check our math — adjust any assumption</summary>
         <div class="assump" id="assump"></div>
         <div class="formula" id="formula"></div>
-        <p id="basis" style="margin:14px 0 0;font-size:12px;line-height:1.6;opacity:.8">The one external number we lean on: a Harvard Business Review study of 1.25 million sales leads found that firms contacting a lead within an hour were nearly seven times as likely to qualify it as those that waited even an hour longer, and more than sixty times as likely as those that waited a day (Oldroyd, McElheran &amp; Elkington, &ldquo;The Short Life of Online Sales Leads,&rdquo; Harvard Business Review, March 2011). Every other number here is a stated, conservative assumption &mdash; and you can adjust each one above.</p>
+        <p id="basis" style="margin:14px 0 0;font-size:12px;line-height:1.6;opacity:.8">The one external number we lean on: a Harvard Business Review study of 1.25 million sales leads found that firms contacting a lead within an hour were nearly seven times as likely to qualify it as those that waited even an hour longer, and more than sixty times as likely as those that waited a day (Oldroyd, McElheran &amp; Elkington, &ldquo;The Short Life of Online Sales Leads,&rdquo; Harvard Business Review, March 2011). The AI-research share leans on two more: 132 million Americans &mdash; 42&ndash;51% of online shoppers &mdash; now research purchases with AI assistants (Adyen Retail Report 2026), and 25% already use one daily (Visa). We default to a conservative 22%. Every other number here is a stated, conservative assumption &mdash; and you can adjust each one above.</p>
       </details>
+    </div>
+
+    <!-- AI-era projection (angle sweep 2026-10-09): a stated, adjustable
+         projection — rendered separately from the leak card by design, so the
+         defensible arithmetic above never shares a total with a trend figure. -->
+    <div class="film leakcard" id="aicard">
+      <div class="lbl">The AI-era projection</div>
+      <div class="leaknum" id="aicount"></div>
+      <div class="leakunder"></div>
+      <p id="ailine" style="margin:0 0 6px;font-size:16px;line-height:1.5"></p>
+      <p id="aireframe" style="margin:0;font-size:13px;opacity:.75">A projection, not a measurement — 132 million Americans already research with AI assistants before they buy (Adyen Retail Report 2026; Visa: 25% use one daily). Adjust the share under &ldquo;Check our math&rdquo; above.</p>
     </div>
 
     <!-- Walkthrough CTA (launch-day-copy-restore §1, restored 2026-10-08:
@@ -397,6 +408,11 @@ var XRAY = (function () {
     FIRST_YEAR_VISITS: 12,           // first-year visits of a new patient (× visit fee = first-year value)
     WEEKS_PER_MONTH: 4.33,
     ROUND_TO: 50,                    // display rounding for dollar figures
+    // AI-inquiry projection (angle sweep 2026-10-09) — a stated, adjustable
+    // PROJECTION rendered separately, never folded into totalLeak.
+    AI_RESEARCH_SHARE: 0.22,         // share of inquiries that start inside an AI assistant (Adyen 2026: 42–51% of shoppers; Visa: 25% daily — we use a conservative 22%)
+    AI_INVISIBLE_MAX: 0.85,          // AI-invisible share at visibility score 0 (never 100% — honest bounds)
+    AI_INVISIBLE_MIN: 0.15,          // AI-invisible share at a perfect visibility score
   }
 
   var AXES = {
@@ -458,6 +474,22 @@ var XRAY = (function () {
       o.NO_CALLBACK_LOSS * o.WOULD_CONVERT * firstYearValue
   }
 
+  // AI visibility derives from the signals the answer engines actually read —
+  // reviews + real content (our own copy's claim) — NOT from a new question;
+  // "12 questions · 2 minutes" stays true.
+  function aiInvisibleShare (scores, o) {
+    o = o || CONFIG
+    var visibility = (scores.reviews + scores.content) / 200
+    return o.AI_INVISIBLE_MAX - (o.AI_INVISIBLE_MAX - o.AI_INVISIBLE_MIN) * visibility
+  }
+
+  function aiLeak (a, o) {
+    o = o || CONFIG
+    var firstYearValue = a.visitFee * o.FIRST_YEAR_VISITS
+    return a.inquiriesWeekly * o.AI_RESEARCH_SHARE * o.WEEKS_PER_MONTH *
+      aiInvisibleShare(axisScores(a), o) * o.WOULD_CONVERT * firstYearValue
+  }
+
   function roundDollars (x) {
     return Math.round(x / CONFIG.ROUND_TO) * CONFIG.ROUND_TO
   }
@@ -479,10 +511,14 @@ var XRAY = (function () {
       missedShare: missedShare(a.b1, a.b2),
       // The derived, visceral number: inquiries that get no live answer.
       missedCallsWeekly: a.inquiriesWeekly * missedShare(a.b1, a.b2),
+      // The AI-era projection (separate from totalLeak by design).
+      aiResearchedWeekly: a.inquiriesWeekly * o.AI_RESEARCH_SHARE,
+      aiInvisibleShare: aiInvisibleShare(scores, o),
+      aiLeak: roundDollars(aiLeak(a, o)),
     }
   }
 
-  return { CONFIG: CONFIG, AXES: AXES, compute: compute, axisScores: axisScores, weakestAxis: weakestAxis, missedShare: missedShare, driftLeak: driftLeak, responseLeak: responseLeak, roundDollars: roundDollars }
+  return { CONFIG: CONFIG, AXES: AXES, compute: compute, axisScores: axisScores, weakestAxis: weakestAxis, missedShare: missedShare, driftLeak: driftLeak, responseLeak: responseLeak, aiInvisibleShare: aiInvisibleShare, aiLeak: aiLeak, roundDollars: roundDollars }
 })()
 if (typeof module !== 'undefined' && module.exports) module.exports = XRAY
 /*__XRAY_MATH_END__*/
@@ -758,7 +794,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = XRAY
           ' weekly inquiries slip through — and most people who miss you once never try twice. They book with whoever answers. That’s an estimated <b>' + money(r.responseLeak) + '/month</b> walking to competitors.'
       case 'reviews':
         return '<b>The scan shows an invisible practice.</b> With ' + reviewBandText() +
-          ' Google reviews, you’re outranked by clinics that are no better than you — just louder. Reviews are the first thing a new patient judges you on, and yours aren’t compounding.'
+          ' Google reviews, you’re outranked by clinics that are no better than you — just louder. Reviews are the first thing a new patient judges you on, and yours aren’t compounding. And it’s no longer just people reading them: AI assistants weigh the same reviews when they decide which practice to name.'
       default:
         return '<b>The scan shows silence.</b> Your practice goes quiet between visits — and silence reads as absence. Patients can’t stay loyal to a practice they never hear from, and prospects can’t find one that never shows up.'
     }
@@ -834,6 +870,19 @@ if (typeof module !== 'undefined' && module.exports) module.exports = XRAY
     // waitlist/notify box so the number follows them to the next step.
     var bridge = $('bridgeline')
     if (bridge) bridge.textContent = raw >= 1 ? big.replace('≈ ', '≈') + ' ' + unit + ' with nobody answering live. ' : ''
+    paintAiCard(r)
+  }
+
+  // AI-era projection card (angle sweep 2026-10-09). Always framed as a
+  // projection — "if the trend holds", adjustable — never a measured fact.
+  function paintAiCard (r) {
+    var aiRaw = r.aiResearchedWeekly
+    var aiN = aiRaw < 1 ? '≈ 1' : '≈ ' + Math.round(aiRaw)
+    var aiUnit = aiRaw < 1 ? 'inquiry most weeks' : (Math.round(aiRaw) === 1 ? 'inquiry a week' : 'inquiries a week')
+    $('aicount').innerHTML = aiN + '<small> ' + aiUnit + ' now start inside an AI assistant</small>'
+    $('ailine').innerHTML = 'Patients have started asking ChatGPT and Siri the question they used to type into Google: &ldquo;who should I see about this?&rdquo; At your current visibility scores, an estimated <b>' +
+      Math.round(r.aiInvisibleShare * 100) + '%</b> of those patients never find you at all — if the trend holds, a projected <b>' +
+      money(r.aiLeak) + '/month</b> that no missed-call log will ever show you.'
   }
 
   function animateNumber (el, target, ms) {
@@ -856,6 +905,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = XRAY
     { key: 'NO_CALLBACK_LOSS', label: 'Missed callers who never try again', min: 0.3, max: 0.85, step: 0.05, fmt: function (v) { return Math.round(v * 100) + '%' } },
     { key: 'WOULD_CONVERT', label: 'Of those, who would have booked', min: 0.3, max: 0.85, step: 0.05, fmt: function (v) { return Math.round(v * 100) + '%' } },
     { key: 'FIRST_YEAR_VISITS', label: 'First-year visits of a new patient', min: 6, max: 20, step: 1, fmt: function (v) { return v + ' visits' } },
+    { key: 'AI_RESEARCH_SHARE', label: 'Patients who research via AI assistants first', min: 0.1, max: 0.5, step: 0.01, fmt: function (v) { return Math.round(v * 100) + '%' } },
   ]
   var overrides = {}
 
@@ -888,7 +938,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = XRAY
     var o = Object.assign({}, XRAY.CONFIG, overrides)
     $('formula').innerHTML =
       'DRIFT = patients &times; max(0, ' + Math.round(o.TARGET_MAINT_RATE * 100) + '% − your ' + Math.round((answers.maintRate || 0) * 100) + '%) &times; ' + Math.round(o.REALIZATION * 100) + '% &times; fee &times; ' + o.MAINT_VISITS_PER_YEAR + '/12<br>' +
-      'MISSED = inquiries/wk &times; 4.33 &times; missed-share(your answers) &times; ' + Math.round(o.NO_CALLBACK_LOSS * 100) + '% &times; ' + Math.round(o.WOULD_CONVERT * 100) + '% &times; (fee &times; ' + o.FIRST_YEAR_VISITS + ')'
+      'MISSED = inquiries/wk &times; 4.33 &times; missed-share(your answers) &times; ' + Math.round(o.NO_CALLBACK_LOSS * 100) + '% &times; ' + Math.round(o.WOULD_CONVERT * 100) + '% &times; (fee &times; ' + o.FIRST_YEAR_VISITS + ')<br>' +
+      'AI (projection) = inquiries/wk &times; ' + Math.round(o.AI_RESEARCH_SHARE * 100) + '% &times; 4.33 &times; AI-invisible(your visibility scores) &times; ' + Math.round(o.WOULD_CONVERT * 100) + '% &times; (fee &times; ' + o.FIRST_YEAR_VISITS + ')'
   }
 
   function recompute () {

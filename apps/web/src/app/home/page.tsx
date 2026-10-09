@@ -27,7 +27,7 @@ import {
 export const metadata: Metadata = {
   title: 'Omniply... Marketing Autopilot for Local Practices',
   description:
-    'One loop, four systems: instant AI response to every call and message, content in your voice, compounding Google reviews, and client recall. You approve, it ships.',
+    'Be the practice AI assistants and people find: instant AI response to every call and message, content in your voice, compounding Google reviews, and client recall. One loop, four systems. You approve, it ships.',
 }
 
 const FAQ_ITEMS: FaqEntry[] = [
@@ -48,6 +48,10 @@ const FAQ_ITEMS: FaqEntry[] = [
     a: 'Everything in the loop. Weekly articles, the weekly newsletter with 25,000 email sends a month, social posts with designed graphics, branded lead-magnet guides, the 2-Minute Spine Check for your website, the AI response and recall systems, and the review growth engine. No per-piece fees, no content credits, no surprise line items.',
   },
   {
+    q: 'What does "visible to AI assistants" actually mean?',
+    a: 'When someone asks ChatGPT, Siri or Google’s AI who to book, the assistant reads the same public signals a careful human would: your reviews, your content, your website’s structure, and whether anyone answers when it reaches out. Omniply builds exactly those signals, and its chat and voice front desk means an AI assistant that calls or messages your practice gets an instant answer instead of a voicemail.',
+  },
+  {
     q: 'Can I cancel? What happens to my content?',
     a: 'You can cancel any month. Everything already published stays published, because it was always yours: your website, your email list, your social accounts, your documents.',
   },
@@ -57,16 +61,18 @@ export default function HomePage() {
   return (
     <main>
       <SiteHeader />
-      {/* ── Hero: platform definition + vertical pathway above the fold ── */}
+      {/* ── Hero: AI-booking lead (angle sweep 2026-10-09) + vertical pathway ── */}
       <Section dark>
         <Eyebrow>Omniply</Eyebrow>
         <h1 className="mb-6 text-4xl font-extrabold leading-tight md:text-5xl" style={{ textWrap: 'balance' } as React.CSSProperties}>
-          How many client calls did your practice miss this week?
+          Your next client will ask an AI assistant who to book. Can it even find you?
         </h1>
         <P lead>
-          Each one booked with whoever answered. Omniply is marketing on autopilot for local practices: it
-          answers in seconds, writes in your voice, asks for the review, and remembers every client who
-          drifted... every week, while you run the practice. You approve. It ships.
+          132 million Americans already research with AI assistants before they buy. If one can&rsquo;t find
+          your practice, understand your website, or talk to it, it simply books the next practice down the
+          road. Omniply is marketing on autopilot for local practices: it makes you the practice AI
+          assistants and people find, answers every call and message in seconds, writes in your voice, asks
+          for the review, and remembers every client who drifted. You approve. It ships.
         </P>
         <div className="mt-8 grid gap-4 sm:grid-cols-2">
           <a
@@ -87,7 +93,8 @@ export default function HomePage() {
             <div className="text-xs font-bold uppercase tracking-widest text-white/50">2 minutes</div>
             <div className="mt-2 text-xl font-bold text-white">X-Ray your practice &rarr;</div>
             <div className="mt-1 text-sm text-white/60">
-              Four system scores and a dollar figure on what is quietly leaking.
+              Four system scores, a dollar figure on what is quietly leaking, and whether AI assistants can
+              find you.
             </div>
           </a>
         </div>
@@ -99,14 +106,15 @@ export default function HomePage() {
 
 
 
-      {/* ── Why speed and presence decide ── */}
+      {/* ── Why speed and presence decide (missed calls: the second angle) ── */}
       <Section>
         <Eyebrow>Why it matters now</Eyebrow>
         <H2>Your clients decide faster than your front desk can answer.</H2>
         <StatBand />
         <P>
           Whoever answers first and stays familiar wins the booking. That is not a slogan, it is the measured
-          behavior of people choosing a local practice today.
+          behavior of people choosing a local practice today. And the newest wave skips the phone entirely:
+          they ask an AI assistant, and the assistant recommends whoever it can actually read.
         </P>
       </Section>
 
@@ -196,8 +204,9 @@ export default function HomePage() {
         <div className="my-12 h-px w-full" style={{ background: '#343434' }} />
         <H2>Start where the doctors start: with the X-Ray.</H2>
         <P lead>
-          Two minutes, twelve questions... four system scores and a dollar figure on what your practice is
-          quietly leaking every month. No call, no pitch. A report and a number.
+          Two minutes, twelve questions... four system scores, a dollar figure on what your practice is
+          quietly leaking every month, and a read on whether AI assistants can even find you. No call, no
+          pitch. A report and a number.
         </P>
         <Cta href={XRAY_URL} sub="2 minutes · free · your report is yours to keep">
           X-Ray My Practice

@@ -60,13 +60,19 @@ $397 a month. Everything in the loop. Cancel anytime. We&apos;re not asking you 
 marketer... we&apos;re asking you to stop having to be one.
 ```
 
+**⚠️ Angle-sweep re-base (2026-10-09):** the surrounding copy on
+/chiropractors, /home, the X-Ray page and the StatBand was rewritten
+AI-first. The snippets above restore ONLY the price mentions — paste them
+into the NEW copy, do not revert the AI-first headlines/paragraphs around
+them. The FAQ price question on /chiropractors is now the 8th entry (an
+AI-discoverability FAQ was inserted at position 4).
+
 ## 4. apps/web/src/app/home/page.tsx
 
-**Meta description** (restore tail — base updated 2026-10-03 by the
-missed-call sweep, keep the new response-first wording and just append
-the price):
+**Meta description** (re-based 2026-10-09 by the ANGLE SWEEP — keep the
+AI-first wording and just append the price):
 ```
-'One loop, four systems: instant AI response to every call and message, content in your voice, compounding Google reviews, and client recall. You approve, it ships. $397/mo flat.'
+'Be the practice AI assistants and people find: instant AI response to every call and message, content in your voice, compounding Google reviews, and client recall. One loop, four systems. You approve, it ships. $397/mo flat.'
 ```
 
 **FAQ question**:

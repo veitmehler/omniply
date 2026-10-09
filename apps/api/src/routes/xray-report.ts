@@ -141,6 +141,16 @@ async function renderDebriefPdf(dParam: string, parsed: NonNullable<ReturnType<t
     mult: r.priceMultiple,
     fee: money(answers.visitFee),
     feeYear: money(answers.visitFee * 12),
+    aiLine:
+      answers.inquiriesWeekly <= 0
+        ? 'Patients have started asking ChatGPT and Siri the question they used to type into Google: "who should I see about this?" As inquiries grow, being readable to the answer engines decides whether you come up at all.'
+        : 'Patients have started asking ChatGPT and Siri the question they used to type into Google: "who should I see about this?" An estimated <b>' +
+          (r.aiResearchedWeekly < 1 ? '1 of your weekly inquiries' : Math.round(r.aiResearchedWeekly) + ' of your weekly inquiries') +
+          '</b> now starts inside an AI assistant... and at your current visibility scores, roughly <b>' +
+          Math.round(r.aiInvisibleShare * 100) +
+          '%</b> of those patients never find you at all. If the trend holds, that is a projected <b>' +
+          money(r.aiLeak) +
+          '/month</b> on top of the leak above... one that no missed-call log will ever show you.',
   })
 
   const pdf = await withRasterPage(async (page) => {
@@ -171,7 +181,9 @@ const S3_PREFIX = 'xray-reports/'
 // reports re-render with the new design instead of serving the old S3 object.
 // v4: missed-call-first leak card + AI-search force extension + HBR basis
 // (missed-call sweep Part 1, 2026-10-03)
-const TEMPLATE_VERSION = '4'
+// v5: AI-first technology force + AI-era projection card + Adyen/Visa sources
+// (angle sweep, 2026-10-09)
+const TEMPLATE_VERSION = '5'
 
 function publicApiBase(): string {
   return (process.env.XRAY_PUBLIC_API_BASE ?? 'https://svc.omniply.io').replace(/\/$/, '')

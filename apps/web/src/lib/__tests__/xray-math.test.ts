@@ -22,10 +22,14 @@ function loadXray() {
       totalLeak: number
       priceMultiple: number
       missedShare: number
+      aiResearchedWeekly: number
+      aiInvisibleShare: number
+      aiLeak: number
     }
     missedShare: (b1: number, b2: number) => number
     driftLeak: (a: Record<string, number>) => number
     responseLeak: (a: Record<string, number>) => number
+    aiLeak: (a: Record<string, number>, o?: Record<string, number>) => number
   }
 }
 
@@ -151,5 +155,43 @@ describe('compute output', () => {
     })
     expect(r.totalLeak).toBe(0)
     expect(r.priceMultiple).toBe(1)
+  })
+})
+
+describe('AI-era projection', () => {
+  it('matches the worked example at the 22% default', () => {
+    // visibility = (reviews 30 + content 20) / 200 = 0.25
+    // invisible = 0.85 − 0.70 × 0.25 = 0.675
+    // 10 × 0.22 × 4.33 × 0.675 × 0.6 × (65×12) = 3010.4…
+    const r = XRAY.compute(planExample)
+    expect(r.aiResearchedWeekly).toBeCloseTo(2.2, 6)
+    expect(r.aiInvisibleShare).toBeCloseTo(0.675, 6)
+    expect(r.aiLeak).toBe(3000) // rounded to $50
+  })
+
+  it('bounds invisibility to [0.15, 0.85] and never reaches 0 or 1', () => {
+    const worst = XRAY.compute({
+      a1: 0, a2: 0, a3: 0, b1: 0, b2: 0, c1: 0, c2: 0, d1: 0, d2: 0,
+      inquiriesWeekly: 10, maintRate: 0, activePatients: 100, visitFee: 40,
+    })
+    expect(worst.aiInvisibleShare).toBe(0.85)
+    const best = XRAY.compute({
+      a1: 10, a2: 10, a3: 10, b1: 10, b2: 10, c1: 10, c2: 10, d1: 10, d2: 10,
+      inquiriesWeekly: 10, maintRate: 0.35, activePatients: 800, visitFee: 65,
+    })
+    expect(best.aiInvisibleShare).toBeCloseTo(0.15, 10)
+    expect(best.aiLeak).toBeGreaterThan(0)
+  })
+
+  it('honors the AI_RESEARCH_SHARE slider override', () => {
+    const low = XRAY.compute(planExample, { AI_RESEARCH_SHARE: 0.1 })
+    const high = XRAY.compute(planExample, { AI_RESEARCH_SHARE: 0.5 })
+    expect(low.aiLeak).toBeLessThan(high.aiLeak)
+    expect(low.aiResearchedWeekly).toBeCloseTo(1, 6)
+  })
+
+  it('stays OUT of totalLeak by design', () => {
+    const r = XRAY.compute(planExample)
+    expect(r.totalLeak).toBe(r.driftLeak + r.responseLeak)
   })
 })

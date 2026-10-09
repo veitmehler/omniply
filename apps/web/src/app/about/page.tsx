@@ -16,8 +16,9 @@ export default function AboutPage() {
       </P>
       <P>
         The system inside Omniply is the playbook elite practice coaches teach their clients to execute by
-        hand: consistent content in your voice, instant response to every inquiry, compounding Google
-        reviews, and systematic patient recall. It works every time it is actually executed, and it fails
+        hand: instant response to every inquiry, compounding Google reviews, consistent content in your
+        voice, and systematic patient recall... the same signals that now decide whether AI assistants can
+        find and recommend a practice at all. It works every time it is actually executed, and it fails
         every time life gets in the way of executing it. So we built the version that cannot get tired,
         cannot get busy, and cannot skip a week.
       </P>

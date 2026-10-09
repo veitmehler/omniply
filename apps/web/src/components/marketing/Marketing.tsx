@@ -405,6 +405,7 @@ export function LoopDiagram() {
 /* ── Verified stat band (same numbers + sources as the X-Ray funnel) ─────── */
 export function StatBand({ onDark }: { onDark?: boolean }) {
   const stats = [
+    { n: '132M', l: 'Americans research with AI assistants before they buy' },
     { n: '78%', l: 'of customers buy from whoever answers first' },
     { n: '100×', l: 'more likely to connect in 5 min vs. 30 min' },
     { n: '2 days', l: 'the average business response time' },
@@ -413,10 +414,10 @@ export function StatBand({ onDark }: { onDark?: boolean }) {
   const dim = onDark ? 'rgba(255,255,255,0.6)' : TOKENS.muted
   return (
     <div className="my-10">
-      <div className="grid grid-cols-1 gap-6 border-y py-8 sm:grid-cols-3" style={{ borderColor: onDark ? '#343434' : TOKENS.line }}>
+      <div className="grid grid-cols-1 gap-6 border-y py-8 sm:grid-cols-2 lg:grid-cols-4" style={{ borderColor: onDark ? '#343434' : TOKENS.line }}>
         {stats.map((s) => (
           <div key={s.n}>
-            <div className="text-4xl font-extrabold tracking-tight" style={{ color: s.n === '100×' ? (onDark ? TOKENS.lime : TOKENS.accentDeep) : ink }}>
+            <div className="text-4xl font-extrabold tracking-tight" style={{ color: s.n === '132M' ? (onDark ? TOKENS.lime : TOKENS.accentDeep) : ink }}>
               {s.n}
             </div>
             <div className="mt-2 text-xs font-semibold uppercase tracking-wider" style={{ color: dim }}>{s.l}</div>
@@ -424,11 +425,13 @@ export function StatBand({ onDark }: { onDark?: boolean }) {
         ))}
       </div>
       <p className="mt-3 text-xs" style={{ color: dim }}>
-        Sources: Oldroyd, Lead Response Management Study (InsideSales, 2007) &middot; Oldroyd, McElheran &amp;
-        Elkington, &ldquo;The Short Life of Online Sales Leads,&rdquo; Harvard Business Review, March 2011
-        (1.25M leads: responding within an hour made firms nearly 7&times; as likely to qualify the lead as
-        waiting an hour longer, 60&times;+ vs. a day) &middot; Lead Connect survey. Every Omniply leak
-        estimate is computed from your own answers and stated, adjustable assumptions.
+        Sources: Adyen Retail Report 2026 (132M Americans, 42&ndash;51% of online shoppers, research
+        purchases with AI assistants; Visa: 25% use one daily) &middot; Oldroyd, Lead Response Management
+        Study (InsideSales, 2007) &middot; Oldroyd, McElheran &amp; Elkington, &ldquo;The Short Life of
+        Online Sales Leads,&rdquo; Harvard Business Review, March 2011 (1.25M leads: responding within an
+        hour made firms nearly 7&times; as likely to qualify the lead as waiting an hour longer, 60&times;+
+        vs. a day) &middot; Lead Connect survey. Every Omniply leak estimate is computed from your own
+        answers and stated, adjustable assumptions.
       </p>
     </div>
   )
