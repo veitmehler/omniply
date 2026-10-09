@@ -118,8 +118,9 @@ ride the pre-launch window as independent, revertable commits (~1 day total):
 
 ## 4. Freeze week (the week before vacation)
 
-- [ ] Droplet OS updates + reboot, BOTH droplets — after checking for in-flight jobs;
-  verify containers come back healthy (`/health/deep`). **Big backlog done early
+- [x] Droplet OS updates + reboot, BOTH droplets — DONE 2026-10-08 (staging ~48 pkgs,
+  prod 94 ops, via systemd-run as root over tailnet [socioply user has NO passwordless
+  sudo]; both rebooted, reboot-required flags cleared, containers + health green). **Big backlog done early
   2026-08-03** (~60 pkgs incl. docker/tailscale/kernel + reboots, both boxes verified
   healthy, health 200) so the rehearsal tests the updated system; freeze week only
   needs the light delta accumulated since, done together with the DB upsize (§1).
