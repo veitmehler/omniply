@@ -186,6 +186,18 @@ export async function onboardingRoutes(app: FastifyInstance) {
         return publishClinicSchema(r.account.ownerUserId)
       })
       .catch(() => {})
+    // Staff contacts, second pass: provisioning runs this at PURCHASE time,
+    // before the owner has set up GHL — staff phones added during setup were
+    // missed (live test 2026-10-09: owner phone set post-purchase, no staff
+    // contact created). Re-run now that setup is demonstrably done.
+    // Idempotent (phone-keyed upsert), best-effort.
+    void (async () => {
+      const { getGhlCredentials } = await import('../lib/ghl/settings')
+      const creds = await getGhlCredentials(r.account.ownerUserId)
+      if (!creds) return
+      const { ensureStaffContacts } = await import('../lib/ghl/staff-contacts')
+      await ensureStaffContacts(creds.apiKey, creds.locationId)
+    })().catch((err) => logger.warn({ err }, '[onboarding] staff-contacts second pass failed (non-fatal)'))
 
     // Starter lead-magnet library (leadgen plan Phase 7): compile every active
     // template for this account — lands review-gated, never blocks generation.

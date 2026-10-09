@@ -123,12 +123,18 @@ export function ContentPlan() {
 
   // While any social set is generating (~15min for an article), poll so the
   // "generating…" chip flips to the Review button without a manual reload.
+  // ALSO poll for a window after any approval: the inbox snapshot from before
+  // the approval says "nothing generating", so without this kick the chip
+  // never appears at all and the approval looks like it skipped social
+  // (live test 2026-10-09 — the newsletter's whole run fit inside the gap).
+  const [socialPollUntil, setSocialPollUntil] = useState(0)
+  const bumpSocialPoll = () => setSocialPollUntil(Date.now() + 20 * 60_000)
   useEffect(() => {
-    if (!anySocialGenerating) return
+    if (!anySocialGenerating && Date.now() > socialPollUntil) return
     const t = setInterval(() => void load(), 30_000)
     return () => clearInterval(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [anySocialGenerating])
+  }, [anySocialGenerating, socialPollUntil])
   const readyQueue: ReviewItem[] = [
     ...(inbox?.articles ?? []).map((a) => ({ kind: 'article' as const, id: a.jobId, title: a.title, finalQuality: a.finalQuality ?? null })),
     ...(inbox?.newsletters ?? []).map((n) => ({ kind: 'newsletter' as const, id: n.newsletterId, title: n.title })),
@@ -139,6 +145,7 @@ export function ContentPlan() {
 
   function onApproved() {
     setOpenIndex((idx) => (idx == null ? null : idx + 1 < readyQueue.length ? idx + 1 : null))
+    bumpSocialPoll()
     void load()
   }
 
@@ -610,6 +617,7 @@ export function ContentPlan() {
           newsletterId={readyQueue[openIndex].id}
           title={readyQueue[openIndex].title}
           onClose={() => { setOpenIndex(null); void load() }}
+          onApproved={() => { setOpenIndex(null); bumpSocialPoll(); void load() }}
         />
       )}
 
@@ -638,6 +646,7 @@ export function ContentPlan() {
         <NewsletterReviewModal
           newsletterId={socialReviewNewsletter.newsletterId}
           title={socialReviewNewsletter.title}
+          focusSocial
           onClose={() => { setSocialReviewNewsletter(null); void load() }}
           onApproved={() => { setSocialReviewNewsletter(null); void load() }}
         />

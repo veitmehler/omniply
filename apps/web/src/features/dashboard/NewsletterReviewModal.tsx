@@ -17,12 +17,17 @@ export function NewsletterReviewModal({
   title,
   onClose,
   onApproved,
+  focusSocial,
 }: {
   newsletterId: string
   title: string
   onClose: () => void
   /** Newsletter approve or social approve-all closes the modal (defaults to onClose). */
   onApproved?: () => void
+  /** Opened via "Approve social posts" → auto-scroll to the social section
+   *  once loaded (the newsletter itself is already approved; landing at the
+   *  top reads as the wrong screen — Veit 2026-10-09). */
+  focusSocial?: boolean
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -43,7 +48,7 @@ export function NewsletterReviewModal({
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto bg-background px-6 py-5">
-          <NewsletterEditionContent newsletterId={newsletterId} onApproved={onApproved ?? onClose} />
+          <NewsletterEditionContent newsletterId={newsletterId} onApproved={onApproved ?? onClose} focusSocial={focusSocial} />
         </div>
       </div>
     </div>

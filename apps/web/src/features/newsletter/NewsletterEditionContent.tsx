@@ -66,10 +66,30 @@ const SECTIONS: Array<{ key: string; label: string }> = [
  * with each caller, since a modal has no "navigate away" concept and provides
  * its own sizing.
  */
-export function NewsletterEditionContent({ newsletterId, onApproved }: { newsletterId: string; onApproved?: () => void }) {
+export function NewsletterEditionContent({
+  newsletterId,
+  onApproved,
+  focusSocial,
+}: {
+  newsletterId: string
+  onApproved?: () => void
+  /** Scroll to the social-posts section once loaded ("Approve social posts" entry). */
+  focusSocial?: boolean
+}) {
   const [nl, setNl] = useState<Newsletter | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const socialRef = useRef<HTMLDivElement>(null)
+
+  // After load, jump to the social section when that's what the user came
+  // for — the edition above is already approved at that point, and landing
+  // at the top reads as the wrong screen (Veit 2026-10-09). Small delay
+  // lets the preview/iframe sections take their layout height first.
+  useEffect(() => {
+    if (!focusSocial || loading) return
+    const t = setTimeout(() => socialRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 350)
+    return () => clearTimeout(t)
+  }, [focusSocial, loading])
 
   const [subject, setSubject] = useState('')
   const [preview, setPreview] = useState('')
@@ -822,7 +842,9 @@ export function NewsletterEditionContent({ newsletterId, onApproved }: { newslet
       </div>
 
       {/* Full-width: social posts generated from this newsletter */}
-      <NewsletterSocialPreview newsletterId={newsletterId} onApproved={onApproved} />
+      <div ref={socialRef} className="scroll-mt-4">
+        <NewsletterSocialPreview newsletterId={newsletterId} onApproved={onApproved} />
+      </div>
     </div>
   )
 }
