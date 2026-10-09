@@ -150,6 +150,11 @@ and 11:00 needs no action at all. Companion docs:
 6. Standard T-1: launch-commit prep (LAUNCH_TS ×3 + price/CTA restores ON TOP
    of new-angle pages), linkedinPersonal verify, monitoring green,
    announcements staged, help-doc parked decisions.
+7. Watermark-claims grep (5 min — Anthropic EU AI Act text watermark now on
+   our models): sweep marketing surfaces + help docs for any
+   "undetectable / passes AI detection / looks human-written"-flavored
+   promises (none believed to exist). Positioning stays: written in your
+   voice, YOU approve, it ships — never "not AI".
 
 ### Tuesday Oct 13 (launch — per the timeline above, verification now ALSO
 checks: heroes lead AI-first, X-Ray shows the AI-inquiry metric, video v2
