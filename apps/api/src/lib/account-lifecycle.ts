@@ -133,6 +133,30 @@ async function redateStaleTopics(
  * days actually have planned content and skips the rest. Implements the
  * "generate when a cycle's payment clears" behavior.
  */
+/**
+ * First generated date = TOMORROW on the clinic's own calendar (Veit
+ * 2026-10-09): purchase-day content is stale by construction — the owner
+ * cannot review and send a newsletter dated the day they signed up (the
+ * live test generated a Friday edition at 8:55pm Friday). Same logic holds
+ * for renewal-day editions on billing-cycle bursts. socialTimezone is the
+ * platform's clinic clock (set at business_confirm; social scheduling and
+ * the WP publish hour already use it); UTC is the degenerate fallback.
+ */
+export function firstBurstDate(tz: string | null | undefined, now: Date = new Date()): Date {
+  let localDateKey: string
+  try {
+    localDateKey = new Intl.DateTimeFormat('en-CA', {
+      timeZone: tz || 'UTC',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(now)
+  } catch {
+    localDateKey = now.toISOString().slice(0, 10)
+  }
+  return new Date(new Date(`${localDateKey}T00:00:00Z`).getTime() + MS_PER_DAY)
+}
+
 export async function burstCurrentWindow(
   accountId: string,
   opts?: { skipStoryGate?: boolean },
@@ -152,7 +176,11 @@ export async function burstCurrentWindow(
   }
 
   const w = billingWindows(acct.subscriptionStartedAt)
-  const start = new Date(Math.max(Date.now(), w.from.getTime()))
+  const settings = await prisma.settings.findUnique({
+    where: { userId: acct.ownerUserId },
+    select: { socialTimezone: true },
+  })
+  const start = new Date(Math.max(firstBurstDate(settings?.socialTimezone).getTime(), w.from.getTime()))
   start.setUTCHours(0, 0, 0, 0)
   const dates: string[] = []
   for (let d = start.getTime(); d <= w.executableUntil.getTime(); d += MS_PER_DAY) {

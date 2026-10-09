@@ -62,6 +62,11 @@ export async function contentPlanRoutes(app: FastifyInstance) {
     } else if (acct?.subscriptionStartedAt) {
       const w = billingWindows(acct.subscriptionStartedAt)
       from = w.from
+      // Floor to day start: w.from carries the purchase TIME, but calendar
+      // topics are midnight-dated — an unfloored range hid the subscription
+      // day's items from My Content while the burst (which floors) generated
+      // them (live test 2026-10-09: finished newsletter invisible in review).
+      from.setUTCHours(0, 0, 0, 0)
       to = w.to
       executableUntil = w.executableUntil
     } else {

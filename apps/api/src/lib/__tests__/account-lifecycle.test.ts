@@ -22,6 +22,7 @@ vi.mock('@omniply/shared', () => ({
     newsletterTopic: { findMany: (...a: unknown[]) => ntFindMany(...a), update: vi.fn() },
     user: { findMany: (...a: unknown[]) => userFindMany(...a) },
     brandSettings: { findFirst: (...a: unknown[]) => brandFindFirst(...a) },
+    settings: { findUnique: vi.fn().mockResolvedValue({ socialTimezone: 'UTC' }) },
   },
 }))
 
@@ -114,5 +115,37 @@ describe('applyBillingEvent', () => {
     const r = await applyBillingEvent('acct_1', 'payment_cleared')
     expect(r.applied).toBe(true)
     expect(r.burst).toBeNull()
+  })
+})
+
+describe('firstBurstDate (clinic-timezone day+1, 2026-10-09)', () => {
+  it('starts tomorrow on the CLINIC calendar, not UTC', async () => {
+    const { firstBurstDate } = await import('../account-lifecycle')
+    // 9pm Friday Oct 9 in Miami = already Saturday Oct 10 in UTC.
+    const nowMiami9pm = new Date('2026-10-10T01:00:00Z')
+    // Clinic's tomorrow = Oct 10 (their Saturday), NOT Oct 11.
+    expect(firstBurstDate('America/New_York', nowMiami9pm).toISOString().slice(0, 10)).toBe('2026-10-10')
+    // For a UTC observer the same instant is already Oct 10 → tomorrow Oct 11.
+    expect(firstBurstDate('UTC', nowMiami9pm).toISOString().slice(0, 10)).toBe('2026-10-11')
+  })
+
+  it('late-evening purchase gets the next local day, never same-day', async () => {
+    const { firstBurstDate } = await import('../account-lifecycle')
+    const purchase = new Date('2026-10-09T20:15:59Z') // the live test purchase (4:15pm EDT)
+    expect(firstBurstDate('America/New_York', purchase).toISOString().slice(0, 10)).toBe('2026-10-10')
+  })
+
+  it('handles a DST fall-back boundary without skipping or repeating a day', async () => {
+    const { firstBurstDate } = await import('../account-lifecycle')
+    // US DST ends Nov 1 2026, 2am local. 11:30pm EST Oct 31 → tomorrow Nov 1.
+    const beforeFallBack = new Date('2026-11-01T03:30:00Z')
+    expect(firstBurstDate('America/New_York', beforeFallBack).toISOString().slice(0, 10)).toBe('2026-11-01')
+  })
+
+  it('falls back to UTC on a missing or invalid timezone', async () => {
+    const { firstBurstDate } = await import('../account-lifecycle')
+    const now = new Date('2026-10-09T05:00:00Z')
+    expect(firstBurstDate(null, now).toISOString().slice(0, 10)).toBe('2026-10-10')
+    expect(firstBurstDate('Not/AZone', now).toISOString().slice(0, 10)).toBe('2026-10-10')
   })
 })
