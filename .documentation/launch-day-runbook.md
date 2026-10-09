@@ -158,6 +158,15 @@ playing).
 ### Deliberately launch-week (recorded, not forgotten): outreach email/message
 rework (AI-visibility lead — DONE early 2026-10-09), article WRITING (Monday =
 topics only), azavea.ai polish, cold-domain warmup start.
+- **Sonnet 4.5 → 5.5 migration, target ~Oct 20 (HARD window Oct 14–28):**
+  Anthropic degrades claude-sonnet-4-5 availability Oct 30, retires Nov 30.
+  Sonnet carries ~22% of content COGS (article body steps 9/11/110,
+  newsletter writing, captions, story arcs, syndication) — 5.5 is stated
+  cheaper, so neutral-to-positive on margin. Model ids live in CODE
+  constants AND seeded prompt_templates defaults (both envs) + cost-table
+  needs the 5.5 pricing row. NOT a find-replace: bench 1 article + 1
+  newsletter + 1 social set on the test clinic for voice/de-AI parity
+  before flipping prod. Chat/voice agents are Haiku 4.5 — UNAFFECTED.
 
 ### Post-launch backlog (from the 2026-10-09 test purchase)
 - Lighter-cadence offer (Veit 2026-10-09): clinics who feel full cadence is
