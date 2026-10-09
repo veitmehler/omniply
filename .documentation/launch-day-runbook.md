@@ -168,6 +168,14 @@ topics only), azavea.ai polish, cold-domain warmup start.
 - Per-content cost attribution: stamp jobId on diagram-restyle / social /
   syndication llm_usage rows (or add a rollup) — the admin article page
   shows ~$1.35 while true all-in is ~$3.30/article.
+- Motif caching for tinted posts (Veit 2026-10-09; pairs with the earlier
+  icon-library idea): every tinted P1/P3/story post generates a fresh
+  AI "faded icon motif" texture that renders at ~10% opacity under the
+  wash — cache one per account (or a small weekly-rotating set / curated
+  icon library) and reuse via the existing reuseBackgroundUrl hook.
+  ~5–7 image calls saved per social set ≈ $5–7/mo per clinic, zero
+  visible design change. Photos stay EXCLUSIVELY on P2 newsletter
+  carousels (design unchanged).
 - PDF guide style selector: cover color + logo-variant picker with a
   "Regenerate guides" button, mirroring the newsletter template builder
   (per-account overrides + recompile of the library). The automatic
