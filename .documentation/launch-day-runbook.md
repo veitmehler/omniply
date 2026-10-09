@@ -177,6 +177,15 @@ topics only), azavea.ai polish, cold-domain warmup start.
 - Per-content cost attribution: stamp jobId on diagram-restyle / social /
   syndication llm_usage rows (or add a rollup) — the admin article page
   shows ~$1.35 while true all-in is ~$3.30/article.
+- Haiku 4.5 → successor migration, PRE-PLANNED (Veit 2026-10-09): no
+  retirement announced yet, but the same lifecycle is coming. This is the
+  CHAT + VOICE agent brain (shared engine) — the surface the C3 red-team
+  hardened against Haiku 4.5's specific behavior. Swap procedure when the
+  time comes: flip defaultModel on the agent_* prompt rows (live-patchable
+  DB update, no deploy) on STAGING first, re-run a condensed C3 probe set
+  (bookings, corrections, third-party callbacks, hours boundaries,
+  family-phone, inducement/Medicare) + one voice smoke call, THEN prod.
+  Never a bare model-name swap.
 - Motif caching for tinted posts (Veit 2026-10-09; pairs with the earlier
   icon-library idea): every tinted P1/P3/story post generates a fresh
   AI "faded icon motif" texture that renders at ~10% opacity under the
