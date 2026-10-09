@@ -135,6 +135,15 @@ and 11:00 needs no action at all. Companion docs:
 3. GHL block: W2 Launch Blast (re-DATE from Sept wording + checkout links +
    AI-led copy + publish check), system-email brand alignment (Claude's audit
    list; slides to Wed if tight), A2P registration, demo CRM contact cleanup.
+   Orderform findings (test purchase 2026-10-09): re-import the Stripe product
+   with the corrected name ("Chiropractors" — GHL blocks renaming imported
+   products; re-link orderform + SaaS plan after and confirm with a preview),
+   map the orderform Company field to the contact's STANDARD Business Name
+   field (stops "<Buyer>'s Account" location names → wrong schema/brand
+   prefill), phone-input padding CSS (flag covers digits: .iti input
+   padding-left ~64px on the funnel step), and confirm the LIVE orderform
+   shows only the real plan (no leftover $10/$20 test prices).
+   ("INFOMATION" typo + SaaS Configurator name: fixed Oct 9.)
 4. Draft content topics: website articles + LinkedIn articles (AI-first angle).
 5. Rebuild azavea.ai as the marketing agency behind Omniply (Claude builds,
    Veit reviews).
@@ -147,5 +156,16 @@ checks: heroes lead AI-first, X-Ray shows the AI-inquiry metric, video v2
 playing).
 
 ### Deliberately launch-week (recorded, not forgotten): outreach email/message
-rework (AI-visibility lead), article WRITING (Monday = topics only), azavea.ai
-polish, cold-domain warmup start.
+rework (AI-visibility lead — DONE early 2026-10-09), article WRITING (Monday =
+topics only), azavea.ai polish, cold-domain warmup start.
+
+### Post-launch backlog (from the 2026-10-09 test purchase)
+- PDF guide style selector: cover color + logo-variant picker with a
+  "Regenerate guides" button, mirroring the newsletter template builder
+  (per-account overrides + recompile of the library). The automatic
+  contrast fix (cover ink + logo variant by header luminance) shipped
+  2026-10-09; the selector is the taste-control layer on top.
+- Diagram-restyle cost: ~$1.74/article (22 image calls) — the largest
+  single content cost line; evaluate motif caching / fewer variants.
+- Onboarding belt: treat "<Name>'s Account"-shaped location names as unset
+  in the business-confirm prefill (don't invite one-click-accepting them).
