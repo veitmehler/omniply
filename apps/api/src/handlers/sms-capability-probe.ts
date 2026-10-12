@@ -159,11 +159,24 @@ async function probeAccount(accountId: string, ownerUserId: string): Promise<voi
 }
 
 export async function smsCapabilityProbeHandler(_jobs: PgBoss.Job<unknown>[]): Promise<void> {
+  // Skip only the confirmed steady state (available + last probe delivered).
+  // NOT(AND(...)) compiled to SQL three-valued logic: a row with
+  // smsProbeStatus NULL made the whole predicate NULL → silently excluded —
+  // the demo (pre-migration voiceSmsAvailable=true, never probed) matched
+  // nothing and the probe ran empty for 4 days (found 2026-10-12). Null
+  // must be an explicit branch; `not: 'delivered'` alone ALSO drops nulls.
   const rows = await prisma.voiceAgentConfig.findMany({
-    where: { NOT: { AND: [{ voiceSmsAvailable: true }, { smsProbeStatus: 'delivered' }] } },
+    where: {
+      OR: [
+        { voiceSmsAvailable: false },
+        { smsProbeStatus: null },
+        { NOT: { smsProbeStatus: 'delivered' } },
+      ],
+    },
     select: { accountId: true },
     take: 50,
   })
+  logger.info({ accounts: rows.length }, '[sms-probe] daily probe starting')
   for (const row of rows) {
     const account = await prisma.account.findUnique({
       where: { id: row.accountId },
