@@ -179,6 +179,10 @@ topics only), azavea.ai polish, cold-domain warmup start.
   customization; every step down is margin (content COGS ~$55/mo full →
   ~$21/mo at 1+1). Mostly calendar routing, not new plumbing. Diagrams are
   NOT a cost lever — too valuable (Veit).
+- Newsletter sent-status sync: GHL sends the campaign but our row stays
+  'scheduled' forever (sentAt never set — verified 2026-10-12: Saturday
+  edition delivered, status unchanged). Cosmetic but misleading in review
+  surfaces; sync from GHL campaign status or flip on scheduledFor passing.
 - Per-content cost attribution: stamp jobId on diagram-restyle / social /
   syndication llm_usage rows (or add a rollup) — the admin article page
   shows ~$1.35 while true all-in is ~$3.30/article.
