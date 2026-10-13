@@ -12,7 +12,7 @@ import { TOKENS } from './Marketing'
 
 // Gate held closed until the demo video is ready (launch extended past
 // 2026-09-22) — set the real opening timestamp here when it's locked in.
-const LAUNCH_TS = Date.parse('2099-01-01T00:00:00Z')
+const LAUNCH_TS = Date.parse('2026-10-13T15:00:00Z')
 const JOINED_KEY = 'omniply-founding-joined'
 const LEAD_KEY = 'omniply-xray-v1'
 

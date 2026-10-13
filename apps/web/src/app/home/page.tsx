@@ -27,7 +27,7 @@ import {
 export const metadata: Metadata = {
   title: 'Omniply... Marketing Autopilot for Local Practices',
   description:
-    'Be the practice AI assistants and people find: instant AI response to every call and message, content in your voice, compounding Google reviews, and client recall. One loop, four systems. You approve, it ships.',
+    'Be the practice AI assistants and people find: instant AI response to every call and message, content in your voice, compounding Google reviews, and client recall. One loop, four systems. You approve, it ships. $397/mo flat.',
 }
 
 const FAQ_ITEMS: FaqEntry[] = [
@@ -44,7 +44,7 @@ const FAQ_ITEMS: FaqEntry[] = [
     a: 'Setup is a guided conversation of roughly ten to fifteen minutes, and the system starts producing in hours. After that, your job is a review pass measured in minutes per week: read, click approve, done. Nothing carrying your name ships without your sign-off.',
   },
   {
-    q: 'What is included?',
+    q: 'What is included in the $397?',
     a: 'Everything in the loop. Weekly articles, the weekly newsletter with 25,000 email sends a month, social posts with designed graphics, branded lead-magnet guides, the 2-Minute Spine Check for your website, the AI response and recall systems, and the review growth engine. No per-piece fees, no content credits, no surprise line items.',
   },
   {
