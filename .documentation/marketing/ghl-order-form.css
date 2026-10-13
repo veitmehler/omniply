@@ -1,13 +1,14 @@
 /* ── Omniply order form — paste into GHL funnel page: Settings → Custom CSS ──
-   Aligns the one-step order form with the omniply.io design system:
-   near-black ground (#0E0E0F), white card, lime CTA (#C3F43B on #0B0B0C),
-   deep lime-green accents (#5F8A14) on light surfaces, system font stack.
+   Aligns the one-step order form with the omniply.io design system
+   (2026-10-13 launch palette): deep-petrol ground (#052234, the sales-page
+   header/hero), white card, lime CTA (#C3F43B on #0B0B0C), deep lime-green
+   accents (#5F8A14) on light surfaces, system font stack.
    Written against GHL's one-step order form classes (2026-08). */
 
-/* page ground: match the sales pages */
+/* page ground: match the sales-page header/hero (petrol, not black) */
 body,
 .bgCover {
-  background: #0E0E0F !important;
+  background: linear-gradient(180deg, #052234 0%, #0A2A3F 100%) !important;
 }
 
 /* the card — uniform 35px padding on desktop; on mobile 35px top/bottom
@@ -16,7 +17,9 @@ body,
   background: #ffffff;
   border: 1px solid #e2e3e6;
   border-radius: 14px;
-  box-shadow: 0 14px 48px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 14px 48px rgba(2, 16, 26, 0.55);
+  outline: 1px solid #164863;
+  outline-offset: 6px;
   padding-top: 35px !important;
   padding-bottom: 35px !important;
   font-family: -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
