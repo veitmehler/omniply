@@ -485,6 +485,7 @@ export function MarketingFooter() {
     { href: '/about', label: 'About' },
     { href: '/contact', label: 'Contact' },
     { href: '/data-security', label: 'Data & AI' },
+    { href: '/agents', label: 'For AI Agents' },
     { href: '/terms', label: 'Terms' },
     { href: '/privacy', label: 'Privacy' },
     { href: '/refund-policy', label: 'Refunds' },

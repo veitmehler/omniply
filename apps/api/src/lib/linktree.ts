@@ -133,7 +133,8 @@ export async function buildStandaloneLinktreeHtml(userId: string): Promise<strin
     socials,
   })
   const name = esc(brand.organizationName ?? 'Links')
-  const entitySchemas = [buildClinicEntity(brand)]
+  const { ensureAgentMcpUrl } = await import('./agent-mcp-token')
+  const entitySchemas = [buildClinicEntity(brand, { mcpUrl: await ensureAgentMcpUrl(userId).catch(() => null) })]
   const faqSchema = buildFaqSchema(((brand.clinicFaqs as unknown as ClinicFaq[] | null) ?? []))
   const schemaBlock = buildFencedBlock(faqSchema ? [...entitySchemas, faqSchema] : entitySchemas)
   return `<!doctype html>
@@ -204,7 +205,8 @@ export async function publishLinktreePage(userId: string): Promise<string | null
 
     // Entity (+FAQ) schema rides on the linktree page — the coverage floor
     // every WP clinic gets regardless of the page ladder (agent plan 3.1).
-    const entitySchemas = [buildClinicEntity(brand)]
+    const { ensureAgentMcpUrl } = await import('./agent-mcp-token')
+  const entitySchemas = [buildClinicEntity(brand, { mcpUrl: await ensureAgentMcpUrl(userId).catch(() => null) })]
     const faqSchema = buildFaqSchema(((brand.clinicFaqs as unknown as ClinicFaq[] | null) ?? []))
     const contentWithSchema = `${html}\n${buildFencedBlock(faqSchema ? [...entitySchemas, faqSchema] : entitySchemas)}`
 

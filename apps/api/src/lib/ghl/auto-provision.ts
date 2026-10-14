@@ -118,6 +118,9 @@ export async function provisionLocation(
       ghlBillingToken: billingToken,
       ghlReviewToken: reviewToken,
       ghlDmToken: dmToken,
+      // Direct agent booking endpoint token (MCP plan Phase 2) — minted at
+      // birth so the discovery trail never advertises a missing endpoint.
+      agentMcpToken: randomBytes(24).toString('base64url'),
     },
   })
   const owner = await prisma.user.create({

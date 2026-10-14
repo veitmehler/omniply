@@ -37,7 +37,7 @@ function postalAddress(brand: Brand): Record<string, unknown> | null {
 }
 
 /** MedicalClinic entity: name, contact, address, hours, GBP link, booking action. */
-export function buildClinicEntity(brand: Brand): Record<string, unknown> {
+export function buildClinicEntity(brand: Brand, opts?: { mcpUrl?: string | null }): Record<string, unknown> {
   const entity: Record<string, unknown> = {
     '@context': 'https://schema.org',
     '@type': 'MedicalClinic',
@@ -60,11 +60,27 @@ export function buildClinicEntity(brand: Brand): Record<string, unknown> {
   }
   if (brand.googleBusinessProfileUrl) entity.sameAs = [brand.googleBusinessProfileUrl]
   if (brand.primarySpecialization) entity.medicalSpecialty = brand.primarySpecialization
-  if (brand.bookingUrl) {
+  if (brand.bookingUrl || opts?.mcpUrl) {
+    // Two entry points on one ReserveAction: the human booking page and the
+    // machine endpoint (MCP) — the discovery trail for AI agents (plan:
+    // .plans/mcp-booking-endpoint). Agents that read schema find the direct
+    // protocol; everyone else keeps the page.
+    const targets: Array<Record<string, unknown>> = []
+    if (brand.bookingUrl) targets.push({ '@type': 'EntryPoint', urlTemplate: brand.bookingUrl })
+    if (opts?.mcpUrl) {
+      targets.push({
+        '@type': 'EntryPoint',
+        urlTemplate: opts.mcpUrl,
+        httpMethod: 'POST',
+        contentType: 'application/json',
+        description:
+          'Model Context Protocol (MCP) endpoint for AI assistants: JSON-RPC tools get_clinic_info, get_availability, book_appointment, request_callback. See https://omniply.io/agents',
+      })
+    }
     entity.potentialAction = {
       '@type': 'ReserveAction',
       name: 'Book an Appointment',
-      target: { '@type': 'EntryPoint', urlTemplate: brand.bookingUrl },
+      target: targets.length === 1 ? targets[0] : targets,
     }
   }
   return entity

@@ -28,6 +28,7 @@ import { logger } from './logger'
 import { assertSafeWpUrl } from './ssrf'
 import { withTimeout } from './net/with-timeout'
 import { buildClinicEntity, buildFaqSchema, type ClinicFaq } from './clinic-schema'
+import { ensureAgentMcpUrl } from './agent-mcp-token'
 
 const PLUGIN_SLUG = 'omniply-connect'
 
@@ -155,7 +156,8 @@ export async function installOmniplyConnect(userId: string): Promise<OmniplyConn
     // ── 3. Head JSON-LD ─────────────────────────────────────────────────────
     const brand = await brandSettingsForUser(userId)
     if (brand?.organizationName) {
-      const schemas: Record<string, unknown>[] = [buildClinicEntity(brand)]
+      const mcpUrl = await ensureAgentMcpUrl(userId)
+      const schemas: Record<string, unknown>[] = [buildClinicEntity(brand, { mcpUrl })]
       const faqSchema = buildFaqSchema(((brand.clinicFaqs as unknown as ClinicFaq[] | null) ?? []))
       if (faqSchema) schemas.push(faqSchema)
       const headRes = await call(`${siteBase}/?rest_route=/omniply/v1/head`, {
