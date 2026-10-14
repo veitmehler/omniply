@@ -239,11 +239,17 @@ export async function mcpRoutes(app: FastifyInstance) {
             const conversationId = await conversationFor(account.id, undefined)
             reply.header('Mcp-Session-Id', conversationId)
             const requested = (params as { protocolVersion?: string }).protocolVersion
+            // Patient-facing name, never the internal account label ("<Buyer>'s
+            // Account" — the exact bug the friendly-name sync exists to kill).
+            const brand = await prisma.brandSettings.findFirst({
+              where: { userId: account.ownerUserId! },
+              select: { organizationName: true },
+            })
             return reply.send(
               rpcResult(id, {
                 protocolVersion: requested || PROTOCOL_VERSION,
                 capabilities: { tools: {} },
-                serverInfo: { name: `omniply-clinic`, title: account.name ?? 'Clinic booking', version: '1.0.0' },
+                serverInfo: { name: `omniply-clinic`, title: brand?.organizationName ?? account.name ?? 'Clinic booking', version: '1.0.0' },
                 instructions:
                   'Booking assistant for this practice. Call get_clinic_info first; use get_availability before book_appointment — slotStart must be an exact offered startIso.',
               }),
