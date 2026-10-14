@@ -330,10 +330,16 @@ async function handleToolCall(
           phone: phone.trim(),
           slotStart: slotStart.trim(),
         })
+        // The response must never promise an email the attach didn't deliver
+        // (same truthfulness bar as the chat agent, C3 2026-10-08).
+        let emailAttached = false
         if (email?.trim()) {
-          await executeAddEmail(ctx, conversationId, { type: 'add_contact_email', email: email.trim() }).catch(
-            (err) => logger.warn({ err, conversationId }, '[mcp] email attach failed (booking landed)'),
-          )
+          emailAttached = await executeAddEmail(ctx, conversationId, { type: 'add_contact_email', email: email.trim() })
+            .then(() => true)
+            .catch((err) => {
+              logger.warn({ err, conversationId }, '[mcp] email attach failed (booking landed)')
+              return false
+            })
         }
         await logToolCall(conversationId, name, { name: patientName, phone, slotStart }, 'booked')
         logger.info({ accountId: account.id, conversationId, slotStart }, '[mcp] appointment booked via MCP')
@@ -341,9 +347,11 @@ async function handleToolCall(
           booked: true,
           slotStart,
           practice: ctx.practiceName,
-          confirmation: email?.trim()
+          confirmation: emailAttached
             ? 'Appointment booked. A confirmation is sent to the provided email.'
-            : 'Appointment booked. Provide an email to receive a written confirmation.',
+            : email?.trim()
+              ? 'Appointment booked. The email could NOT be attached (it may belong to another patient here) — the booking stands; the practice will confirm by phone.'
+              : 'Appointment booked. Provide an email to receive a written confirmation.',
         })
       } catch (err) {
         await logToolCall(conversationId, name, { name: patientName, phone, slotStart }, 'FAILED')
