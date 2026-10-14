@@ -15,6 +15,7 @@ import { stripeBillingRoutes } from './routes/stripe-billing'
 import { xrayReportRoutes } from './routes/xray-report'
 import { spineCheckRoutes } from './routes/spine-check'
 import { agentRoutes } from './routes/agent'
+import { mcpRoutes } from './mcp/routes'
 import { voiceAgentRoutes } from './routes/voice-agent'
 import { voiceAssistantRoutes } from './routes/voice-assistant'
 import { pmsRoutes } from './routes/pms'
@@ -106,6 +107,7 @@ async function main() {
 
   // ── Routes ─────────────────────────────────────────────────────────────────
   await app.register(healthRoutes)
+  await app.register(mcpRoutes) // direct agent booking (MCP) — public, token-pathed
   await app.register(aiRoutes, { prefix: '/api/ai' })
   await app.register(imageRoutes, { prefix: '/api/images' })
   await app.register(mediaRoutes, { prefix: '/api' })

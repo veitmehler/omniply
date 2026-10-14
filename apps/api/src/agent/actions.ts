@@ -186,7 +186,7 @@ async function callbackSummary(ctx: AgentContext, conversationId: string): Promi
   }
 }
 
-async function executeCallback(
+export async function executeCallback(
   ctx: AgentContext,
   conversationId: string,
   action: Extract<AgentAction, { type: 'request_callback' }>,
@@ -374,7 +374,7 @@ async function executeCallback(
  * same convergence rules as callbacks) → GHL appointment at the validated
  * slot → audit row + note. No LLM call — the caller is live on the phone.
  */
-async function executeBooking(
+export async function executeBooking(
   ctx: AgentContext,
   conversationId: string,
   action: Extract<AgentAction, { type: 'book_appointment' }>,
@@ -549,7 +549,7 @@ async function executeCapture(
   logger.info({ accountId: ctx.accountId, conversationId, guide: action.guideSlug, converged: Boolean(existingId) }, '[agent] capture → GHL + drip')
 }
 
-async function executeAddEmail(
+export async function executeAddEmail(
   ctx: AgentContext,
   conversationId: string,
   action: Extract<AgentAction, { type: 'add_contact_email' }>,
