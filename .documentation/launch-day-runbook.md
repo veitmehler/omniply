@@ -174,6 +174,18 @@ topics only), azavea.ai polish, cold-domain warmup start.
   before flipping prod. Chat/voice agents are Haiku 4.5 — UNAFFECTED.
 
 ### Post-launch backlog (from the 2026-10-09 test purchase)
+- **ChatGPT Apps directory submission — the aggregator play (Veit
+  2026-10-14, post-launch-week):** OpenAI's Apps SDK is built ON MCP; our
+  per-clinic MCP server (live 2026-10-14, .plans/mcp-booking-endpoint) is
+  ~80% of a submission. Restaurants got in-chat booking Aug 10, 2026 via
+  AGGREGATORS (OpenTable/Resy/Yelp spoke for thousands at once) — healthcare
+  appointments are the obvious next vertical and the same pattern will
+  repeat. One "Omniply" app = every Omniply practice bookable inside
+  ChatGPT. Scope: Apps SDK wrapper over the existing MCP tools (clinic
+  selection/routing layer), OpenAI review requirements, healthcare-vertical
+  policy check. Window matters: before anyone else in local healthcare
+  copies the restaurant precedent. Related also-backlogged: plugin v1.2
+  (head link + /.well-known), A2A/NLWeb bridges, reschedule/cancel tools.
 - Lighter-cadence offer (Veit 2026-10-09): clinics who feel full cadence is
   too much can choose 1–2 articles/wk and 1–4 newsletters/wk. Framed as
   customization; every step down is margin (content COGS ~$55/mo full →
