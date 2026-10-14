@@ -223,6 +223,18 @@
   .ctabox .btn { width: 100%; max-width: 420px; }
   .ctabox .under { font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.1em; color: var(--dim); margin-top: 12px; text-transform: uppercase; }
 
+
+  /* ── consultation modal ── */
+  .consult-link { display:block; margin:18px auto 0; background:none; border:none; color:var(--dim); font-family:var(--mono); font-size:12.5px; letter-spacing:0.08em; text-transform:uppercase; cursor:pointer; text-decoration:underline; text-underline-offset:3px; }
+  .consult-link:hover { color: var(--lime); }
+  .consult-overlay { position:fixed; inset:0; z-index:90; background:rgba(2,16,26,0.82); display:none; align-items:center; justify-content:center; padding:18px; }
+  .consult-overlay.open { display:flex; }
+  .consult-box { position:relative; width:100%; max-width:520px; max-height:92svh; overflow-y:auto; background:var(--bg1); border:1px solid var(--line); border-radius:14px; padding:22px 20px; }
+  .consult-box h3 { font-size:20px; font-weight:700; margin:0 0 6px; color:var(--ink); }
+  .consult-box .sub { font-size:13.5px; color:var(--dim); margin:0 0 14px; line-height:1.5; }
+  .consult-close { position:absolute; top:10px; right:12px; background:none; border:none; color:var(--dim); font-size:22px; cursor:pointer; line-height:1; }
+  .consult-close:hover { color:var(--ink); }
+  .consult-box iframe { width:100%; border:none; min-height:560px; border-radius:8px; background:#fff; }
   footer.fine {
     position: relative; z-index: 1;
     font-size: 12px; color: #6E6E74; text-align: center; padding: 18px 20px 30px; max-width: 640px;
@@ -356,6 +368,7 @@
     <div class="ctabox">
       <a class="btn" id="cta" href="/walkthrough">Watch the Practice Autopilot Walkthrough &rarr;</a>
       <div class="under">No call. No pressure. The exact system, on screen.</div>
+      <button class="consult-link" type="button" data-consult-open>Or talk it through: 15-minute consultation with the founder &rarr;</button>
     </div>
 
     <!-- Demo line (missed-call sweep Part 4b): the proof moment — the
@@ -378,6 +391,16 @@
   </section>
 </div>
 
+
+<!-- consultation modal (lazy iframe — loads only on open) -->
+<div class="consult-overlay" id="consult-overlay" role="dialog" aria-modal="true" aria-label="Book a 15-minute practice consultation">
+  <div class="consult-box">
+    <button class="consult-close" id="consult-close" aria-label="Close">&times;</button>
+    <h3>15-minute practice consultation</h3>
+    <p class="sub">With the founder. Bring your X-Ray results if you have them. No pitch &mdash; just straight answers about your practice.</p>
+    <div id="consult-frame"></div>
+  </div>
+</div>
 <footer class="fine">Estimates are computed from your answers and the stated, adjustable assumptions — they are illustrations, not guarantees. © Omniply · <a href="https://www.omniply.io">omniply.io</a></footer>
 
 <script>
@@ -1019,6 +1042,42 @@ if (typeof module !== 'undefined' && module.exports) module.exports = XRAY
       under.textContent = 'Something went wrong, please tap again.'
     })
   })
+})()
+</script>
+
+<script>
+(function () {
+  'use strict'
+  var overlay = document.getElementById('consult-overlay')
+  var frameHost = document.getElementById('consult-frame')
+  var loaded = false
+  function openConsult () {
+    if (!loaded) {
+      loaded = true
+      var f = document.createElement('iframe')
+      f.src = 'https://links.omniply.io/widget/booking/71yY77QNTMNPtHYvqAXl'
+      f.id = 'omniply-consult-cal'
+      f.setAttribute('allow', 'payment')
+      f.setAttribute('scrolling', 'no')
+      frameHost.appendChild(f)
+      var s = document.createElement('script')
+      s.src = 'https://links.omniply.io/js/form_embed.js'
+      document.body.appendChild(s)
+    }
+    overlay.classList.add('open')
+    document.body.style.overflow = 'hidden'
+  }
+  function closeConsult () {
+    overlay.classList.remove('open')
+    document.body.style.overflow = ''
+  }
+  document.querySelectorAll('[data-consult-open]').forEach(function (el) {
+    el.addEventListener('click', function (e) { e.preventDefault(); openConsult() })
+  })
+  document.getElementById('consult-close').addEventListener('click', closeConsult)
+  overlay.addEventListener('click', function (e) { if (e.target === overlay) closeConsult() })
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeConsult() })
+  if (/[?&]consult=1/.test(location.search)) openConsult()
 })()
 </script>
 </body>
