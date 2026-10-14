@@ -8,7 +8,18 @@ Onboarding is a chat, not a settings page. It collects everything Omniply needs 
 
 ## Step by step
 
-**1. Your website.** Paste your website address. Omniply reads your pages to learn your services, your location, and how you talk about your practice.
+**1. Confirm your business details.** The very first card shows your practice's details, pre-filled from your Omniply CRM: business name, your name, email, phone, website, address, and timezone. Check every line — these flow into your content, your public pages, and the messages patients receive.
+
+The **Business name** field deserves special attention:
+
+- Enter your practice's **everyday name, exactly as patients know it** — for example *Simon Chiropractic Center*. No legal suffixes: not "LLC", "PLLC", "Inc." or "Pty Ltd". This name appears in booking confirmation texts and emails, your newsletters, your articles, and your link-in-bio page.
+- If the field is **empty or shows something generic** (like an account name ending in "'s Account"), that just means your CRM was created before your practice name was on file. Type your real practice name — that's all that's needed.
+- **When you correct the name here, Omniply also updates your CRM's display name** (the "Friendly Business Name" in your Omniply CRM's Business Profile) to match, so patient-facing messages sent from the CRM show the right name too. You only ever have to fix it once, in this one place.
+- Your **Legal Business Name** (in your Omniply CRM under Settings → Business Profile) is a different field and is never changed by onboarding. Keep it exactly as it appears on your tax records — text-message registration (A2P) verifies it against your EIN, so "Smith Chiropractic Group PLLC" belongs there even though patients just see "Smith Chiropractic".
+
+Rule of thumb: **Friendly Business Name = what patients see. Legal Business Name = what the IRS sees.** They are allowed to differ, and usually should.
+
+Also confirm your **website** on this card — Omniply reads your pages to learn your services, your location, and how you talk about your practice.
 
 **2. Your blog, if you have one.** If the scan finds blog posts, you will be asked one important question: **did you write these yourself?** Only confirm this if the writing is genuinely yours (or your own team's). When you confirm, Omniply studies those posts as a writing sample so your new content matches your existing voice. If the posts were outsourced or AI-written, say so; the system will build your voice from the interview instead.
 

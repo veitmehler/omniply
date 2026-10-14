@@ -80,6 +80,39 @@ export async function commitBusinessConfirm(ctx: StepContext, answer: unknown): 
   })
   if (merged.timezone) await settingsUpsert(ctx.userId, { socialTimezone: merged.timezone })
 
+  // Friendly-name sync (Veit design 2026-10-14): the owner just confirmed the
+  // patient-facing practice name. If it DIFFERS from GHL's Friendly Business
+  // Name ({{location.name}} — what every snapshot SMS/email template renders),
+  // the edit is the consent: push the confirmed name to the location so
+  // patient messages never say "<Buyer>'s Account". Writes the location name
+  // ONLY — the Legal Business Name (A2P/EIN) is never touched (and isn't even
+  // reachable through this API surface). Best-effort; never blocks the step.
+  const ghlFriendly = ((ctx.stepData.ghlLocationName as string | undefined) ?? '').trim()
+  const confirmedName = merged.organizationName.trim()
+  if (ghlFriendly && confirmedName.toLowerCase() !== ghlFriendly.toLowerCase()) {
+    void (async () => {
+      const { getGhlCredentials } = await import('../lib/ghl/settings')
+      const creds = await getGhlCredentials(ctx.userId)
+      if (!creds) return
+      const res = await fetch(`https://services.leadconnectorhq.com/locations/${creds.locationId}`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${creds.apiKey}`,
+          Version: '2021-07-28',
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({ name: confirmedName }),
+      })
+      if (res.ok) {
+        ctx.stepData.ghlLocationName = confirmedName
+        logger.info({ userId: ctx.userId, from: ghlFriendly, to: confirmedName }, '[onboarding] friendly business name synced to GHL')
+      } else {
+        logger.warn({ userId: ctx.userId, status: res.status }, '[onboarding] friendly-name sync failed (non-fatal)')
+      }
+    })().catch((err) => logger.warn({ err, userId: ctx.userId }, '[onboarding] friendly-name sync crashed (non-fatal)'))
+  }
+
   const oldWebsite = (prefill.website ?? '').trim()
   const newWebsite = (merged.website ?? '').trim()
   ctx.stepData.ghlPrefill = merged
