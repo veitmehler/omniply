@@ -92,7 +92,7 @@ export async function articleRoutes(app: FastifyInstance) {
         ...statusFilter,
       },
       include: {
-        topic: { select: { topic: true, mode: true } },
+        topic: { select: { topic: true, mode: true, publishingDate: true, scheduledDate: true } },
         _count: { select: { pipelineSteps: true, errorLogs: true } },
         // In-flight social set, if any — lets the listing show a live
         // creation/review/scheduling indicator per article.

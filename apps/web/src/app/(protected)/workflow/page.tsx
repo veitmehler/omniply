@@ -20,7 +20,7 @@ type ArticleJob = {
   totalTokens: number
   createdAt: string
   startedAt: string | null
-  topic: { topic: string; mode: string }
+  topic: { topic: string; mode: string; publishingDate: string | null; scheduledDate: string | null }
   _count: { pipelineSteps: number; errorLogs: number }
   /** In-flight social set (pending/processing/ready/scheduling), at most one entry */
   socialAutomationRuns?: { status: string; completedSpecs: number; totalSpecs: number }[]
@@ -238,10 +238,21 @@ export default function WorkflowPage() {
                         {job.topic.topic}
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        {new Date(job.createdAt).toLocaleDateString('en-US', {
-                          month: 'short', day: 'numeric', year: 'numeric',
-                          hour: '2-digit', minute: '2-digit',
-                        })}
+                        {(() => {
+                          // Publish date (topic nominal date — what /articles will
+                          // show at approval); generation timestamp as fallback.
+                          // Date-only values are UTC midnight — format in UTC so
+                          // the day doesn't shift in western timezones.
+                          const nominal = job.topic.publishingDate ?? job.topic.scheduledDate
+                          return nominal
+                            ? `Publishes ${new Date(nominal).toLocaleDateString('en-US', {
+                                month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC',
+                              })}`
+                            : new Date(job.createdAt).toLocaleDateString('en-US', {
+                                month: 'short', day: 'numeric', year: 'numeric',
+                                hour: '2-digit', minute: '2-digit',
+                              })
+                        })()}
                       </p>
                     </div>
                     <div className="flex items-center gap-4 flex-shrink-0">
