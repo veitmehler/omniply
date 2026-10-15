@@ -1,22 +1,30 @@
 # Authority Content Engine (Azavea) — Implementation Plan v2
 
-Status: v1 BUILT 2026-10-15 (deploy gated on idle job queue as always).
-PIPELINE-FIRST per Veit (no hand-written posts — the engine generating from
-our own articles IS the proof of concept).
+Status: v2 ARC-INTEGRATED, SHIPPED 2026-10-15. Veit correction same day:
+authority registers are woven INTO the existing story-arc posts — NOT a
+new standalone daily post. The v1 standalone build (cron + processor +
+hook-card + linkedin_personal surface) was removed the same day it shipped,
+before its first cron fire; no standalone post was ever generated.
 Chiro-platform port: .plans/authority-engine-chiro.implementation-plan.md.
 
-Built pieces: authority-rotation.ts (persisted shuffled bag, anti-streak,
-fit swap; 4 unit tests), authority-post.ts (generator, 5 register shapes,
-step-250 override hook, substance-first system rule), authority-processor.ts
-(run slotVariant='authority' → spec result + ready posts + preview through
-the EXISTING approval/dispatch flow; runSocialAutomation branches so the
-safety sweeper recovers correctly), handlers/authority-post.ts (daily cron
-05:30 UTC, azavea-gated, article-pool source, AUTHORITY_ENGINE_ENABLED=0
-kill-switch), dispatch-run.ts (new 'linkedin_personal' surface + authority
-text-only allowance), syndication/generate.ts (dominant register per
-platform article from the same bag, stored on syndication_articles.register),
-migration 20261015090000 (brand_settings.authorityEngineState +
-syndication_articles.register), web preview labels.
+Shipped shape:
+- authority-rotation.ts: persisted shuffled bag, anti-streak, fit swap;
+  4 unit tests. State on brand_settings.authorityEngineState.
+- authority-registers.ts: the 5 register shapes + articleRegisterDirective
+  (syndication) + arcRegisterDirective (story arcs).
+- story-arc.ts: azavea arcs draw ONE dominant register per ARC from the bag;
+  the directive shapes beat 1's hook and the final resolution; all serialized
+  mechanics + truth/compliance rules override register pressure. Clinics
+  untouched until the chiro port.
+- syndication/generate.ts: one dominant register per platform article from
+  the SAME bag, stored on syndication_articles.register (azavea-only).
+  Live-proven on the seasonal-dips article (belief_shift LI / leadership
+  Medium).
+- Posts flow through the EXISTING story slots (P1/P3, all platforms; story
+  posts already route to personal LinkedIn when mapped) — cadence ~12 typed
+  beats/wk ≈ 1.7/day, no new machinery.
+- worker.ts keeps a boss.unschedule('authority-post-generate') cleanup line
+  so the removed cron's persisted pg-boss schedule dies.
 
 ## The five types (Sehgal taxonomy)
 opinionated · belief-shifting · thought leadership · proof-led ·

@@ -192,7 +192,7 @@ export function SyndicationPanels({ workflow }: { workflow: WorkflowView }) {
                         <a
                           key={d.id}
                           href={`/api/articles/${jobId}/diagram-svg/${d.id}`}
-                          download={`diagram-${d.position}.svg`}
+                          download={`diagram-${d.position}.${d.downloadExt ?? 'svg'}`}
                           className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-md border border-border bg-background hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
                         >
                           <Download className="h-3 w-3" />

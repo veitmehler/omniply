@@ -34,10 +34,13 @@ backlog.
    (enemy→opinion, declaration/line→leadership, moments→proof,
    proof→framework, myths/derived→belief_shift). Pools stored on brand
    settings; the generator draws from them plus published articles.
-4. **Matrix slot**: the clinic weekly matrix gains an authority-post slot on
-   the shared bag rotation (clinic design language: FB/IG tint-motif
-   render, same as Azavea's). Cadence conservative by default (2-3/week —
-   clinics, unlike Azavea, didn't sign up to be loud; owner can raise it).
+4. **Register-infused story arcs** (REVISED 2026-10-15, mirroring the azavea
+   v2 correction: registers go INTO the existing story-arc posts, no new
+   slot): clinic story arcs draw a dominant register per arc from the shared
+   bag — the clinic matrix's existing story slots carry it. Gate: extend the
+   story-arc draw beyond vertical==='azavea' once the typed pools (items 1-3)
+   exist; clinic registers draw from the POOLS + article, azavea-style
+   article-only until then.
 5. **Owner's personal LinkedIn (optional onboarding ask)**: the
    `linkedinPersonal` mechanism already exists in the dispatcher — clinics
    currently map business pages only. Add an optional onboarding/Settings

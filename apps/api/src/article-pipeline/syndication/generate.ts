@@ -13,7 +13,7 @@ import { recordLLMUsage } from '../../lib/llm-usage'
 import { logger } from '../../lib/logger'
 import { sanitizeDashesText } from '../../lib/text/dash-sanitizer'
 import { drawAuthorityType, type AuthorityType } from '../../social/generators/authority-rotation'
-import { articleRegisterDirective } from '../../social/generators/authority-post'
+import { articleRegisterDirective } from '../../social/generators/authority-registers'
 
 const PLATFORMS = ['linkedin', 'medium'] as const
 export type SyndicationPlatform = (typeof PLATFORMS)[number]

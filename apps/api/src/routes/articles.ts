@@ -137,6 +137,7 @@ export async function articleRoutes(app: FastifyInstance) {
                 svgS3Key: true,
                 pngS3Key: true,
                 pngDarkS3Key: true,
+                stylizedPngS3Key: true,
               },
               orderBy: { position: 'asc' },
             },
@@ -176,6 +177,8 @@ export async function articleRoutes(app: FastifyInstance) {
               cdnUrl: d.pngS3Key ? `${cdnBase}/${d.pngS3Key}` : null,
               svgCdnUrl: d.svgS3Key ? `${cdnBase}/${d.svgS3Key}` : null,
               darkCdnUrl: d.pngDarkS3Key ? `${cdnBase}/${d.pngDarkS3Key}` : null,
+              // What the download route will actually serve (stylized > png > svg).
+              downloadExt: d.stylizedPngS3Key || d.pngS3Key ? 'png' : 'svg',
             })),
           }
         : null,
@@ -838,7 +841,28 @@ export async function articleRoutes(app: FastifyInstance) {
         orderBy: { platform: 'asc' },
       })
 
-      return reply.send({ articles })
+      // Diagram download list for the client modal — clients add these to their
+      // LinkedIn/Medium posts by hand (Veit 2026-10-15). The download route
+      // serves the branded restyled PNG when available.
+      const page = await prisma.sitePage.findFirst({
+        where: { jobId },
+        select: {
+          diagrams: {
+            select: { id: true, position: true, sectionTitle: true, stylizedPngS3Key: true, pngS3Key: true, svgS3Key: true },
+            orderBy: { position: 'asc' },
+          },
+        },
+      })
+      const diagrams = (page?.diagrams ?? [])
+        .filter((d) => d.stylizedPngS3Key || d.pngS3Key || d.svgS3Key)
+        .map((d) => ({
+          id: d.id,
+          position: d.position,
+          sectionTitle: d.sectionTitle,
+          downloadExt: d.stylizedPngS3Key || d.pngS3Key ? 'png' : 'svg',
+        }))
+
+      return reply.send({ articles, diagrams })
     },
   )
 
@@ -991,16 +1015,22 @@ export async function articleRoutes(app: FastifyInstance) {
 
       const diagram = await prisma.articleDiagram.findFirst({
         where: { id: diagramId, sitePage: { jobId, userId: user.id } },
-        select: { svgS3Key: true },
+        select: { svgS3Key: true, pngS3Key: true, stylizedPngS3Key: true },
       })
 
       if (!diagram) return reply.status(404).send({ error: 'Diagram not found' })
-      if (!diagram.svgS3Key) return reply.status(404).send({ error: 'SVG not available' })
+      // Serve the SAME asset the published article shows: the branded restyled
+      // PNG when it exists, plain raster next, raw Mermaid SVG only as the
+      // last-resort fallback (this route predates the restyle feature and used
+      // to hand out the pre-restyle SVG — Veit 2026-10-15).
+      const s3Key = diagram.stylizedPngS3Key ?? diagram.pngS3Key ?? diagram.svgS3Key
+      if (!s3Key) return reply.status(404).send({ error: 'Diagram image not available' })
 
       try {
-        const { body, contentType } = await readS3Object(diagram.svgS3Key)
+        const { body, contentType } = await readS3Object(s3Key)
+        const isSvg = s3Key.endsWith('.svg') || contentType.includes('svg')
         return reply
-          .header('Content-Type', contentType.includes('svg') ? 'image/svg+xml' : contentType)
+          .header('Content-Type', isSvg ? 'image/svg+xml' : contentType.includes('image') ? contentType : 'image/png')
           .header('Cache-Control', 'public, max-age=86400')
           .send(body)
       } catch (err) {

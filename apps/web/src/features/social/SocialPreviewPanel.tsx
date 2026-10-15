@@ -24,12 +24,6 @@ const POST_TYPE_LABELS: Record<string, string> = {
   pitch_carousel: 'Pitch carousel',
   pitch_hook: 'Pitch hook',
   tips_story: 'Tips story',
-  authority_text: 'Authority post',
-}
-
-/** Surface names: 'linkedin_personal' is the owner's personal profile (authority posts). */
-const PLATFORM_LABELS: Record<string, string> = {
-  linkedin_personal: 'LinkedIn (personal)',
 }
 
 export type SpecPreviewPlatform = {
@@ -523,7 +517,7 @@ function PlatformCaptions({
         return (
           <div key={p.platform} className="text-xs">
             <div className="flex items-center gap-2">
-              <span className="font-medium capitalize">{PLATFORM_LABELS[p.platform] ?? p.platform}</span>
+              <span className="font-medium capitalize">{p.platform}</span>
               {editable && !isEditing && (
                 <button
                   onClick={() => startEdit(p.platform, p.caption)}

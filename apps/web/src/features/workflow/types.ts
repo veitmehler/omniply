@@ -56,6 +56,8 @@ export type ArticleDiagram = {
   sectionTitle: string
   caption?: string | null
   svgCdnUrl?: string | null
+  /** Format the download route serves: branded restyled/plain PNG, SVG fallback. */
+  downloadExt?: 'png' | 'svg'
 }
 
 export type SitePage = {

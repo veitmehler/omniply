@@ -9,6 +9,8 @@ import { recordLLMUsage } from '../../lib/llm-usage'
 import { logger } from '../../lib/logger'
 import type { AutomationLogContext } from '../automation/log-context'
 import type { ArticleContentContext } from '../automation/content'
+import { drawAuthorityType } from './authority-rotation'
+import { arcRegisterDirective } from './authority-registers'
 
 /**
  * Story-arc generator (engagement v2 — .plans/story-arc-posts plan).
@@ -62,6 +64,7 @@ function buildUserPrompt(opts: {
   articleUrl: string
   ctaLine: string
   priorPosts: string[]
+  registerDirective: string | null
 }): string {
   const prior = opts.priorPosts.length
     ? opts.priorPosts.map((p, i) => `--- Prior post ${i + 1} (most recent first) ---\n${p}`).join('\n\n')
@@ -74,7 +77,7 @@ ${opts.narratorBeats || '(none provided: stay with industry observations and the
 
 WRITING VOICE:
 ${opts.writingStyle || 'Plainspoken, concrete, operator-to-operator.'}
-
+${opts.registerDirective ? `\n${opts.registerDirective}\n` : ''}
 ADVERTISING RESTRICTIONS (hard rules; may be empty):
 ${opts.restrictions}
 
@@ -178,11 +181,28 @@ export async function generateStoryArc(opts: {
 }): Promise<StoryBeat[]> {
   const { userId, beatCount, logCtx } = opts
 
-  const [brand, theme, t] = await Promise.all([
+  const [brand, theme, t, vertical] = await Promise.all([
     brandSettingsForUser(userId),
     loadSocialBrandTheme(userId),
     loadPromptTemplate(230, { userId }),
+    verticalForUser(userId).catch(() => null),
   ])
+
+  // Authority engine v2 (Veit 2026-10-15): azavea arcs carry ONE dominant
+  // rhetorical register, drawn from the same persisted anti-streak bag the
+  // syndication articles rotate through. Clinics stay untouched until the
+  // chiro port (.plans/authority-engine-chiro plan). Draw failure degrades
+  // to a registerless arc, never blocks the run.
+  let registerDirective: string | null = null
+  if (vertical === 'azavea') {
+    try {
+      const register = await drawAuthorityType(userId)
+      registerDirective = arcRegisterDirective(register)
+      logger.info({ ...logCtx, register }, '[story-arc] authority register drawn for arc')
+    } catch (err) {
+      logger.warn({ ...logCtx, err }, '[story-arc] register draw failed — generating without one')
+    }
+  }
 
   let restrictions = ''
   try {
@@ -211,6 +231,7 @@ export async function generateStoryArc(opts: {
     articleUrl: opts.articleUrl,
     ctaLine: theme.socialCallToAction?.trim() || '',
     priorPosts: prior.map((p) => p.content),
+    registerDirective,
   })
 
   const provider = (t?.defaultProvider ?? 'anthropic').toLowerCase()
@@ -391,7 +412,6 @@ export async function generateStoryArc(opts: {
       }
     }
   }
-  const vertical = await verticalForUser(userId).catch(() => null)
   const commentHook =
     vertical === 'azavea'
       ? 'Comment "XRAY" and I will send you the free 2-minute Practice X-Ray.'

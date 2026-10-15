@@ -10,7 +10,7 @@
  * straight into LinkedIn's editor.
  */
 import { useEffect, useState } from 'react'
-import { BookMarked, ClipboardCheck, ClipboardCopy, Linkedin, Loader2, X } from 'lucide-react'
+import { BookMarked, ClipboardCheck, ClipboardCopy, Download, Linkedin, Loader2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import { markdownToHtml } from '@/features/workflow/markdown-to-html'
@@ -23,6 +23,13 @@ interface SyndicationArticle {
   errorMessage?: string | null
 }
 
+interface SyndicationDiagram {
+  id: string
+  position: number
+  sectionTitle: string
+  downloadExt: 'png' | 'svg'
+}
+
 export function SyndicationModal({
   jobId,
   articleTitle,
@@ -33,6 +40,7 @@ export function SyndicationModal({
   onClose: () => void
 }) {
   const [articles, setArticles] = useState<SyndicationArticle[]>([])
+  const [diagrams, setDiagrams] = useState<SyndicationDiagram[]>([])
   const [loaded, setLoaded] = useState(false)
   const [tab, setTab] = useState<'linkedin' | 'medium'>('linkedin')
   const [copied, setCopied] = useState<string | null>(null)
@@ -43,6 +51,7 @@ export function SyndicationModal({
     if (res?.ok) {
       const data = await res.json()
       setArticles(data.articles ?? [])
+      setDiagrams(data.diagrams ?? [])
     }
     setLoaded(true)
   }
@@ -186,6 +195,27 @@ export function SyndicationModal({
                   ? 'Paste into a new LinkedIn Article — headings and formatting carry over.'
                   : 'Paste into a new Medium story — or use Medium’s Import tool with your live article link to pull images automatically.'}
               </p>
+              {diagrams.length > 0 && (
+                <div className="mt-4">
+                  <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                    Add your branded diagrams to the post:
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {diagrams.map((d) => (
+                      <a
+                        key={d.id}
+                        href={`/api/articles/${jobId}/diagram-svg/${d.id}`}
+                        download={`diagram-${d.position}.${d.downloadExt}`}
+                        className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                      >
+                        <Download className="h-3 w-3" />
+                        Diagram {d.position}
+                        {d.sectionTitle ? ` — ${d.sectionTitle.slice(0, 24)}` : ''}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
             </>
           ) : (
             <p className="py-8 text-sm text-muted-foreground">No platform articles yet.</p>
