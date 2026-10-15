@@ -31,6 +31,10 @@ export async function getDiagramRasterBrowser(): Promise<Browser> {
       executablePath: chromiumPath(),
       headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+      // Under full-droplet load (15-article backfill, 2026-10-15) a screenshot
+      // took >180s (the library default) and killed the section permanently —
+      // the CDP command had no answer from a CPU-starved Chromium, not a hang.
+      protocolTimeout: 300_000,
     })
   }
   return pooled

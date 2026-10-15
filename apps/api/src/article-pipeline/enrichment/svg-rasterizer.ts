@@ -23,6 +23,21 @@ export async function rasterizeSvg(
   targetWidth = 1200,
   background = '#ffffff',
 ): Promise<RasterizeResult> {
+  // One retry on a fresh page/permit: a screenshot timeout under droplet-wide
+  // load pressure is transient, and a failure here loses the section's diagram
+  // for good (the enrichment retry path only covers Mermaid render errors).
+  try {
+    return await rasterizeSvgOnce(svg, targetWidth, background)
+  } catch {
+    return rasterizeSvgOnce(svg, targetWidth, background)
+  }
+}
+
+async function rasterizeSvgOnce(
+  svg: string,
+  targetWidth: number,
+  background: string,
+): Promise<RasterizeResult> {
   const scale = 2
 
   return withRasterPage(async (page) => {
