@@ -6,12 +6,14 @@
  * needed since the two LLM calls complete in ~10–20 s.
  */
 
-import { resolvePromptByStep } from '../../lib/prompt-resolver'
+import { resolvePromptByStep, verticalForUser } from '../../lib/prompt-resolver'
 import { prisma } from '@omniply/shared'
 import { getLLMAdapter } from '../llm/factory'
 import { recordLLMUsage } from '../../lib/llm-usage'
 import { logger } from '../../lib/logger'
 import { sanitizeDashesText } from '../../lib/text/dash-sanitizer'
+import { drawAuthorityType, type AuthorityType } from '../../social/generators/authority-rotation'
+import { articleRegisterDirective } from '../../social/generators/authority-post'
 
 const PLATFORMS = ['linkedin', 'medium'] as const
 export type SyndicationPlatform = (typeof PLATFORMS)[number]
@@ -130,6 +132,11 @@ export async function generateSyndicationArticles(
 
   const citationsText = buildCitationsText(citationsArray)
 
+  // Authority engine (azavea only): each platform article gets ONE dominant
+  // rhetorical register, drawn from the same persisted bag as the daily
+  // authority posts — feed-level variety, never all five woven into one piece.
+  const isAzavea = (await verticalForUser(userId).catch(() => null)) === 'azavea'
+
   const results: SyndicationResult[] = []
 
   for (const platform of PLATFORMS) {
@@ -154,10 +161,19 @@ export async function generateSyndicationArticles(
         .replace(/{{article_body}}/g,      articleBodyPlain)
         .replace(/{{citations}}/g,         citationsText)
 
-    const resolvedSystem = template.systemPrompt ? resolveVars(template.systemPrompt) : null
-    const resolvedUser   = resolveVars(template.userPrompt)
+    let register: AuthorityType | null = null
+    if (isAzavea) {
+      register = await drawAuthorityType(userId).catch((err) => {
+        logger.warn({ jobId, platform, err }, '[syndication] register draw failed — generating without one')
+        return null
+      })
+    }
 
-    logger.info({ jobId, platform }, '[syndication] generating article')
+    const resolvedSystem = template.systemPrompt ? resolveVars(template.systemPrompt) : null
+    const resolvedUser   =
+      resolveVars(template.userPrompt) + (register ? `\n\n${articleRegisterDirective(register)}` : '')
+
+    logger.info({ jobId, platform, register }, '[syndication] generating article')
 
     const adapter  = getLLMAdapter(template.defaultProvider)
     const response = await adapter.call({
@@ -182,6 +198,7 @@ export async function generateSyndicationArticles(
         platform,
         title,
         content,
+        register,
         status:       'completed',
         inputTokens:  response.tokens.input,
         outputTokens: response.tokens.output,
@@ -192,6 +209,7 @@ export async function generateSyndicationArticles(
       update: {
         title,
         content,
+        register,
         status:       'completed',
         errorMessage: null,
         inputTokens:  response.tokens.input,

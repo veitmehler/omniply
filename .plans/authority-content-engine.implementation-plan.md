@@ -1,9 +1,22 @@
 # Authority Content Engine (Azavea) — Implementation Plan v2
 
-Status: PLANNED 2026-10-15, re-scoped same day per Veit: PIPELINE-FIRST
-(no hand-written posts — the engine generating from our own articles IS the
-proof of concept). Build ASAP; deploy gated on idle job queue as always.
+Status: v1 BUILT 2026-10-15 (deploy gated on idle job queue as always).
+PIPELINE-FIRST per Veit (no hand-written posts — the engine generating from
+our own articles IS the proof of concept).
 Chiro-platform port: .plans/authority-engine-chiro.implementation-plan.md.
+
+Built pieces: authority-rotation.ts (persisted shuffled bag, anti-streak,
+fit swap; 4 unit tests), authority-post.ts (generator, 5 register shapes,
+step-250 override hook, substance-first system rule), authority-processor.ts
+(run slotVariant='authority' → spec result + ready posts + preview through
+the EXISTING approval/dispatch flow; runSocialAutomation branches so the
+safety sweeper recovers correctly), handlers/authority-post.ts (daily cron
+05:30 UTC, azavea-gated, article-pool source, AUTHORITY_ENGINE_ENABLED=0
+kill-switch), dispatch-run.ts (new 'linkedin_personal' surface + authority
+text-only allowance), syndication/generate.ts (dominant register per
+platform article from the same bag, stored on syndication_articles.register),
+migration 20261015090000 (brand_settings.authorityEngineState +
+syndication_articles.register), web preview labels.
 
 ## The five types (Sehgal taxonomy)
 opinionated · belief-shifting · thought leadership · proof-led ·

@@ -395,6 +395,16 @@ export async function runSocialAutomation(
     }
   }
 
+  // Authority runs (slotVariant 'authority') are single-post typed runs with
+  // their own processor — branching AFTER the claim means the safety sweeper's
+  // auto-recovery and the slot-retry path both re-enter the right pipeline
+  // instead of wiping the run into weekday-matrix slots.
+  if (run.slotVariant === 'authority') {
+    const { processAuthorityRun } = await import('./authority-processor')
+    await processAuthorityRun(run)
+    return
+  }
+
   const settings = await prisma.settings.findUnique({ where: { userId: run.userId } })
   const timeZone = settings?.socialTimezone ?? 'America/New_York'
   const kind: 'article' | 'newsletter' = run.newsletterId ? 'newsletter' : 'article'

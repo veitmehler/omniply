@@ -2,6 +2,7 @@ import type { Post } from '@prisma/client'
 import { prisma } from '@omniply/shared'
 import { logger } from '../../lib/logger'
 import { dispatchPublish, isGhlManagedPlatform } from '../dispatcher'
+import { getGhlCredentials } from '../../lib/ghl/settings'
 import { sendFailureAlert } from '../../lib/alerts'
 import { type AutomationLogContext, withPlatform, withPost, withSlotKey } from './log-context'
 
@@ -18,7 +19,9 @@ async function dispatchReadyPost(post: Post, logCtx: AutomationLogContext): Prom
   // pure text post (mirror of the creation rule in schedule-posts.ts).
   // The old unconditional media guard failed every one of them with
   // "No media attached" (found live 2026-09-23).
-  const textOnlyStory = post.postType === 'story_text' && post.platform !== 'instagram'
+  // Authority posts (plan v1) are text-only on both LinkedIn surfaces.
+  const textOnlyStory =
+    (post.postType === 'story_text' || post.postType === 'authority_text') && post.platform !== 'instagram'
   if (!videoUrl && !imageUrl && !mediaUrls?.length && !textOnlyStory) {
     await prisma.post.update({
       where: { id: post.id },
@@ -27,15 +30,33 @@ async function dispatchReadyPost(post: Post, logCtx: AutomationLogContext): Prom
     return false
   }
 
+  // 'linkedin_personal' is our own surface name (authority posts hit BOTH
+  // LinkedIn surfaces as separate Post rows); GHL-side it is the personal
+  // account on the 'linkedin' platform. Fail explicitly when the mapping
+  // disappeared since generation — the preferPersonalProfile fallback would
+  // otherwise silently double-post to the company page.
+  const isPersonalLinkedin = post.platform === 'linkedin_personal'
+  const targetPlatform = isPersonalLinkedin ? 'linkedin' : post.platform
+  if (isPersonalLinkedin) {
+    const creds = await getGhlCredentials(post.userId)
+    if (!creds?.accountIds.linkedinPersonal) {
+      await prisma.post.update({
+        where: { id: post.id },
+        data: { status: 'failed', errorMsg: 'Personal LinkedIn is no longer mapped in Omniply settings' },
+      })
+      return false
+    }
+  }
+
   try {
-    if (isGhlManagedPlatform(post.platform)) {
-      const result = await dispatchPublish(post.userId, post.platform, post.content, {
+    if (isGhlManagedPlatform(targetPlatform)) {
+      const result = await dispatchPublish(post.userId, targetPlatform, post.content, {
         imageUrl: mediaUrls ? undefined : imageUrl,
         mediaUrls,
         videoUrl,
         postAsStory: post.postAsStory,
         scheduledAt,
-        preferPersonalProfile: post.postType === 'story_text',
+        preferPersonalProfile: post.postType === 'story_text' || isPersonalLinkedin,
         logCtx: platformCtx,
       })
 

@@ -18,6 +18,7 @@ import { agentFinalizeHandler } from './handlers/agent-finalize'
 import { processDmTurn, type DmJobData } from './agent/dm'
 import { voiceTransferWatchdogHandler, type VoiceTransferWatchdogJobData } from './handlers/voice-transfer-watchdog'
 import { azaveaCadenceHandler } from './handlers/azavea-cadence'
+import { authorityPostHandler } from './handlers/authority-post'
 import { oauthStateCleanupHandler, OAuthCleanupJobData } from './handlers/oauth'
 import { dbBackupHandler, DbBackupJobData } from './handlers/backup'
 import { pgMonitorHandler } from './handlers/pg-monitor'
@@ -121,6 +122,7 @@ async function main() {
   await boss.schedule(QUEUES.AGENT_RETENTION_CLEANUP, '15 3 * * *', {}) // daily 03:15 UTC — 180d chat-transcript retention (decision D)
   await boss.schedule(QUEUES.AGENT_FINALIZE, '*/10 * * * *', {}) // every 10 min — idle-chat contact reconcile + summary note
   await boss.schedule(QUEUES.AZAVEA_CADENCE, '0 8 * * *', {}) // daily 08:00 UTC — azavea vertical MWF article cadence (no-op on non-slot days)
+  await boss.schedule(QUEUES.AUTHORITY_POST_GENERATE, '30 5 * * *', {}) // daily 05:30 UTC — azavea authority post from the article pool (posts 15:00 local after approval)
 
   // ── Social publishing ───────────────────────────────────────────────────────
   await boss.work<PublishJobData>(
@@ -179,6 +181,12 @@ async function main() {
     QUEUES.AZAVEA_CADENCE,
     { batchSize: 1 },
     withSentry('azavea-cadence', azaveaCadenceHandler),
+  )
+
+  await boss.work(
+    QUEUES.AUTHORITY_POST_GENERATE,
+    { batchSize: 1 },
+    withSentry('authority-post-generate', authorityPostHandler),
   )
 
   await boss.work<DbBackupJobData>(

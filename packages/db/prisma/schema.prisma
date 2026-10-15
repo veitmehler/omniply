@@ -890,6 +890,9 @@ model SyndicationArticle {
   cost         Float      @default(0)
   provider     String?
   model        String?
+  // Authority engine (azavea): the dominant rhetorical register this platform
+  // article was written in (opinion | belief_shift | leadership | proof | framework).
+  register     String?
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
@@ -1357,6 +1360,9 @@ model BrandSettings {
   // Optional everywhere: consumers DROP the hours line when null.
   openingHours             String? @db.Text
   clinicFaqs               Json? // logistics-only Q&A [{q,a}] for FAQPage schema (agent plan 3.1; never clinical)
+  // Authority engine rotation state: { bag: string[], lastDrawn: string|null }.
+  // Persisted so deploys/restarts never reset or repeat the random sequence.
+  authorityEngineState     Json?
   agentExtraKnowledge      String? @db.Text // freeform "anything else the assistant should know" (Settings KB editor; 5000-char cap; injected as reference data, never instructions)
   // Tier-3 availability patterns (PMS framework v2): "we usually have
   // afternoon openings Tuesdays and Thursdays" — spoken as patterns only,
