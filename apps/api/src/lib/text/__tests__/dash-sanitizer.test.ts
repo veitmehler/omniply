@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   normalizeDashes,
   stripSafeDashes,
+  stripResidualDashes,
   rewriteIsSafe,
   wordTokens,
   splitTagAffixes,
@@ -214,5 +215,48 @@ describe('rewrapInlineTags', () => {
 describe('wordTokens', () => {
   it('lowercases and strips punctuation, keeping apostrophes', () => {
     expect(wordTokens("It's the spine—not the mattress!")).toEqual(["it's", 'the', 'spine', 'not', 'the', 'mattress'])
+  })
+})
+
+describe('stripResidualDashes (tier 3)', () => {
+  it('replaces the unspaced word-adjacent tell with ", "', () => {
+    expect(stripResidualDashes('$189 per patient—three times more patients')).toBe(
+      '$189 per patient, three times more patients',
+    )
+  })
+
+  it('replaces spaced word-adjacent dashes', () => {
+    expect(stripResidualDashes('the data — not the vibe — decides')).toBe('the data, not the vibe, decides')
+  })
+
+  it('converts digit ranges to a tight en-dash, spaced or not', () => {
+    expect(stripResidualDashes('open 30—45 days ahead')).toBe('open 30–45 days ahead')
+    expect(stripResidualDashes('open 30 — 45 days ahead')).toBe('open 30–45 days ahead')
+  })
+
+  it('keeps a standalone divider line', () => {
+    expect(stripResidualDashes('end of thought.\n\n—\n\n## Next Section')).toBe(
+      'end of thought.\n\n—\n\n## Next Section',
+    )
+  })
+
+  it('keeps a dash introducing a URL (reference lists)', () => {
+    expect(stripResidualDashes('1. Some Study — https://example.com/paper')).toBe(
+      '1. Some Study — https://example.com/paper',
+    )
+  })
+
+  it('never touches dashes inside tags or code blocks', () => {
+    expect(stripResidualDashes('<a href="https://x.com/a—b">link</a> word—word')).toBe(
+      '<a href="https://x.com/a—b">link</a> word, word',
+    )
+    expect(stripResidualDashes('<code>a—b</code> stays, text—tell goes')).toBe(
+      '<code>a—b</code> stays, text, tell goes',
+    )
+  })
+
+  it('leaves dash-free text untouched', () => {
+    const s = 'plain text with a hyphen-word and a range 2–4'
+    expect(stripResidualDashes(s)).toBe(s)
   })
 })
