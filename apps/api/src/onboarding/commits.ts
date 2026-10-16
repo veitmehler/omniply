@@ -251,10 +251,17 @@ export async function commitBrandProfile(ctx: StepContext, answer: unknown): Pro
       ? { clinicFaqs: ctx.stepData.clinicFaqsDraft }
       : {}),
     // Authority pools (chiro port 2026-10-16): the five register pools in the
-    // owner's own interview words. Stored now; arcs draw them only once
-    // authorityEngineState.enabled is flipped (per-account opt-in).
+    // owner's own interview words, and the engine DEFAULT-ON for new accounts
+    // (Veit 2026-10-16: "we don't accidentally want to forget to enable").
+    // The enable guard checks existing state so a profile re-commit never
+    // resets a live rotation bag.
     ...(ctx.stepData.authorityPoolsDraft && typeof ctx.stepData.authorityPoolsDraft === 'object'
-      ? { authorityPools: ctx.stepData.authorityPoolsDraft }
+      ? {
+          authorityPools: ctx.stepData.authorityPoolsDraft,
+          ...((await brandSettingsForUser(ctx.userId))?.authorityEngineState
+            ? {}
+            : { authorityEngineState: { bag: [], lastDrawn: null, enabled: true } }),
+        }
       : {}),
     // Crawl-harvested socials (available only NOW — the crawl finishes after
     // business_confirm): site links win per-platform, GHL prefill fills gaps.
