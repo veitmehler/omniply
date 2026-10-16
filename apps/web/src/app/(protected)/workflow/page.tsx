@@ -117,7 +117,10 @@ export default function WorkflowPage() {
         throw new Error('Failed to fetch articles')
       }
       const data = await res.json()
-      setJobs(data.jobs ?? [])
+      // Order by publish date (the date the article lands on the public blog),
+      // newest first — generation time only breaks ties for undated jobs.
+      const nominal = (j: ArticleJob) => new Date(j.topic?.publishingDate ?? j.topic?.scheduledDate ?? j.createdAt).getTime()
+      setJobs(([...(data.jobs ?? [])] as ArticleJob[]).sort((a, b) => nominal(b) - nominal(a)))
     } catch {
       if (jobsRef.current.length === 0) {
         toast.error('Failed to load article jobs')
