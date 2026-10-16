@@ -49,6 +49,8 @@ const SYSTEM_PROMPT_BASE =
   'You output ONLY valid Mermaid syntax — no explanation, no code fences, no markdown. ' +
   'Do not add inline style directives, themeVariables, embedded init directives (%%{...}%%), classDef blocks, or other color overrides — ' +
   'theming is applied externally so labels stay readable. ' +
+  'NUMBERS RULE: figures in labels may ONLY be copied verbatim from the section text. NEVER compute, sum, derive, or ' +
+  'estimate a figure — if the section states a total, use that total; if it states none, omit totals entirely. ' +
   'If the section is purely narrative or no diagram fits despite the required type, output exactly: SKIP'
 
 /**

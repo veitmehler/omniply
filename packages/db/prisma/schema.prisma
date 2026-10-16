@@ -1008,6 +1008,8 @@ model SitePage {
   primaryKeyword       String?
   schemaJson           String?               @db.Text // JSON-LD from Step 16 (generate_schema_markup)
   storyArcJson         Json? // generated story-arc beats (engagement v2) — one arc per article, both cadence days read it
+  // Consistency audit (step 20.5): { auditedAt, applied: AuditOp[], rejected: AuditOp[] }
+  auditFindingsJson    Json?
   enrichmentStatus     String                @default("pending") // pending | in_progress | completed | failed
   enrichmentError      String?
   enrichedAt           DateTime?

@@ -5,7 +5,9 @@ import { loadPromptTemplate } from './prompt-template'
 import { withGeoRetry } from './geo-retry'
 
 const DEF_SYS =
-  'You are an expert content strategist creating "Key Takeaways" sections for Generative Engine Optimization (GEO). Your takeaways must be declarative statements packed with specific data, entities, and actionable insights.'
+  'You are an expert content strategist creating "Key Takeaways" sections for Generative Engine Optimization (GEO). Your takeaways must be declarative statements packed with specific data, entities, and actionable insights. ' +
+  'NUMBERS RULE: figures may ONLY be copied verbatim from the article. NEVER compute, sum, derive, or estimate a ' +
+  'figure — if the article states a total, use that total; if it states none, present items without one.'
 
 const DEF_USER = `Generate a "Key Takeaways" section for the following article.
 

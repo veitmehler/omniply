@@ -40,6 +40,7 @@ import { parseFaqQuestions, parseSecondaryKeywords, pickKeywordForSection } from
 import { matchQuestionsToSections } from './geo-question-matcher'
 import { generateQuestionFromKeyword, rephraseForUniqueness } from './geo-question-generator'
 import { generateAiSummary } from './geo-summary-generator'
+import { runConsistencyAudit } from './consistency-audit'
 import { restructureHtmlWithGeo, type GeoSectionData } from './geo-html-restructurer'
 import { sanitizeGeoQuestion } from './geo-question-sanitizer'
 import { normalizeH2Questions } from '../approval-service'
@@ -378,7 +379,7 @@ export async function runArticleEnrichment(jobId: string): Promise<void> {
   await setEnrichmentPhaseStep(jobId, 20)
 
   const cut = findFirstH2Index(geoHtml)
-  const intro = cut >= 0 ? geoHtml.slice(0, cut) : ''
+  let intro = cut >= 0 ? geoHtml.slice(0, cut) : ''
   const bodyOnly = cut >= 0 ? geoHtml.slice(cut) : geoHtml
 
   let keyTakeawaysHtml: string | null = null
@@ -410,6 +411,47 @@ export async function runArticleEnrichment(jobId: string): Promise<void> {
     }
   } catch (err) {
     logger.warn({ jobId, err }, '[enrichment] key takeaways / toc failed')
+  }
+
+  // Step 20.5 — consistency audit (.plans/article-consistency-audit plan):
+  // every text surface downstream artifacts derive from now exists (post-GEO
+  // body, KT) and nothing visual is rendered yet, so guarded fixes here cost
+  // zero re-renders and diagrams/figcaptions inherit corrected text. Never
+  // blocks: any failure inside returns the inputs untouched. Headings are
+  // guard-protected, so the TOC built above stays valid.
+  try {
+    const audit = await runConsistencyAudit({
+      jobId,
+      userId: job.userId,
+      title: sitePage.seoTitle ?? sitePage.title,
+      excerpt: sitePage.excerpt,
+      introHtml: intro,
+      keyTakeawaysHtml,
+      bodyHtml: bodyWithIds,
+    })
+    totalCost += audit.cost
+    totalInputTokens += audit.inputTokens
+    totalOutputTokens += audit.outputTokens
+    intro = audit.introHtml
+    keyTakeawaysHtml = audit.keyTakeawaysHtml
+    bodyWithIds = audit.bodyHtml
+
+    const titleChanged = audit.title !== (sitePage.seoTitle ?? sitePage.title)
+    const excerptChanged = audit.excerpt !== sitePage.excerpt
+    await prisma.sitePage.update({
+      where: { id: sitePage.id },
+      data: {
+        ...(titleChanged ? (sitePage.seoTitle ? { seoTitle: audit.title } : { title: audit.title }) : {}),
+        ...(excerptChanged ? { excerpt: audit.excerpt } : {}),
+        auditFindingsJson: {
+          auditedAt: new Date().toISOString(),
+          applied: audit.applied,
+          rejected: audit.rejected,
+        } as object,
+      },
+    })
+  } catch (err) {
+    logger.warn({ jobId, err }, '[enrichment] consistency audit failed — continuing unaudited')
   }
 
   await setEnrichmentPhaseStep(jobId, 21)

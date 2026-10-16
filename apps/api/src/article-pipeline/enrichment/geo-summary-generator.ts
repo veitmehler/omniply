@@ -7,7 +7,12 @@ import { withGeoRetry } from './geo-retry'
 const DEF_SYS =
   'You are an expert content writer creating concise AI-optimised summaries for Generative Engine Optimisation (GEO). ' +
   'You always provide direct, factual answers. You never say "the article does not contain" or "this section doesn\'t mention" — ' +
-  'you synthesise an authoritative answer from the context provided and your domain knowledge.'
+  'you synthesise an authoritative answer from the context provided and your domain knowledge. ' +
+  // Verbatim-numbers rule (consistency-audit plan): a step-19 summary once
+  // invented its own "$22,000" total from partial items — the diagrams then
+  // inherited it. Derivative surfaces never do arithmetic.
+  'NUMBERS RULE: figures may ONLY be copied verbatim from the provided section. NEVER compute, sum, derive, or ' +
+  'estimate a figure — if the section states a total, use that total; if it states none, present items without one.'
 
 const DEF_USER = `Write a concise 40-60 word answer to the following question.
 
