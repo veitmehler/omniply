@@ -1,12 +1,16 @@
 # Authority Engine — Chiro Platform Port
 
-Status: PLANNED 2026-10-15, REVISED 2026-10-16 after the azavea engine's
-first full production day (11 register-infused arcs reviewed beat-by-beat).
-The azavea v2 architecture is proven; this plan covers what's DIFFERENT for
-client clinics, plus the fixes the first live day showed are PREREQUISITES
-for clinics rather than nice-to-haves. Positioning: "your personal authority
-engine" — makes the OWNER visible, not just the clinic; strongest retention
-feature on the backlog.
+Status: **BUILT + DEPLOYED 2026-10-16** (commit e1f9c70): prerequisites
+P1–P3, q_myths (7th voice question), deterministic pool synthesis + LLM
+myth-derivation fallback, authorityPools column + commit wiring,
+per-account `authorityEngineState.enabled` gate (arcs + syndication),
+personal-LinkedIn mapping in the GHL settings panel. Pools BACKFILLED for
+the demo account and The Chiropractic Clinic (belief_shift derived from
+their q_enemy answers). **No clinic is enabled yet** — flip
+authorityEngineState.enabled on the pilot account to start drawing
+registers; new onboardings get pools automatically and stay off until
+flipped. Positioning: "your personal authority engine" — makes the OWNER
+visible, not just the clinic; strongest retention feature on the backlog.
 
 ## What the first azavea production day validated (2026-10-16)
 
