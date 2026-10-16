@@ -11,7 +11,7 @@ import { prisma } from '@omniply/shared'
 import { logger } from '../lib/logger'
 import { getSystemApiKey } from '../lib/system-keys'
 import { getBoss, QUEUES } from '../queues/index'
-import { synthesizeBrandProfile, generateClinicFaqs, type VoiceAnswers } from '../onboarding/synthesis'
+import { synthesizeBrandProfile, generateClinicFaqs, buildAuthorityPools, type VoiceAnswers } from '../onboarding/synthesis'
 import type { SpecializationDraft } from '../onboarding/site-analysis'
 import { mergeStepData } from '../onboarding/step-data'
 
@@ -56,6 +56,7 @@ export async function onboardingSynthesisHandler(jobs: PgBoss.Job<OnboardingSynt
         tribe: answerText(stepData, 'q_tribe'),
         line: answerText(stepData, 'q_line'),
         proof: answerText(stepData, 'q_proof'),
+        myths: answerText(stepData, 'q_myths'),
       }
       try {
         const profile = await synthesizeBrandProfile(
@@ -70,6 +71,13 @@ export async function onboardingSynthesisHandler(jobs: PgBoss.Job<OnboardingSynt
         stepData.clinicFaqsDraft = (await generateClinicFaqs(geminiKey, (stepData.corpus as string) ?? '').catch(
           () => [],
         )) as unknown as Record<string, unknown>[]
+        // Authority pools (chiro port): the five register pools in the owner's
+        // own words — persisted to brandSettings at brand-profile commit.
+        stepData.authorityPoolsDraft = (await buildAuthorityPools(
+          geminiKey,
+          answers,
+          answerText(stepData, 'q_moments'),
+        ).catch(() => undefined)) as unknown as Record<string, unknown> | undefined
       } catch (err) {
         logger.error({ accountId, err }, '[onboarding-synthesis] synthesis failed — manual profile entry')
       }
@@ -78,7 +86,7 @@ export async function onboardingSynthesisHandler(jobs: PgBoss.Job<OnboardingSynt
 
     // Merge ONLY the keys this job owns (lost-update fix: this exact write
     // clobbered q_proof + the logo choice on the 2026-09-14 live E2E).
-    const OWN_KEYS = ['synthesisDone', 'brandProfileDraft', 'clinicFaqsDraft'] as const
+    const OWN_KEYS = ['synthesisDone', 'brandProfileDraft', 'clinicFaqsDraft', 'authorityPoolsDraft'] as const
     const patch: Record<string, unknown> = {}
     for (const k of OWN_KEYS) if (stepData[k] !== undefined) patch[k] = stepData[k]
     await mergeStepData(session.id, patch)

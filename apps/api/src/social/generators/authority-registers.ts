@@ -42,13 +42,50 @@ export function articleRegisterDirective(type: AuthorityType): string {
 }
 
 /** Dominant-register directive for a STORY ARC (the serialized beat posts). */
-export function arcRegisterDirective(type: AuthorityType): string {
-  return (
-    `DOMINANT REGISTER FOR THIS ARC: ${type}.\n` +
-    `${REGISTER_SHAPES[type]}\n` +
+export function arcRegisterDirective(
+  type: AuthorityType,
+  opts?: {
+    /** Healthcare compliance preamble (clinic accounts). */
+    chiro?: boolean
+    /** Clinic authority-pool material for this register (synthesized from the
+     *  owner's onboarding interview) — same truth rules as narrator moments. */
+    material?: string[] | null
+  },
+): string {
+  const parts = [
+    `DOMINANT REGISTER FOR THIS ARC: ${type}.`,
+    REGISTER_SHAPES[type],
     "Weave this register into the ARC as its through-line: beat 1's hook and the final beat's resolution carry it " +
-    'strongest; middle beats advance the serialized story while reinforcing it. The arc rules below (open loops, ' +
-    're-anchoring, schedule labels, slide formats) and EVERY truth/compliance rule override register pressure: when ' +
-    'the register wants a claim the material cannot support, drop the claim, never the rule.'
-  )
+      'strongest; middle beats advance the serialized story while reinforcing it. The arc rules below (open loops, ' +
+      're-anchoring, schedule labels, slide formats) and EVERY truth/compliance rule override register pressure: when ' +
+      'the register wants a claim the material cannot support, drop the claim, never the rule.',
+  ]
+  // Opinion tightening (2026-10-16: azavea opinion arcs drifted into
+  // framework-style enumeration instead of defending one claim).
+  if (type === 'opinion') {
+    parts.push(
+      "For the opinion register specifically: beat 1's FIRST LINE stakes the claim itself (not a scene, not a " +
+        'question), and every beat advances or defends that ONE claim. Do not drift into enumerating a model or ' +
+        'framework; the claim is the spine.',
+    )
+  }
+  if (opts?.chiro) {
+    parts.push(
+      'COMPLIANCE SCOPE (healthcare practice — hard rule): opinions, claims, and stances live in practice ' +
+        'MARKETING, patient experience, operations, and care philosophy ONLY. Never clinical claims, treatment ' +
+        'outcomes, condition promises, or anything resembling medical advice. Patient proof may only be the ' +
+        "provided de-identified material or the practice's own aggregate numbers (review counts, ratings).",
+    )
+  }
+  if (opts?.material?.length) {
+    // Clinic pools often hold ONE long transcript per register — give single
+    // items full room, trim harder only when a pool has many entries.
+    const perItem = opts.material.length <= 2 ? 1200 : 400
+    const items = opts.material.slice(0, 8).map((m) => `- ${m.slice(0, perItem)}`)
+    parts.push(
+      `REGISTER MATERIAL for ${type} (the owner's own words from their interview — you may draw on these under the ` +
+        'same truth rules as narrator moments: retold faithfully, never embellished, never merged):\n' + items.join('\n'),
+    )
+  }
+  return parts.join('\n')
 }

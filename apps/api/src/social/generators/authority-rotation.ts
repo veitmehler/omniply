@@ -24,16 +24,44 @@ export function isAuthorityType(v: unknown): v is AuthorityType {
 export interface AuthorityBagState {
   bag: AuthorityType[]
   lastDrawn: AuthorityType | null
+  /** Chiro port: per-account opt-in — clinics draw registers only when true
+   *  (azavea is always-on by vertical). Preserved across state writes. */
+  enabled?: boolean
 }
 
-function parseState(raw: unknown): AuthorityBagState {
+export function parseState(raw: unknown): AuthorityBagState {
   if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
-    const o = raw as { bag?: unknown; lastDrawn?: unknown }
+    const o = raw as { bag?: unknown; lastDrawn?: unknown; enabled?: unknown }
     const bag = Array.isArray(o.bag) ? o.bag.filter(isAuthorityType) : []
     const lastDrawn = isAuthorityType(o.lastDrawn) ? o.lastDrawn : null
-    return { bag, lastDrawn }
+    return { bag, lastDrawn, ...(o.enabled === true ? { enabled: true } : {}) }
   }
   return { bag: [], lastDrawn: null }
+}
+
+/** Should this brand's content draw authority registers? */
+export function authorityRegisterEligible(vertical: string | null, stateRaw: unknown): boolean {
+  return vertical === 'azavea' || parseState(stateRaw).enabled === true
+}
+
+/** Clinic authority pools (brand_settings.authorityPools): register → material. */
+export type AuthorityPools = Partial<Record<AuthorityType, string[]>>
+
+export function parsePools(raw: unknown): AuthorityPools | null {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null
+  const out: AuthorityPools = {}
+  let any = false
+  for (const t of AUTHORITY_TYPES) {
+    const v = (raw as Record<string, unknown>)[t]
+    if (Array.isArray(v)) {
+      const items = v.filter((x): x is string => typeof x === 'string' && x.trim().length > 0)
+      if (items.length) {
+        out[t] = items
+        any = true
+      }
+    }
+  }
+  return any ? out : null
 }
 
 /**
@@ -58,7 +86,7 @@ export function nextDraw(
     }
   }
   const drawn = bag[0]
-  return { drawn, state: { bag: bag.slice(1), lastDrawn: drawn } }
+  return { drawn, state: { ...state, bag: bag.slice(1), lastDrawn: drawn } }
 }
 
 /**

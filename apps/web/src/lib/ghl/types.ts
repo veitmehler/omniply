@@ -8,6 +8,8 @@ export type GhlAccountIds = {
   facebook?: string
   instagram?: string
   linkedin?: string
+  /** Personal LinkedIn profile — story/authority posts route here when set. */
+  linkedinPersonal?: string
   threads?: string
 }
 

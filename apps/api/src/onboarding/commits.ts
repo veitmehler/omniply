@@ -250,6 +250,12 @@ export async function commitBrandProfile(ctx: StepContext, answer: unknown): Pro
     ...(Array.isArray(ctx.stepData.clinicFaqsDraft) && (ctx.stepData.clinicFaqsDraft as unknown[]).length > 0
       ? { clinicFaqs: ctx.stepData.clinicFaqsDraft }
       : {}),
+    // Authority pools (chiro port 2026-10-16): the five register pools in the
+    // owner's own interview words. Stored now; arcs draw them only once
+    // authorityEngineState.enabled is flipped (per-account opt-in).
+    ...(ctx.stepData.authorityPoolsDraft && typeof ctx.stepData.authorityPoolsDraft === 'object'
+      ? { authorityPools: ctx.stepData.authorityPoolsDraft }
+      : {}),
     // Crawl-harvested socials (available only NOW — the crawl finishes after
     // business_confirm): site links win per-platform, GHL prefill fills gaps.
     ...socialRowsFrom({
@@ -544,7 +550,7 @@ export async function commitWritingSample(ctx: StepContext, answer: unknown): Pr
     article = null
   }
 
-  const transcripts = ['q_declaration', 'q_enemy', 'q_tribe', 'q_line', 'q_moments', 'q_proof']
+  const transcripts = ['q_declaration', 'q_enemy', 'q_myths', 'q_tribe', 'q_line', 'q_moments', 'q_proof']
     .map((k) => (ctx.stepData[k] as { text?: string })?.text)
     .filter(Boolean)
     .join('\n\n')

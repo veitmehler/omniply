@@ -1362,9 +1362,13 @@ model BrandSettings {
   // Optional everywhere: consumers DROP the hours line when null.
   openingHours             String? @db.Text
   clinicFaqs               Json? // logistics-only Q&A [{q,a}] for FAQPage schema (agent plan 3.1; never clinical)
-  // Authority engine rotation state: { bag: string[], lastDrawn: string|null }.
+  // Authority engine rotation state: { bag: string[], lastDrawn: string|null,
+  // enabled?: boolean } — `enabled` is the per-account chiro opt-in.
   // Persisted so deploys/restarts never reset or repeat the random sequence.
   authorityEngineState     Json?
+  // Chiro authority pools (register → owner's interview material):
+  // { opinion: [], leadership: [], proof: [], framework: [], belief_shift: [] }
+  authorityPools           Json?
   agentExtraKnowledge      String? @db.Text // freeform "anything else the assistant should know" (Settings KB editor; 5000-char cap; injected as reference data, never instructions)
   // Tier-3 availability patterns (PMS framework v2): "we usually have
   // afternoon openings Tuesdays and Thursdays" — spoken as patterns only,

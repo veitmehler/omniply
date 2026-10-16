@@ -60,6 +60,8 @@ export interface VoiceAnswers {
   tribe?: string
   line?: string
   proof?: string
+  /** q_myths — what patients wrongly believe (authority belief-shift source). */
+  myths?: string
 }
 
 export async function synthesizeBrandProfile(
@@ -83,6 +85,7 @@ OWNER'S SPOKEN ANSWERS (verbatim transcripts — mine these for personality, sta
 3. Their favorite patient: ${answers.tribe ?? '(skipped)'}
 4. What they refuse to compromise on: ${answers.line ?? '(skipped)'}
 5. What the first visit/month looks like: ${answers.proof ?? '(skipped)'}
+6. What patients wrongly believe (myths they keep correcting): ${answers.myths ?? '(skipped)'}
 
 Return STRICT JSON:
 {
@@ -99,6 +102,62 @@ Return STRICT JSON:
 }`,
     'onboarding.brand_profile',
   )
+}
+
+/** Register → owner's interview material (brandSettings.authorityPools shape). */
+export interface AuthorityPoolsDraft {
+  opinion: string[]
+  leadership: string[]
+  proof: string[]
+  framework: string[]
+  belief_shift: string[]
+}
+
+/**
+ * Belief-shift derivation (chiro authority port, gap 2): legacy accounts
+ * answered q_enemy but never q_myths — extract the patient-held myths from the
+ * rant, keeping the owner's own wording. Best-effort; empty on any failure.
+ */
+export async function deriveBeliefShiftMaterial(apiKey: string, enemyText: string): Promise<string[]> {
+  const res = await geminiJson<{ myths?: unknown }>(
+    apiKey,
+    `A healthcare practice owner was asked what drives them crazy in their industry — what patients keep falling for. From their answer, extract the 2-4 distinct WRONG BELIEFS patients hold (the myths), each as one sentence stated as the belief itself, preserving the owner's own vocabulary and specifics wherever possible. Never invent beliefs the answer does not contain; fewer is fine.
+
+OWNER'S ANSWER (verbatim):
+${enemyText.slice(0, 3000)}
+
+Return STRICT JSON: {"myths": ["...", "..."]}`,
+    'onboarding.belief_shift_derivation',
+  )
+  return Array.isArray(res.myths) ? res.myths.filter((m): m is string => typeof m === 'string' && m.trim().length > 0).slice(0, 4) : []
+}
+
+/**
+ * Authority pools (chiro port, gap 3): deterministic mapping of the interview
+ * answers into the five register pools — the owner's OWN words, so the arc
+ * generator's truth rules apply to them unmodified. Only belief_shift may use
+ * the LLM (derivation fallback when q_myths is absent).
+ */
+export async function buildAuthorityPools(
+  apiKey: string | null,
+  answers: VoiceAnswers,
+  moments?: string,
+): Promise<AuthorityPoolsDraft> {
+  const pools: AuthorityPoolsDraft = {
+    opinion: answers.enemy ? [answers.enemy] : [],
+    leadership: [answers.declaration, answers.line].filter((x): x is string => !!x?.trim()),
+    proof: moments?.trim() ? [moments] : [],
+    framework: answers.proof ? [answers.proof] : [],
+    belief_shift: answers.myths ? [answers.myths] : [],
+  }
+  if (!pools.belief_shift.length && answers.enemy && apiKey) {
+    try {
+      pools.belief_shift = await deriveBeliefShiftMaterial(apiKey, answers.enemy)
+    } catch {
+      /* derivation is optional — the empty-pool swap handles it downstream */
+    }
+  }
+  return pools
 }
 
 export async function generateWritingStyle(

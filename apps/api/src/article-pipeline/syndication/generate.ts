@@ -7,12 +7,12 @@
  */
 
 import { resolvePromptByStep, verticalForUser } from '../../lib/prompt-resolver'
-import { prisma } from '@omniply/shared'
+import { prisma, brandSettingsForUser } from '@omniply/shared'
 import { getLLMAdapter } from '../llm/factory'
 import { recordLLMUsage } from '../../lib/llm-usage'
 import { logger } from '../../lib/logger'
 import { sanitizeDashesText } from '../../lib/text/dash-sanitizer'
-import { drawAuthorityType, type AuthorityType } from '../../social/generators/authority-rotation'
+import { drawAuthorityType, authorityRegisterEligible, type AuthorityType } from '../../social/generators/authority-rotation'
 import { articleRegisterDirective } from '../../social/generators/authority-registers'
 
 const PLATFORMS = ['linkedin', 'medium'] as const
@@ -132,10 +132,13 @@ export async function generateSyndicationArticles(
 
   const citationsText = buildCitationsText(citationsArray)
 
-  // Authority engine (azavea only): each platform article gets ONE dominant
-  // rhetorical register, drawn from the same persisted bag as the daily
-  // authority posts — feed-level variety, never all five woven into one piece.
-  const isAzavea = (await verticalForUser(userId).catch(() => null)) === 'azavea'
+  // Authority engine: each platform article gets ONE dominant rhetorical
+  // register, drawn from the same persisted bag as the story arcs —
+  // feed-level variety, never all five woven into one piece. Eligibility
+  // (chiro port 2026-10-16): azavea always; clinics per-account opt-in.
+  const vertical = await verticalForUser(userId).catch(() => null)
+  const brandForRegister = await brandSettingsForUser(userId).catch(() => null)
+  const registerEligible = authorityRegisterEligible(vertical, brandForRegister?.authorityEngineState)
 
   const results: SyndicationResult[] = []
 
@@ -162,7 +165,7 @@ export async function generateSyndicationArticles(
         .replace(/{{citations}}/g,         citationsText)
 
     let register: AuthorityType | null = null
-    if (isAzavea) {
+    if (registerEligible) {
       register = await drawAuthorityType(userId).catch((err) => {
         logger.warn({ jobId, platform, err }, '[syndication] register draw failed — generating without one')
         return null

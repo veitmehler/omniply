@@ -113,7 +113,7 @@ const STEPS: StepDef[] = [
     kind: 'voice',
     prepare: async () => ({
       messages: [
-        "Now the good part — six questions about your practice. Answer them out loud if you can (tap the mic); speaking works better than typing, and I'll use your voice later too.",
+        "Now the good part — seven questions about your practice. Answer them out loud if you can (tap the mic); speaking works better than typing, and I'll use your voice later too.",
         "Be detailed and elaborate — ramble, tell stories, go on tangents. The more you say, the better I capture how YOU naturally talk, and that's what makes your content sound like you instead of a robot.",
         'Imagine a patient describing your clinic to a friend three years from now. What do you want them to say you did for them?',
       ],
@@ -127,6 +127,19 @@ const STEPS: StepDef[] = [
       messages: ["What's the one thing in your industry that drives you crazy — the thing patients keep falling for before they find you?"],
     }),
     commit: storeAnswer('q_enemy'),
+  },
+  // Authority-engine belief-shift source (chiro port, 2026-10-16): placed
+  // right after q_enemy — the rant usually contains the myths; this surfaces
+  // them explicitly. Feeds brandSettings.authorityPools.belief_shift.
+  {
+    id: 'q_myths',
+    kind: 'voice',
+    prepare: async () => ({
+      messages: [
+        'What do patients wrongly believe — about chiropractic, about pain, about your work — that you find yourself correcting in the treatment room?',
+      ],
+    }),
+    commit: storeAnswer('q_myths'),
   },
   {
     id: 'q_tribe',

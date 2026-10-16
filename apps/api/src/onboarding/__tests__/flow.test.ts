@@ -32,10 +32,13 @@ describe('onboarding flow', () => {
   it('declares the full step order, welcome first and final last', () => {
     expect(STEP_ORDER[0]).toBe('welcome')
     expect(STEP_ORDER[STEP_ORDER.length - 1]).toBe('final')
-    // The six voice questions are all present (q_moments added P3 2026-09-09).
-    for (const q of ['q_declaration', 'q_enemy', 'q_tribe', 'q_line', 'q_moments', 'q_proof']) {
+    // The seven voice questions are all present (q_moments added P3
+    // 2026-09-09; q_myths added with the chiro authority port 2026-10-16).
+    for (const q of ['q_declaration', 'q_enemy', 'q_myths', 'q_tribe', 'q_line', 'q_moments', 'q_proof']) {
       expect(STEP_ORDER).toContain(q)
     }
+    // q_myths sits right after q_enemy — the rant surfaces the myths.
+    expect(STEP_ORDER.indexOf('q_myths')).toBe(STEP_ORDER.indexOf('q_enemy') + 1)
     // Every required setup surface is a step; elevenlabs REMOVED (P3: no client voice).
     for (const s of ['business_confirm', 'logo_confirm', 'brand_profile_confirm', 'writing_sample', 'template_reveal', 'offers', 'cta', 'booking_url', 'pms', 'wordpress', 'socials', 'gbp', 'google_reviews', 'toggles']) {
       expect(STEP_ORDER).toContain(s)
@@ -88,5 +91,31 @@ describe('onboarding flow', () => {
   it('rejects unknown steps', async () => {
     const result = await commitAndAdvance(ctx(), 'sess_1', 'nope', {})
     expect(result.error).toBe('Unknown step')
+  })
+})
+
+import { buildAuthorityPools } from '../synthesis'
+
+describe('authority pools (chiro port)', () => {
+  it('maps interview answers deterministically into the five pools', async () => {
+    const pools = await buildAuthorityPools(
+      null,
+      { declaration: 'decl', enemy: 'rant', line: 'no compromise', proof: 'first visit walkthrough', myths: 'myth text' },
+      'two true stories',
+    )
+    expect(pools).toEqual({
+      opinion: ['rant'],
+      leadership: ['decl', 'no compromise'],
+      proof: ['two true stories'],
+      framework: ['first visit walkthrough'],
+      belief_shift: ['myth text'],
+    })
+  })
+
+  it('leaves belief_shift empty without myths and without an api key (derivation is optional)', async () => {
+    const pools = await buildAuthorityPools(null, { enemy: 'rant' })
+    expect(pools.belief_shift).toEqual([])
+    expect(pools.opinion).toEqual(['rant'])
+    expect(pools.proof).toEqual([])
   })
 })

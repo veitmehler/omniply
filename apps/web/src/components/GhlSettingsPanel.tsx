@@ -26,11 +26,23 @@ const DEFAULT_PROMO_EMAIL: PromoEmailConfig = {
   fromEmail: null,
 }
 
-const OMNIPLY_PLATFORMS = [
-  { key: 'facebook' as const, label: 'Facebook' },
-  { key: 'instagram' as const, label: 'Instagram' },
-  { key: 'linkedin' as const, label: 'LinkedIn' },
-  { key: 'threads' as const, label: 'Threads' },
+const OMNIPLY_PLATFORMS: Array<{
+  key: 'facebook' | 'instagram' | 'linkedin' | 'linkedinPersonal' | 'threads'
+  label: string
+  /** Which Omniply platform the account options come from. */
+  optionsFrom?: 'linkedin'
+  hint?: string
+}> = [
+  { key: 'facebook', label: 'Facebook' },
+  { key: 'instagram', label: 'Instagram' },
+  { key: 'linkedin', label: 'LinkedIn' },
+  {
+    key: 'linkedinPersonal',
+    label: 'LinkedIn — personal profile',
+    optionsFrom: 'linkedin',
+    hint: 'Optional: your story and authority posts perform best on a personal profile.',
+  },
+  { key: 'threads', label: 'Threads' },
 ]
 
 export function GhlSettingsPanel() {
@@ -273,11 +285,14 @@ export function GhlSettingsPanel() {
 
       <div className="space-y-3 pt-2 border-t border-border">
         <p className="text-sm font-medium text-card-foreground">Platform account mapping</p>
-        {OMNIPLY_PLATFORMS.map(({ key, label }) => {
-          const options = accountsForPlatform(key)
+        {OMNIPLY_PLATFORMS.map(({ key, label, optionsFrom, hint }) => {
+          const options = accountsForPlatform(optionsFrom ?? key)
           return (
             <div key={key} className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div className="min-w-[120px] text-sm text-card-foreground">{label}</div>
+              <div className="min-w-[120px] text-sm text-card-foreground">
+                {label}
+                {hint && <p className="mt-0.5 text-xs text-muted-foreground sm:max-w-[220px]">{hint}</p>}
+              </div>
               <select
                 value={accountIds[key] ?? ''}
                 onChange={(e) =>
@@ -296,7 +311,7 @@ export function GhlSettingsPanel() {
                   </option>
                 ))}
               </select>
-              <Button variant="ghost" size="sm" onClick={() => void openGhlOAuth(key)}>
+              <Button variant="ghost" size="sm" onClick={() => void openGhlOAuth(optionsFrom ?? key)}>
                 <ExternalLink className="w-4 h-4 mr-1" />
                 Connect in Omniply
               </Button>

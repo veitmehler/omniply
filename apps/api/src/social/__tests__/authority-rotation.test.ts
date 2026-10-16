@@ -56,3 +56,62 @@ describe('authority rotation (shuffled bag)', () => {
     expect(r.state.lastDrawn).toBe(r.drawn)
   })
 })
+
+import { parseState, authorityRegisterEligible, parsePools } from '../generators/authority-rotation'
+import { buildFigureCorpus, stripUnsupportedFigureSentences } from '../generators/beat-figure-gate'
+
+describe('chiro port: enabled flag + pools', () => {
+  it('preserves enabled across draws', () => {
+    const r = nextDraw({ bag: [], lastDrawn: null, enabled: true }, seededRand(3))
+    expect(r.state.enabled).toBe(true)
+  })
+
+  it('parseState keeps enabled only when strictly true', () => {
+    expect(parseState({ bag: [], lastDrawn: null, enabled: true }).enabled).toBe(true)
+    expect(parseState({ bag: [], lastDrawn: null, enabled: 'yes' }).enabled).toBeUndefined()
+  })
+
+  it('eligibility: azavea always, clinics only when enabled', () => {
+    expect(authorityRegisterEligible('azavea', null)).toBe(true)
+    expect(authorityRegisterEligible('chiro', null)).toBe(false)
+    expect(authorityRegisterEligible('chiro', { bag: [], lastDrawn: null, enabled: true })).toBe(true)
+  })
+
+  it('parsePools returns only non-empty string arrays', () => {
+    expect(parsePools({ opinion: ['a'], proof: [], junk: ['x'] })).toEqual({ opinion: ['a'] })
+    expect(parsePools({ proof: [] })).toBeNull()
+    expect(parsePools(null)).toBeNull()
+  })
+})
+
+describe('beat figure gate', () => {
+  const logCtx = { runId: 'r', userId: 'u' }
+  const corpus = buildFigureCorpus([
+    'Healthcare practices miss 29% of inbound calls. The leak compounds to roughly $125,280 annually at $1,200 first-year value.',
+    'Comment "XRAY" for the free 2-minute Practice X-Ray.',
+  ])
+
+  it('drops the sentence with the invented $72,000 (the live regression case)', () => {
+    const beat =
+      'The phone rang into silence.\nHere is the math nobody runs: 3 missed calls a day at $1,200 value. That is $72,000 annually walking out the door.\nTonight: the structural reason.'
+    const out = stripUnsupportedFigureSentences(beat, corpus, logCtx, 'test')
+    expect(out).not.toContain('$72,000')
+    expect(out).toContain('phone rang into silence')
+    expect(out).toContain('Tonight: the structural reason.')
+  })
+
+  it('keeps supported figures, complements, and CTA figures', () => {
+    const beat = '71% of calls get answered. The rest leak $125,280 annually. Take the 2-minute test.'
+    expect(stripUnsupportedFigureSentences(beat, corpus, logCtx, 'test')).toBe(beat)
+  })
+
+  it('accepts formatting variants of corpus figures', () => {
+    const beat = 'That is $1200 per patient in year one.'
+    expect(stripUnsupportedFigureSentences(beat, corpus, logCtx, 'test')).toBe(beat)
+  })
+
+  it('leaves digit-free text untouched', () => {
+    const beat = 'No numbers here.\n\nJust a story.'
+    expect(stripUnsupportedFigureSentences(beat, corpus, logCtx, 'test')).toBe(beat)
+  })
+})

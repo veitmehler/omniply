@@ -9,8 +9,16 @@ import { recordLLMUsage } from '../../lib/llm-usage'
 import { logger } from '../../lib/logger'
 import type { AutomationLogContext } from '../automation/log-context'
 import type { ArticleContentContext } from '../automation/content'
-import { drawAuthorityType } from './authority-rotation'
+import {
+  drawAuthorityType,
+  swapAuthorityType,
+  authorityRegisterEligible,
+  parsePools,
+  AUTHORITY_TYPES,
+  type AuthorityType,
+} from './authority-rotation'
 import { arcRegisterDirective } from './authority-registers'
+import { buildFigureCorpus, stripUnsupportedFigureSentences } from './beat-figure-gate'
 
 /**
  * Story-arc generator (engagement v2 — .plans/story-arc-posts plan).
@@ -188,16 +196,30 @@ export async function generateStoryArc(opts: {
     verticalForUser(userId).catch(() => null),
   ])
 
-  // Authority engine v2 (Veit 2026-10-15): azavea arcs carry ONE dominant
-  // rhetorical register, drawn from the same persisted anti-streak bag the
-  // syndication articles rotate through. Clinics stay untouched until the
-  // chiro port (.plans/authority-engine-chiro plan). Draw failure degrades
-  // to a registerless arc, never blocks the run.
+  // Authority engine v2 (Veit 2026-10-15; chiro port 2026-10-16): eligible
+  // accounts carry ONE dominant rhetorical register per arc, drawn from the
+  // same persisted anti-streak bag the syndication articles rotate through.
+  // Eligibility: azavea always; clinics per-account via
+  // authorityEngineState.enabled. Clinic draws are POOL-AWARE (port P3): a
+  // drawn register whose interview pool is empty swaps for one with material
+  // ('leadership' as the article-derivable fallback), and the pool text is
+  // injected as register material. Draw failure degrades to a registerless
+  // arc, never blocks the run.
   let registerDirective: string | null = null
-  if (vertical === 'azavea') {
+  if (authorityRegisterEligible(vertical, brand?.authorityEngineState)) {
     try {
-      const register = await drawAuthorityType(userId)
-      registerDirective = arcRegisterDirective(register)
+      const isClinic = vertical !== 'azavea'
+      const pools = isClinic ? parsePools(brand?.authorityPools) : null
+      let register = await drawAuthorityType(userId)
+      if (isClinic && pools && !pools[register]?.length) {
+        const replacement: AuthorityType = AUTHORITY_TYPES.find((t) => pools[t]?.length) ?? 'leadership'
+        if (replacement !== register) {
+          await swapAuthorityType(userId, register, replacement)
+          logger.info({ ...logCtx, drawn: register, replacement }, '[story-arc] empty-pool register swapped')
+          register = replacement
+        }
+      }
+      registerDirective = arcRegisterDirective(register, { chiro: isClinic, material: pools?.[register] ?? null })
       logger.info({ ...logCtx, register }, '[story-arc] authority register drawn for arc')
     } catch (err) {
       logger.warn({ ...logCtx, err }, '[story-arc] register draw failed — generating without one')
@@ -212,11 +234,17 @@ export async function generateStoryArc(opts: {
     /* proceed without */
   }
 
-  // Callback pool: the narrator's most recent published/scheduled story posts.
+  // Callback pool: the narrator's most recent story posts. 'ready' included
+  // (chiro-port P1, 2026-10-16): a burst generates many arcs back-to-back and
+  // the published-only window let same-day arcs open with IDENTICAL beats —
+  // clinic onboarding bursts make that the default failure mode. Sequential
+  // runs in a burst now see each other; 3-way-concurrent siblings may still
+  // overlap (accepted residual).
   const prior = await prisma.post.findMany({
-    where: { userId, postType: 'story_text', platform: 'linkedin', status: { in: ['scheduled', 'published'] } },
+    where: { userId, postType: 'story_text', platform: 'linkedin', status: { in: ['ready', 'scheduled', 'published'] } },
     orderBy: { createdAt: 'desc' },
     take: 4,
+    distinct: ['automationRunId'],
     select: { content: true },
   })
 
@@ -389,6 +417,28 @@ export async function generateStoryArc(opts: {
         )
       ).filter((s) => s.length > 0),
     })
+  }
+
+  // Figure gate (chiro-port P2, 2026-10-16): the verbatim-numbers prompt rule
+  // demonstrably leaks (~1 unsupported figure per 11 arcs) — every figure in a
+  // beat must trace to the article material, a narrator moment, or the CTA
+  // line (percent complements allowed). Sentences carrying unsupported
+  // figures are dropped; a beat that would strip to nothing keeps its
+  // original text (an imperfect number beats an empty post) and logs loudly.
+  const figureCorpus = buildFigureCorpus([
+    opts.articleTitle,
+    opts.articleMaterial,
+    brand?.storyBeats,
+    theme.socialCallToAction,
+  ])
+  for (const b of beats) {
+    const strippedPost = stripUnsupportedFigureSentences(b.postText, figureCorpus, logCtx, 'story_post')
+    if (strippedPost.length >= 60) b.postText = strippedPost
+    else if (strippedPost !== b.postText)
+      logger.warn({ ...logCtx }, '[story-arc] figure gate would empty a beat — original kept for manual review')
+    b.slides = b.slides
+      .map((s) => stripUnsupportedFigureSentences(s, figureCorpus, logCtx, 'story_slide'))
+      .filter((s) => s.trim().length > 0)
   }
 
   // Evening beats get a DEDICATED CTA slide (deterministic layout). The

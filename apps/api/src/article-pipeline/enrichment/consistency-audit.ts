@@ -73,6 +73,16 @@ function stripTags(html: string): string {
     .trim()
 }
 
+/** Raw figure strings found in a text (tags stripped). */
+export function listFigures(html: string, cap = 120): string[] {
+  const text = stripTags(html)
+  const out: string[] = []
+  let m: RegExpExecArray | null
+  const rx = new RegExp(FIGURE_RX.source, 'g')
+  while ((m = rx.exec(text)) !== null && out.length < cap) out.push(m[0])
+  return out
+}
+
 /** Labeled inventory of every figure in a surface, each with local context. */
 export function extractFigures(surface: string, html: string): string[] {
   const text = stripTags(html)
