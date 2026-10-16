@@ -102,10 +102,12 @@ export default function WorkflowPage() {
   const fetchJobs = async (activeFilter = filter, { silent = false } = {}) => {
     if (!silent) setIsLoading(true)
     try {
+      // The API defaults to 20 jobs — far below a working backlog (Veit
+      // 2026-10-16: bulk approvals vanished below the fold).
       const url =
         activeFilter === 'all'
-          ? '/api/articles'
-          : `/api/articles?status=${activeFilter}`
+          ? '/api/articles?limit=200'
+          : `/api/articles?status=${activeFilter}&limit=200`
       const res = await authedFetch(url)
       if (!res.ok) {
         // Swallow any non-2xx error when we already have data to display.
