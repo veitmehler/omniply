@@ -257,7 +257,13 @@ export async function generateStoryArc(opts: {
     articleTitle: opts.articleTitle,
     articleMaterial: opts.articleMaterial,
     articleUrl: opts.articleUrl,
-    ctaLine: theme.socialCallToAction?.trim() || '',
+    // Comment-keyword accounts (clinic test 2026-10-18): the per-platform
+    // layer owns the reader-facing hook, and socialCallToAction often stores
+    // the INSTRUCTION phrasing ("Invite readers to comment…") — feeding it to
+    // the prompt pasted that guidance verbatim into evening-beat post text.
+    // Keyword accounts end beats naturally; the CTA slide + platform hooks
+    // carry the keyword funnel. (Same bug family as the 2026-10-01 P3 fix.)
+    ctaLine: theme.commentKeyword ? '' : theme.socialCallToAction?.trim() || '',
     priorPosts: prior.map((p) => p.content),
     registerDirective,
   })
@@ -372,7 +378,14 @@ export async function generateStoryArc(opts: {
       ? b.slides.filter((s): s is string => typeof s === 'string' && s.trim().length > 0).map((s) => s.trim())
       : []
     if (!postText || slides.length < 3) throw new Error('Story arc: beat missing postText or slides')
-    const stripDashes = (txt: string) => txt.replace(/\s*[—–]\s*/g, ', ')
+    // Digit–digit ranges keep a tight en-dash ("30–40%"); everything else
+    // comma-izes ("30, 40%" shipped in a clinic beat 2026-10-18).
+    const stripDashes = (txt: string) =>
+      txt.replace(/\s*[—–]\s*/g, (m, offset: number, s: string) => {
+        const prev = s[offset - 1] ?? ''
+        const next = s[offset + m.length] ?? ''
+        return /\d/.test(prev) && /\d/.test(next) ? '–' : ', '
+      })
     // Guarantee a blank line after every thought in the post text: upgrade any
     // single line break to a paragraph break (user 2026-09-04). Slides keep
     // their own spacing (renderer concern).
