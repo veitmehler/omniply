@@ -17,7 +17,13 @@ import type { AutomationLogContext } from '../automation/log-context'
  */
 
 function norm(s: string): string {
-  return s.replace(/,/g, '').toLowerCase()
+  // Suspended hyphens ("a 90- to 100-degree angle") must match the natural
+  // phrasing a beat uses ("90 to 100 degrees"), so a digit's trailing hyphen
+  // before whitespace is dropped. Attached ranges ("3-5") are untouched.
+  return s
+    .replace(/(\d)-(\s)/g, '$1$2')
+    .replace(/,/g, '')
+    .toLowerCase()
 }
 
 /** Formatting variants a corpus match may take for one figure. */

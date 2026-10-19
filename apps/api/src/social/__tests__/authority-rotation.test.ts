@@ -110,6 +110,12 @@ describe('beat figure gate', () => {
     expect(stripUnsupportedFigureSentences(beat, corpus, logCtx, 'test')).toBe(beat)
   })
 
+  it('matches suspended-hyphen ranges (the "90- to 100-degree" false positive)', () => {
+    const c = buildFigureCorpus(['Set the chair so your knees rest at a 90- to 100-degree angle.'])
+    const beat = 'Adjust the seat until your knees sit at 90 to 100 degrees.'
+    expect(stripUnsupportedFigureSentences(beat, c, logCtx, 'test')).toBe(beat)
+  })
+
   it('leaves digit-free text untouched', () => {
     const beat = 'No numbers here.\n\nJust a story.'
     expect(stripUnsupportedFigureSentences(beat, corpus, logCtx, 'test')).toBe(beat)
