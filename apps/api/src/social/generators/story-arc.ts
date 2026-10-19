@@ -118,7 +118,7 @@ ARC RULES:
 - Beats 2 and onward OPEN with one short re-anchoring line that orients a first-time reader (half a sentence referencing where the story stands) before continuing.
 - Every beat except the last ends mid-tension with an open loop to the next.
 - SCHEDULE: beats alternate morning and evening, starting with a morning beat. A MORNING beat's open loop points at TONIGHT ("Tonight: ..."); an EVENING beat's open loop (except the last beat, which resolves) points at TOMORROW ("Tomorrow morning: ..."). Never use the wrong label, and NEVER write clock times in the copy (no "at 19:00", no "at 7 PM"): "Tonight" and "Tomorrow morning" are the only schedule words.
-- The LAST beat resolves the arc and its POST TEXT (never a slide) may include exactly one soft mention of the article${opts.articleUrl ? ` (link: ${opts.articleUrl})` : ''}.
+- The LAST beat resolves the arc and its POST TEXT (never a slide) may include exactly one soft mention of the article${opts.articleUrl ? ` (link: ${opts.articleUrl})` : ' BY TITLE ONLY — you do not know its address, so NEVER write a URL of any kind'}.
 - EVENING beats (beat 2${opts.beatCount >= 4 ? ' and beat 4' : ''}): the POST TEXT ends with exactly this call-to-action line as its final line: "${opts.ctaLine}"${opts.ctaLine ? '' : ' (no CTA line provided: end naturally)'}
 - Beats never reuse a scene, opening, or anecdote from each other or from the prior posts above.
 - Narrator moments are FACTS: never merge two different moments into one scene, and never attach a date or timeframe to a moment unless it appears in that moment's own text.
@@ -565,6 +565,28 @@ export async function generateStoryArc(opts: {
       logger.info({ ...logCtx, beat: i }, '[story-arc] teaser slide restored deterministically')
     }
     b.slides = out
+  }
+
+  // URL guard (2026-10-19): the model fabricated plausible article links
+  // ("?p=79", "?p=[article-id]") by imitating prior posts when no URL was
+  // provided — a self-reinforcing hallucination via the callback pool. Post
+  // text may only carry the URL we supplied; any other link drops its line.
+  // (Slides are already URL-free by the stripUrlSentences pass.)
+  const allowedUrl = opts.articleUrl?.trim()
+  const URL_IN_TEXT = /https?:\/\/\S+/
+  for (const b of beats) {
+    b.postText = b.postText
+      .split('\n')
+      .filter((line) => {
+        const m = line.match(URL_IN_TEXT)
+        if (!m) return true
+        if (allowedUrl && m[0].startsWith(allowedUrl)) return true
+        logger.warn({ ...logCtx, dropped: line.slice(0, 100) }, '[story-arc] fabricated/unprovided URL — line dropped')
+        return false
+      })
+      .join('\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim()
   }
 
   // Evening beats get a DEDICATED CTA slide (deterministic layout). The
