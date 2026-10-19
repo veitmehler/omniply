@@ -18,7 +18,15 @@ import {
   type AuthorityType,
 } from './authority-rotation'
 import { arcRegisterDirective } from './authority-registers'
-import { buildFigureCorpus, stripUnsupportedFigureSentences } from './beat-figure-gate'
+import {
+  buildFigureCorpus,
+  stripUnsupportedFigureSentences,
+  findUnsupportedFigures,
+  LOOP_MARKER_RX,
+  fallbackLoopLine,
+} from './beat-figure-gate'
+import { listFigures } from '../../article-pipeline/enrichment/consistency-audit'
+import type { LLMAdapter } from '../../article-pipeline/llm/adapter'
 
 /**
  * Story-arc generator (engagement v2 — .plans/story-arc-posts plan).
@@ -73,6 +81,9 @@ function buildUserPrompt(opts: {
   ctaLine: string
   priorPosts: string[]
   registerDirective: string | null
+  /** Deterministic figure inventory from the source material (prevention:
+   *  the model picks supported numbers for hooks in the first place). */
+  allowedFigures: string
 }): string {
   const prior = opts.priorPosts.length
     ? opts.priorPosts.map((p, i) => `--- Prior post ${i + 1} (most recent first) ---\n${p}`).join('\n\n')
@@ -90,6 +101,9 @@ ADVERTISING RESTRICTIONS (hard rules; may be empty):
 ${opts.restrictions}
 
 ARTICLE TITLE: ${opts.articleTitle}
+FIGURES YOU MAY USE (the complete menu — every number in any post or slide must appear in this list or a narrator moment, verbatim; never derive, total, or invent others):
+${opts.allowedFigures || '(none — write without numbers)'}
+
 ARTICLE MATERIAL (the arc's substance; numbers may ONLY come from here):
 ${opts.articleMaterial}
 
@@ -110,6 +124,8 @@ ARC RULES:
 - Narrator moments are FACTS: never merge two different moments into one scene, and never attach a date or timeframe to a moment unless it appears in that moment's own text.
 - NEVER invent events, experiments, tests, products, conversations, or timelines that are not explicitly described in a narrator moment or the article. If a moment lacks detail, stay abstract rather than inventing specifics.
 - Every number in every post must appear VERBATIM in the article material or a narrator moment. No derived, estimated, or invented figures.
+- HOOK lines (the first slide, the post's opening line) are strongest with a number, but ONLY a number from the allowed list above.
+- Open-loop/teaser lines ("Tonight: ...", "Tomorrow morning: ...") and the LAST slide must contain NO digits at all — tease the subject, never the statistic.
 - Write every figure as numerals exactly as printed in the source (15.6%, $5,000, 30-40%); NEVER spell numbers out in words, even in spoken-style lines.
 - 120 to 220 words per post. Short lines. Separate THOUGHTS with a BLANK line (a thought may span several sentences); never run two thoughts together in one paragraph.
 
@@ -266,6 +282,15 @@ export async function generateStoryArc(opts: {
     ctaLine: theme.commentKeyword ? '' : theme.socialCallToAction?.trim() || '',
     priorPosts: prior.map((p) => p.content),
     registerDirective,
+    allowedFigures: [
+      ...new Set([
+        ...listFigures(opts.articleMaterial),
+        ...listFigures(brand?.storyBeats ?? ''),
+        ...listFigures(theme.socialCallToAction ?? ''),
+      ]),
+    ]
+      .slice(0, 60)
+      .join(' · '),
   })
 
   const provider = (t?.defaultProvider ?? 'anthropic').toLowerCase()
@@ -432,26 +457,114 @@ export async function generateStoryArc(opts: {
     })
   }
 
-  // Figure gate (chiro-port P2, 2026-10-16): the verbatim-numbers prompt rule
-  // demonstrably leaks (~1 unsupported figure per 11 arcs) — every figure in a
-  // beat must trace to the article material, a narrator moment, or the CTA
-  // line (percent complements allowed). Sentences carrying unsupported
-  // figures are dropped; a beat that would strip to nothing keeps its
-  // original text (an imperfect number beats an empty post) and logs loudly.
+  // Figure gate (chiro-port P2, slot-aware since 2026-10-19 — Veit: numbered
+  // hooks are powerful, don't strip them; retry instead): every figure must
+  // trace to the article material, a narrator moment, or the CTA line
+  // (percent complements allowed). Remedies by slot:
+  //  - HOOKS (first slide / post opener): up to 3 fed retries carrying the
+  //    allowed-figure menu, then a numbers-free rewrite — the hook never
+  //    silently disappears and the bad number never ships.
+  //  - TEASERS/open loops: unsupported sentences drop, then a deterministic
+  //    label-correct fallback restores the serialization ("Part 2 tonight.").
+  //  - everything else: sentence-drop, as proven.
   const figureCorpus = buildFigureCorpus([
     opts.articleTitle,
     opts.articleMaterial,
     brand?.storyBeats,
     theme.socialCallToAction,
   ])
-  for (const b of beats) {
-    const strippedPost = stripUnsupportedFigureSentences(b.postText, figureCorpus, logCtx, 'story_post')
-    if (strippedPost.length >= 60) b.postText = strippedPost
-    else if (strippedPost !== b.postText)
-      logger.warn({ ...logCtx }, '[story-arc] figure gate would empty a beat — original kept for manual review')
-    b.slides = b.slides
-      .map((s) => stripUnsupportedFigureSentences(s, figureCorpus, logCtx, 'story_slide'))
-      .filter((s) => s.trim().length > 0)
+  const allowedMenu = [...new Set(listFigures(opts.articleMaterial + '\n' + (brand?.storyBeats ?? '')))]
+    .slice(0, 60)
+    .join(' · ')
+  let hookFixCalls = 0
+  const MAX_HOOK_FIX_CALLS = 8 // per arc — cost/latency ceiling for the ladder
+
+  /** Fed-retry ladder for a structural hook sentence. Null = ladder exhausted. */
+  const rewriteHook = async (sentence: string, badFigs: string[]): Promise<string | null> => {
+    for (let attempt = 1; attempt <= 4 && hookFixCalls < MAX_HOOK_FIX_CALLS; attempt++) {
+      const numbersFree = attempt === 4
+      hookFixCalls++
+      try {
+        const run2 = await (adapter as LLMAdapter).call({
+          systemPrompt:
+            'You rewrite exactly ONE social-post hook line. Keep its punch, voice, and meaning. ' +
+            'Output ONLY the rewritten line — no quotes, no commentary, no em-dashes.',
+          userPrompt: numbersFree
+            ? `Rewrite this hook with NO numbers or digits at all — tease the subject, not the statistic:\n${sentence}`
+            : `This hook uses figures not present in the source material (${badFigs.join(', ')}). Rewrite it keeping its punch, using ONLY figures from this list (or none):\n${allowedMenu || '(no figures available — use none)'}\n\nHook:\n${sentence}`,
+          model,
+          temperature: 0.5,
+          maxTokens: 120,
+        })
+        await recordLLMUsage(userId, 'story_arc_hook_fix', run2)
+        const candidate = run2.content.trim().split('\n')[0].replace(/\s*[—–]\s*/g, ', ').trim()
+        const ok =
+          candidate.length >= 8 &&
+          candidate.length <= 220 &&
+          (numbersFree ? !/\d/.test(candidate) : findUnsupportedFigures(candidate, figureCorpus).length === 0)
+        if (ok) {
+          logger.info({ ...logCtx, attempt, numbersFree, badFigs }, '[story-arc] hook rewritten past figure gate')
+          return candidate
+        }
+      } catch (err) {
+        logger.warn({ ...logCtx, attempt, err }, '[story-arc] hook rewrite attempt failed')
+      }
+    }
+    return null
+  }
+
+  /** First-sentence split for post text (the opener is the hook). */
+  const splitOpener = (text: string): [string, string] => {
+    const firstLine = text.split('\n')[0]
+    const m = firstLine.match(/^.*?[.!?](?=\s|$)/)
+    const opener = m ? m[0] : firstLine
+    return [opener, text.slice(opener.length)]
+  }
+
+  for (let i = 0; i < beats.length; i++) {
+    const b = beats[i]
+    const isFinal = i === beats.length - 1
+
+    // Post text: protect the opener via the ladder; sentence-strip the rest.
+    const [opener, rest] = splitOpener(b.postText)
+    const openerBad = findUnsupportedFigures(opener, figureCorpus)
+    let newOpener = opener
+    if (openerBad.length) newOpener = (await rewriteHook(opener, openerBad)) ?? opener
+    if (newOpener === opener && openerBad.length)
+      logger.warn({ ...logCtx, beat: i, openerBad }, '[story-arc] hook ladder exhausted — original opener kept for review')
+    const strippedRest = stripUnsupportedFigureSentences(rest, figureCorpus, logCtx, 'story_post')
+    let postText = (newOpener + strippedRest).replace(/\n{3,}/g, '\n\n').trim()
+    // Loop restoration: a non-final beat must still tease its sequel.
+    if (!isFinal && !LOOP_MARKER_RX.test(postText.split('\n').slice(-3).join('\n'))) {
+      postText = postText + '\n\n' + fallbackLoopLine(i)
+      logger.info({ ...logCtx, beat: i }, '[story-arc] post open loop restored deterministically')
+    }
+    b.postText = postText.length >= 60 ? postText : b.postText
+
+    // Slides: hook ladder on slide 0, sentence-drop elsewhere, loop guarantee last.
+    const out: string[] = []
+    for (let j = 0; j < b.slides.length; j++) {
+      const s = b.slides[j]
+      const bad = findUnsupportedFigures(s, figureCorpus)
+      if (!bad.length) {
+        out.push(s)
+        continue
+      }
+      if (j === 0) {
+        const fixed = await rewriteHook(s, bad)
+        out.push(fixed ?? s)
+        if (!fixed) logger.warn({ ...logCtx, beat: i, bad }, '[story-arc] hook slide ladder exhausted — original kept for review')
+      } else {
+        const stripped = stripUnsupportedFigureSentences(s, figureCorpus, logCtx, 'story_slide')
+        if (stripped.trim().length > 0) out.push(stripped)
+        else logger.info({ ...logCtx, beat: i, slide: j }, '[story-arc] slide fully dropped by figure gate')
+      }
+    }
+    if (!isFinal && !LOOP_MARKER_RX.test(out[out.length - 1] ?? '')) {
+      out.push(fallbackLoopLine(i))
+      logger.info({ ...logCtx, beat: i }, '[story-arc] teaser slide restored deterministically')
+    }
+    b.slides = out
   }
 
   // Evening beats get a DEDICATED CTA slide (deterministic layout). The

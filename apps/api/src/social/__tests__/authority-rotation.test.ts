@@ -115,3 +115,28 @@ describe('beat figure gate', () => {
     expect(stripUnsupportedFigureSentences(beat, corpus, logCtx, 'test')).toBe(beat)
   })
 })
+
+import { findUnsupportedFigures, LOOP_MARKER_RX, fallbackLoopLine } from '../generators/beat-figure-gate'
+
+describe('slot-aware gate helpers', () => {
+  const corpus = buildFigureCorpus(['The article cites 29% missed calls and $1,200 value.'])
+
+  it('findUnsupportedFigures surfaces only unbacked figures', () => {
+    expect(findUnsupportedFigures('29% miss their calls at $1,200 each', corpus)).toEqual([])
+    expect(findUnsupportedFigures('That is $72,000 annually from 29% misses', corpus)).toEqual(['$72,000'])
+    expect(findUnsupportedFigures('no digits here', corpus)).toEqual([])
+  })
+
+  it('loop markers match the serialization grammar', () => {
+    expect(LOOP_MARKER_RX.test('Tonight: the fix.')).toBe(true)
+    expect(LOOP_MARKER_RX.test('Tomorrow morning: part 2.')).toBe(true)
+    expect(LOOP_MARKER_RX.test('Part 2 tonight.')).toBe(true)
+    expect(LOOP_MARKER_RX.test('your spine evolved for movement, not stillness.')).toBe(false)
+  })
+
+  it('fallback loop lines follow morning/evening parity', () => {
+    expect(fallbackLoopLine(0)).toBe('Part 2 tonight.')
+    expect(fallbackLoopLine(1)).toBe('Tomorrow morning: part 2.')
+    expect(fallbackLoopLine(2)).toBe('Part 2 tonight.')
+  })
+})

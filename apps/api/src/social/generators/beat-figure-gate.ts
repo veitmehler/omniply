@@ -71,6 +71,22 @@ export function buildFigureCorpus(sources: Array<string | null | undefined>): Al
   }
 }
 
+/** Figures in `text` that the corpus does not support. */
+export function findUnsupportedFigures(text: string, corpus: AllowedFigureCorpus): string[] {
+  if (!/\d/.test(text)) return []
+  return listFigures(text).filter((f) => !corpus.allows(f))
+}
+
+/** Serialized-arc open-loop markers (the cliffhanger grammar). */
+export const LOOP_MARKER_RX = /\b(Tonight|Tomorrow(\s+morning)?|Part 2)\b/i
+
+/** Deterministic, label-correct teaser when a gate drop broke the open loop
+ *  (morning beats tease tonight; evening beats tease tomorrow — mirrors
+ *  fixLoopLabel's parity). */
+export function fallbackLoopLine(beatIdx: number): string {
+  return beatIdx % 2 === 0 ? 'Part 2 tonight.' : 'Tomorrow morning: part 2.'
+}
+
 /** Drop sentences containing unsupported figures; returns the cleaned text. */
 export function stripUnsupportedFigureSentences(
   text: string,
