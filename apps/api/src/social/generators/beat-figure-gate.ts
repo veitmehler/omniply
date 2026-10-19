@@ -67,6 +67,13 @@ export function buildFigureCorpus(sources: Array<string | null | undefined>): Al
       complements.add((Number.isInteger(c) ? String(c) : c.toFixed(1).replace(/\.0$/, '')) + '%')
     }
   }
+  // Range endpoints: in "15–25%" / "15 to 25 percent" the unit attaches only
+  // to the second number, so a beat's "15%" finds no substring. Both
+  // endpoints of a percent range are allowed percents.
+  for (const m of corpus.matchAll(/(\d{1,3}(?:\.\d+)?)\s*(?:[-–—]|to)\s*(\d{1,3}(?:\.\d+)?)\s*(?:%|percent)/g)) {
+    complements.add(m[1] + '%')
+    complements.add(m[2] + '%')
+  }
   return {
     allows(fig: string): boolean {
       if (variants(fig).some((v) => corpus.includes(v))) return true

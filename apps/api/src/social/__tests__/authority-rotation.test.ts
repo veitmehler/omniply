@@ -116,6 +116,14 @@ describe('beat figure gate', () => {
     expect(stripUnsupportedFigureSentences(beat, c, logCtx, 'test')).toBe(beat)
   })
 
+  it('allows percent-range endpoints (the "15–25%" ↔ "15% to 25%" false positive)', () => {
+    const c = buildFigureCorpus(['Lumbar support reduces disc pressure by 15–25% compared to unsupported sitting.'])
+    const beat = 'Proper support cuts disc pressure by 15% to 25%.'
+    expect(stripUnsupportedFigureSentences(beat, c, logCtx, 'test')).toBe(beat)
+    const cWords = buildFigureCorpus(['It may reduce pressure by 15 to 25 percent.'])
+    expect(stripUnsupportedFigureSentences(beat, cWords, logCtx, 'test')).toBe(beat)
+  })
+
   it('leaves digit-free text untouched', () => {
     const beat = 'No numbers here.\n\nJust a story.'
     expect(stripUnsupportedFigureSentences(beat, corpus, logCtx, 'test')).toBe(beat)
