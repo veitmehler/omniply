@@ -124,6 +124,12 @@ describe('beat figure gate', () => {
     expect(stripUnsupportedFigureSentences(beat, cWords, logCtx, 'test')).toBe(beat)
   })
 
+  it('matches spelled-out small counts (the "three times a week" false positive)', () => {
+    const c = buildFigureCorpus(['They are desk workers who hit the gym three times a week.'])
+    const beat = 'The people I see injured are desk workers who hit the gym 3 times a week.'
+    expect(stripUnsupportedFigureSentences(beat, c, logCtx, 'test')).toBe(beat)
+  })
+
   it('leaves digit-free text untouched', () => {
     const beat = 'No numbers here.\n\nJust a story.'
     expect(stripUnsupportedFigureSentences(beat, corpus, logCtx, 'test')).toBe(beat)

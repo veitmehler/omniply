@@ -48,6 +48,13 @@ function variants(fig: string): string[] {
   if (/\d-\d/.test(fig)) v.add(norm(fig.replace(/-/, ' to ')))
   if (/x$/i.test(fig)) v.add(norm(fig.replace(/x$/i, ' times')))
   if (/\stimes$/i.test(fig)) v.add(norm(fig.replace(/\s+times$/i, 'x')))
+  // Small counts the corpus may spell out: beat "3 times" ↔ article "three
+  // times". Only standalone 0–12 convert, so "15%" and "$1200" are untouched.
+  const WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve']
+  for (const existing of [...v]) {
+    const worded = existing.replace(/\b(1[0-2]|[0-9])\b/g, (d) => WORDS[Number(d)])
+    if (worded !== existing) v.add(worded)
+  }
   return [...v]
 }
 
