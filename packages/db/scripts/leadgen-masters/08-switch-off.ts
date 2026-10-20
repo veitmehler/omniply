@@ -5,6 +5,7 @@ import { wellnessDisclaimer } from './common'
 export const spec: MasterDocSpec = {
   title: 'The Art of Switching Off',
   subtitle: 'Why downtime is a skill, not a reward, and how busy people build it back into the week',
+  coverAsset: 'w8_cover',
   coverChecklist: [
     'The case for downtime: why rest is part of performance, not its opposite',
     'Micro-pauses: two-minute resets that fit between meetings',
@@ -31,6 +32,7 @@ export const spec: MasterDocSpec = {
       heading: 'Micro-pauses: the two-minute reset',
       slotName: 'micro_pauses',
       unnumbered: true,
+      figure: { asset: 'w8_exhale' },
       defaultHtml:
         '<p>You do not need an empty afternoon to switch off. You need small, repeatable pauses that interrupt the build-up before it compounds. Two minutes, done several times a day, outperforms one heroic spa day a quarter.</p>',
       frozenHtml:
@@ -42,6 +44,7 @@ export const spec: MasterDocSpec = {
       heading: 'The digital sunset',
       slotName: 'digital_sunset',
       unnumbered: true,
+      figure: { asset: 'w8_sunset' },
       defaultHtml:
         '<p>Work used to end when you left the building. Now it ends only when you decide it does, which means many days never end at all. A digital sunset is a chosen time when the working day is declared over, marked by a small closing ritual your brain learns to trust.</p>',
       frozenHtml:

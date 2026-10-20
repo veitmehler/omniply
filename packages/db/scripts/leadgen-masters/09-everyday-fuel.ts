@@ -7,6 +7,7 @@ import { wellnessDisclaimer } from './common'
 export const spec: MasterDocSpec = {
   title: 'Everyday Fuel',
   subtitle: 'Unglamorous eating habits that support training, energy, and busy weeks, with zero rules you will hate',
+  coverAsset: 'w9_cover',
   coverChecklist: [
     'The half-plate habit that replaces calorie math',
     'Hydration without the gallon-jug theatrics',
@@ -22,6 +23,7 @@ export const spec: MasterDocSpec = {
       heading: 'The half-plate habit',
       slotName: 'half_plate',
       unnumbered: true,
+      figure: { asset: 'w9_plate' },
       defaultHtml:
         '<p>Forget counting anything. At lunch and dinner, aim for half the plate to be vegetables or salad, a palm of protein, and the rest whatever carbohydrate the meal was built on. That single picture quietly handles fibre, protein, and portion at once, with no app involved.</p><p>Protein deserves one extra sentence: it is what muscles are rebuilt from, and most people eat the bulk of theirs at dinner. Spreading it across the day, some at every meal, supports the strength work in this guide series far better than one big evening dose.</p>',
       frozenHtml:
@@ -54,6 +56,7 @@ export const spec: MasterDocSpec = {
       heading: 'When you eat shapes how you feel',
       slotName: 'rhythm',
       unnumbered: true,
+      figure: { asset: 'w9_rhythm' },
       defaultHtml:
         '<p>Bodies love a rhythm in food for the same reason they love one in sleep. Regular meals keep energy steadier than the skip-then-raid pattern, and an earlier, lighter dinner is one of the most underrated sleep habits there is: a body busy digesting at midnight is not fully resting.</p>',
       frozenHtml:

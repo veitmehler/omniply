@@ -5,6 +5,7 @@ import { wellnessDisclaimer } from './common'
 export const spec: MasterDocSpec = {
   title: 'Everyday Strength',
   subtitle: 'The five movements that keep you capable for decades, and a 20-minute week that actually fits your life',
+  coverAsset: 'w6_cover',
   coverChecklist: [
     'Why muscle is the quiet currency of aging well',
     'The five everyday movements behind almost everything you do',
@@ -31,6 +32,7 @@ export const spec: MasterDocSpec = {
       heading: 'Squat, hinge, push, pull, carry',
       slotName: 'five_moves',
       unnumbered: true,
+      figure: { asset: 'w6_moves' },
       defaultHtml:
         '<p>Strip away the machines and the jargon and nearly everything your body does against resistance is one of five patterns. Train these five and daily life gets easier almost everywhere at once.</p>',
       frozenHtml:
@@ -42,6 +44,7 @@ export const spec: MasterDocSpec = {
       heading: 'The 20-minute week',
       slotName: 'week_plan',
       unnumbered: true,
+      figure: { asset: 'w6_week' },
       defaultHtml:
         '<p>Two sessions of ten minutes beat one heroic hour that never happens. The plan below is deliberately modest, because the goal is December, not just next Tuesday.</p>',
       frozenHtml:

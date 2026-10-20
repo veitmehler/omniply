@@ -5,6 +5,7 @@ import { wellnessDisclaimer } from './common'
 export const spec: MasterDocSpec = {
   title: 'Better Sleep, Night After Night',
   subtitle: 'How consistency, light, and a real wind-down turn ordinary nights into your best recovery tool',
+  coverAsset: 'w7_cover',
   coverChecklist: [
     'Why a steady sleep schedule beats extra hours',
     'The light rules: morning sun in, evening glow down',
@@ -31,6 +32,7 @@ export const spec: MasterDocSpec = {
       heading: 'Morning sun in, evening glow down',
       slotName: 'light',
       unnumbered: true,
+      figure: { asset: 'w7_light' },
       defaultHtml:
         '<p>Light is the clock-setter. Bright outdoor light within an hour of waking tells your body the day has started, which is exactly what makes sleepiness show up on time that night. Even a cloudy sky outdoors delivers far more useful light than any bright kitchen.</p><p>In the evening the same system runs in reverse: bright overhead light and glowing screens tell your body it is still afternoon. Dim the house after dinner, switch to lamps, and let the last hour run warm and low.</p>',
       frozenHtml:
@@ -53,6 +55,7 @@ export const spec: MasterDocSpec = {
       heading: 'The 60-minute landing pattern',
       slotName: 'winddown',
       unnumbered: true,
+      figure: { asset: 'w7_winddown' },
       defaultHtml:
         '<p>Bodies do not have an off switch; they have a descent. A repeatable final hour tells your nervous system, in its own language, that the day is over. The exact contents matter less than the repetition... the routine itself becomes the signal.</p>',
       frozenHtml:
