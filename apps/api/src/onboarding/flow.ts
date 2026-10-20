@@ -74,6 +74,17 @@ interface StepDef {
   commit(ctx: StepContext, answer: unknown): Promise<string | null>
 }
 
+/** q_myths wording per vertical (wellness plan Phase 3): the question works
+ *  for any clinic vertical; only the field it names changes. Feeds
+ *  brandSettings.authorityPools.belief_shift either way. */
+export function mythsQuestionFor(vertical: string): string {
+  const field =
+    vertical === 'wellness'
+      ? 'about recovery and wellness therapies, about pain and healing'
+      : 'about chiropractic, about pain'
+  return `What do patients wrongly believe — ${field}, about your work — that you find yourself correcting in the treatment room?`
+}
+
 /** Simple steps store their raw answer under stepData[id] — later phases refine. */
 function storeAnswer(id: string): StepDef['commit'] {
   return async (ctx, answer) => {
@@ -134,11 +145,11 @@ const STEPS: StepDef[] = [
   {
     id: 'q_myths',
     kind: 'voice',
-    prepare: async () => ({
-      messages: [
-        'What do patients wrongly believe — about chiropractic, about pain, about your work — that you find yourself correcting in the treatment room?',
-      ],
-    }),
+    prepare: async (ctx) => {
+      const { verticalForUser } = await import('../lib/prompt-resolver')
+      const vertical = await verticalForUser(ctx.userId).catch(() => 'chiro')
+      return { messages: [mythsQuestionFor(vertical)] }
+    },
     commit: storeAnswer('q_myths'),
   },
   {

@@ -105,6 +105,62 @@ real test happens at the pilot's onboarding (checklist below).
 - Estimate: 1–2 days platform + user-side Meta/GHL setup.
 
 ## Phase 3 — Wellness vertical content pack
+Status: **IN PROGRESS 2026-10-20.** Done: vertical-aware q_myths
+(mythsQuestionFor in flow.ts; chiro keeps the original wording),
+specializationRegistryKeys now honors `enabled` (staged rows invisible to
+onboarding), `recovery_wellness` Specialization row inserted DISABLED on
+prod + staging. Arc compliance preamble audited: already vertical-neutral
+("healthcare practice… never clinical claims/outcomes/condition promises")
+— applies to HBOT/PEMF as written, NO code change needed. GATED on the
+claims-policy sign-off below: PlainLanguageConfig row insert, calendar topic
+generation, lead magnet + nurture copy.
+
+### DRAFT — claims policy for industry "Wellness & Recovery" (AWAITING VEIT SIGN-OFF)
+Becomes `PlainLanguageConfig.restrictions` (injected into every article/
+newsletter generation for matching accounts; same mechanism as chiro):
+
+> ADVERTISING-CLAIM RESTRICTIONS (wellness & recovery center — hard rules):
+> 1. FRAME EVERYTHING as recovery, performance, relaxation, and general
+>    wellness SUPPORT. Never present any service as treating, curing,
+>    preventing, or diagnosing any disease, illness, or medical condition.
+> 2. HBOT (hyperbaric oxygen): an active FDA/FTC enforcement target. NEVER
+>    name a disease or condition it helps (not cancer, autism, Lyme, long
+>    COVID, stroke, dementia — not any). Allowed: recovery routines, how a
+>    session works and feels, published research described with hedges
+>    ("researchers have explored…", "a 2023 study examined…") and never as
+>    proof of benefit. Never the words "heal", "treat", "cure", "therapy
+>    for <condition>" in connection with HBOT.
+> 3. PEPTIDES: strictest category — many compounds are not FDA-approved.
+>    NEVER name specific peptides' effects, suggest doses, or promise
+>    outcomes. The ONLY allowed framing is the consultation itself: a
+>    practitioner-led conversation about options, suitability, and sourcing
+>    safety. No peptide product claims of any kind.
+> 4. PEMF, whole-body vibration, compression, KAATSU, massage,
+>    physiotherapy: recovery/circulation/mobility SUPPORT language with
+>    honest hedges ("many clients use…", "may help you feel…"). No injury-
+>    treatment promises, no "fixes", no named-condition relief claims.
+> 5. PRODUCTS (teas, supplements): FDA structure/function rules — "supports"
+>    language only, never disease claims, and when a product benefit is
+>    stated, note that such statements are not FDA-evaluated.
+> 6. NO detox-cure, disease-reversal, anti-aging-as-fact, or longevity-
+>    promise framing. Aging, inflammation, and recovery may be DISCUSSED as
+>    topics; outcomes may not be promised.
+> 7. PROOF: only de-identified transformed client stories from the provided
+>    material and the practice's own aggregate numbers (review counts,
+>    ratings). Never named testimonials, never before/after health claims.
+> 8. Always point readers to qualified medical professionals for medical
+>    concerns; the practice complements, never replaces, medical care.
+
+Starter plain-language exemplars (metaphor bank, same table's `exemplars`):
+HBOT chamber = "a pressurized room that lets your blood carry extra oxygen,
+like turning up the water pressure so every sprinkler on the lawn reaches
+further"; PEMF = "a gentle magnetic pulse, like a metronome your cells can
+rest to"; compression boots = "a wave pattern that walks fluid up your legs,
+the way squeezing a toothpaste tube from the bottom moves everything along";
+KAATSU/BFR = "training with a light safety brake on blood flow so muscles
+work hard at low loads"; fascia = "the cling-film layer that wraps every
+muscle"; VO2/recovery capacity = "the size of your body's fuel line, not the
+size of the tank".
 - Specialization row `recovery_wellness` (+ industry string "Wellness &
   Recovery" convention for BrandSettings.industry — plain-language REQUIRES
   industry, onboarding runbook already notes this).

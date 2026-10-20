@@ -788,6 +788,8 @@ ${corpus.slice(0, 24_000)}`,
 }
 
 export async function specializationRegistryKeys(): Promise<string[]> {
-  const rows = await prisma.specialization.findMany({ select: { key: true } })
+  // enabled:false rows are staged (e.g. a new vertical's specialization
+  // before its calendars exist) — they must not surface in onboarding.
+  const rows = await prisma.specialization.findMany({ where: { enabled: true }, select: { key: true } })
   return rows.map((r) => r.key)
 }

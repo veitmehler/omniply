@@ -16,7 +16,7 @@ vi.mock('@omniply/shared', () => ({
 }))
 vi.mock('../../lib/logger', () => ({ logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() } }))
 
-import { STEP_ORDER, currentStepView, commitAndAdvance, type StepContext } from '../flow'
+import { STEP_ORDER, currentStepView, commitAndAdvance, mythsQuestionFor, type StepContext } from '../flow'
 
 function ctx(stepData: Record<string, unknown> = {}): StepContext {
   return { accountId: 'acct_1', userId: 'u_1', stepData }
@@ -39,6 +39,12 @@ describe('onboarding flow', () => {
     }
     // q_myths sits right after q_enemy — the rant surfaces the myths.
     expect(STEP_ORDER.indexOf('q_myths')).toBe(STEP_ORDER.indexOf('q_enemy') + 1)
+    // Vertical-aware wording (wellness plan Phase 3): chiro keeps the
+    // original question; wellness names its own field; unknown falls back.
+    expect(mythsQuestionFor('chiro')).toContain('about chiropractic, about pain')
+    expect(mythsQuestionFor('wellness')).toContain('about recovery and wellness therapies')
+    expect(mythsQuestionFor('wellness')).toContain('correcting in the treatment room')
+    expect(mythsQuestionFor('whatever')).toContain('about chiropractic')
     // Every required setup surface is a step; elevenlabs REMOVED (P3: no client voice).
     for (const s of ['business_confirm', 'logo_confirm', 'brand_profile_confirm', 'writing_sample', 'template_reveal', 'offers', 'cta', 'booking_url', 'pms', 'wordpress', 'socials', 'gbp', 'google_reviews', 'toggles']) {
       expect(STEP_ORDER).toContain(s)
