@@ -70,7 +70,7 @@ export function EmbedShell({ justCompletedOnboarding = false }: { justCompletedO
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="sticky top-0 z-20 border-b border-border bg-background/95 backdrop-blur">
+      <div className="sticky top-0 z-20 border-b border-border bg-[rgb(26,32,44)]">
         <nav className="mx-auto flex max-w-4xl gap-1 px-4">
           {TABS.map((t) => (
             <button
