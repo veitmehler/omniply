@@ -24,6 +24,23 @@ const COHORT_REGRANT_DAYS = 42
 const LENGTH_RATIO_MIN = 0.7
 const LENGTH_RATIO_MAX = 1.4
 
+/**
+ * Paper size follows the clinic's country (Veit 2026-10-21: US clients are
+ * weirded out by A4). Letter world per ISO/common usage; UNKNOWN defaults to
+ * LETTER (US-first market — Australia is only the example clinic). The
+ * master CSS is authored at A4 height; letter renders swap the one hardcoded
+ * cover height (297mm → 279.4mm) at compile time so legacy stored masters
+ * work without a re-seed.
+ */
+const LETTER_COUNTRIES = new Set(['US', 'CA', 'MX', 'DO', 'PR', 'PH', 'CL', 'CO', 'CR', 'GT', 'PA', 'SV', 'NI', 'HN', 'BO', 'VE'])
+export function paperFormatFor(countryCode: string | null | undefined): 'letter' | 'a4' {
+  if (!countryCode?.trim()) return 'letter'
+  return LETTER_COUNTRIES.has(countryCode.trim().toUpperCase()) ? 'letter' : 'a4'
+}
+export function applyPaperSize(html: string, format: 'letter' | 'a4'): string {
+  return format === 'letter' ? html.replace(/height:\s*297mm/g, 'height: 279.4mm') : html
+}
+
 interface SlotMeta {
   maxChars?: number
   rewriteEligible?: boolean
@@ -48,6 +65,8 @@ export interface BrandTokens {
   fontColor: string
   /** Contrast-computed ink for anything rendered ON headerColor (cover, strip). */
   coverInk: string
+  /** Paper size by clinic country (letter default; a4 for the A4 world). */
+  paperFormat: 'letter' | 'a4'
 }
 
 /** ROTATION support: grant the recent capture cohort on a fresh file (silent). */
@@ -182,6 +201,7 @@ async function brandTokensFor(userId: string): Promise<BrandTokens> {
   const headerColor = brand?.nlHeaderBgColor ?? brand?.diagramPrimaryColor ?? '#0b2545'
   const lightHeader = headerIsLight(headerColor)
   return {
+    paperFormat: paperFormatFor(brand?.organizationCountryCode),
     organizationName: brand?.organizationName ?? 'Your Practice',
     phone: brand?.organizationPhone ?? '',
     phoneTel: (brand?.organizationPhone ?? '').replace(/[^\d+]/g, ''),
@@ -468,13 +488,14 @@ export async function compileLeadGenDocument(documentId: string, feedbackNote?: 
     // cover, margin-bounded content, brand strip stamped via pdf-lib.
     const inked = await inlineLogo(tokens)
     html = applyBrandTokens(html, inked)
+    html = applyPaperSize(html, inked.paperFormat)
     const { coverHtml, contentHtml } = splitAtCover(html)
     const [coverPdf, contentPdf] = await withRasterPage(async (page) => {
       await page.setContent(coverHtml || html, { waitUntil: 'load', timeout: 60_000 })
-      const c = (await page.pdf({ format: 'a4', printBackground: true })) as Buffer
+      const c = (await page.pdf({ format: inked.paperFormat, printBackground: true })) as Buffer
       await page.setContent(contentHtml, { waitUntil: 'load', timeout: 60_000 })
       const b = (await page.pdf({
-        format: 'a4',
+        format: inked.paperFormat,
         printBackground: true,
         margin: { top: '18mm', bottom: '26mm', left: '0', right: '0' },
       })) as Buffer

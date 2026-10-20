@@ -60,3 +60,23 @@ describe('cover contrast (light-palette fix 2026-10-09)', () => {
     expect(headerIsLight('not-a-color')).toBe(false)
   })
 })
+
+describe('paper size by country (Veit 2026-10-21: Letter default)', () => {
+  it('letter for the Letter world and for UNKNOWN; a4 elsewhere', async () => {
+    const { paperFormatFor } = await import('../compile')
+    expect(paperFormatFor('US')).toBe('letter')
+    expect(paperFormatFor('do')).toBe('letter') // the DR pilot prints Letter
+    expect(paperFormatFor('CA')).toBe('letter')
+    expect(paperFormatFor(null)).toBe('letter')
+    expect(paperFormatFor('  ')).toBe('letter')
+    expect(paperFormatFor('AU')).toBe('a4')
+    expect(paperFormatFor('DE')).toBe('a4')
+  })
+  it('letter renders swap the cover height; a4 leaves the master untouched', async () => {
+    const { applyPaperSize } = await import('../compile')
+    const html = '<style>.cover { height: 297mm; background: x; }</style>'
+    expect(applyPaperSize(html, 'letter')).toContain('height: 279.4mm')
+    expect(applyPaperSize(html, 'letter')).not.toContain('297mm')
+    expect(applyPaperSize(html, 'a4')).toBe(html)
+  })
+})
