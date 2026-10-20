@@ -113,8 +113,9 @@ export async function repointBookingTriggerLink(userId: string): Promise<void> {
 
 export async function repointSpineCheckTriggerLink(userId: string): Promise<void> {
   try {
-    const { spineCheckUrlForUser } = await import('../spine-check/generate')
-    const url = await spineCheckUrlForUser(userId)
+    // Vertical-aware: wellness accounts' trigger link points at the Age Check.
+    const { quizUrlForUser } = await import('../lib/quiz')
+    const url = await quizUrlForUser(userId)
     if (!url) return
     const { getGhlCredentials } = await import('../lib/ghl/settings')
     const creds = await getGhlCredentials(userId)

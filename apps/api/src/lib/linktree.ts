@@ -14,7 +14,7 @@ import { logger } from './logger'
 import { assertSafeWpUrl } from './ssrf'
 import { withTimeout } from './net/with-timeout'
 import { buildClinicEntity, buildFaqSchema, buildFencedBlock, type ClinicFaq } from './clinic-schema'
-import { spineCheckUrlForUser } from '../spine-check/generate'
+import { quizLinkForUser } from './quiz'
 
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 
@@ -81,9 +81,10 @@ async function linktreeDataForUser(userId: string) {
   const brand = await brandSettingsForUser(userId)
   if (!brand) return null
   const links: LinkEntry[] = []
-  // Spine Check on top (user decision 2026-08-06: the most valuable opt-in).
-  const spineCheckUrl = await spineCheckUrlForUser(userId).catch(() => null)
-  if (spineCheckUrl) links.push({ label: 'Take the 2-Minute Spine Check', url: spineCheckUrl })
+  // The quiz on top (user decision 2026-08-06: the most valuable opt-in).
+  // Vertical-aware: Spine Check for clinics, Biological Age Check for wellness.
+  const quiz = await quizLinkForUser(userId).catch(() => null)
+  if (quiz) links.push({ label: quiz.label, url: quiz.url })
   if (brand.bookingUrl) links.push({ label: 'Book an Appointment', url: brand.bookingUrl })
   // Phone-only clinics: the call link IS the booking CTA (run-3 item 8).
   if (brand.organizationPhone)

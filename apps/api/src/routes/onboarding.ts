@@ -21,7 +21,7 @@ import { generationReadiness } from '../lib/generation-readiness'
 import { resolveArticleCalendar, resolveNewsletterCalendar } from '../newsletter/calendar-routing'
 import { burstCurrentWindow } from '../lib/account-lifecycle'
 import { publishLinktreePage } from '../lib/linktree'
-import { publishSpineCheckPage } from '../spine-check/generate'
+import { publishQuizPage } from '../lib/quiz'
 import { repointSpineCheckTriggerLink } from '../leadgen/compile'
 import { publishClinicSchema } from '../lib/clinic-schema'
 import { installOmniplyConnect } from '../lib/omniply-connect'
@@ -156,9 +156,11 @@ export async function onboardingRoutes(app: FastifyInstance) {
     const consents = (consentBrand?.installConsents ?? {}) as Record<string, boolean>
     const consented = (key: string) => consents[key] !== false
     void (consented('quiz')
-      ? publishSpineCheckPage(r.account.ownerUserId).finally(() => {
+      ? publishQuizPage(r.account.ownerUserId).finally(() => {
           // After publish the quiz URL is final (WP page or hosted) — point
-          // the snapshot's omniply-spine-check trigger link at it.
+          // the snapshot's omniply-spine-check trigger link at it. The repoint
+          // is vertical-aware too (quizUrlForUser) and no-ops when the
+          // snapshot has no such link.
           void repointSpineCheckTriggerLink(r.account.ownerUserId)
         })
       : Promise.resolve(null)

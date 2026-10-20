@@ -14,6 +14,7 @@ import { ghlBillingRoutes } from './routes/ghl-billing'
 import { stripeBillingRoutes } from './routes/stripe-billing'
 import { xrayReportRoutes } from './routes/xray-report'
 import { spineCheckRoutes } from './routes/spine-check'
+import { ageCheckRoutes } from './routes/age-check'
 import { agentRoutes } from './routes/agent'
 import { mcpRoutes } from './mcp/routes'
 import { voiceAgentRoutes } from './routes/voice-agent'
@@ -116,6 +117,7 @@ async function main() {
   await app.register(stripeBillingRoutes, { prefix: '/api' })
   await app.register(xrayReportRoutes, { prefix: '/api' })
   await app.register(spineCheckRoutes, { prefix: '/api' })
+  await app.register(ageCheckRoutes, { prefix: '/api' })
   await app.register(agentRoutes, { prefix: '/api' })
   await app.register(voiceAgentRoutes, { prefix: '/api' })
   await app.register(voiceAssistantRoutes, { prefix: '/api' })
