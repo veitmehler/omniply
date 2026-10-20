@@ -60,16 +60,19 @@ export function EmbedShell({ justCompletedOnboarding = false }: { justCompletedO
     requestAnimationFrame(find)
   }
 
+  // Page ground matches the omniply.io hero (Marketing TOKENS.ink → inkDeep).
+  const heroBackground = 'linear-gradient(180deg, #0A2A3F, #052234)'
+
   if (!bridgeReady) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center" style={{ background: heroBackground }}>
         <div className="h-6 w-6 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen" style={{ background: heroBackground }}>
       <div className="sticky top-0 z-20 border-b border-border bg-[rgb(26,32,44)]">
         <nav className="mx-auto flex max-w-4xl gap-1 px-4">
           {TABS.map((t) => (
