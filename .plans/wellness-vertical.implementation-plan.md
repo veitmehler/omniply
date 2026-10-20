@@ -181,8 +181,17 @@ size of the tank".
   leaks chiro specifics (audit pass on first E2E output). Arc compliance
   preamble: generalize `arcRegisterDirective`'s chiro preamble to a
   per-vertical healthcare preamble (wellness variant = claims policy).
-- Lead magnet: "2-Minute Recovery Check" (spine-check analogue) + guide
-  variant through the existing Drive delivery; X-Ray nurture copy variant.
+- Lead magnet: **BUILT 2026-10-21 as "The Biological Age Check"** (Veit's
+  Option D — biological-age headline + pillar breakdown; "recovery check"
+  naming explicitly rejected). Spine Check's sibling: age-check module +
+  routes, AGE_MATH-tested scoring (12 habit questions, 4 pillars
+  move/sleep/unwind/fuel, year deltas), estimate-not-measurement disclaimer
+  baked into the template, capture → Drive grant-all → GHL ('age-check-lead'),
+  WP /age-check iframe publish, lib/quiz.ts vertical dispatch (onboarding,
+  linktree, trigger-link repoint). Guides mapped by pillar
+  (everyday-strength/better-sleep/switch-off/everyday-fuel) — quiz promises
+  nothing until those LeadGenDocuments exist. STILL OPEN: the guide PDFs
+  themselves + nurture copy variant.
 - Estimate: ~1 week, dominated by calendar generation+validation and the
   first-output audit pass. English-only v1; multilingual = explicit roadmap
   item, not promised.
