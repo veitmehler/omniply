@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseDmPayload } from '../dm'
+import { parseDmPayload, CHANNEL_TYPES } from '../dm'
 
 describe('parseDmPayload (tolerant GHL workflow webhook shapes)', () => {
   it('reads customData mappings (the documented snapshot shape)', () => {
@@ -18,6 +18,23 @@ describe('parseDmPayload (tolerant GHL workflow webhook shapes)', () => {
     const p = parseDmPayload({ foo: 'bar' })
     expect(p.contactId).toBeNull()
     expect(p.message).toBeNull()
+  })
+})
+
+describe('CHANNEL_TYPES (messenger channels the DM transport serves)', () => {
+  it('maps FB, IG, and WhatsApp inbound types to their send types', () => {
+    expect(CHANNEL_TYPES['TYPE_FACEBOOK']).toBe('FB')
+    expect(CHANNEL_TYPES['TYPE_INSTAGRAM']).toBe('IG')
+    // WhatsApp (wellness plan Phase 2): inbound TYPE_WHATSAPP / resolved
+    // 'WhatsApp' both send as 'WhatsApp' (Conversations send-message enum).
+    expect(CHANNEL_TYPES['TYPE_WHATSAPP']).toBe('WhatsApp')
+    expect(CHANNEL_TYPES['WHATSAPP']).toBe('WhatsApp')
+  })
+
+  it('still excludes non-messenger channels (SMS/email/webchat have their own transports)', () => {
+    for (const t of ['TYPE_SMS', 'TYPE_EMAIL', 'TYPE_WEBCHAT', 'TYPE_LIVE_CHAT', 'TYPE_CALL']) {
+      expect(CHANNEL_TYPES[t]).toBeUndefined()
+    }
   })
 })
 

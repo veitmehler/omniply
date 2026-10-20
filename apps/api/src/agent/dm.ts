@@ -10,19 +10,27 @@ import { runAgentTurn } from './engine'
  * The snapshot workflow "AI DM Responder" (trigger: Customer Replied — the
  * builder offers no per-channel filter, so it fires on EVERY inbound reply)
  * posts to /api/agent/ghl-dm/:token. This module filters to the supported
- * messenger channels server-side, maps the payload onto an agent conversation
- * and replies on the same channel. Time-insensitive by design: the webhook
- * enqueues and returns immediately; the turn runs in the worker.
+ * messenger channels server-side (FB, IG, WhatsApp), maps the payload onto an
+ * agent conversation and replies on the same channel. Time-insensitive by
+ * design: the webhook enqueues and returns immediately; the turn runs in the
+ * worker.
  */
 
-/** GHL message-type → outbound send type. Extend to enable more channels. */
-const CHANNEL_TYPES: Record<string, string> = {
+/** GHL message-type → outbound send type. Extend to enable more channels.
+ *  WhatsApp (wellness plan Phase 2): inbound arrives as TYPE_WHATSAPP, the
+ *  send type is 'WhatsApp' (Conversations send-message enum). Agent replies
+ *  are always answers to an inbound message, so they fall inside Meta's
+ *  24-hour service window — business-INITIATED sends (reminders, review
+ *  asks) need approved templates and stay in GHL workflows, not here. */
+export const CHANNEL_TYPES: Record<string, string> = {
   TYPE_FACEBOOK: 'FB',
   TYPE_FB: 'FB',
   FB: 'FB',
   TYPE_INSTAGRAM: 'IG',
   TYPE_IG: 'IG',
   IG: 'IG',
+  TYPE_WHATSAPP: 'WhatsApp',
+  WHATSAPP: 'WhatsApp',
 }
 
 export interface DmJobData {
@@ -110,7 +118,7 @@ export async function processDmTurn(data: DmJobData): Promise<void> {
 
   // Channel resolution when the webhook payload had no message_type: look at
   // the contact's latest conversation. Non-messenger channels (SMS, email,
-  // webchat) are skipped silently — this transport only serves FB/IG DMs.
+  // webchat) are skipped silently — this transport serves FB/IG/WhatsApp DMs.
   let sendType = data.sendType
   if (!sendType) {
     const { findGhlConversationChannel } = await import('../lib/ghl/client')

@@ -84,9 +84,17 @@ Goal: AI agent (voice + chat + MCP) books across N service calendars.
   the piece every multi-service chiro clinic also wants.
 
 ## Phase 2 — WhatsApp channel
+Status: **PLATFORM SIDE BUILT 2026-10-20.** CHANNEL_TYPES += TYPE_WHATSAPP/
+WHATSAPP → 'WhatsApp' (send-type confirmed against the GHL send-a-new-message
+enum: SMS, Email, WhatsApp, IG, FB, Custom, Live_Chat; inbound arrives as
+TYPE_WHATSAPP). The DM transport was already channel-generic, so inbound WA →
+Customer Replied workflow → same webhook → same agent pipe → reply as
+'WhatsApp'. No GHL workflow change needed (it fires on every inbound reply;
+we filter server-side). ⚠️ NOT live-E2E-testable until a WABA exists — first
+real test happens at the pilot's onboarding (checklist below).
 - `CHANNEL_TYPES` += TYPE_WHATSAPP → 'WhatsApp' (confirm GHL send-type string
   against Conversations API docs); channel resolution via
-  findGhlConversationChannel already exists for builder-less triggers.
+  findGhlConversationChannel already exists for builder-less triggers. DONE.
 - Inbound WA lands in GHL Conversations → same Customer Replied workflow →
   same agent pipe. Expected: config + one enum entry + send-path test.
 - **24-hour session rule**: free-form replies only within 24h of the
