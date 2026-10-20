@@ -6,11 +6,20 @@ myth-derivation fallback, authorityPools column + commit wiring,
 per-account `authorityEngineState.enabled` gate (arcs + syndication),
 personal-LinkedIn mapping in the GHL settings panel. Pools BACKFILLED for
 the demo account and The Chiropractic Clinic (belief_shift derived from
-their q_enemy answers). **No clinic is enabled yet** — flip
-authorityEngineState.enabled on the pilot account to start drawing
-registers; new onboardings get pools automatically and stay off until
-flipped. Positioning: "your personal authority engine" — makes the OWNER
-visible, not just the clinic; strongest retention feature on the backlog.
+their q_enemy answers). **enabled:true is the DEFAULT for new accounts**
+since 13066bd (set at brand-profile commit; existing accounts keep their
+state — flip manually). Positioning: "your personal authority engine" —
+makes the OWNER visible, not just the clinic; strongest retention feature
+on the backlog.
+
+**Clinic E2E test cycle CLOSED 2026-10-20** (3 articles × 2 demo accounts,
+same topics, 6 full social regenerations run to a clean pass). Confirmed
+live: pools surface in arcs (myth/opinion openers, proof moments woven),
+registers rotate per account, dedupe holds across the burst, CTAs
+reader-phrased, digit ranges intact, title-only article references, zero
+fabricated URLs, hook ladder dormant (figure menu in prompt suffices),
+teaser loop restoration works ("Part 2 tonight." replaced a gated teaser).
+Final run's only gate fires were a CORRECT catch of an invented "80%".
 
 ## What the first azavea production day validated (2026-10-16)
 
@@ -44,6 +53,14 @@ P2. **Arc-level figure gate (critical for healthcare).** One azavea beat
    like the diagram check, e.g. 71% ≡ 100−29%). On violation: strip the
    offending sentence (same philosophy as the slide URL-stripper) or
    regenerate once; never ship an unsupported number in a clinic's name.
+   SHIPPED (beat-figure-gate.ts) and live-proven; the clinic test runs then
+   closed its false-positive family — all three are matching variants where
+   the beat phrases a TRUE article figure differently (2026-10-19/20):
+   suspended hyphens "90- to 100-degree"↔"90 to 100 degrees" (8afefd1),
+   percent-range endpoints "15–25%"/"15 to 25 percent"↔"15%" (b4a2c25),
+   spelled-out small counts "three times"↔"3 times" (751e8c7). Each is
+   unit-pinned on its live sentence. The gate fails safe (drops a sentence,
+   never ships a number), so any future variant costs one logged sentence.
 P3. **Register-fit degradation is graceful but should be fit-aware for
    clinics.** Azavea's 'proof' arc had no case material and drifted into
    belief-shift language rather than inventing (good!). Clinics will have
