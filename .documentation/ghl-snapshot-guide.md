@@ -68,10 +68,13 @@ GHL calendars own booking ONLY in direct-ghl mode (see the PMS strategy in
    - Service-communication vs marketing tags kept strictly separate (privacy posture in
      every jurisdiction)
 4. **ONE nurture workflow** (simplified 2026-07-28): trigger = Contact Tag Added with
-   ALL five `leadgen-*` tags as OR-filters → 2 generic follow-up emails → create
-   Opportunity in the New Patient pipeline. The emails NEVER link the document —
-   delivery happens BEFORE the tag exists (Drive access-proposal flow auto-grants,
-   then pushes contact+tag), so copy assumes the lead already has their guide.
+   ALL five `leadgen-*` tags as OR-filters → delivery email + 2 generic follow-ups →
+   create Opportunity in the New Patient pipeline. ⚠️ CORRECTION 2026-10-21: the
+   original "emails NEVER link the document" rule was superseded a day later by the
+   2026-07-29 trigger-link swap — the drip's FIRST email delivers the guide via the
+   per-guide `omniply-guide-<slug>` trigger link (compile repoints it at every
+   regeneration; see leadgen/compile.ts). The FOLLOW-UP emails still never link the
+   document (the lead has it by then).
    CTAs use the `omniply-booking` trigger link (7b) + built-in location merge fields
    ({{location.name}} etc.) — NO per-clinic edits, NO per-document custom values.
    Per-magnet copy personalization = optional later refinement.
