@@ -62,6 +62,18 @@ export function EmbedShell({ justCompletedOnboarding = false }: { justCompletedO
 
   // Page ground matches the omniply.io hero (Marketing TOKENS.ink → inkDeep).
   const heroBackground = 'linear-gradient(180deg, #0A2A3F, #052234)'
+  // Re-skin the dark theme's near-black surfaces for the blue ground: cards
+  // sit between the hero ink (#0A2A3F) and the nav bar (#1A202C), borders in
+  // the same blue-slate family. Scoped here so the main platform is untouched.
+  const embedTheme = {
+    ['--background' as string]: '#0A2A3F',
+    ['--card' as string]: '#122535',
+    ['--popover' as string]: '#122535',
+    ['--secondary' as string]: '#122535',
+    ['--muted' as string]: '#122535',
+    ['--border' as string]: '#2B3E52',
+    ['--input' as string]: '#2B3E52',
+  } as React.CSSProperties
 
   if (!bridgeReady) {
     return (
@@ -72,7 +84,7 @@ export function EmbedShell({ justCompletedOnboarding = false }: { justCompletedO
   }
 
   return (
-    <div className="min-h-screen" style={{ background: heroBackground }}>
+    <div className="min-h-screen" style={{ background: heroBackground, ...embedTheme }}>
       <div className="sticky top-0 z-20 border-b border-border bg-[rgb(26,32,44)]">
         <nav className="mx-auto flex max-w-4xl gap-1 px-4">
           {TABS.map((t) => (
