@@ -202,9 +202,14 @@ export async function onboardingRoutes(app: FastifyInstance) {
     })().catch((err) => logger.warn({ err }, '[onboarding] staff-contacts second pass failed (non-fatal)'))
 
     // Starter lead-magnet library (leadgen plan Phase 7): compile every active
-    // template for this account — lands review-gated, never blocks generation.
+    // template OF THIS ACCOUNT'S VERTICAL (+ 'all') — lands review-gated,
+    // never blocks generation.
     try {
-      const templates = await prisma.leadGenTemplate.findMany({ where: { active: true }, select: { id: true, name: true, slug: true } })
+      const acct = await prisma.account.findUnique({ where: { id: r.account.accountId }, select: { vertical: true } })
+      const templates = await prisma.leadGenTemplate.findMany({
+        where: { active: true, vertical: { in: [acct?.vertical ?? 'chiro', 'all'] } },
+        select: { id: true, name: true, slug: true },
+      })
       if (templates.length > 0) {
         const boss = await getBoss()
         for (const t of templates) {

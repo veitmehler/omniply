@@ -172,6 +172,9 @@ model LeadGenTemplate {
   description String?
   sourceHtml  String   @db.Text
   slotMeta    Json? // per-slot: { maxChars, rewriteEligible }
+  // Which vertical compiles this master at onboarding: 'chiro' | 'wellness'
+  // | 'all' (e.g. the QR review card works for any local business).
+  vertical    String   @default("chiro")
   active      Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt

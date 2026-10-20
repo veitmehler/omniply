@@ -73,8 +73,9 @@ export async function leadgenRoutes(app: FastifyInstance) {
       const account = await accountFor(clerkId)
       if (!account) return reply.status(404).send({ error: 'No account' })
 
+      const acct = await prisma.account.findUnique({ where: { id: account.accountId }, select: { vertical: true } })
       const template = await prisma.leadGenTemplate.findFirst({
-        where: { id: request.body?.templateId, active: true },
+        where: { id: request.body?.templateId, active: true, vertical: { in: [acct?.vertical ?? 'chiro', 'all'] } },
       })
       if (!template) return reply.status(404).send({ error: 'Template not found' })
 
@@ -212,12 +213,16 @@ export async function leadgenRoutes(app: FastifyInstance) {
     return reply.status(202).send({ documentId: doc.id })
   })
 
-  // GET /leadgen/templates — active masters (for "add from template").
+  // GET /leadgen/templates — active masters OF THE ACCOUNT'S VERTICAL
+  // (for "add from template").
   app.get('/leadgen/templates', async (request, reply) => {
     const clerkId = await requireAuth(request, reply)
     if (!clerkId) return
+    const account = await accountFor(clerkId)
+    if (!account) return reply.status(404).send({ error: 'No account' })
+    const acct = await prisma.account.findUnique({ where: { id: account.accountId }, select: { vertical: true } })
     const templates = await prisma.leadGenTemplate.findMany({
-      where: { active: true },
+      where: { active: true, vertical: { in: [acct?.vertical ?? 'chiro', 'all'] } },
       select: { id: true, name: true, slug: true, description: true },
       orderBy: { name: 'asc' },
     })
