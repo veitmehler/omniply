@@ -42,7 +42,10 @@ function toolText(payload: unknown, isError = false) {
 }
 
 /** Tool definitions, gated by booking mode so agents see an honest surface. */
-export function toolDefsFor(bookable: boolean): Array<Record<string, unknown>> {
+export function toolDefsFor(
+  bookable: boolean,
+  services?: Array<{ key: string; label: string }> | null,
+): Array<Record<string, unknown>> {
   const defs: Array<Record<string, unknown>> = [
     {
       name: 'get_clinic_info',
@@ -68,28 +71,44 @@ export function toolDefsFor(bookable: boolean): Array<Record<string, unknown>> {
     },
   ]
   if (bookable) {
+    const serviceKeys = services?.map((s) => s.key) ?? []
+    const multi = serviceKeys.length > 0
+    const serviceMenu = multi ? services!.map((s) => `${s.key} = ${s.label}`).join(', ') : ''
     defs.splice(
       1,
       0,
       {
         name: 'get_availability',
-        description:
-          'Current open appointment slots. Returns exact ISO start times; book_appointment accepts ONLY these values.',
-        inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+        description: multi
+          ? `Current open appointment slots PER SERVICE (${serviceMenu}). Returns exact ISO start times; book_appointment accepts ONLY these values, each valid ONLY for its own service.`
+          : 'Current open appointment slots. Returns exact ISO start times; book_appointment accepts ONLY these values.',
+        inputSchema: multi
+          ? {
+              type: 'object',
+              properties: {
+                service: { type: 'string', enum: serviceKeys, description: 'Limit the result to one service (optional)' },
+              },
+              additionalProperties: false,
+            }
+          : { type: 'object', properties: {}, additionalProperties: false },
       },
       {
         name: 'book_appointment',
-        description:
-          'Book an appointment at one of the offered slots. slotStart MUST be an exact startIso value returned by get_availability in this session.',
+        description: multi
+          ? 'Book an appointment at one of the offered slots. service is REQUIRED and slotStart MUST be an exact startIso that get_availability returned FOR THAT SERVICE in this session.'
+          : 'Book an appointment at one of the offered slots. slotStart MUST be an exact startIso value returned by get_availability in this session.',
         inputSchema: {
           type: 'object',
           properties: {
             name: { type: 'string', description: "Patient's full name" },
             phone: { type: 'string', description: "Patient's phone number" },
             slotStart: { type: 'string', description: 'Exact startIso from get_availability' },
+            ...(multi
+              ? { service: { type: 'string', enum: serviceKeys, description: 'The service to book (from get_availability)' } }
+              : {}),
             email: { type: 'string', description: "Patient's email for the confirmation (optional)" },
           },
-          required: ['name', 'phone', 'slotStart'],
+          required: multi ? ['name', 'phone', 'slotStart', 'service'] : ['name', 'phone', 'slotStart'],
           additionalProperties: false,
         },
       },
@@ -205,7 +224,9 @@ async function getClinicInfo(account: McpAccount): Promise<Record<string, unknow
     openingHours: brand?.openingHours ?? null,
     bookingPage: brand?.bookingUrl ?? null,
     directBooking: booking.bookable
-      ? 'This assistant can book directly — call get_availability, then book_appointment.'
+      ? booking.services
+        ? `This assistant can book directly — call get_availability, then book_appointment with a service. Services: ${booking.services.map((s) => `${s.key} (${s.label})`).join(', ')}.`
+        : 'This assistant can book directly — call get_availability, then book_appointment.'
       : 'No direct slot booking here — use request_callback and the team will arrange the appointment.',
     ...(brand?.availabilityPatterns ? { typicalAvailability: brand.availabilityPatterns } : {}),
   }
@@ -251,7 +272,7 @@ export async function mcpRoutes(app: FastifyInstance) {
                 capabilities: { tools: {} },
                 serverInfo: { name: `omniply-clinic`, title: brand?.organizationName ?? account.name ?? 'Clinic booking', version: '1.0.0' },
                 instructions:
-                  'Booking assistant for this practice. Call get_clinic_info first; use get_availability before book_appointment — slotStart must be an exact offered startIso.',
+                  'Booking assistant for this practice. Call get_clinic_info first; use get_availability before book_appointment — slotStart must be an exact offered startIso. Where get_availability lists services, book_appointment also requires that service\'s key.',
               }),
             )
           }
@@ -259,7 +280,7 @@ export async function mcpRoutes(app: FastifyInstance) {
             return reply.send(rpcResult(id, {}))
           case 'tools/list': {
             const booking = await bookingInfoFor(account.id, account.ownerUserId)
-            return reply.send(rpcResult(id, { tools: toolDefsFor(booking.bookable) }))
+            return reply.send(rpcResult(id, { tools: toolDefsFor(booking.bookable, booking.services) }))
           }
           case 'tools/call': {
             const name = String((params as { name?: unknown }).name ?? '')
@@ -298,9 +319,28 @@ async function handleToolCall(
     }
     case 'get_availability': {
       const booking = await bookingInfoFor(account.id, account.ownerUserId!)
-      await logToolCall(conversationId, name, {}, `ok (${booking.slots.length} slots)`)
+      await logToolCall(conversationId, name, args.service ? { service: args.service } : {}, `ok (${booking.slots.length} slots)`)
       if (!booking.bookable) {
         return toolText({ bookable: false, note: 'Use request_callback — the team arranges appointments.' })
+      }
+      if (booking.services) {
+        const filter = args.service?.trim().toLowerCase()
+        const services = booking.services.filter((s) => !filter || s.key === filter)
+        if (filter && !services.length) {
+          return toolText(
+            { error: `Unknown or unavailable service '${filter}'. Available: ${booking.services.map((s) => s.key).join(', ')}.` },
+            true,
+          )
+        }
+        return toolText({
+          bookable: true,
+          services: services.map((s) => ({
+            service: s.key,
+            label: s.label,
+            slots: s.slots.map((x) => ({ startIso: x.startIso, label: x.label })),
+          })),
+          note: 'book_appointment requires service + an exact startIso from THAT service\'s list.',
+        })
       }
       return toolText({
         bookable: true,
@@ -318,7 +358,23 @@ async function handleToolCall(
         return toolText({ error: 'Direct booking is not available here — use request_callback.' }, true)
       }
       // Protocol clients can send arbitrary times; the chat UI never could.
-      if (!booking.slots.some((s) => s.startIso === slotStart)) {
+      // Multi-service: the slot must belong to the NAMED service's own list.
+      const serviceKey = args.service?.trim().toLowerCase() || null
+      if (booking.services) {
+        const svc = serviceKey ? booking.services.find((s) => s.key === serviceKey) : null
+        if (!svc) {
+          return toolText(
+            { error: `service is required here. Available: ${booking.services.map((s) => s.key).join(', ')}.` },
+            true,
+          )
+        }
+        if (!svc.slots.some((s) => s.startIso === slotStart)) {
+          return toolText(
+            { error: `slotStart is not an offered slot for service '${svc.key}'. Call get_availability and use an exact startIso from that service's list.` },
+            true,
+          )
+        }
+      } else if (!booking.slots.some((s) => s.startIso === slotStart)) {
         return toolText(
           { error: 'slotStart is not an offered slot. Call get_availability and use an exact startIso.' },
           true,
@@ -335,6 +391,7 @@ async function handleToolCall(
           name: patientName.trim(),
           phone: phone.trim(),
           slotStart: slotStart.trim(),
+          service: booking.services ? serviceKey : null,
         })
         // The response must never promise an email the attach didn't deliver
         // (same truthfulness bar as the chat agent, C3 2026-10-08).
@@ -347,11 +404,12 @@ async function handleToolCall(
               return false
             })
         }
-        await logToolCall(conversationId, name, { name: patientName, phone, slotStart }, 'booked')
+        await logToolCall(conversationId, name, { name: patientName, phone, slotStart, ...(serviceKey ? { service: serviceKey } : {}) }, 'booked')
         logger.info({ accountId: account.id, conversationId, slotStart }, '[mcp] appointment booked via MCP')
         return toolText({
           booked: true,
           slotStart,
+          ...(serviceKey ? { service: serviceKey } : {}),
           practice: ctx.practiceName,
           confirmation: emailAttached
             ? 'Appointment booked. A confirmation is sent to the provided email.'

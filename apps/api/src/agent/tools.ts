@@ -25,7 +25,7 @@ export type AgentAction =
   | { type: 'intake_details'; name: string | null; phone: string | null }
   // Direct booking (missed-call sweep Part 4a): slotStart must be one of the
   // EXACT ISO strings the server offered THIS turn — anything else drops.
-  | { type: 'book_appointment'; name: string; phone: string; slotStart: string }
+  | { type: 'book_appointment'; name: string; phone: string; slotStart: string; service: string | null }
 
 export interface ActionContext {
   /** Slugs of guides that are live AND deliverable for this account. */
@@ -36,6 +36,10 @@ export interface ActionContext {
   hasContact: boolean
   /** ISO starts of the booking slots offered this turn ([] → booking off). */
   offeredSlots?: string[]
+  /** Multi-service accounts: service key → the ISO starts offered for THAT
+   * service this turn. Present → book_appointment must name a listed service
+   * and a slot from that service's own list (wrong-calendar bookings drop). */
+  offeredByService?: Record<string, string[]>
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
@@ -142,12 +146,19 @@ export function validateAction(raw: unknown, ctx: ActionContext): AgentAction | 
       const name = str(a.name, 60)
       const phone = str(a.phone, 30)
       const slotStart = str(a.slotStart, 40)
+      const service = str(a.service, 40).toLowerCase()
       // Deterministic guard (plan Part 4a): only a slot the server offered
       // THIS turn is bookable — a hallucinated or stale time drops the action
       // (reply ships, booking doesn't, action-dropped flag surfaces it).
-      if (!(ctx.offeredSlots ?? []).includes(slotStart)) return null
+      // Multi-service (wellness plan Phase 1): the slot must come from the
+      // NAMED service's own list — right time, wrong calendar also drops.
+      if (ctx.offeredByService && Object.keys(ctx.offeredByService).length) {
+        if (!service || !(ctx.offeredByService[service] ?? []).includes(slotStart)) return null
+      } else {
+        if (!(ctx.offeredSlots ?? []).includes(slotStart)) return null
+      }
       if (!name || !validPhone(phone)) return null
-      return { type: 'book_appointment', name, phone, slotStart }
+      return { type: 'book_appointment', name, phone, slotStart, service: service || null }
     }
 
     case 'request_human':

@@ -56,6 +56,18 @@ packages, product line. Cash-pay, appointment-driven, tourist-heavy clientele
 5. **Pricing**: standard $397/mo; voice metering per post-launch plan.
 
 ## Phase 1 — Multi-service booking layer (platform-wide; chiro benefits too)
+Status: **BUILT 2026-10-20.** Config shape shipped as
+`agentBookingConfig.services: [{key,label,calendarId,synonyms[]}]`
+(lib/booking/services.ts parser; direct-ghl only; absent/invalid = classic
+single-calendar, byte-identical). Engine renders per-service inventory with
+tighter per-service caps (14/svc, full detail day 1) + service rules; the
+validator pins slot↔service (offeredByService); executeBooking books on the
+service's calendar and stamps the service into note/booking-time field; MCP
+get_availability/book_appointment gained the service param (enum of keys,
+required when configured). Scope note vs. the original sketch: NO client
+Settings editor — booking mode/calendar themselves are deliberately
+admin-set until the rollout Settings surface lands (routes/pms.ts), so the
+services map is admin-set the same way.
 Goal: AI agent (voice + chat + MCP) books across N service calendars.
 - `agentBookingConfig.services`: `[{ key, label, calendarId, durationMin?,
   synonyms[] }]`; absent → today's single-calendar behavior (zero regression).

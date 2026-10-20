@@ -53,6 +53,22 @@ describe('pickSlots', () => {
     expect(out[1].label).toBe(`${out[1].dayLabel} at ${out[1].timeLabel}`)
   })
 
+  it('per-service caps shrink the inventory (multi-service prompt budget)', () => {
+    const all = [
+      ...halfHourDay('2026-10-05', 8, 18),
+      ...halfHourDay('2026-10-06', 8, 18),
+      ...halfHourDay('2026-10-07', 8, 18),
+    ]
+    const caps = { maxSlots: 14, fullDetailDays: 1, laterDayStride: 2, maxPerLaterDay: 4 }
+    const out = pickSlots(all, NOW, TZ, caps)
+    expect(out.length).toBeLessThanOrEqual(14)
+    // First bookable day keeps full detail, later days are thinned to ≤4.
+    const tuesday = out.filter((s) => s.startIso.startsWith('2026-10-06'))
+    expect(tuesday.length).toBeLessThanOrEqual(4)
+    // Default caps unchanged when the param is omitted.
+    expect(pickSlots(all, NOW, TZ).length).toBeGreaterThan(out.length)
+  })
+
   it('empty input and all-too-soon input produce no slots', () => {
     expect(pickSlots([], NOW, TZ)).toEqual([])
     expect(pickSlots(['2026-10-05T09:10:00-07:00'], NOW, TZ)).toEqual([])

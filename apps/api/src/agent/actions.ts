@@ -390,6 +390,14 @@ export async function executeBooking(
   if (!isDirectMode(mode)) throw new Error(`Booking not enabled in direct mode (mode=${mode})`)
   const provider = providerFor(mode)
 
+  // Multi-service (wellness plan Phase 1): a named service books on ITS
+  // calendar. The validator already pinned slot↔service; an unknown key here
+  // means config changed mid-conversation — fail loudly, never book wrong.
+  const { parseBookingServices } = await import('../lib/booking/services')
+  const services = mode === 'direct-ghl' ? parseBookingServices(account?.agentBookingConfig) : null
+  const service = action.service ? (services?.find((s) => s.key === action.service) ?? null) : null
+  if (action.service && !service) throw new Error(`Unknown booking service '${action.service}'`)
+
   const phone = normalizePhoneE164(action.phone, ctx.countryCode)
   const tags = ['appointment-booked', 'chat-agent-lead']
   const known = await knownDetailsFor(conversationId)
@@ -420,7 +428,7 @@ export async function executeBooking(
       accountId: ctx.accountId,
       ownerUserId: ctx.ownerUserId,
       config: account?.agentBookingConfig ?? null,
-      calendarId: account?.agentBookingCalendarId ?? null,
+      calendarId: service?.calendarId ?? account?.agentBookingCalendarId ?? null,
     },
     {
       slotStart: action.slotStart,
@@ -450,7 +458,8 @@ export async function executeBooking(
   try {
     const settings = await prisma.settings.findUnique({ where: { userId: ctx.ownerUserId }, select: { socialTimezone: true } })
     const { labelForSlot } = await import('./booking')
-    const label = labelForSlot(action.slotStart, settings?.socialTimezone ?? null)
+    const slotLabel = labelForSlot(action.slotStart, settings?.socialTimezone ?? null)
+    const label = service ? `${service.label} — ${slotLabel}` : slotLabel
     const fieldId = await getBookingTimeFieldId(creds.apiKey, creds.locationId)
     if (fieldId) await updateGhlContact(creds.apiKey, contactId, { customFields: [{ id: fieldId, value: label }] })
   } catch (err) {
@@ -460,11 +469,16 @@ export async function executeBooking(
   await createGhlContactNote(
     creds.apiKey,
     contactId,
-    ['📅 Appointment booked by the AI assistant on a live call', `Start: ${action.slotStart}`, `Caller: ${action.name} (${phone})`].join('\n'),
+    [
+      '📅 Appointment booked by the AI assistant on a live call',
+      ...(service ? [`Service: ${service.label}`] : []),
+      `Start: ${action.slotStart}`,
+      `Caller: ${action.name} (${phone})`,
+    ].join('\n'),
   ).catch((err) => logger.warn({ err, conversationId }, '[agent] booking note failed (appointment landed)'))
 
   logger.info(
-    { accountId: ctx.accountId, conversationId, provider: mode, externalId: booked.externalId, slot: action.slotStart },
+    { accountId: ctx.accountId, conversationId, provider: mode, externalId: booked.externalId, slot: action.slotStart, service: action.service ?? undefined },
     '[agent] appointment booked via voice',
   )
 }

@@ -24,6 +24,24 @@ describe('MCP tool surface honesty (mode gating)', () => {
     const book = toolDefsFor(true).find((t) => t.name === 'book_appointment') as { inputSchema: { required: string[] } }
     expect(book.inputSchema.required).toEqual(['name', 'phone', 'slotStart'])
   })
+  it('multi-service accounts additionally require service, as an enum of the configured keys', () => {
+    const services = [
+      { key: 'hbot', label: 'HBOT Session' },
+      { key: 'massage', label: 'Sports Massage' },
+    ]
+    const defs = toolDefsFor(true, services)
+    const book = defs.find((t) => t.name === 'book_appointment') as {
+      inputSchema: { required: string[]; properties: Record<string, { enum?: string[] }> }
+    }
+    expect(book.inputSchema.required).toEqual(['name', 'phone', 'slotStart', 'service'])
+    expect(book.inputSchema.properties.service.enum).toEqual(['hbot', 'massage'])
+    const avail = defs.find((t) => t.name === 'get_availability') as {
+      inputSchema: { properties: Record<string, { enum?: string[] }> }
+    }
+    expect(avail.inputSchema.properties.service.enum).toEqual(['hbot', 'massage'])
+    // null services = classic single-calendar surface, byte-identical.
+    expect(toolDefsFor(true, null)).toEqual(toolDefsFor(true))
+  })
 })
 
 describe('booking throttle (3/hour per clinic+IP)', () => {

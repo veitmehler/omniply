@@ -344,11 +344,11 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
   const booking: BookingInfo =
     (channel === 'voice' && !messageMode) || channel === 'web'
       ? await bookingInfoFor(input.accountId, ctx.ownerUserId)
-      : { mode: 'off', bookable: false, slots: [] }
-  const groupedSlotLines = (): string[] => {
+      : { mode: 'off', bookable: false, slots: [], services: null }
+  const groupedSlotLines = (slots = booking.slots): string[] => {
     const lines: string[] = []
     let day = ''
-    for (const s of booking.slots) {
+    for (const s of slots) {
       if (s.dayLabel !== day) {
         day = s.dayLabel
         lines.push(`${day}${s.relative ? ` (${s.relative})` : ''}:`)
@@ -357,12 +357,29 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
     }
     return lines
   }
+  // Multi-service accounts: inventory rendered PER SERVICE (each service
+  // books on its own calendar), plus the rules that pin service + slot
+  // together. Single-calendar accounts see the classic flat list.
+  const slotListLines = (): string[] =>
+    booking.services
+      ? booking.services.flatMap((svc) => [
+          `SERVICE ${svc.key} — ${svc.label}:`,
+          ...groupedSlotLines(svc.slots).map((l) => `  ${l}`),
+        ])
+      : groupedSlotLines()
+  const serviceRules: string[] = booking.services
+    ? [
+        'Times are listed PER SERVICE, and each service books separately. FIRST make sure which service they want — ask when it is not stated (name the services in plain words, never the codes). Only offer times from THAT service\'s list, and never mix times across services.',
+        'When they choose, attach book_appointment with service set to the EXACT service code (the word right after SERVICE) alongside slotStart. A service with no list below has no bookable times — offer a callback for it (request_callback) and say the team will arrange that service.',
+      ]
+    : []
   const isVoiceBooking = channel === 'voice'
   const bookingBlock = booking.bookable
     ? isVoiceBooking
       ? [
         'DIRECT BOOKING IS AVAILABLE ON THIS CALL. The complete list of bookable times (the raw value before each time is what you attach — the time is what you say):',
-        ...groupedSlotLines(),
+        ...slotListLines(),
+        ...serviceRules,
         'When the caller wants an appointment: make sure you have their name and number first (reuse details already known; read a new number back digit by digit). Offer AT MOST THREE times in one reply, each at a DIFFERENT hour, spread across what is available (for example one morning, one midday, one late afternoon) — more than three spoken times in a row is impossible to follow on the phone, and NEVER read the whole list. When they ask about a specific time or day, answer just for that: offer it if listed, otherwise the nearest listed time, said plainly ("the closest I have is four o\'clock"). When they choose, attach book_appointment with slotStart set to the EXACT raw value for that time plus their name and phone, and confirm it aloud in the same reply ("You are booked for Tuesday, October sixth at ten A M — the team will see you then.").',
         'NEVER invent, accept, or imply a time that is not in the list. Only when nothing listed suits the caller: offer a callback instead (request_callback) with their preferred time in their own words.',
         'You can only book for the PERSON ON THIS CALL. You CANNOT book for a spouse, child, or anyone else: for additional people, collect their names and take a front-desk callback (request_callback) to set those up — and NEVER say or imply that another person\'s appointment is booked.',
@@ -372,7 +389,8 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
       ].join('\n')
       : [
           'DIRECT BOOKING IS AVAILABLE IN THIS CHAT. The complete list of bookable times (the raw value before each time is what you attach — the time is what you write):',
-          ...groupedSlotLines(),
+          ...slotListLines(),
+          ...serviceRules,
           'When the visitor wants an appointment: collect their full name and best phone number first (plain digits with hyphens). Offer at most THREE times, each at a different hour, spread across what is available — never paste the whole list. When they ask about a specific time or day, answer just for that: offer it if listed, otherwise the nearest listed time. When they choose, attach book_appointment with slotStart set to the EXACT raw value for that time plus their name and phone, and confirm it in the same reply ("You\'re booked for Tuesday, October 6 at 10:00 AM — the team will see you then.").',
           'NEVER invent, accept, or imply a time that is not in the list. Only when nothing listed suits them: offer a callback instead (request_callback) with their preferred time in their own words.',
           'You can only book for the PERSON IN THIS CHAT. You CANNOT book for a spouse, child, or anyone else: for additional people, collect their names and take a front-desk callback (request_callback) to set those up — and NEVER say or imply that another person\'s appointment is booked.',
@@ -554,6 +572,12 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
         hasContact: Boolean(conversation.ghlContactId),
         // book_appointment validates only in direct modes (Tier 1).
         offeredSlots: booking.bookable ? booking.slots.map((s) => s.startIso) : [],
+        // Multi-service: a slot is bookable ONLY with its own service's key —
+        // a right time on the wrong calendar is a wrong booking.
+        offeredByService:
+          booking.bookable && booking.services
+            ? Object.fromEntries(booking.services.map((s) => [s.key, s.slots.map((x) => x.startIso)]))
+            : undefined,
       })
       // A dropped action means the reply may promise something that never
       // executed (e.g. "the guide is on its way") — flag it so the transcript

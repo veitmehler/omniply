@@ -220,7 +220,7 @@ describe('action validation', () => {
     const slot = '2026-10-06T10:00:00-07:00'
     const offered = { ...CTX, offeredSlots: [slot, '2026-10-06T14:00:00-07:00'] }
     const good = { type: 'book_appointment', name: 'Jane Doe', phone: '480-962-6011', slotStart: slot }
-    expect(validateAction(good, offered)).toEqual({ type: 'book_appointment', name: 'Jane Doe', phone: '480-962-6011', slotStart: slot })
+    expect(validateAction(good, offered)).toEqual({ type: 'book_appointment', name: 'Jane Doe', phone: '480-962-6011', slotStart: slot, service: null })
     // Hallucinated / stale time → dropped.
     expect(validateAction({ ...good, slotStart: '2026-10-06T11:00:00-07:00' }, offered)).toBeNull()
     // Booking disabled (no offered slots passed at all) → dropped.
@@ -228,6 +228,28 @@ describe('action validation', () => {
     // Missing identity → dropped.
     expect(validateAction({ ...good, name: '' }, offered)).toBeNull()
     expect(validateAction({ ...good, phone: '12' }, offered)).toBeNull()
+  })
+
+  it('multi-service booking pins the slot to its OWN service', () => {
+    const hbotSlot = '2026-10-06T10:00:00-07:00'
+    const massageSlot = '2026-10-06T14:00:00-07:00'
+    const ctx = {
+      ...CTX,
+      offeredSlots: [hbotSlot, massageSlot],
+      offeredByService: { hbot: [hbotSlot], massage: [massageSlot] },
+    }
+    const base = { type: 'book_appointment', name: 'Jane Doe', phone: '480-962-6011' }
+    expect(validateAction({ ...base, slotStart: hbotSlot, service: 'hbot' }, ctx)).toEqual({
+      type: 'book_appointment', name: 'Jane Doe', phone: '480-962-6011', slotStart: hbotSlot, service: 'hbot',
+    })
+    // Model-cased key still resolves.
+    expect(validateAction({ ...base, slotStart: hbotSlot, service: 'HBOT' }, ctx)).not.toBeNull()
+    // Right time, wrong service's calendar → dropped.
+    expect(validateAction({ ...base, slotStart: massageSlot, service: 'hbot' }, ctx)).toBeNull()
+    // Unknown service → dropped.
+    expect(validateAction({ ...base, slotStart: hbotSlot, service: 'cryo' }, ctx)).toBeNull()
+    // Service omitted on a multi-service account → dropped (flat list is not enough).
+    expect(validateAction({ ...base, slotStart: hbotSlot }, ctx)).toBeNull()
   })
 
   it('guide offers only for live slugs', () => {
