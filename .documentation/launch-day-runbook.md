@@ -174,6 +174,21 @@ topics only), azavea.ai polish, cold-domain warmup start.
   before flipping prod. Chat/voice agents are Haiku 4.5 — UNAFFECTED.
 
 ### Post-launch backlog (from the 2026-10-09 test purchase)
+- **Platform-INITIATED WhatsApp sends (Veit 2026-10-20, expected to matter):**
+  today WhatsApp is reply-only by design — the agent answers on the channel a
+  message arrived on (wellness plan Phase 2, f82f77d), which is always inside
+  Meta's 24h service window, so no capability tracking is needed. The moment
+  the PLATFORM initiates a WhatsApp message (guide-link delivery WhatsApp-
+  first instead of SMS, booking confirmations, recall/review asks from our
+  code rather than GHL workflows), two new pieces are required: (1) a
+  per-account capability flag done attempt-and-latch like voiceSmsAvailable
+  (never a manual switch — attempt, then latch off on failure + owner
+  notice), and (2) a Meta-APPROVED template per message kind, since
+  business-initiated WA outside the 24h window is template-only and billed
+  per conversation category. Likely trigger: the Whealth pilot's tourist
+  clientele preferring WhatsApp over SMS for guide delivery. Scope when it
+  lands: template registry per account, send path next to buildGuideSms,
+  capability latch, and the voice agent offering "WhatsApp or text?".
 - **ChatGPT Apps directory submission — the aggregator play (Veit
   2026-10-14, post-launch-week):** OpenAI's Apps SDK is built ON MCP; our
   per-clinic MCP server (live 2026-10-14, .plans/mcp-booking-endpoint) is
