@@ -115,7 +115,12 @@ prod + staging. Arc compliance preamble audited: already vertical-neutral
 claims-policy sign-off below: PlainLanguageConfig row insert, calendar topic
 generation, lead magnet + nurture copy.
 
-### DRAFT — claims policy for industry "Wellness & Recovery" (AWAITING VEIT SIGN-OFF)
+### Claims policy for industry "Wellness & Recovery" — SIGNED OFF (Veit) + INSERTED prod/staging 2026-10-20
+⚠️ Onboarding convention: the pilot account's BrandSettings.industry must be
+set to exactly "Wellness & Recovery" (case-insensitive match) or the whole
+injection pass silently skips. Specializations stay audience orientations,
+NOT service lines (Veit agreed 2026-10-20): one `recovery_wellness` calendar
+for the pilot; modality coverage via topic seeds.
 Becomes `PlainLanguageConfig.restrictions` (injected into every article/
 newsletter generation for matching accounts; same mechanism as chiro):
 
