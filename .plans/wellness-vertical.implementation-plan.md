@@ -190,8 +190,15 @@ size of the tank".
   WP /age-check iframe publish, lib/quiz.ts vertical dispatch (onboarding,
   linktree, trigger-link repoint). Guides mapped by pillar
   (everyday-strength/better-sleep/switch-off/everyday-fuel) — quiz promises
-  nothing until those LeadGenDocuments exist. STILL OPEN: the guide PDFs
-  themselves + nurture copy variant.
+  nothing until those LeadGenDocuments exist. **Guide masters DRAFTED +
+  SEEDED prod/staging 2026-10-21** (4eea04e): four MasterDocSpec files
+  (packages/db/scripts/leadgen-masters/06-09) on the chiro master machinery,
+  wellness disclaimer, claims-safe habits-only content (fuel guide makes
+  zero supplement claims). LeadGenTemplate gained a `vertical` column
+  ('chiro'|'wellness'|'all') with filters at onboarding compile-all + the
+  template picker/creator — required, since onboarding compiled EVERY active
+  template. Polish items: cover/section SVG art (masters currently render
+  art-free), nurture copy variant.
 - Estimate: ~1 week, dominated by calendar generation+validation and the
   first-output audit pass. English-only v1; multilingual = explicit roadmap
   item, not promised.
