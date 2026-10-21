@@ -1011,6 +1011,10 @@ async function finishProbeSideEffects(ctx: StepContext, placeId: string): Promis
           (l) => l.name?.toLowerCase() === 'omniply-review',
         )
         if (link) await updateTriggerLink(creds.apiKey, link.id, link.name, reviewDeepLink(placeId))
+        // The designed review-request template reads the SAME destination as
+        // a custom value (trigger-link merge ids don't survive snapshots).
+        const { upsertGhlCustomValue } = await import('../lib/ghl/client')
+        await upsertGhlCustomValue(creds.apiKey, creds.locationId, 'omniply_review_url', reviewDeepLink(placeId))
       }
     } catch (err) {
       logger.warn({ err }, '[onboarding] trigger-link provisioning failed (non-fatal)')
