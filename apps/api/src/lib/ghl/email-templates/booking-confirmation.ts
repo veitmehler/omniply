@@ -2,17 +2,22 @@
  * Booking-confirmation email template (snapshot email-branding design,
  * Veit 2026-10-21). Lives in the SNAPSHOT as a code-view template; branding
  * arrives per clinic via {{custom_values.omniply_brand_*}} written by
- * lib/ghl/brand-values.ts at the onboarding finale.
+ * lib/ghl/brand-values.ts — which mirrors the NEWSLETTER template the client
+ * customizes in Settings (header + footer colors, button pair, logo variant
+ * AND width, font family/color), so transactional emails and newsletters
+ * read as one family.
  *
  * Constraints baked in:
  *  - bulletproof table layout + inline styles (email-client reality)
- *  - every color/logo spot is a custom value; copy spots are merge fields
+ *  - every color/logo/font spot is a custom value; copy spots merge fields
  *  - {{contact.booking_time}} is the existing custom field the booking flow
  *    writes (clinic-local, human-readable label)
  *  - dash-free text (de-AI rule applies to client-facing copy)
  */
 
 export const BOOKING_CONFIRMATION_TEMPLATE_NAME = 'Omniply booking confirmation'
+
+const FONT = `{{custom_values.omniply_brand_font_family}}, Helvetica, Arial, sans-serif`
 
 export const BOOKING_CONFIRMATION_HTML = `<!doctype html>
 <html lang="en">
@@ -27,18 +32,18 @@ export const BOOKING_CONFIRMATION_HTML = `<!doctype html>
       <td align="center" style="padding:28px 12px;">
         <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:600px; max-width:100%; background-color:#ffffff; border-radius:12px; overflow:hidden;">
 
-          <!-- Header band: brand color + logo -->
+          <!-- Header band: newsletter header color + logo at the client's chosen width -->
           <tr>
             <td align="center" style="background-color:{{custom_values.omniply_brand_header_color}}; padding:26px 24px;">
-              <img src="{{custom_values.omniply_brand_logo_header}}" alt="{{location.name}}" height="44" style="display:block; max-height:44px; width:auto; border:0;" />
+              <img src="{{custom_values.omniply_brand_logo_header}}" alt="{{location.name}}" width="{{custom_values.omniply_brand_logo_width}}" style="display:block; width:{{custom_values.omniply_brand_logo_width}}px; max-width:100%; height:auto; border:0;" />
             </td>
           </tr>
 
           <!-- Confirmation headline -->
           <tr>
-            <td style="padding:34px 36px 8px 36px; font-family:Helvetica, Arial, sans-serif;">
+            <td style="padding:34px 36px 8px 36px; font-family:${FONT};">
               <p style="margin:0; font-size:13px; letter-spacing:2px; text-transform:uppercase; color:{{custom_values.omniply_brand_accent_color}}; font-weight:bold;">Appointment confirmed</p>
-              <h1 style="margin:10px 0 0 0; font-size:26px; line-height:1.25; color:#1d2530;">See you soon, {{contact.first_name}}.</h1>
+              <h1 style="margin:10px 0 0 0; font-size:26px; line-height:1.25; color:{{custom_values.omniply_brand_font_color}};">See you soon, {{contact.first_name}}.</h1>
             </td>
           </tr>
 
@@ -47,10 +52,10 @@ export const BOOKING_CONFIRMATION_HTML = `<!doctype html>
             <td style="padding:22px 36px 6px 36px;">
               <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f7f9fb; border-left:4px solid {{custom_values.omniply_brand_accent_color}}; border-radius:8px;">
                 <tr>
-                  <td style="padding:18px 20px; font-family:Helvetica, Arial, sans-serif;">
+                  <td style="padding:18px 20px; font-family:${FONT};">
                     <p style="margin:0; font-size:12.5px; letter-spacing:1px; text-transform:uppercase; color:#5c6672;">Your appointment</p>
-                    <p style="margin:6px 0 0 0; font-size:19px; font-weight:bold; color:#1d2530;">{{contact.booking_time}}</p>
-                    <p style="margin:10px 0 0 0; font-size:15px; line-height:1.5; color:#3a4450;">{{location.name}}<br/>{{location.full_address}}</p>
+                    <p style="margin:6px 0 0 0; font-size:19px; font-weight:bold; color:{{custom_values.omniply_brand_font_color}};">{{contact.booking_time}}</p>
+                    <p style="margin:10px 0 0 0; font-size:15px; line-height:1.5; color:{{custom_values.omniply_brand_font_color}};">{{location.name}}<br/>{{location.full_address}}</p>
                   </td>
                 </tr>
               </table>
@@ -59,34 +64,34 @@ export const BOOKING_CONFIRMATION_HTML = `<!doctype html>
 
           <!-- Body copy -->
           <tr>
-            <td style="padding:20px 36px 6px 36px; font-family:Helvetica, Arial, sans-serif;">
-              <p style="margin:0; font-size:15.5px; line-height:1.6; color:#3a4450;">We have your spot reserved. If anything changes, or you would like a different time, just call us and we will sort it out in a minute.</p>
+            <td style="padding:20px 36px 6px 36px; font-family:${FONT};">
+              <p style="margin:0; font-size:15.5px; line-height:1.6; color:{{custom_values.omniply_brand_font_color}};">We have your spot reserved. If anything changes, or you would like a different time, just call us and we will sort it out in a minute.</p>
             </td>
           </tr>
 
-          <!-- Call button -->
+          <!-- Call button: the newsletter's button pair -->
           <tr>
             <td align="center" style="padding:22px 36px 30px 36px;">
               <table role="presentation" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td align="center" style="background-color:{{custom_values.omniply_brand_accent_color}}; border-radius:8px;">
-                    <a href="tel:{{location.phone}}" style="display:inline-block; padding:13px 30px; font-family:Helvetica, Arial, sans-serif; font-size:16px; font-weight:bold; color:#ffffff; text-decoration:none;">Call {{location.name}}</a>
+                  <td align="center" style="background-color:{{custom_values.omniply_brand_button_color}}; border-radius:8px;">
+                    <a href="tel:{{location.phone}}" style="display:inline-block; padding:13px 30px; font-family:${FONT}; font-size:16px; font-weight:bold; color:{{custom_values.omniply_brand_button_text_color}}; text-decoration:none;">Call {{location.name}}</a>
                   </td>
                 </tr>
               </table>
-              <p style="margin:12px 0 0 0; font-family:Helvetica, Arial, sans-serif; font-size:13px; color:#5c6672;">{{location.phone}}</p>
+              <p style="margin:12px 0 0 0; font-family:${FONT}; font-size:13px; color:#5c6672;">{{location.phone}}</p>
             </td>
           </tr>
 
-          <!-- Footer band: brand color + contact line -->
+          <!-- Footer band: the newsletter's FOOTER color + its computed ink -->
           <tr>
-            <td align="center" style="background-color:{{custom_values.omniply_brand_header_color}}; padding:20px 24px;">
-              <p style="margin:0; font-family:Helvetica, Arial, sans-serif; font-size:13px; line-height:1.6; color:{{custom_values.omniply_brand_header_ink}};">{{location.name}} &middot; {{location.phone}}<br/>{{location.full_address}}</p>
+            <td align="center" style="background-color:{{custom_values.omniply_brand_footer_color}}; padding:20px 24px;">
+              <p style="margin:0; font-family:${FONT}; font-size:13px; line-height:1.6; color:{{custom_values.omniply_brand_footer_ink}};">{{location.name}} &middot; {{location.phone}}<br/>{{location.full_address}}</p>
             </td>
           </tr>
 
         </table>
-        <p style="margin:14px 0 0 0; font-family:Helvetica, Arial, sans-serif; font-size:12px; color:#8a97a6;">You are receiving this because you booked an appointment with {{location.name}}.</p>
+        <p style="margin:14px 0 0 0; font-family:${FONT}; font-size:12px; color:#8a97a6;">You are receiving this because you booked an appointment with {{location.name}}.</p>
       </td>
     </tr>
   </table>

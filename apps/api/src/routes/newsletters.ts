@@ -602,6 +602,12 @@ export async function newsletterRoutes(app: FastifyInstance) {
             create: { userId: ownerUserId, ...data },
             update: data,
           })
+          // A newsletter-template redesign must reach the transactional email
+          // templates too: they read brand CUSTOM VALUES at send time, so
+          // re-writing the values is the whole propagation (fire-and-forget).
+          void import('../lib/ghl/brand-values')
+            .then(({ writeBrandCustomValues }) => writeBrandCustomValues(ownerUserId))
+            .catch(() => null)
         }
       }
 
@@ -675,10 +681,16 @@ export async function newsletterRoutes(app: FastifyInstance) {
 
     try {
       const { lightUrl, darkUrl, colorUrl, colorLuminance } = await processLogo(userId, sourceUrl)
+      const ownerUserId = await canonicalAccountUserId(userId)
       await prisma.brandSettings.update({
-        where: { userId: await canonicalAccountUserId(userId) },
+        where: { userId: ownerUserId },
         data: { nlLogoLightUrl: lightUrl, nlLogoDarkUrl: darkUrl, nlLogoColorUrl: colorUrl, nlLogoColorLuminance: colorLuminance },
       })
+      // New logo variants change the header-correct pick → refresh the
+      // transactional-email brand custom values (fire-and-forget).
+      void import('../lib/ghl/brand-values')
+        .then(({ writeBrandCustomValues }) => writeBrandCustomValues(ownerUserId))
+        .catch(() => null)
       return reply.send({ lightUrl, darkUrl, colorUrl })
     } catch (err) {
       logger.error({ userId, err }, '[newsletters] logo processing failed')
