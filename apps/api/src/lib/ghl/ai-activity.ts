@@ -141,38 +141,59 @@ const FIELDS: Array<{ key: string; name: string; dataType: string; options?: str
   { key: 'duration_seconds', name: 'Duration Seconds', dataType: 'NUMERICAL' },
 ]
 
-/** Idempotent schema ensure (provisioning + first finalize per process). */
+/** Idempotent schema ensure (provisioning + first finalize per process).
+ *  Learned live 2026-10-21: schema creation auto-creates a default field
+ *  FOLDER, and field creation REQUIRES its id as parentId — so fields are
+ *  reconciled on every first-per-process ensure, not only at schema create
+ *  (also heals partially-created schemas). */
 export async function ensureAiActivityObject(apiKey: string, locationId: string): Promise<boolean> {
   if (ensured.has(locationId)) return true
-  const get = await ghl(apiKey, `/objects/${OBJECT_KEY}?locationId=${locationId}&fetchProperties=true`)
-  if (get.status === 200) {
-    ensured.add(locationId)
-    return true
-  }
+  const get = await ghl(apiKey, `/objects/${OBJECT_KEY}?locationId=${locationId}`)
   if (get.status === 401 || get.status === 403) {
     logger.warn({ locationId, status: get.status }, '[ai-activity] objects scope missing — records skipped until the app grant carries it')
     return false
   }
-  const create = await ghl(apiKey, '/objects/', {
-    method: 'POST',
-    body: JSON.stringify({
-      locationId,
-      labels: { singular: 'AI Activity', plural: 'AI Activities' },
-      key: OBJECT_KEY,
-      description: 'One record per Omniply AI agent conversation (dashboard data)',
-      primaryDisplayPropertyDetails: { key: `${OBJECT_KEY}.interaction`, name: 'Interaction', dataType: 'TEXT' },
-    }),
-  })
-  if (create.status >= 300) {
-    logger.warn({ locationId, status: create.status, body: JSON.stringify(create.json).slice(0, 300) }, '[ai-activity] schema create failed')
+  if (get.status !== 200) {
+    const create = await ghl(apiKey, '/objects/', {
+      method: 'POST',
+      body: JSON.stringify({
+        locationId,
+        labels: { singular: 'AI Activity', plural: 'AI Activities' },
+        key: OBJECT_KEY,
+        description: 'One record per Omniply AI agent conversation (dashboard data)',
+        primaryDisplayPropertyDetails: { key: `${OBJECT_KEY}.interaction`, name: 'Interaction', dataType: 'TEXT' },
+      }),
+    })
+    if (create.status >= 300) {
+      logger.warn({ locationId, status: create.status, body: JSON.stringify(create.json).slice(0, 300) }, '[ai-activity] schema create failed')
+      return false
+    }
+    logger.info({ locationId }, '[ai-activity] custom object created')
+  }
+
+  // Field reconcile: find the object's folder + existing fields, create the missing ones.
+  const fieldsRes = await ghl(apiKey, `/custom-fields/object-key/${OBJECT_KEY}?locationId=${locationId}`)
+  if (fieldsRes.status !== 200) {
+    logger.warn({ locationId, status: fieldsRes.status }, '[ai-activity] field listing failed')
     return false
   }
+  const listing = fieldsRes.json as { fields?: { fieldKey?: string }[]; folders?: { id?: string }[] }
+  const parentId = listing.folders?.[0]?.id
+  if (!parentId) {
+    logger.warn({ locationId }, '[ai-activity] no field folder on object — fields skipped')
+    return false
+  }
+  const existing = new Set((listing.fields ?? []).map((f) => f.fieldKey))
+  let createdAny = false
   for (const f of FIELDS) {
+    if (existing.has(`${OBJECT_KEY}.${f.key}`)) continue
+    createdAny = true
     const r = await ghl(apiKey, '/custom-fields/', {
       method: 'POST',
       body: JSON.stringify({
         locationId,
         objectKey: OBJECT_KEY,
+        parentId,
         name: f.name,
         fieldKey: `${OBJECT_KEY}.${f.key}`,
         dataType: f.dataType,
@@ -182,10 +203,14 @@ export async function ensureAiActivityObject(apiKey: string, locationId: string)
     })
     if (r.status >= 300) {
       logger.warn({ locationId, field: f.key, status: r.status, body: JSON.stringify(r.json).slice(0, 200) }, '[ai-activity] field create failed')
+      return false
     }
   }
+  // Freshly created fields need a moment before record validation sees them
+  // (observed live 2026-10-21: immediate writes 400 "couldn't validate the
+  // mapped field", the same write passes seconds later).
+  if (createdAny) await new Promise((resolve) => setTimeout(resolve, 5000))
   ensured.add(locationId)
-  logger.info({ locationId }, '[ai-activity] custom object created')
   return true
 }
 
