@@ -514,6 +514,9 @@ export function formatLocalSendAt(utcDate: Date, timeZone: string): string {
 
 export interface UpsertContactResult {
   contactId: string | null
+  /** GHL's `new` flag: true when the upsert CREATED the contact, false when
+   * it matched an existing one, null when the response omitted it. */
+  isNew: boolean | null
 }
 
 /**
@@ -536,7 +539,7 @@ export async function upsertGhlContact(
   },
 ): Promise<UpsertContactResult> {
   if (!input.email && !input.phone) throw new Error('upsertGhlContact needs email or phone')
-  const data = await ghlRequest<{ contact?: { id?: string } }>(apiKey, '/contacts/upsert', {
+  const data = await ghlRequest<{ contact?: { id?: string }; new?: boolean }>(apiKey, '/contacts/upsert', {
     method: 'POST',
     body: {
       locationId,
@@ -549,7 +552,7 @@ export async function upsertGhlContact(
       ...(input.customFields?.length ? { customFields: input.customFields } : {}),
     },
   })
-  return { contactId: data.contact?.id ?? null }
+  return { contactId: data.contact?.id ?? null, isNew: typeof data.new === 'boolean' ? data.new : null }
 }
 
 /** Location staff users (id, name, email, phone) — staff-contact provisioning. */

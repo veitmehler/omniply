@@ -136,7 +136,7 @@ async function executeRequestHuman(ctx: AgentContext, conversationId: string): P
       })
       contactId = result.contactId ?? null
       if (contactId) {
-        await prisma.agentConversation.update({ where: { id: conversationId }, data: { ghlContactId: contactId } })
+        await prisma.agentConversation.update({ where: { id: conversationId }, data: { ghlContactId: contactId, ...(result.isNew === true ? { contactWasCreated: true } : {}) } })
       }
     }
   }
@@ -312,6 +312,7 @@ export async function executeCallback(
         )
       }
     }
+    let createdNew = false
     if (correctedId) {
       await updateGhlContact(creds.apiKey, correctedId, {
         phone,
@@ -332,11 +333,12 @@ export async function executeCallback(
         ...(customFieldsOrUndef ? { customFields: customFieldsOrUndef } : {}),
       })
       contactId = result.contactId ?? null
+      createdNew = result.isNew === true
     }
     if (contactId && !isThirdParty) {
       await prisma.agentConversation.update({
         where: { id: conversationId },
-        data: { ghlContactId: contactId },
+        data: { ghlContactId: contactId, ...(createdNew ? { contactWasCreated: true } : {}) },
       })
     }
     if (contactId && isThirdParty && isUpdatedCallback) {
@@ -550,7 +552,7 @@ async function executeCapture(
     if (contactId) {
       await prisma.agentConversation.update({
         where: { id: conversationId },
-        data: { ghlContactId: contactId },
+        data: { ghlContactId: contactId, ...(result.isNew === true ? { contactWasCreated: true } : {}) },
       })
     }
   }
@@ -683,7 +685,7 @@ async function executeIntake(
     source: 'chat-agent',
   })
   if (result.contactId) {
-    await prisma.agentConversation.update({ where: { id: conversationId }, data: { ghlContactId: result.contactId } })
+    await prisma.agentConversation.update({ where: { id: conversationId }, data: { ghlContactId: result.contactId, ...(result.isNew === true ? { contactWasCreated: true } : {}) } })
     logger.info({ conversationId, accountId: ctx.accountId }, '[agent] intake → GHL contact converged')
   }
 }

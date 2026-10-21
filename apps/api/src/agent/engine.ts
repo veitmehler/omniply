@@ -311,6 +311,15 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
     .join('\n')
 
   const open = openStatusFor(ctx)
+  // AI Activity rollup fact: whether this conversation STARTED outside
+  // business hours — stamped once, from the same open-status the prompt
+  // uses, so finalize never re-derives hours.
+  if (conversation.startedAfterHours === null && open.known) {
+    conversation.startedAfterHours = !open.openNow
+    void prisma.agentConversation
+      .update({ where: { id: conversation.id }, data: { startedAfterHours: !open.openNow } })
+      .catch(() => {})
+  }
   const openStatus = open.known
     ? [`Local time at the practice: ${open.localTime}.`, open.verdict, open.todayLine ? `Today's hours: ${open.todayLine}` : null]
         .filter(Boolean)

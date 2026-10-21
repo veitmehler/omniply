@@ -150,6 +150,12 @@ export async function processDmTurn(data: DmJobData): Promise<void> {
     ghlContactId: data.contactId,
   })
 
+  // AI Activity rollup fact: persist the resolved platform (FB/IG/WhatsApp)
+  // — resolution is per-turn and would otherwise be lost to the dashboard.
+  void prisma.agentConversation
+    .update({ where: { id: result.conversationId }, data: { dmPlatform: sendType } })
+    .catch(() => {})
+
   // DM rendering: cards become plain links appended to the reply text.
   const parts = [result.reply]
   if (result.action?.type === 'send_booking_link' && result.bookingUrl) parts.push(result.bookingUrl)

@@ -1208,6 +1208,14 @@ model AgentConversation {
   ghlContactId String?
   // Inactivity finalizer: reconciliation + summary pass completed.
   finalizedAt  DateTime?
+  // AI Activity rollup facts (snapshot-optimization dashboard): the DM's
+  // resolved platform (FB/IG/WhatsApp — resolved per turn, worth keeping),
+  // whether the AGENT created the GHL contact (vs matching an existing one),
+  // and whether the conversation started outside business hours (null =
+  // hours unknown). Written at turn time; consumed by the finalize rollup.
+  dmPlatform        String?
+  contactWasCreated Boolean  @default(false)
+  startedAfterHours Boolean?
   // Voice rescue (.plans/voice-rescue-agent.implementation-plan.md):
   // callerPhone (E.164, parsed from the agent stub prompt's CALLER=) is the
   // PRIMARY rescue-link key; rescuePendingAt is stamped by the transfer
