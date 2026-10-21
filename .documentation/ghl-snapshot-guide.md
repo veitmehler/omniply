@@ -78,7 +78,19 @@ GHL calendars own booking ONLY in direct-ghl mode (see the PMS strategy in
    CTAs use the `omniply-booking` trigger link (7b) + built-in location merge fields
    ({{location.name}} etc.) — NO per-clinic edits, NO per-document custom values.
    Per-magnet copy personalization = optional later refinement.
-5. **Review-request workflow** — trigger: `appointment-completed` tag → delay → review ask
+4b. **Branded transactional email template** (added 2026-10-21): the booking-
+   confirmation email moves from plain text to the designed code-view template
+   in .documentation/email-templates/booking-confirmation.html (paste into the
+   builder's code editor, name "Omniply booking confirmation", point the
+   booking-confirmation workflow's email at it). Branding arrives per clinic
+   via location custom values `omniply_brand_header_color` / `_header_ink` /
+   `_accent_color` / `_logo_header`, written by writeBrandCustomValues at the
+   onboarding finale (computed on our side: contrast ink + header-correct logo
+   variant). PROVEN 2026-10-21 on the demo location: custom values substitute
+   inside style attributes and img src at send time. NOTE: creating templates
+   via API needs an emails/builder scope our app token lacks (401) — not
+   required for the snapshot model (one hand-pasted template, per-location
+   values), bump the scope only if API-managed templates become wanted.
    (email; SMS variant added when SMS activates). Pre-built and DORMANT until a tag source
    exists; the QR counter card covers review velocity meanwhile.
 6. **New Patient pipeline** (the one in section A).
