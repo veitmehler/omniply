@@ -2,10 +2,12 @@
  * "AI Employee" dashboard embed page (snapshot-optimization 2026-10-21).
  *
  * Rendered inside a GHL dashboard URL widget, so the page is styled as the
- * CARD INTERIOR: white ground, system type, no outer chrome — the dashboard
- * supplies the card. Single-theme light on purpose (the host dashboard is
- * light); every surface color is explicit so the iframe never inherits the
- * host ground. Fully responsive: the user free-resizes the widget.
+ * CARD INTERIOR. Deliberately single-theme in the OMNIPLY EMBED language
+ * (apps/web/src/app/embed/EmbedShell.tsx: card #122535 on the hero-gradient
+ * ground, border #2B3E52, ink #FFFFFF/#A0A0A5, accent #C3F43B) so the panel
+ * reads as one of the platform's own cards; every surface color is explicit
+ * so the iframe never inherits the host ground. Fully responsive: the user
+ * free-resizes the widget.
  *
  * Modes:
  *   live    — fetches <page-url>/data?days=N (token stays in the URL only)
@@ -15,14 +17,14 @@
 
 const STYLE = `
   :root {
-    --bg: #ffffff;
-    --ink: #1c2838;
-    --muted: #68788d;
-    --line: #e7eaf0;
-    --tile: #f7f9fb;
-    --accent: #2a6f97;
-    --accent-soft: #e8f1f7;
-    --accent-ink: #ffffff;
+    --bg: #122535;
+    --ink: #ffffff;
+    --muted: #a0a0a5;
+    --line: #2b3e52;
+    --tile: #0e2032;
+    --accent: #c3f43b;
+    --accent-soft: #1a3246;
+    --accent-ink: #0e0e0f;
   }
   * { box-sizing: border-box; margin: 0; }
   html, body { height: 100%; }
