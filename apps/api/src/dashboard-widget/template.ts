@@ -54,6 +54,9 @@ const STYLE = `
   .stat .sub { font-size: 11.5px; color: var(--muted); min-height: 16px; }
   .chips { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 12px 2px 0; color: var(--muted); font-size: 12px; }
   .chips b { color: var(--ink); font-weight: 650; font-variant-numeric: tabular-nums; }
+  .band { margin-top: 14px; }
+  .band-title { font-size: 11.5px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 8px; }
+  .hero.compact .num { font-size: clamp(20px, 3.5vw, 28px); }
   .charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 10px; margin-top: 12px; }
   .panel { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; min-width: 0; }
   .panel h2 { font-size: 11.5px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 10px; }
@@ -89,6 +92,10 @@ const BODY = `
     <div class="stat"><div class="label">After-hours answers</div><div class="num" id="n-ah">–</div><div class="sub" id="s-ah"></div></div>
   </div>
   <div class="chips" id="chips"></div>
+  <div class="band" id="practice" hidden>
+    <h2 class="band-title">Practice</h2>
+    <div class="hero compact" id="practice-tiles"></div>
+  </div>
   <div class="charts">
     <div class="panel"><h2>Conversations by channel</h2><div id="channels"></div></div>
     <div class="panel"><h2>Daily activity</h2><div class="trend" id="trend"></div><div class="axis" id="axis"></div></div>
@@ -118,6 +125,23 @@ const SCRIPT = `
     if (t.guidesSent > 0) chips += '<span><b>' + n(t.guidesSent) + '</b> guides delivered</span>';
     if (t.handoffs > 0) chips += '<span><b>' + n(t.handoffs) + '</b> handed to your team</span>';
     el('chips').innerHTML = chips;
+
+    var pr = d.practice || {};
+    function tile(label, num, sub) {
+      return '<div class="stat"><div class="label">' + label + '</div><div class="num">' + num + '</div><div class="sub">' + sub + '</div></div>';
+    }
+    var ptiles = '';
+    if (pr.appointments != null) {
+      ptiles += tile('All appointments', n(pr.appointments), t.booked > 0 ? n(t.booked) + ' booked by your AI' : 'across your calendars');
+    }
+    if (pr.rating != null) {
+      ptiles += tile('Google rating', pr.rating.toFixed(1) + ' \\u2605', pr.reviewCount != null ? n(pr.reviewCount) + ' reviews' : '');
+    }
+    if (pr.unread != null) {
+      ptiles += tile('Inbox', n(pr.unread), 'unread conversations');
+    }
+    el('practice-tiles').innerHTML = ptiles;
+    el('practice').hidden = !ptiles;
 
     var entries = Object.keys(d.byChannel).map(function (k) { return [k, d.byChannel[k]]; })
       .filter(function (e) { return e[1] > 0; })
@@ -202,6 +226,7 @@ const SAMPLE_GETTER = `
         voice: part(0.38), webchat: part(0.30), facebook: part(0.12),
         instagram: part(0.08), whatsapp: part(0.09), 'agent-protocol': part(0.03),
       },
+      practice: { appointments: part(0.55), unread: 3, rating: 4.8, reviewCount: 213 },
       byDay: byDay,
     });
   }

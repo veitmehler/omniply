@@ -983,6 +983,51 @@ export async function listGhlCalendars(apiKey: string, locationId: string): Prom
   return data.calendars ?? []
 }
 
+/** Appointment count across ALL the location's calendars in [startMs, endMs],
+ *  cancelled excluded (AI Employee dashboard "Practice" band). Null = the
+ *  listing failed; per-calendar failures just skip that calendar. */
+export async function countGhlAppointments(
+  apiKey: string,
+  locationId: string,
+  startMs: number,
+  endMs: number,
+): Promise<number | null> {
+  let calendars: GhlCalendar[]
+  try {
+    calendars = await listGhlCalendars(apiKey, locationId)
+  } catch {
+    return null
+  }
+  let count = 0
+  for (const cal of calendars) {
+    if (cal.isActive === false) continue
+    try {
+      const data = await ghlRequest<{ events?: { appointmentStatus?: string }[] }>(
+        apiKey,
+        `/calendars/events?locationId=${encodeURIComponent(locationId)}&calendarId=${encodeURIComponent(cal.id)}&startTime=${startMs}&endTime=${endMs}`,
+        { version: CALENDARS_VERSION },
+      )
+      count += (data.events ?? []).filter((e) => e.appointmentStatus !== 'cancelled').length
+    } catch {
+      // one calendar failing should not blank the whole stat
+    }
+  }
+  return count
+}
+
+/** Unread-conversation count for the location (AI Employee dashboard). */
+export async function countUnreadGhlConversations(apiKey: string, locationId: string): Promise<number | null> {
+  try {
+    const data = await ghlRequest<{ total?: number }>(
+      apiKey,
+      `/conversations/search?locationId=${encodeURIComponent(locationId)}&status=unread&limit=1`,
+    )
+    return typeof data.total === 'number' ? data.total : null
+  } catch {
+    return null
+  }
+}
+
 /**
  * Free slots for a calendar window, flattened + sorted ascending. GHL returns
  * `{ "<date>": { slots: ["<iso-with-offset>", …] }, traceId }`; the timezone

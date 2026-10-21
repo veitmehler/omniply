@@ -15,7 +15,10 @@
 import type { FastifyInstance } from 'fastify'
 import { prisma } from '@omniply/shared'
 import { aggregateAiActivity, type AiActivityStats } from '../lib/ai-activity-stats'
+import { practiceStatsForAccount, type PracticeStats } from '../lib/practice-stats'
 import { buildDashboardWidgetHtml, buildDashboardPendingHtml } from '../dashboard-widget/template'
+
+type WidgetPayload = AiActivityStats & { practice: PracticeStats }
 
 const TOKEN_RE = /^[A-Za-z0-9_-]{20,60}$/
 const DAYS_ALLOWED = new Set([7, 30, 90])
@@ -23,7 +26,7 @@ const DAYS_ALLOWED = new Set([7, 30, 90])
 // The dashboard refreshes freely; one aggregation per account+range per
 // minute is plenty live and keeps repeated widget loads off the DB.
 const STATS_CACHE_MS = 60_000
-const statsCache = new Map<string, { at: number; stats: AiActivityStats }>()
+const statsCache = new Map<string, { at: number; stats: WidgetPayload }>()
 
 async function accountIdForToken(token: string): Promise<string | null> {
   if (!TOKEN_RE.test(token)) return null
@@ -69,7 +72,11 @@ export async function dashboardWidgetRoutes(app: FastifyInstance): Promise<void>
       const hit = statsCache.get(key)
       if (hit && Date.now() - hit.at < STATS_CACHE_MS) return reply.send(hit.stats)
 
-      const stats = await aggregateAiActivity(accountId, days)
+      const [ai, practice] = await Promise.all([
+        aggregateAiActivity(accountId, days),
+        practiceStatsForAccount(accountId, days),
+      ])
+      const stats: WidgetPayload = { ...ai, practice }
       statsCache.set(key, { at: Date.now(), stats })
       if (statsCache.size > 500) {
         const oldest = statsCache.keys().next().value
