@@ -200,6 +200,12 @@ async function logToolCall(conversationId: string, name: string, args: unknown, 
       },
     })
     .catch(() => {})
+  // turnCount gates the finalizer (and with it the AI Activity dashboard
+  // record) — MCP conversations never bumped it, so protocol bookings were
+  // invisible to both (found via Veit's widget count, 2026-10-21).
+  await prisma.agentConversation
+    .update({ where: { id: conversationId }, data: { turnCount: { increment: 1 } } })
+    .catch(() => {})
 }
 
 async function getClinicInfo(account: McpAccount): Promise<Record<string, unknown>> {
