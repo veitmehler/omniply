@@ -160,6 +160,11 @@ export async function onboardingRoutes(app: FastifyInstance) {
     void import('../lib/ghl/brand-values')
       .then(({ writeBrandCustomValues }) => writeBrandCustomValues(r.account.ownerUserId))
       .catch(() => null)
+    // AI Employee dashboard embed: mint the read-only token and point the
+    // snapshot's omniply_ai_dashboard_url custom value at it. Best-effort.
+    void import('../lib/dashboard-widget-token')
+      .then(({ writeDashboardWidgetUrlValue }) => writeDashboardWidgetUrlValue(r.account.ownerUserId))
+      .catch(() => null)
     void (consented('quiz')
       ? publishQuizPage(r.account.ownerUserId).finally(() => {
           // After publish the quiz URL is final (WP page or hosted) — point

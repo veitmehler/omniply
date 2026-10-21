@@ -75,6 +75,11 @@ model Account {
   agentWidgetToken   String?             @unique
   // Direct agent booking (MCP): public per-clinic endpoint token (plan 2026-10-14).
   agentMcpToken      String?             @unique
+  // GHL dashboard "AI Employee" embed (snapshot-optimization, 2026-10-21):
+  // read-only stats page URL carried in the omniply_ai_dashboard_url custom
+  // value. Deliberately separate from agentWidgetToken (that one ships in
+  // public website HTML) and agentMcpToken (that one can book).
+  dashboardWidgetToken String?           @unique
   agentConversations AgentConversation[]
   // Voice-agent booking/availability (PMS framework v2, 2026-10-06):
   // 'off' | 'direct-ghl' | 'direct-cliniko' | 'direct-nookal' |
