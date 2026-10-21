@@ -155,6 +155,11 @@ export async function onboardingRoutes(app: FastifyInstance) {
     })
     const consents = (consentBrand?.installConsents ?? {}) as Record<string, boolean>
     const consented = (key: string) => consents[key] !== false
+    // Brand custom values (email-template branding): computed here, rendered
+    // by the snapshot's code-view templates. Best-effort like the repoints.
+    void import('../lib/ghl/brand-values')
+      .then(({ writeBrandCustomValues }) => writeBrandCustomValues(r.account.ownerUserId))
+      .catch(() => null)
     void (consented('quiz')
       ? publishQuizPage(r.account.ownerUserId).finally(() => {
           // After publish the quiz URL is final (WP page or hosted) — point
