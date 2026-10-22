@@ -835,11 +835,13 @@ export async function commitWpCategories(ctx: StepContext, answer: unknown): Pro
   try {
     const auth = await wpAuthForUser(ctx.userId)
     if (!auth) return null
-    const state = await getWpTaxonomyState(auth.siteUrl, auth.authHeader)
+    const { verticalForUser } = await import('../lib/prompt-resolver')
+    const vertical = await verticalForUser(ctx.userId).catch(() => 'chiro')
+    const state = await getWpTaxonomyState(auth.siteUrl, auth.authHeader, vertical)
     if (state.missingCurated.length > 0) {
       await createWpCategories(auth.siteUrl, auth.authHeader, state.missingCurated)
     }
-    await seedWpTagsIfNone(auth.siteUrl, auth.authHeader)
+    await seedWpTagsIfNone(auth.siteUrl, auth.authHeader, vertical)
   } catch (err) {
     // A WP hiccup must not block onboarding — log and continue.
     logger.warn({ err, userId: ctx.userId }, '[onboarding] category setup failed — continuing')

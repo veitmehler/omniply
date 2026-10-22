@@ -212,10 +212,10 @@ export async function wpConnectionRoutes(app: FastifyInstance) {
     void (async () => {
       const vertical = await verticalForUser(user.id)
       if (vertical === 'azavea') return
-      const state = await getWpTaxonomyState(conn.siteUrl, auth)
+      const state = await getWpTaxonomyState(conn.siteUrl, auth, vertical)
       if (state.realCategoryNames.length > 0) return
       await createWpCategories(conn.siteUrl, auth, state.missingCurated)
-      await seedWpTagsIfNone(conn.siteUrl, auth)
+      await seedWpTagsIfNone(conn.siteUrl, auth, vertical)
     })().catch((err) => logger.warn({ err, siteUrl: conn.siteUrl }, '[wp-connections] taxonomy bootstrap failed'))
 
     return reply.status(201).send({

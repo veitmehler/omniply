@@ -41,7 +41,7 @@ import {
 } from './commits'
 import { specializationRegistryKeys } from './site-analysis'
 import { mergeStepDataAndStep } from './step-data'
-import { wpAuthForUser, getWpTaxonomyState, CHIRO_WP_CATEGORIES } from '../lib/wp-taxonomy'
+import { wpAuthForUser, getWpTaxonomyState, wpCategoriesForVertical } from '../lib/wp-taxonomy'
 
 export type StepKind = 'info' | 'text' | 'choice' | 'confirm_card' | 'voice' | 'action'
 
@@ -380,7 +380,9 @@ const STEPS: StepDef[] = [
       try {
         const auth = await wpAuthForUser(ctx.userId)
         if (!auth) return skipView("We'll sort out blog categories once your website is connected.")
-        const state = await getWpTaxonomyState(auth.siteUrl, auth.authHeader)
+        const { verticalForUser } = await import('../lib/prompt-resolver')
+        const vertical = await verticalForUser(ctx.userId).catch(() => 'chiro')
+        const state = await getWpTaxonomyState(auth.siteUrl, auth.authHeader, vertical)
         if (state.realCategoryNames.length > 0 && state.missingCurated.length === 0) {
           return skipView('I see your site already has blog categories. We will assign your articles to those.')
         }
@@ -397,7 +399,7 @@ const STEPS: StepDef[] = [
         }
         return {
           messages: [
-            `Your site has no blog categories yet. Want us to set up six chiropractic ones? (${CHIRO_WP_CATEGORIES.join(', ')}) - This helps readers and Google to better navigate and understand your content. You can rename or remove them in WordPress anytime.`,
+            `Your site has no blog categories yet. Want us to set up six ${vertical === 'wellness' ? 'wellness' : 'chiropractic'} ones? (${wpCategoriesForVertical(vertical).join(', ')}) - This helps readers and Google to better navigate and understand your content. You can rename or remove them in WordPress anytime.`,
           ],
           options: [
             { value: 'yes', label: 'Yes, set them up' },
