@@ -69,18 +69,19 @@ The team at {{location.name}}
 Design rule (Veit 2026-10-22): ALL comment funnels lead to the lead-gen
 quiz. The quiz already routes each lead to their matched guide (weakest
 pillar), so per-guide keywords would just bypass the capture. ONE comment
-workflow, not five.
+workflow, not five. Keyword locked 2026-10-22: **WELLNESS** (replaces the
+earlier AGE pick — aspirational to type publicly, markets the offer).
 
 DM reply sends the quiz trigger link; public reply: "Just sent it to
 your DMs!"
 
 | Keyword | Asset | Trigger link |
 |---|---|---|
-| AGE | Biological Age Check | omniply-spine-check (quiz link; vertical-aware repoint) |
+| WELLNESS | Biological Age Check | omniply-spine-check (quiz link; vertical-aware repoint) |
 
-Caption CTAs: the per-account `dm_keyword` preset carries a single
-keyword+asset by design, so the clinic's social config is simply
-`AGE | the Biological Age Check`.
+Caption CTAs: the onboarding consent step (commitCta) writes the
+per-account `dm_keyword` preset automatically per vertical:
+`WELLNESS | the Biological Age Check`.
 
 ---
 

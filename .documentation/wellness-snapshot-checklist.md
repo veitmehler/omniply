@@ -47,10 +47,12 @@ at every guide regeneration. A typo = a silently dead drip link.
 Design rule (Veit 2026-10-22): ALL comments lead to the lead-gen quiz —
 it routes each lead to their matched guide anyway. Delete ALL chiro
 keyword workflows; keep/create exactly one:
-- [ ] AGE → `omniply-spine-check` (the quiz)
+- [ ] WELLNESS → `omniply-spine-check` (the quiz). Keyword locked
+      2026-10-22 (replaces the earlier AGE pick).
 Public comment reply stays: "Just sent it to your DMs!"
-Social config at onboarding: dm_keyword preset = `AGE | the Biological
-Age Check` (the preset is single-keyword by design; no code change).
+Social config: the onboarding consent step (commitCta) now writes the
+dm_keyword preset per vertical automatically —
+`WELLNESS | the Biological Age Check`.
 
 ### Edit 4 — nurture workflow
 - [ ] Trigger: Contact Tag Added, OR across the four wellness

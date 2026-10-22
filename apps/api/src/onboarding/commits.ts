@@ -476,17 +476,21 @@ export async function commitOffers(ctx: StepContext, answer: unknown): Promise<s
 
 /** cta: socialCallToAction (+ goal mapping). */
 /**
- * cta = the social lead-gen CONSENT (§4b-3). SPINE is the only wired funnel:
- * yes → fixed keyword + dm_keyword goal + quiz-install consent; no → captions
- * fall back phone-first ("call the office", Veit decision 2026-09-15), and
- * the finale skips the quiz-page publish.
+ * cta = the social lead-gen CONSENT (§4b-3). The quiz comment→DM funnel is
+ * the only wired machine — keyword per vertical (SPINE / WELLNESS, Veit
+ * 2026-10-22): yes → fixed keyword + dm_keyword goal + quiz-install consent;
+ * no → captions fall back phone-first ("call the office", Veit decision
+ * 2026-09-15), and the finale skips the quiz-page publish.
  */
 export async function commitCta(ctx: StepContext, answer: unknown): Promise<string | null> {
   const a = (answer ?? {}) as { value?: string }
   if (a.value !== 'yes' && a.value !== 'no') return 'Pick one of the two options'
   if (a.value === 'yes') {
+    const { verticalForUser } = await import('../lib/prompt-resolver')
+    const vertical = await verticalForUser(ctx.userId).catch(() => 'chiro')
     await brandUpsert(ctx.userId, {
-      socialCallToAction: 'SPINE|our 2-Minute Spine Check',
+      socialCallToAction:
+        vertical === 'wellness' ? 'WELLNESS|the Biological Age Check' : 'SPINE|our 2-Minute Spine Check',
       socialPrimaryGoal: 'dm_keyword',
       installConsents: { ...(await currentConsents(ctx.userId)), quiz: true },
     })

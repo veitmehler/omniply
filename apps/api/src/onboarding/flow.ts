@@ -433,17 +433,22 @@ const STEPS: StepDef[] = [
   {
     id: 'cta',
     kind: 'choice',
-    prepare: async () => ({
+    prepare: async (ctx) => {
+      const { verticalForUser } = await import('../lib/prompt-resolver')
+      const vertical = await verticalForUser(ctx.userId).catch(() => 'chiro')
+      const keyword = vertical === 'wellness' ? 'WELLNESS' : 'SPINE'
+      return {
       messages: [
         "As part of Omniply, you can get a full lead-generation quiz installed on your website automatically. Quizzes are the best way for social media followers to become leads. Once they complete the quiz, they're subscribed to your newsletter and get offers to book an appointment.",
         "If you enable this, we'll add a page to your website automatically. It's safe and reversible — you can remove it anytime.",
-        'Every social media post then tells your readers they\'ll get the quiz link messaged to them when they reply "SPINE" on any of your posts.',
+        `Every social media post then tells your readers they'll get the quiz link messaged to them when they reply "${keyword}" on any of your posts.`,
       ],
       options: [
         { value: 'yes', label: 'Yes, please set this up.' },
         { value: 'no', label: "No, I don't want to generate leads from my social media activity." },
       ],
-    }),
+      }
+    },
     commit: async (ctx, answer) => {
       const err = await commitCta(ctx, answer)
       if (!err) ctx.stepData.cta = answer
