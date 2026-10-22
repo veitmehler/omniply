@@ -1,0 +1,37 @@
+<!--
+  Wellness nurture Email 1 - all branches
+  Subject:      Did your guide land, {{contact.first_name}}?
+  Preview text: One small habit this week beats ten intentions.
+  Send:         1 day after tag
+  AFTER PASTING: select the "Book your visit" link text and attach the
+  "omniply-booking" TRIGGER LINK via the builder's link tool (the href
+  below is a placeholder). Never link the guide document here.
+-->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Did your guide land?</title>
+</head>
+<body style="margin:0; padding:0; background-color:#ffffff;">
+  <table role="presentation" width="600" cellpadding="0" cellspacing="0" align="center" style="width:600px; max-width:100%; margin:0 auto 0 auto;">
+    <tr>
+      <td style="padding:32px 20px 24px 20px; font-family:Helvetica, Arial, sans-serif; font-size:20px; line-height:1.6; color:#222222;">
+        <p style="margin:0 0 20px 0;">Hi {{contact.first_name}},</p>
+        <p style="margin:0 0 20px 0;">Yesterday you took the Biological Age Check and picked up one of our guides. Quick question: did you get a chance to open it yet?</p>
+        <p style="margin:0 0 20px 0;">If not, no guilt. It is sitting in your inbox from us, and it will still be there tonight. Here is the one thing we would point you to: skip straight to the section that matched your weakest pillar, and pick a single habit from it. Not the whole guide. One habit, for one week.</p>
+        <p style="margin:0 0 20px 0;">That is genuinely how this works. The people we see feeling better month after month almost never overhauled their lives. They changed one small thing, kept it, and then changed the next one.</p>
+        <p style="margin:0 0 20px 0;">And if you would rather have someone map that first step with you, that is exactly what we do all day at {{location.name}}. A first visit is relaxed: we talk through how you move, sleep, unwind and fuel up, and you leave with a plan that fits your actual week.</p>
+        <p style="margin:0 0 20px 0;"><a href="#" style="color:#1a0dab; font-weight:bold;">Book your visit</a></p>
+        <p style="margin:0;">Talk soon,<br/>The team at {{location.name}}</p>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:8px 20px 32px 20px; font-family:Helvetica, Arial, sans-serif; font-size:13px; line-height:1.6; color:#8a97a6; border-top:1px solid #e7eaf0;">
+        <p style="margin:12px 0 0 0;">{{location.name}} &middot; {{location.full_address}}<br/><a href="{{unsubscribe_link}}" style="color:#8a97a6;">Unsubscribe</a></p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

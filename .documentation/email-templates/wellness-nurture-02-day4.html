@@ -1,0 +1,38 @@
+<!--
+  Wellness nurture Email 2 - all branches
+  Subject:      The pillar most people pick wrong
+  Preview text: Your result already told you where to start.
+  Send:         3 days after Email 1 (day 4)
+  AFTER PASTING: select the "Book your visit" link text and attach the
+  "omniply-booking" TRIGGER LINK via the builder's link tool (the href
+  below is a placeholder). Never link the guide document here.
+-->
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>The pillar most people pick wrong</title>
+</head>
+<body style="margin:0; padding:0; background-color:#ffffff;">
+  <table role="presentation" width="600" cellpadding="0" cellspacing="0" align="center" style="width:600px; max-width:100%; margin:0 auto 0 auto;">
+    <tr>
+      <td style="padding:32px 20px 24px 20px; font-family:Helvetica, Arial, sans-serif; font-size:20px; line-height:1.6; color:#222222;">
+        <p style="margin:0 0 20px 0;">Hi {{contact.first_name}},</p>
+        <p style="margin:0 0 20px 0;">A pattern we see all the time: someone takes the Biological Age Check, sees their weakest pillar, and then starts working on a different one. The runner with the ragged sleep schedule signs up for more running. The exhausted professional with zero downtime buys a new mattress.</p>
+        <p style="margin:0 0 20px 0;">It makes sense. We all prefer the pillar we are already good at.</p>
+        <p style="margin:0 0 20px 0;">But the biggest gains almost always hide in the pillar you have been avoiding, and the first step there is usually smaller than you think. Ten minutes of strength. A fixed wake time. One protected evening. A real lunch away from the screen.</p>
+        <p style="margin:0 0 20px 0;">If you want a second pair of eyes on it, bring your result to us. At {{location.name}} we will walk through your week as it actually is, not as an app thinks it should be, and build the smallest routine that moves your weakest pillar. No overhauls, no lectures.</p>
+        <p style="margin:0 0 20px 0;"><a href="#" style="color:#1a0dab; font-weight:bold;">Book your visit</a></p>
+        <p style="margin:0 0 20px 0;">Whenever you are ready,<br/>The team at {{location.name}}</p>
+        <p style="margin:0;">P.S. You can simply reply to this email with a question. A real person reads these.</p>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:8px 20px 32px 20px; font-family:Helvetica, Arial, sans-serif; font-size:13px; line-height:1.6; color:#8a97a6; border-top:1px solid #e7eaf0;">
+        <p style="margin:12px 0 0 0;">{{location.name}} &middot; {{location.full_address}}<br/><a href="{{unsubscribe_link}}" style="color:#8a97a6;">Unsubscribe</a></p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
