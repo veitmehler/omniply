@@ -41,9 +41,12 @@ async function fetchLocation(locationId: string, token: string): Promise<Locatio
 const KNOWN_VERTICALS = new Set(['chiro', 'wellness'])
 
 /** The snapshot's self-description (funnel provisioning 2026-10-22): each
- *  vertical's snapshot carries an `omniply_vertical` custom value, so a
- *  location born from the wellness SaaS plan arrives labeled before our
- *  webhook ever fires. Absent value (the chiro snapshot) = chiro. */
+ *  vertical's snapshot carries an `omniply_vertical_<v>` MARKER custom value,
+ *  so a location born from that vertical's SaaS plan arrives labeled before
+ *  our webhook ever fires. The vertical is encoded in the KEY NAME, not the
+ *  value, because GHL snapshot cloning copies custom-value keys but STRIPS
+ *  their values (found at the Whealth pilot). A non-empty `omniply_vertical`
+ *  value (hand-set) still wins. Absent (the chiro snapshot) = chiro. */
 async function fetchSnapshotVertical(locationId: string, token: string): Promise<string> {
   try {
     const res = await fetch(`${GHL_BASE}/locations/${locationId}/customValues`, {
@@ -51,28 +54,50 @@ async function fetchSnapshotVertical(locationId: string, token: string): Promise
     })
     if (!res.ok) return 'chiro'
     const data = (await res.json()) as { customValues?: { name?: string; value?: string }[] }
-    const raw = data.customValues?.find((cv) => cv.name === 'omniply_vertical')?.value?.trim().toLowerCase()
-    if (!raw) return 'chiro'
-    if (!KNOWN_VERTICALS.has(raw)) {
-      logger.warn({ locationId, raw }, '[auto-provision] unknown omniply_vertical value — defaulting to chiro')
-      return 'chiro'
+    const list = data.customValues ?? []
+    const direct = list.find((cv) => cv.name === 'omniply_vertical')?.value?.trim().toLowerCase()
+    if (direct) {
+      if (KNOWN_VERTICALS.has(direct)) return direct
+      logger.warn({ locationId, direct }, '[auto-provision] unknown omniply_vertical value — ignoring')
     }
-    return raw
+    for (const cv of list) {
+      const m = /^omniply_vertical_([a-z0-9_-]+)$/.exec(cv.name ?? '')
+      if (!m) continue
+      if (KNOWN_VERTICALS.has(m[1])) return m[1]
+      logger.warn({ locationId, marker: cv.name }, '[auto-provision] unknown vertical marker — defaulting to chiro')
+    }
+    return 'chiro'
   } catch {
     return 'chiro'
   }
 }
 
-/** Best-effort: pre-set the webhook-token custom values the snapshot workflows reference. */
+/** Best-effort: pre-set the webhook-token custom values the snapshot workflows reference.
+ *  UPSERT, not POST (fixed 2026-10-22, found at the Whealth pilot): snapshot-cloned
+ *  locations ALREADY carry these keys — GHL clones custom-value KEYS but strips
+ *  their VALUES — and POST on an existing name fails, leaving the webhooks empty. */
 async function setCustomValues(locationId: string, token: string, values: Record<string, string>): Promise<void> {
+  let existing: { id?: string; name?: string }[] = []
+  try {
+    const listRes = await fetch(`${GHL_BASE}/locations/${locationId}/customValues`, {
+      headers: { Authorization: `Bearer ${token}`, Version: VERSION },
+    })
+    if (listRes.ok) existing = ((await listRes.json()) as { customValues?: { id?: string; name?: string }[] }).customValues ?? []
+  } catch (err) {
+    logger.warn({ err, locationId }, '[auto-provision] custom value listing failed — falling back to create-only')
+  }
   const failed: string[] = []
   for (const [name, value] of Object.entries(values)) {
     try {
-      const res = await fetch(`${GHL_BASE}/locations/${locationId}/customValues`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, Version: VERSION, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, value }),
-      })
+      const found = existing.find((cv) => cv.name === name && cv.id)
+      const res = await fetch(
+        `${GHL_BASE}/locations/${locationId}/customValues${found ? `/${found.id}` : ''}`,
+        {
+          method: found ? 'PUT' : 'POST',
+          headers: { Authorization: `Bearer ${token}`, Version: VERSION, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, value }),
+        },
+      )
       if (!res.ok) {
         failed.push(name)
         logger.error({ locationId, name, status: res.status }, '[auto-provision] custom value set FAILED')
