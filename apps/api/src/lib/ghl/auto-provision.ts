@@ -37,6 +37,32 @@ async function fetchLocation(locationId: string, token: string): Promise<Locatio
   }
 }
 
+/** Verticals a snapshot may declare; anything else falls back to chiro. */
+const KNOWN_VERTICALS = new Set(['chiro', 'wellness'])
+
+/** The snapshot's self-description (funnel provisioning 2026-10-22): each
+ *  vertical's snapshot carries an `omniply_vertical` custom value, so a
+ *  location born from the wellness SaaS plan arrives labeled before our
+ *  webhook ever fires. Absent value (the chiro snapshot) = chiro. */
+async function fetchSnapshotVertical(locationId: string, token: string): Promise<string> {
+  try {
+    const res = await fetch(`${GHL_BASE}/locations/${locationId}/customValues`, {
+      headers: { Authorization: `Bearer ${token}`, Version: VERSION },
+    })
+    if (!res.ok) return 'chiro'
+    const data = (await res.json()) as { customValues?: { name?: string; value?: string }[] }
+    const raw = data.customValues?.find((cv) => cv.name === 'omniply_vertical')?.value?.trim().toLowerCase()
+    if (!raw) return 'chiro'
+    if (!KNOWN_VERTICALS.has(raw)) {
+      logger.warn({ locationId, raw }, '[auto-provision] unknown omniply_vertical value — defaulting to chiro')
+      return 'chiro'
+    }
+    return raw
+  } catch {
+    return 'chiro'
+  }
+}
+
 /** Best-effort: pre-set the webhook-token custom values the snapshot workflows reference. */
 async function setCustomValues(locationId: string, token: string, values: Record<string, string>): Promise<void> {
   const failed: string[] = []
@@ -108,10 +134,12 @@ export async function provisionLocation(
   const billingToken = randomBytes(24).toString('base64url')
   const reviewToken = randomBytes(24).toString('base64url')
   const dmToken = randomBytes(24).toString('base64url')
+  const vertical = await fetchSnapshotVertical(locationId, minted.token)
 
   const account = await prisma.account.create({
     data: {
       name: loc.name ?? `Location ${locationId}`,
+      vertical,
       status: 'active',
       subscriptionStartedAt: new Date(),
       paidThrough: new Date(Date.now() + 33 * 24 * 3600 * 1000),
@@ -163,6 +191,6 @@ export async function provisionLocation(
   // this window always found nobody. ensureStaffContacts runs at the
   // onboarding finale instead (routes/onboarding.ts), when setup is done.
 
-  logger.info({ locationId, accountId: account.id, source, ownerEmail }, '[auto-provision] account provisioned')
+  logger.info({ locationId, accountId: account.id, source, ownerEmail, vertical }, '[auto-provision] account provisioned')
   return account.id
 }

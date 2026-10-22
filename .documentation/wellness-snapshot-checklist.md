@@ -79,14 +79,20 @@ Age Check` (the preset is single-keyword by design; no code change).
       so burst-on-payment auto-provisioning works per vertical.
 
 ## C. Platform-side pilot steps (admin/DB, mostly one-liners)
-- [ ] Set `accounts.vertical = 'wellness'` BEFORE onboarding runs (flips
-      quiz choice, template compiles, q_myths wording, arc compliance,
-      linktree label)
+- [x] ~~Set `accounts.vertical = 'wellness'` BEFORE onboarding~~ AUTOMATED
+      2026-10-22 (funnel provisioning): the wellness snapshot carries the
+      `omniply_vertical = wellness` custom value (written via PIT; custom
+      values travel in snapshots), and auto-provision reads it at account
+      birth — every location born from the wellness SaaS plan arrives
+      labeled. Absent/unknown value = chiro. VERIFY on the pilot: the
+      provision log line shows `vertical: 'wellness'`.
 - [ ] Flip Specialization `recovery_wellness` to `enabled: true` (both
-      envs; it is staged disabled) so onboarding can select it
-- [ ] Onboarding must set BrandSettings.industry to exactly
-      "Wellness & Recovery" (case-insensitive match) or the claims-policy
-      injection silently skips
+      envs; it is staged disabled) so onboarding can select it — stays
+      MANUAL on purpose: it is the one-time switch that opens the vertical
+- [x] ~~Industry exactly "Wellness & Recovery"~~ AUTOMATED 2026-10-22: the
+      profile commit pins the exact PlainLanguageConfig string for
+      wellness-vertical accounts (crawl-detected industry is ignored for
+      them), so the claims-policy injection can never silently skip.
 - [ ] Verify calendar routing lands on the Recovery & Wellness calendars
       (articles 122 topics, newsletters 183 editions, both hemispheres
       imported 2026-10-21)

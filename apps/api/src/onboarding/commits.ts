@@ -236,13 +236,19 @@ export async function commitBrandProfile(ctx: StepContext, answer: unknown): Pro
     : checked.includes(draft.primarySpecialization ?? '')
       ? draft.primarySpecialization!
       : checked[0]
+  // Wellness accounts pin the EXACT PlainLanguageConfig industry string —
+  // the claims-policy injection matches it literally and silently skips on
+  // anything else (funnel provisioning 2026-10-22; was a manual checklist flip).
+  const committerVertical = await prisma.user
+    .findUnique({ where: { id: ctx.userId }, select: { account: { select: { vertical: true } } } })
+    .then((u) => u?.account?.vertical ?? 'chiro')
   await brandUpsert(ctx.userId, {
     businessDescription: draft.businessDescription,
     who: draft.who,
     ourExperience: draft.ourExperience ?? null,
     articleGoal: draft.articleGoal ?? null,
     specialInstructions: draft.specialInstructions ?? null,
-    industry: draft.industry ?? null,
+    industry: committerVertical === 'wellness' ? 'Wellness & Recovery' : (draft.industry ?? null),
     primarySpecialization: primary,
     specializations: checked,
     specialization: primary,
