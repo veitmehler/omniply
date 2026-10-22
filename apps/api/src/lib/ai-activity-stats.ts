@@ -1,14 +1,101 @@
 /**
- * AI Employee dashboard widget stats (snapshot-optimization, 2026-10-21):
- * aggregates for the embedded GHL dashboard panel, computed straight from
- * agent_conversations (NOT the GHL custom object — Postgres is the source
- * of truth, always live, no backfill/settle semantics to fight).
- *
- * Reuses the finalize rollup (rollupConversation) so the widget and the
- * custom-object records can never disagree about what a conversation was.
+ * AI Receptionist dashboard widget stats (snapshot-optimization,
+ * 2026-10-21): aggregates for the embedded GHL dashboard panel, computed
+ * straight from agent_conversations — Postgres is the source of truth,
+ * always live. (The GHL "AI Activity" custom-object layer this rollup
+ * originally fed was removed 2026-10-22: the embed panel replaced native
+ * widgets entirely and clients can't edit dashboards, so nothing read it.)
  */
 import { prisma } from '@omniply/shared'
-import { rollupConversation, type AiActivityRecord } from './ghl/ai-activity'
+
+export interface AiActivityRecord {
+  channel: 'voice' | 'webchat' | 'facebook' | 'instagram' | 'whatsapp' | 'agent-protocol'
+  outcome: 'booked' | 'booking_link_sent' | 'callback' | 'guide_sent' | 'human_handoff' | 'answered'
+  bookedSystem: 'ghl' | 'cliniko' | 'none'
+  newContact: boolean
+  coverage: 'after_hours' | 'overflow' | 'in_hours' | 'unknown'
+  durationSeconds: number | null
+  startedAt: Date
+}
+
+export interface RollupInput {
+  channel: string // agent_conversations.channel: web | voice | ghl-dm | mcp
+  dmPlatform: string | null // FB | IG | WhatsApp (resolved send type)
+  contactWasCreated: boolean
+  startedAfterHours: boolean | null
+  actions: Array<{ type?: unknown } | null> // AgentMessage.action payloads
+  appointmentProviders: string[] // agent_appointments.provider for the convo
+  firstMessageAt: Date | null
+  lastMessageAt: Date | null
+}
+
+/** Pure rollup: one conversation → one record. Exported for tests. */
+export function rollupConversation(input: RollupInput): AiActivityRecord {
+  const channel: AiActivityRecord['channel'] =
+    input.channel === 'voice'
+      ? 'voice'
+      : input.channel === 'mcp'
+        ? 'agent-protocol'
+        : input.channel === 'ghl-dm'
+          ? input.dmPlatform === 'FB'
+            ? 'facebook'
+            : input.dmPlatform === 'IG'
+              ? 'instagram'
+              : input.dmPlatform === 'WhatsApp'
+                ? 'whatsapp'
+                : 'facebook' // unresolved legacy DMs: FB is the dominant channel
+          : 'webchat'
+
+  const types = new Set(
+    input.actions
+      .map((a) => (a && typeof a === 'object' && typeof (a as { type?: unknown }).type === 'string' ? ((a as { type: string }).type) : null))
+      .filter((t): t is string => Boolean(t)),
+  )
+  const outcome: AiActivityRecord['outcome'] = input.appointmentProviders.length
+    ? 'booked'
+    : types.has('request_callback')
+      ? 'callback'
+      : types.has('send_guide_link')
+        ? 'guide_sent'
+        : types.has('send_booking_link')
+          ? 'booking_link_sent'
+          : types.has('request_human')
+            ? 'human_handoff'
+            : 'answered'
+
+  const bookedSystem: AiActivityRecord['bookedSystem'] = input.appointmentProviders.length
+    ? input.appointmentProviders.includes('cliniko')
+      ? 'cliniko'
+      : 'ghl'
+    : 'none'
+
+  // Coverage semantics (Veit): after-hours answers prove the night shift;
+  // in-hours VOICE answers are by definition front-desk overflow (the AI
+  // only receives the call when the desk did not).
+  const coverage: AiActivityRecord['coverage'] =
+    input.startedAfterHours === null
+      ? 'unknown'
+      : input.startedAfterHours
+        ? 'after_hours'
+        : channel === 'voice'
+          ? 'overflow'
+          : 'in_hours'
+
+  const durationSeconds =
+    channel === 'voice' && input.firstMessageAt && input.lastMessageAt
+      ? Math.max(0, Math.round((input.lastMessageAt.getTime() - input.firstMessageAt.getTime()) / 1000))
+      : null
+
+  return {
+    channel,
+    outcome,
+    bookedSystem,
+    newContact: input.contactWasCreated,
+    coverage,
+    durationSeconds,
+    startedAt: input.firstMessageAt ?? new Date(),
+  }
+}
 
 export interface AiActivityStats {
   days: number

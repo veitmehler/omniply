@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { rollupConversation, type RollupInput } from '../ai-activity'
+import { rollupConversation, type RollupInput } from '../ai-activity-stats'
 
 const BASE: RollupInput = {
   channel: 'web',

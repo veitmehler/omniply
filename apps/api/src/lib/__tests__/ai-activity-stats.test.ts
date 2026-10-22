@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { aggregateRecords } from '../ai-activity-stats'
-import type { AiActivityRecord } from '../ghl/ai-activity'
+import { aggregateRecords, type AiActivityRecord } from '../ai-activity-stats'
 
 const NOW = new Date('2026-10-21T18:00:00Z')
 

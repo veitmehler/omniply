@@ -56,12 +56,6 @@ export async function agentFinalizeHandler(_jobs: PgBoss.Job<object>[]): Promise
           await maybeWriteSummaryNote(convo.id, convo.ghlContactId, convo.account.ownerUserId, convo.account.vertical, creds.apiKey)
         }
       }
-      // AI Activity dashboard record (best-effort; 401s quietly until the
-      // objects scope lands on the app grant).
-      if (convo.account.ownerUserId) {
-        const { recordConversationActivity } = await import('../lib/ghl/ai-activity')
-        await recordConversationActivity(convo.id, convo.account.ownerUserId).catch(() => {})
-      }
       await prisma.agentConversation.update({ where: { id: convo.id }, data: { finalizedAt: new Date() } })
     } catch (err) {
       logger.warn({ err, conversationId: convo.id }, '[agent-finalize] conversation finalize failed (retries next run)')
