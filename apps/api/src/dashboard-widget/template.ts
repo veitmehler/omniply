@@ -78,7 +78,7 @@ const STYLE = `
 
 const BODY = `
   <div class="head">
-    <h1>AI Employee<span class="live"><span class="dot"></span>LIVE</span></h1>
+    <h1>AI Receptionist<span class="live"><span class="dot"></span>LIVE</span></h1>
     <div class="range" role="group" aria-label="Date range">
       <button data-days="7" aria-pressed="false">7d</button>
       <button data-days="30" aria-pressed="true">30d</button>
@@ -249,7 +249,7 @@ export function buildDashboardWidgetHtml(mode: 'live' | 'sample'): string {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>AI Employee</title>
+<title>AI Receptionist</title>
 <style>${STYLE}</style>
 </head>
 <body>
@@ -266,12 +266,12 @@ export function buildDashboardPendingHtml(): string {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>AI Employee</title>
+<title>AI Receptionist</title>
 <style>${STYLE}</style>
 </head>
 <body>
 <div class="note">
-  <h1>Your AI Employee dashboard is almost ready</h1>
+  <h1>Your AI Receptionist dashboard is almost ready</h1>
   <p>This panel comes to life once onboarding completes — it will show the appointments, new patients, and after-hours conversations your AI handles.</p>
 </div>
 </body>
