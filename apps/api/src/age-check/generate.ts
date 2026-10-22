@@ -24,6 +24,10 @@ export const GUIDE_SLUG_BY_PILLAR = {
   fuel: 'everyday-fuel-guide',
 } as const
 
+/** Not quiz-matched (chiro FIRST_VISIT_SLUG mirror): offered as the results
+ * page's one-line extra when live. */
+export const FIRST_VISIT_SLUG = 'first-wellness-visit'
+
 const DEFAULT_TITLES = {
   move: 'Everyday Strength',
   sleep: 'Better Sleep, Night After Night',
@@ -68,6 +72,7 @@ export async function ageCheckStudioForUser(userId: string): Promise<AgeCheckStu
     captureUrl: `${publicApiBase()}/api/age-check/capture`,
     guideTitles,
     guidesAvailable,
+    firstVisitGuideTitle: guidesAvailable ? (titleBySlug.get(FIRST_VISIT_SLUG) ?? null) : null,
   }
 }
 

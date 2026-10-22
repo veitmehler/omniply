@@ -36,6 +36,9 @@ export interface AgeCheckStudio {
   /** false until the studio's guides are live with Drive files — the quiz
    * then makes no delivery promises (capture + booking CTA only). */
   guidesAvailable: boolean
+  /** The not-quiz-matched first-visit guide (chiro quiz's firstVisitGuide
+   * mirror): shown as a one-line extra when live, null otherwise. */
+  firstVisitGuideTitle: string | null
 }
 
 export function buildAgeCheckFragment(c: AgeCheckStudio): string {
@@ -239,6 +242,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = AGECHECK
     captureUrl: '${jsq(c.captureUrl)}',
     guideTitles: { move: '${jsq(c.guideTitles.move)}', sleep: '${jsq(c.guideTitles.sleep)}', unwind: '${jsq(c.guideTitles.unwind)}', fuel: '${jsq(c.guideTitles.fuel)}' },
     guidesAvailable: ${c.guidesAvailable ? 'true' : 'false'},
+    firstVisitGuide: ${c.firstVisitGuideTitle ? `'${jsq(c.firstVisitGuideTitle)}'` : 'null'},
   }
   // Awareness-register verdicts (same guardrail as the spine check): habits
   // language, no alarm, no promises — the pillar is the protagonist.
@@ -372,6 +376,9 @@ if (typeof module !== 'undefined' && module.exports) module.exports = AGECHECK
     var g
     if (STUDIO.guidesAvailable) {
       g = '<b>Your free guide is on its way:</b> "' + STUDIO.guideTitles[r.weakest] + '" ... check your inbox in the next few minutes.'
+      if (STUDIO.firstVisitGuide) {
+        g += '<br /><span style="color:#5c6672; font-size:14px;">Never been to a recovery studio before? Keep an eye out for "' + STUDIO.firstVisitGuide + '" too.</span>'
+      }
     } else {
       g = "<b>Thanks... you're on the list.</b> Want to start working on your weakest pillar this week? Booking a visit is the simplest next step."
     }

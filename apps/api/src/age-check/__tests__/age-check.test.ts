@@ -21,6 +21,7 @@ const STUDIO: AgeCheckStudio = {
     fuel: 'Everyday Fuel',
   },
   guidesAvailable: false,
+  firstVisitGuideTitle: null,
 }
 
 /** Eval exactly the AGE math block that ships in the generated page. */

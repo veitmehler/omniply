@@ -19,6 +19,7 @@ import { spec as everydayStrength } from './leadgen-masters/06-everyday-strength
 import { spec as wellnessSleep } from './leadgen-masters/07-better-sleep'
 import { spec as switchOff } from './leadgen-masters/08-switch-off'
 import { spec as everydayFuel } from './leadgen-masters/09-everyday-fuel'
+import { spec as firstWellnessVisit } from './leadgen-masters/10-first-wellness-visit'
 import { buildReviewCardHtml } from '../../../apps/api/src/leadgen/review-card'
 
 const prisma = new PrismaClient()
@@ -36,6 +37,7 @@ const MASTERS: { slug: string; description: string; vertical: string; spec: Mast
   { slug: 'better-sleep-guide', description: 'Wellness: consistency, light, bedroom, 60-minute wind-down', vertical: 'wellness', spec: wellnessSleep },
   { slug: 'switch-off-guide', description: 'Wellness: micro-pauses, digital sunset, protected hour', vertical: 'wellness', spec: switchOff },
   { slug: 'everyday-fuel-guide', description: 'Wellness: half-plate, hydration, caffeine/alcohol timing, rhythm', vertical: 'wellness', spec: everydayFuel },
+  { slug: 'first-wellness-visit', description: 'Wellness: first-visit walkthrough, what sessions feel like, myths, questions', vertical: 'wellness', spec: firstWellnessVisit },
 ]
 
 /** Dashes are forbidden in master TEXT; SVG path data is exempt. */

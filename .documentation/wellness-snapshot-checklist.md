@@ -30,6 +30,10 @@ inherited `omniply-booking` typo `/pendingv` → `/pending`):
 - [x] `omniply-guide-better-sleep-guide`
 - [x] `omniply-guide-switch-off-guide`
 - [x] `omniply-guide-everyday-fuel-guide`
+- [x] `omniply-guide-first-wellness-visit` (master 10, added 2026-10-22:
+      "What to Expect at Your First Visit" — NOT quiz-matched; the Age
+      Check results page offers it as the one-line extra, like chiro's
+      first-visit guide)
 Placeholder destinations are fine: compile repoints by LITERAL NAME match
 at every guide regeneration. A typo = a silently dead drip link.
 
