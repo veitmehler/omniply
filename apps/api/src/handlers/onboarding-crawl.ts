@@ -55,7 +55,9 @@ export async function onboardingCrawlHandler(jobs: PgBoss.Job<OnboardingCrawlJob
       if (geminiKey) {
         const [screenshot, registryKeys] = await Promise.all([
           screenshotHomepage(websiteUrl),
-          specializationRegistryKeys(),
+          prisma.account
+            .findUnique({ where: { id: accountId }, select: { vertical: true } })
+            .then((a) => specializationRegistryKeys(a?.vertical ?? 'chiro')),
         ])
         // Palette v2: full-page screenshot → measured pixel clusters → brand
         // inventory (perception) → deterministic role composition (arithmetic).

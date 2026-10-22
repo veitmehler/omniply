@@ -86,9 +86,13 @@ Age Check` (the preset is single-keyword by design; no code change).
       birth — every location born from the wellness SaaS plan arrives
       labeled. Absent/unknown value = chiro. VERIFY on the pilot: the
       provision log line shows `vertical: 'wellness'`.
-- [ ] Flip Specialization `recovery_wellness` to `enabled: true` (both
-      envs; it is staged disabled) so onboarding can select it — stays
-      MANUAL on purpose: it is the one-time switch that opens the vertical
+- [x] ~~Flip Specialization `recovery_wellness` to enabled~~ RETIRED
+      2026-10-22: the registry is now VERTICAL-AWARE (specializations
+      carry vertical 'chiro'|'wellness'|'all'; onboarding only surfaces
+      the account's vertical). recovery_wellness is permanently
+      `vertical='wellness', enabled=true` (flipped by the migration on
+      both envs) and can never appear in chiro onboarding. `enabled` is
+      back to meaning only "calendars exist".
 - [x] ~~Industry exactly "Wellness & Recovery"~~ AUTOMATED 2026-10-22: the
       profile commit pins the exact PlainLanguageConfig string for
       wellness-vertical accounts (crawl-detected industry is ignored for

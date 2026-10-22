@@ -1502,6 +1502,10 @@ model Specialization {
   label     String // display name, e.g. "Family Care"
   sortOrder Int      @default(0)
   enabled   Boolean  @default(true)
+  // Which vertical's onboarding surfaces this checkbox ('chiro' | 'wellness'
+  // | 'all'). Added 2026-10-22 so enabled stops doubling as a vertical fence:
+  // enabled now only means "calendars exist", vertical scopes visibility.
+  vertical  String   @default("chiro")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

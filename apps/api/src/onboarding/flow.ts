@@ -233,7 +233,10 @@ const STEPS: StepDef[] = [
       ],
       card: {
         ...((ctx.stepData.brandProfileDraft as Record<string, unknown>) ?? {}),
-        availableSpecializations: await specializationRegistryKeys(),
+        availableSpecializations: await import('../lib/prompt-resolver')
+          .then(({ verticalForUser }) => verticalForUser(ctx.userId))
+          .catch(() => 'chiro')
+          .then((vertical) => specializationRegistryKeys(vertical)),
       },
       pending: !ctx.stepData.synthesisDone,
     }),

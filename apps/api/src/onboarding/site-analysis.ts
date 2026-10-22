@@ -787,9 +787,13 @@ ${corpus.slice(0, 24_000)}`,
   }
 }
 
-export async function specializationRegistryKeys(): Promise<string[]> {
-  // enabled:false rows are staged (e.g. a new vertical's specialization
-  // before its calendars exist) — they must not surface in onboarding.
-  const rows = await prisma.specialization.findMany({ where: { enabled: true }, select: { key: true } })
+export async function specializationRegistryKeys(vertical: string): Promise<string[]> {
+  // enabled:false rows are staged (calendars not imported yet); vertical
+  // scopes WHICH onboarding surfaces the checkbox ('all' = every vertical) —
+  // a wellness specialization must never be selectable in chiro onboarding.
+  const rows = await prisma.specialization.findMany({
+    where: { enabled: true, vertical: { in: [vertical, 'all'] } },
+    select: { key: true },
+  })
   return rows.map((r) => r.key)
 }

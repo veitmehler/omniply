@@ -7,12 +7,14 @@ interface CreateSpecializationBody {
   label?: string
   sortOrder?: number
   enabled?: boolean
+  vertical?: string
 }
 
 interface UpdateSpecializationBody {
   label?: string
   sortOrder?: number
   enabled?: boolean
+  vertical?: string
 }
 
 /** Normalise a free-text key into a stable slug (lowercase, underscores). */
@@ -54,12 +56,17 @@ export async function specializationsAdminRoutes(app: FastifyInstance) {
     const existing = await prisma.specialization.findUnique({ where: { key } })
     if (existing) return reply.status(409).send({ error: `specialization "${key}" already exists` })
 
+    const vertical = request.body?.vertical
+    if (vertical !== undefined && !['chiro', 'wellness', 'all'].includes(vertical)) {
+      return reply.status(400).send({ error: "vertical must be 'chiro', 'wellness' or 'all'" })
+    }
     const specialization = await prisma.specialization.create({
       data: {
         key,
         label: label.trim(),
         sortOrder: typeof sortOrder === 'number' ? sortOrder : 0,
         enabled: enabled ?? true,
+        ...(vertical !== undefined ? { vertical } : {}),
       },
     })
     return reply.status(201).send({ specialization })
@@ -75,13 +82,17 @@ export async function specializationsAdminRoutes(app: FastifyInstance) {
       const existing = await prisma.specialization.findUnique({ where: { id: request.params.id } })
       if (!existing) return reply.status(404).send({ error: 'Specialization not found' })
 
-      const { label, sortOrder, enabled } = request.body ?? {}
+      const { label, sortOrder, enabled, vertical } = request.body ?? {}
+      if (vertical !== undefined && !['chiro', 'wellness', 'all'].includes(vertical)) {
+        return reply.status(400).send({ error: "vertical must be 'chiro', 'wellness' or 'all'" })
+      }
       const specialization = await prisma.specialization.update({
         where: { id: request.params.id },
         data: {
           ...(label !== undefined ? { label: label.trim() } : {}),
           ...(sortOrder !== undefined ? { sortOrder } : {}),
           ...(enabled !== undefined ? { enabled } : {}),
+          ...(vertical !== undefined ? { vertical } : {}),
         },
       })
       return reply.send({ specialization })
