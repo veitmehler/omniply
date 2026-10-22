@@ -51,6 +51,7 @@ import { leadgenPollHandler } from './handlers/leadgen-poll'
 import { leadgenCompileHandler } from './handlers/leadgen-compile'
 import { placesReviewPollHandler, googleReviewsBackfillHandler } from './handlers/google-reviews'
 import { demoBookingCleanupHandler } from './handlers/demo-booking-cleanup'
+import { reviewCountSnapshotHandler } from './handlers/review-count-snapshot'
 import { pmsContactPollHandler } from './handlers/pms-contact-poll'
 import { smsCapabilityProbeHandler } from './handlers/sms-capability-probe'
 
@@ -115,6 +116,7 @@ async function main() {
   await boss.schedule(QUEUES.ACCOUNT_LIFECYCLE_CLOCK, '30 4 * * *', {}) // daily 04:30 UTC — 60/90d billing clocks
   await boss.schedule(QUEUES.LEADGEN_PROPOSAL_POLL, '*/2 * * * *', {}) // every 2 min — Drive access-proposal capture
   await boss.schedule(QUEUES.PLACES_REVIEW_POLL, '0 4 * * 1', {}) // Monday 04:00 UTC — weekly dual-sort review harvest
+  await boss.schedule(QUEUES.REVIEW_COUNT_SNAPSHOT, '10 4 * * *', {}) // daily 04:10 UTC — dashboard review-growth baseline
   await boss.schedule(QUEUES.DEMO_BOOKING_CLEANUP, '30 8 * * *', {}) // daily 08:30 UTC (~1:30am Phoenix) — demo-line bookings swept
   await boss.schedule(QUEUES.PMS_CONTACT_POLL, '*/5 * * * *', {}) // every 5 min — PMS→GHL demographics sync (updated_since cursors)
   await boss.schedule(QUEUES.SMS_CAPABILITY_PROBE, '0 15 * * *', {}) // daily 15:00 UTC (~8am Phoenix) — texting self-test vs sink number
@@ -404,6 +406,11 @@ async function main() {
     QUEUES.DEMO_BOOKING_CLEANUP,
     { batchSize: 1 },
     withSentry('demo-booking-cleanup', demoBookingCleanupHandler),
+  )
+  await boss.work(
+    QUEUES.REVIEW_COUNT_SNAPSHOT,
+    { batchSize: 1 },
+    withSentry('review-count-snapshot', reviewCountSnapshotHandler),
   )
   await boss.work(
     QUEUES.PMS_CONTACT_POLL,

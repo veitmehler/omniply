@@ -80,6 +80,8 @@ model Account {
   // value. Deliberately separate from agentWidgetToken (that one ships in
   // public website HTML) and agentMcpToken (that one can book).
   dashboardWidgetToken String?           @unique
+  reviewRequestEvents  ReviewRequestEvent[]
+  reviewCountSnapshots ReviewCountSnapshot[]
   agentConversations AgentConversation[]
   // Voice-agent booking/availability (PMS framework v2, 2026-10-06):
   // 'off' | 'direct-ghl' | 'direct-cliniko' | 'direct-nookal' |
@@ -1602,6 +1604,35 @@ model RawReview {
 
   @@unique([accountId, fingerprint])
   @@map("raw_reviews")
+}
+
+// AI Employee dashboard "Review requests sent": one row per fire of the
+// snapshot review-request workflow's webhook step (custom value
+// omniply_review_request_webhook → /api/ghl/review-requests/<ghlReviewToken>).
+model ReviewRequestEvent {
+  id        String   @id @default(cuid())
+  accountId String
+  account   Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([accountId, createdAt])
+  @@map("review_request_events")
+}
+
+// Daily Google review-count snapshot (AI Employee dashboard review growth).
+// Written by the daily cron AND on every practice-stats rating refresh;
+// growth over a range = live count minus the baseline snapshot.
+model ReviewCountSnapshot {
+  id        String   @id @default(cuid())
+  accountId String
+  account   Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  day       String // YYYY-MM-DD (UTC)
+  count     Int
+  rating    Float?
+  createdAt DateTime @default(now())
+
+  @@unique([accountId, day])
+  @@map("review_count_snapshots")
 }
 
 // One billing cycle's review-spidering attempt for an account — the idempotent dedup key for the

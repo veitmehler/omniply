@@ -135,7 +135,14 @@ const SCRIPT = `
       ptiles += tile('All appointments', n(pr.appointments), t.booked > 0 ? n(t.booked) + ' booked by your AI' : 'across your calendars');
     }
     if (pr.rating != null) {
-      ptiles += tile('Google rating', pr.rating.toFixed(1) + ' \\u2605', pr.reviewCount != null ? n(pr.reviewCount) + ' reviews' : '');
+      var rsub = pr.reviewCount != null ? n(pr.reviewCount) + ' reviews' : '';
+      if (pr.reviewGrowth != null && pr.reviewGrowth > 0) {
+        rsub += ' \\u00b7 +' + n(pr.reviewGrowth) + (pr.growthSince ? ' since ' + fmtDate(pr.growthSince) : '');
+      }
+      ptiles += tile('Google rating', pr.rating.toFixed(1) + ' \\u2605', rsub);
+    }
+    if (pr.reviewRequests != null) {
+      ptiles += tile('Review requests', n(pr.reviewRequests), 'sent this period');
     }
     if (pr.unread != null) {
       ptiles += tile('Inbox', n(pr.unread), 'unread conversations');
@@ -226,7 +233,10 @@ const SAMPLE_GETTER = `
         voice: part(0.38), webchat: part(0.30), facebook: part(0.12),
         instagram: part(0.08), whatsapp: part(0.09), 'agent-protocol': part(0.03),
       },
-      practice: { appointments: part(0.55), unread: 3, rating: 4.8, reviewCount: 213 },
+      practice: {
+        appointments: part(0.55), unread: 3, rating: 4.8, reviewCount: 213,
+        reviewRequests: part(0.14), reviewGrowth: Math.max(2, part(0.03)), growthSince: null,
+      },
       byDay: byDay,
     });
   }

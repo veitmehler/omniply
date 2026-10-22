@@ -59,4 +59,22 @@ export async function ghlReviewRoutes(app: FastifyInstance): Promise<void> {
     return reply.send({ ok: true, ingested: inserted })
     },
   )
+
+  // Review-REQUEST counter (AI Employee dashboard): the snapshot's
+  // review-request workflow fires a webhook step here per send (custom value
+  // omniply_review_request_webhook). Same ghlReviewToken — identical posture
+  // (unauthenticated per-account workflow sink), one row per fire.
+  app.post<{ Params: { token: string } }>(
+    '/ghl/review-requests/:token',
+    { config: { rateLimit: { max: 120, timeWindow: '1 minute' } } },
+    async (request, reply) => {
+      const account = await prisma.account.findUnique({
+        where: { ghlReviewToken: request.params.token },
+        select: { id: true },
+      })
+      if (!account) return reply.status(404).send({ error: 'Unknown token' })
+      await prisma.reviewRequestEvent.create({ data: { accountId: account.id } })
+      return reply.send({ ok: true })
+    },
+  )
 }

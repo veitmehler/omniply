@@ -154,6 +154,7 @@ export async function provisionLocation(
   await setCustomValues(locationId, minted.token, {
     omniply_billing_token: `${base}/api/ghl/billing-events/${billingToken}`,
     omniply_review_token: `${base}/api/ghl/reviews/${reviewToken}`,
+    omniply_review_request_webhook: `${base}/api/ghl/review-requests/${reviewToken}`,
     omniply_dm_webhook: `${base}/api/agent/ghl-dm/${dmToken}`,
   })
 

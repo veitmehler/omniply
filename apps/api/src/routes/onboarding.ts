@@ -165,6 +165,11 @@ export async function onboardingRoutes(app: FastifyInstance) {
     void import('../lib/dashboard-widget-token')
       .then(({ writeDashboardWidgetUrlValue }) => writeDashboardWidgetUrlValue(r.account.ownerUserId))
       .catch(() => null)
+    // Review-request webhook (dashboard counter) — belt for accounts born
+    // before the auto-provision write existed.
+    void import('../lib/review-request-webhook')
+      .then(({ writeReviewRequestWebhookValue }) => writeReviewRequestWebhookValue(r.account.ownerUserId))
+      .catch(() => null)
     void (consented('quiz')
       ? publishQuizPage(r.account.ownerUserId).finally(() => {
           // After publish the quiz URL is final (WP page or hosted) — point

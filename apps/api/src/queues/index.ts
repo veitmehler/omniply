@@ -116,6 +116,7 @@ export const QUEUES = {
   LEADGEN_PROPOSAL_POLL: 'leadgen-proposal-poll',
   LEADGEN_COMPILE: 'leadgen-compile',
   PLACES_REVIEW_POLL: 'places-review-poll',
+  REVIEW_COUNT_SNAPSHOT: 'review-count-snapshot',
   DEMO_BOOKING_CLEANUP: 'demo-booking-cleanup',
   PMS_CONTACT_POLL: 'pms-contact-poll',
   SMS_CAPABILITY_PROBE: 'sms-capability-probe',
