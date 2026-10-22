@@ -64,18 +64,23 @@ The team at {{location.name}}
 
 ---
 
-## Comment-keyword vocabulary (workflows 3+, mirrors chiro's keyword table)
+## Comment keyword (workflow 3) — ONE keyword only
 
-DM replies send the asset's trigger link; public reply: "Just sent it to
+Design rule (Veit 2026-10-22): ALL comment funnels lead to the lead-gen
+quiz. The quiz already routes each lead to their matched guide (weakest
+pillar), so per-guide keywords would just bypass the capture. ONE comment
+workflow, not five.
+
+DM reply sends the quiz trigger link; public reply: "Just sent it to
 your DMs!"
 
 | Keyword | Asset | Trigger link |
 |---|---|---|
 | AGE | Biological Age Check | omniply-spine-check (quiz link; vertical-aware repoint) |
-| STRONG | Everyday Strength | omniply-guide-everyday-strength-guide |
-| SLEEP | Better Sleep, Night After Night | omniply-guide-better-sleep-guide |
-| UNWIND | The Art of Switching Off | omniply-guide-switch-off-guide |
-| FUEL | Everyday Fuel | omniply-guide-everyday-fuel-guide |
+
+Caption CTAs: the per-account `dm_keyword` preset carries a single
+keyword+asset by design, so the clinic's social config is simply
+`AGE | the Biological Age Check`.
 
 ---
 

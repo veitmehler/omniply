@@ -39,15 +39,14 @@ at every guide regeneration. A typo = a silently dead drip link.
       (wellness → the Biological Age Check) into it. Renaming it makes the
       repoint log "link not found" and skip.
 
-### Edit 3 — comment-keyword workflows
-Re-key to the locked wellness vocabulary (delete surplus chiro keyword
-workflows):
+### Edit 3 — comment-keyword workflow: ONE keyword only
+Design rule (Veit 2026-10-22): ALL comments lead to the lead-gen quiz —
+it routes each lead to their matched guide anyway. Delete ALL chiro
+keyword workflows; keep/create exactly one:
 - [ ] AGE → `omniply-spine-check` (the quiz)
-- [ ] STRONG → `omniply-guide-everyday-strength-guide`
-- [ ] SLEEP → `omniply-guide-better-sleep-guide`
-- [ ] UNWIND → `omniply-guide-switch-off-guide`
-- [ ] FUEL → `omniply-guide-everyday-fuel-guide`
 Public comment reply stays: "Just sent it to your DMs!"
+Social config at onboarding: dm_keyword preset = `AGE | the Biological
+Age Check` (the preset is single-keyword by design; no code change).
 
 ### Edit 4 — nurture workflow
 - [ ] Trigger: Contact Tag Added, OR across the four wellness
