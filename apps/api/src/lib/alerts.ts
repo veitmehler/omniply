@@ -67,7 +67,12 @@ export async function sendFailureAlert(input: FailureAlertInput): Promise<void> 
 
   if (!resendKey || recipients.size === 0) return
 
-  const subject = `[Omniply] ${input.errorType}`
+  // Env tag (2026-10-22): staging and prod alerts land in the same inbox —
+  // an untagged staging failure reads as a prod incident (the SMS-probe
+  // confusion that prompted this).
+  const { deployEnvironment } = await import('./env')
+  const env = deployEnvironment()
+  const subject = `[Omniply${env === 'production' ? '' : ` ${env.toUpperCase()}`}] ${input.errorType}`
   const body = `${input.message}\n\n${JSON.stringify(input.context ?? {}, null, 2)}`
 
   for (const to of recipients) {

@@ -159,6 +159,14 @@ async function probeAccount(accountId: string, ownerUserId: string): Promise<voi
 }
 
 export async function smsCapabilityProbeHandler(_jobs: PgBoss.Job<unknown>[]): Promise<void> {
+  // Prod-only (2026-10-22): the probe sends a REAL SMS and alerts on
+  // failure — staging's stale dev account was failing this daily and its
+  // untagged alert read as a prod incident.
+  const { isProductionEnv } = await import('../lib/env')
+  if (!isProductionEnv()) {
+    logger.info('[sms-probe] non-production environment — probe skipped')
+    return
+  }
   // Skip only the confirmed steady state (available + last probe delivered).
   // NOT(AND(...)) compiled to SQL three-valued logic: a row with
   // smsProbeStatus NULL made the whole predicate NULL → silently excluded —
