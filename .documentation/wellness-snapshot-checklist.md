@@ -22,11 +22,14 @@ below, save as snapshot "Omniply Wellness".
       omniply_review_token — set per clinic at provisioning)
 
 ### Edit 1 — guide trigger links (names must match slugs EXACTLY)
-Delete the five chiro `omniply-guide-*` links; create four:
-- [ ] `omniply-guide-everyday-strength-guide`
-- [ ] `omniply-guide-better-sleep-guide`
-- [ ] `omniply-guide-switch-off-guide`
-- [ ] `omniply-guide-everyday-fuel-guide`
+DONE VIA API 2026-10-22 (location dyDcrf5pZnHXVXA7Rhx4, PIT): the five
+chiro `omniply-guide-*` links deleted; four wellness links created, all
+pointing at the https://omniply.io/pending placeholder (also fixed the
+inherited `omniply-booking` typo `/pendingv` → `/pending`):
+- [x] `omniply-guide-everyday-strength-guide`
+- [x] `omniply-guide-better-sleep-guide`
+- [x] `omniply-guide-switch-off-guide`
+- [x] `omniply-guide-everyday-fuel-guide`
 Placeholder destinations are fine: compile repoints by LITERAL NAME match
 at every guide regeneration. A typo = a silently dead drip link.
 
@@ -50,8 +53,12 @@ Public comment reply stays: "Just sent it to your DMs!"
 - [ ] Trigger: Contact Tag Added, OR across the four wellness
       `leadgen-*` tags (see Edit 1 slugs, prefixed `leadgen-`)
 - [ ] Email 0: four delivery branches (copy + branch table in
-      wellness-snapshot-nurture.md)
-- [ ] Emails 1 + 2: day 1 + day 4 follow-ups (same doc)
+      wellness-snapshot-nurture.md). All six emails are IMPORTED as
+      builder templates (2026-10-22: "Guide delivery - …" ×4,
+      "Nurture day 1/4 - …"); assign per step, then attach the trigger
+      link to each CTA (hrefs are "#" placeholders; link name is in each
+      template's top code-view comment, with subject + preview text).
+- [ ] Emails 1 + 2: day 1 + day 4 follow-ups (same doc, templates above)
 - [ ] End step: Opportunity in the "New Client" pipeline
 - [ ] Exits: appointment tag / stage move (mirror chiro)
 
