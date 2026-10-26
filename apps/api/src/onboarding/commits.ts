@@ -490,7 +490,7 @@ export async function commitCta(ctx: StepContext, answer: unknown): Promise<stri
     const vertical = await verticalForUser(ctx.userId).catch(() => 'chiro')
     await brandUpsert(ctx.userId, {
       socialCallToAction:
-        vertical === 'wellness' ? 'WELLNESS|the Biological Age Check' : 'SPINE|our 2-Minute Spine Check',
+        vertical === 'wellness' ? 'WELLNESS|the Body Resilience Score' : 'SPINE|our 2-Minute Spine Check',
       socialPrimaryGoal: 'dm_keyword',
       installConsents: { ...(await currentConsents(ctx.userId)), quiz: true },
     })

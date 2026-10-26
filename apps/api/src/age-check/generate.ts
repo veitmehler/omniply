@@ -28,11 +28,13 @@ export const GUIDE_SLUG_BY_PILLAR = {
  * page's one-line extra when live. */
 export const FIRST_VISIT_SLUG = 'first-wellness-visit'
 
+// Resilience rework 2026-10-26: the reworked guide titles (fallbacks only —
+// live titles come from the account's LeadGenTemplate rows).
 const DEFAULT_TITLES = {
-  move: 'Everyday Strength',
-  sleep: 'Better Sleep, Night After Night',
-  unwind: 'The Art of Switching Off',
-  fuel: 'Everyday Fuel',
+  move: 'Bounce Back Stronger',
+  sleep: 'The Sleep Upgrade',
+  unwind: 'The Deep Rest Protocol',
+  fuel: 'The Invisible Fuel Layer',
 } as const
 
 function publicApiBase(): string {
@@ -106,7 +108,7 @@ export async function ageCheckUrlForUser(userId: string): Promise<string | null>
     where: { userId: { in: memberIds } },
     select: { siteUrl: true },
   })
-  if (conn) return `${conn.siteUrl.replace(/\/+$/, '')}/age-check/`
+  if (conn) return `${conn.siteUrl.replace(/\/+$/, '')}/resilience-score/`
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { accountId: true } })
   if (!user?.accountId) return null
   return `${publicApiBase()}/api/age-check/p/${user.accountId}`
@@ -117,9 +119,9 @@ export async function ageCheckUrlForUser(userId: string): Promise<string | null>
 export function buildAgeCheckEmbed(studio: AgeCheckStudio): string {
   const hostedUrl = `${publicApiBase()}/api/age-check/p/${studio.accountId}`
   const name = studio.practiceName.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
-  return `<p>Is your body living younger or older than your birthday says? Take the free Biological Age Check from ${name}... twelve quick questions about how you move, sleep, unwind and fuel up, your estimated biological age at the end, and where to start reclaiming years.</p>
-<iframe id="ac-frame" src="${hostedUrl}?embed=1" title="The Biological Age Check — ${name}" style="width:100%;border:0;min-height:980px;display:block;" loading="lazy"></iframe>
-<noscript><p><a href="${hostedUrl}">Take the Biological Age Check</a></p></noscript>
+  return `<p>How fast do you bounce back? Get your free Body Resilience Score from ${name}... twelve quick questions about how you move, sleep, switch off and fuel up, your score out of 100 at the end, and the one input most worth your attention. Two minutes, no wearable needed.</p>
+<iframe id="ac-frame" src="${hostedUrl}?embed=1" title="The Body Resilience Score — ${name}" style="width:100%;border:0;min-height:980px;display:block;" loading="lazy"></iframe>
+<noscript><p><a href="${hostedUrl}">Get your Body Resilience Score</a></p></noscript>
 <script>(function(){window.addEventListener('message',function(e){if(!e.data||e.data.type!=='ac-height')return;var f=document.getElementById('ac-frame');if(f&&e.source===f.contentWindow&&e.data.height>200){f.style.height=e.data.height+'px';f.style.minHeight='0';}});})();</script>`
 }
 
@@ -158,11 +160,18 @@ export async function publishAgeCheckPage(userId: string): Promise<string | null
         `age-check wp ${path}`,
       )
 
-    const existingRes = await wp('/pages?slug=age-check&status=publish,draft,private,pending')
-    const existing = existingRes.ok ? ((await existingRes.json()) as { id: number }[]) : []
+    // Resilience rework 2026-10-26: new slug. A page published under the old
+    // 'age-check' slug is MIGRATED in place (slug change via update), so no
+    // orphaned old-quiz page survives on the site.
+    let existingRes = await wp('/pages?slug=resilience-score&status=publish,draft,private,pending')
+    let existing = existingRes.ok ? ((await existingRes.json()) as { id: number }[]) : []
+    if (!existing[0]) {
+      existingRes = await wp('/pages?slug=age-check&status=publish,draft,private,pending')
+      existing = existingRes.ok ? ((await existingRes.json()) as { id: number }[]) : []
+    }
     const body = JSON.stringify({
-      title: 'The Biological Age Check',
-      slug: 'age-check',
+      title: 'The Body Resilience Score',
+      slug: 'resilience-score',
       status: 'publish',
       content,
     })
@@ -174,7 +183,7 @@ export async function publishAgeCheckPage(userId: string): Promise<string | null
       return null
     }
     const page = (await res.json()) as { link?: string }
-    const url = page.link ?? `${siteBase}/age-check/`
+    const url = page.link ?? `${siteBase}/resilience-score/`
     logger.info({ userId, url }, '[age-check] published to WordPress')
     return url
   } catch (err) {

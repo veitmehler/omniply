@@ -1,7 +1,14 @@
 /**
- * The Biological Age Check — per-studio client-facing self-check (wellness
- * vertical, the Spine Check's sibling; Veit picked Option D 2026-10-21:
- * biological-age headline + pillar breakdown underneath).
+ * The Body Resilience Score — per-studio client-facing self-check (wellness
+ * vertical, the Spine Check's sibling). REWORKED 2026-10-26 from "The
+ * Biological Age Check" (resilience-funnel-rework plan: bio-age angle
+ * saturated in the niche; Dasha's market feedback). Hook: "How fast do you
+ * bounce back?"; "full capacity" defines it (Veit's blend). Scoring KEEPS
+ * the proven question deltas and pillar math; the overall result is now the
+ * mean of the four pillar scores (0-100) with bands, and the calendar-age
+ * question is GONE (a resilience score needs no age; less PII, one less
+ * screen). The retake-in-30-days loop is the differentiator bio-age could
+ * never offer.
  *
  * Two render targets, mirroring spine-check/template.ts:
  *  - buildAgeCheckFragment(): style + markup + scripts, ALL CSS scoped under
@@ -93,19 +100,11 @@ export function buildAgeCheckFragment(c: AgeCheckStudio): string {
   </div>
 
   <div class="ac-screen ac-active" id="ac-intro">
-    <h1>The Biological Age Check</h1>
-    <p class="ac-sub">Is your body living younger or older than your birthday says? Twelve quick taps about how you move, sleep, unwind and fuel up. Two minutes, no jargon. At the end you'll get your estimated biological age${c.guidesAvailable ? ' and a free guide picked for you' : ''}.</p>
-    <button class="ac-btn" id="ac-start" type="button">Start my Age Check</button>
+    <div class="ac-qmeta">The Body Resilience Score</div>
+    <h1>How fast do you bounce back?</h1>
+    <p class="ac-sub">After a hard session, a rough night, a long flight, a heavy week: some bodies are back to full capacity by morning and some drag for days. Twelve quick questions about how you move, sleep, switch off and fuel up. Two minutes, no wearable needed${c.guidesAvailable ? ', and a free guide picked for your result' : ''}.</p>
+    <button class="ac-btn" id="ac-start" type="button">Get my Score</button>
     <p class="ac-fine">Free · from ${name} · nothing to install</p>
-  </div>
-
-  <div class="ac-screen" id="ac-age">
-    <h2>First: how old are you?</h2>
-    <p class="ac-sub">Your calendar age is the starting line — the next twelve questions decide which way your habits move it.</p>
-    <input class="ac-agein" type="number" id="ac-f-age" inputmode="numeric" min="18" max="100" placeholder="Your age in years" />
-    <div class="ac-err" id="ac-age-err">Please enter an age between 18 and 100.</div>
-    <button class="ac-btn" id="ac-age-next" type="button">Next</button>
-    <button class="ac-back" id="ac-age-back" type="button">&larr; Back</button>
   </div>
 
   <div class="ac-screen" id="ac-q">
@@ -116,8 +115,8 @@ export function buildAgeCheckFragment(c: AgeCheckStudio): string {
   </div>
 
   <div class="ac-screen ac-gate" id="ac-gate">
-    <h2>Your result is ready.</h2>
-    <p class="ac-sub">Where should we send your Biological Age result${c.guidesAvailable ? ' and your free guide' : ''}?</p>
+    <h2>Your Score is ready.</h2>
+    <p class="ac-sub">Where should we send your Body Resilience Score${c.guidesAvailable ? ' and your free guide' : ''}?</p>
     <input type="text" id="ac-f-name" placeholder="First name" autocomplete="given-name" />
     <input type="email" id="ac-f-email" placeholder="Email" autocomplete="email" />
     <div class="ac-err" id="ac-err">Please enter your name and a valid email.</div>
@@ -128,17 +127,20 @@ export function buildAgeCheckFragment(c: AgeCheckStudio): string {
 
   <div class="ac-screen" id="ac-results">
     <div class="ac-scorehead">
-      <div class="ac-qmeta">Your estimated biological age</div>
-      <div class="ac-scorenum"><span id="ac-total">0</span><small> years</small></div>
+      <div class="ac-qmeta">Your Body Resilience Score</div>
+      <div class="ac-scorenum"><span id="ac-total">0</span><small> / 100</small></div>
       <div class="ac-delta" id="ac-delta"></div>
+      <p class="ac-fine" style="margin-top:8px;">Your score estimates how quickly you return to full capacity after life takes a swing at you.</p>
     </div>
     <div class="ac-card">
+      <div class="ac-qmeta">Your four bounce-back inputs</div>
       <div class="ac-bars" id="ac-bars"></div>
       <div class="ac-verdict" id="ac-verdict"></div>
       <div class="ac-guidebox" id="ac-guidebox"></div>
     </div>
     ${c.bookingUrl ? `<div style="margin-top:18px;"><a class="ac-btn" href="${esc(c.bookingUrl)}" target="_blank" rel="noopener">Book a visit with ${name}</a></div>` : c.phone ? `<div style="margin-top:18px;"><a class="ac-btn" href="tel:${esc(c.phone.replace(/[^+\d]/g, ''))}">Call ${name} to book</a></div>` : ''}
-    <p class="ac-disclaimer">This is an educational estimate built from your lifestyle answers... not a medical measurement, assessment or diagnosis. True biological age can only be measured clinically. What this check shows is which everyday habits are likely helping or costing you, and where to start. If something has been bothering you, a qualified professional is always the right next step.</p>
+    <p class="ac-fine" style="margin-top:14px;">Habits move fast. Retake the check in 30 days and watch your score respond.</p>
+    <p class="ac-disclaimer">This is an educational estimate built from your lifestyle answers... a habit-based picture of how well your routines support bounce-back, not a medical measurement, assessment or diagnosis. What this check shows is which everyday habits are likely helping or costing you, and where to start. If something has been bothering you, a qualified professional is always the right next step.</p>
   </div>
 
   <div class="ac-credit">${name}</div>
@@ -189,11 +191,23 @@ var AGECHECK = (function () {
 
   var PILLARS = ['move', 'sleep', 'unwind', 'fuel'] // tiebreak: most trainable first
   var PILLAR_LABEL = { move: 'Movement & strength', sleep: 'Sleep', unwind: 'Stress & downtime', fuel: 'Everyday fuel' }
-  var MIN_AGE = 18
-  var MAX_AGE = 100
-  var MAX_BODY_AGE = 110
+  // Aspirational bands (resilience rework 2026-10-26): the low end never
+  // shames. Thresholds 55 / 70 / 85.
+  var BANDS = [
+    { min: 85, name: 'Elite' },
+    { min: 70, name: 'Strong' },
+    { min: 55, name: 'Solid' },
+    { min: 0, name: 'Developing' },
+  ]
 
-  function compute (calendarAge, answers) {
+  function bandFor (score) {
+    for (var i = 0; i < BANDS.length; i++) {
+      if (score >= BANDS[i].min) return BANDS[i].name
+    }
+    return 'Developing'
+  }
+
+  function compute (answers) {
     var sums = { move: 0, sleep: 0, unwind: 0, fuel: 0 }
     var min = { move: 0, sleep: 0, unwind: 0, fuel: 0 }
     var max = { move: 0, sleep: 0, unwind: 0, fuel: 0 }
@@ -210,25 +224,25 @@ var AGECHECK = (function () {
       sums[q.p] += (typeof answers[i] === 'number' ? answers[i] : 0)
     }
     var scores = {}
-    var totalDelta = 0
+    var total = 0
     for (var k = 0; k < PILLARS.length; k++) {
       var p = PILLARS[k]
       // Pillar score for the bars: 100 = best possible habits, 0 = worst.
       scores[p] = Math.round(((max[p] - sums[p]) / (max[p] - min[p])) * 100)
-      totalDelta += sums[p]
+      total += scores[p]
     }
-    var delta = Math.round(totalDelta)
-    var bodyAge = calendarAge + delta
-    if (bodyAge < MIN_AGE) { bodyAge = MIN_AGE; delta = bodyAge - calendarAge }
-    if (bodyAge > MAX_BODY_AGE) { bodyAge = MAX_BODY_AGE; delta = bodyAge - calendarAge }
+    // The Body Resilience Score: the mean of the four input scores.
+    var score = Math.round(total / PILLARS.length)
+    if (score < 0) score = 0
+    if (score > 100) score = 100
     var weakest = PILLARS[0]
     for (var m = 0; m < PILLARS.length; m++) {
       if (scores[PILLARS[m]] < scores[weakest]) weakest = PILLARS[m]
     }
-    return { bodyAge: bodyAge, delta: delta, scores: scores, weakest: weakest }
+    return { score: score, band: bandFor(score), scores: scores, weakest: weakest }
   }
 
-  return { QUESTIONS: QUESTIONS, PILLARS: PILLARS, PILLAR_LABEL: PILLAR_LABEL, MIN_AGE: MIN_AGE, MAX_AGE: MAX_AGE, compute: compute }
+  return { QUESTIONS: QUESTIONS, PILLARS: PILLARS, PILLAR_LABEL: PILLAR_LABEL, BANDS: BANDS, bandFor: bandFor, compute: compute }
 })()
 if (typeof module !== 'undefined' && module.exports) module.exports = AGECHECK
 /*__AGE_MATH_END__*/
@@ -245,17 +259,23 @@ if (typeof module !== 'undefined' && module.exports) module.exports = AGECHECK
     firstVisitGuide: ${c.firstVisitGuideTitle ? `'${jsq(c.firstVisitGuideTitle)}'` : 'null'},
   }
   // Awareness-register verdicts (same guardrail as the spine check): habits
-  // language, no alarm, no promises — the pillar is the protagonist.
+  // language, no alarm, no promises — the input is the protagonist.
   var VERDICTS = {
-    move: 'Movement and strength are where your habits are adding the most years right now. The good news: this is the most responsive pillar there is... small, regular doses of strength and daily movement tend to pay back fastest.',
-    sleep: 'Your sleep habits are doing the most aging right now. Sleep is when the body does its repair work... a steadier routine usually changes how the whole week feels.',
-    unwind: 'Stress and missing downtime are the biggest drag on your result. Real switch-off time, built into the week on purpose, is one of the most underrated habits there is.',
-    fuel: 'Everyday fuel... food, drinks and what goes with them... is where your habits are costing the most. Small swaps you actually keep beat any overhaul.',
+    move: 'Movement and strength are the input slowing your bounce-back the most right now. The good news: this is the most responsive input there is... small, regular doses of strength and daily movement tend to pay back fastest.',
+    sleep: 'Sleep is the input holding your bounce-back down. Sleep is when the body does its repair work... a steadier routine usually changes how fast everything else recovers.',
+    unwind: 'Stress and missing downtime are the biggest drag on your bounce-back. Real switch-off time, built into the week on purpose, is one of the most underrated recovery tools there is.',
+    fuel: 'Everyday fuel... food, drinks and what goes with them... is the input costing you the most bounce-back. Small swaps you actually keep beat any overhaul.',
+  }
+  // Band verdict lines (resilience rework 2026-10-26): claims-safe, no shame.
+  var BAND_LINES = {
+    Developing: 'Your routines are leaving bounce-back on the table. The good news: this score responds quickly to small changes.',
+    Solid: 'A dependable base. One input is holding the others back, and it is probably the one you expect least.',
+    Strong: 'Your body recovers well. The next gains come from precision, not more effort.',
+    Elite: 'Rare air. At this level the question becomes how long you can keep it, and that is its own craft.',
   }
   function $ (id) { return document.getElementById(id) }
   var answers = []
   var idx = 0
-  var calendarAge = 0
 
   function reportHeight () {
     try {
@@ -276,20 +296,13 @@ if (typeof module !== 'undefined' && module.exports) module.exports = AGECHECK
     setTimeout(reportHeight, 60)
   }
 
-  $('ac-start').addEventListener('click', function () { show('ac-age'); $('ac-f-age').focus() })
-  $('ac-age-back').addEventListener('click', function () { show('ac-intro') })
-  $('ac-age-next').addEventListener('click', function () {
-    var v = parseInt($('ac-f-age').value, 10)
-    var ok = !isNaN(v) && v >= AGECHECK.MIN_AGE && v <= AGECHECK.MAX_AGE
-    $('ac-age-err').style.display = ok ? 'none' : 'block'
-    if (!ok) return
-    calendarAge = v
+  $('ac-start').addEventListener('click', function () {
     idx = 0
     show('ac-q')
     render()
   })
   $('ac-qback').addEventListener('click', function () {
-    if (idx === 0) { show('ac-age'); return }
+    if (idx === 0) { show('ac-intro'); return }
     idx--; render()
   })
 
@@ -329,7 +342,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = AGECHECK
     var ok = name && /^[^\\s@]+@[^\\s@]+\\.[^\\s@]{2,}$/.test(email)
     $('ac-err').style.display = ok ? 'none' : 'block'
     if (!ok) return
-    var r = AGECHECK.compute(calendarAge, answers)
+    var r = AGECHECK.compute(answers)
     sendCapture(name, email, $('ac-f-phone').value.trim(), r)
     renderResults(r)
     show('ac-results')
@@ -343,7 +356,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = AGECHECK
         body: JSON.stringify({
           accountId: STUDIO.accountId,
           name: name, email: email, phone: phone || null,
-          calendarAge: calendarAge, bodyAge: r.bodyAge, delta: r.delta,
+          score: r.score, band: r.band,
           scores: r.scores, weakestPillar: r.weakest,
           source: 'age-check',
         }),
@@ -353,15 +366,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = AGECHECK
   }
 
   function renderResults (r) {
-    $('ac-total').textContent = r.bodyAge
-    var d = $('ac-delta')
-    if (r.delta <= -1) {
-      d.innerHTML = '<b>' + Math.abs(r.delta) + ' year' + (Math.abs(r.delta) === 1 ? '' : 's') + ' younger</b> than your calendar age. Your habits are on your side... keep going.'
-    } else if (r.delta >= 1) {
-      d.innerHTML = '<b>' + r.delta + ' year' + (r.delta === 1 ? '' : 's') + ' older</b> than your calendar age. The pillars below show exactly where to claw them back.'
-    } else {
-      d.innerHTML = '<b>Right in line</b> with your calendar age. The pillars below show where there is still easy ground to gain.'
-    }
+    $('ac-total').textContent = r.score
+    $('ac-delta').innerHTML = '<b>That is ' + r.band + '.</b> ' + BAND_LINES[r.band]
     var bars = $('ac-bars')
     bars.innerHTML = ''
     for (var i = 0; i < AGECHECK.PILLARS.length; i++) {
@@ -380,7 +386,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = AGECHECK
         g += '<br /><span style="color:#5c6672; font-size:14px;">Never been to a recovery studio before? Keep an eye out for "' + STUDIO.firstVisitGuide + '" too.</span>'
       }
     } else {
-      g = "<b>Thanks... you're on the list.</b> Want to start working on your weakest pillar this week? Booking a visit is the simplest next step."
+      g = "<b>Thanks... you're on the list.</b> Want to start working on your weakest input this week? Booking a visit is the simplest next step."
     }
     $('ac-guidebox').innerHTML = g
   }
@@ -396,8 +402,8 @@ export function buildAgeCheckHtml(c: AgeCheckStudio): string {
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>The Biological Age Check — ${name}</title>
-<meta name="description" content="Is your body living younger or older than your birthday says? Twelve quick questions about how you move, sleep, unwind and fuel up — from ${name}." />
+<title>The Body Resilience Score — ${name}</title>
+<meta name="description" content="How fast do you bounce back? Twelve quick questions about how you move, sleep, switch off and fuel up — your Body Resilience Score in two minutes, from ${name}." />
 </head>
 <body style="margin:0;background:#f7f8fa;">
 ${buildAgeCheckFragment(c)}

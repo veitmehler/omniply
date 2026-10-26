@@ -25,7 +25,7 @@ export async function publishQuizPage(userId: string): Promise<string | null> {
 }
 
 export function quizLinkLabel(vertical: string): string {
-  return vertical === 'wellness' ? 'Take the Biological Age Check' : 'Take the 2-Minute Spine Check'
+  return vertical === 'wellness' ? 'Get your Body Resilience Score' : 'Take the 2-Minute Spine Check'
 }
 
 /** Label + URL in one call (linktree's shape). */

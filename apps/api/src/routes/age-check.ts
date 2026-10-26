@@ -23,19 +23,23 @@ import { GUIDE_SLUG_BY_PILLAR, buildStandaloneAgeCheckHtml } from '../age-check/
 const PILLARS = ['move', 'sleep', 'unwind', 'fuel'] as const
 type Pillar = (typeof PILLARS)[number]
 
+const BANDS = ['Developing', 'Solid', 'Strong', 'Elite'] as const
+type Band = (typeof BANDS)[number]
+
 export interface AgeCapture {
   accountId: string
   firstName: string
   email: string
   phone: string | null
-  calendarAge: number
-  bodyAge: number
-  delta: number
+  score: number
+  band: Band
   weakestPillar: Pillar
   scores: Record<Pillar, number>
 }
 
-/** Strict parse + clamp; null on anything malformed. Exported for tests. */
+/** Strict parse + clamp; null on anything malformed. Exported for tests.
+ *  Resilience rework 2026-10-26: score+band replaced the age/delta payload
+ *  (the calendar-age question is gone from the quiz). */
 export function parseAgeCapture(body: unknown): AgeCapture | null {
   if (typeof body !== 'object' || body === null) return null
   const b = body as Record<string, unknown>
@@ -49,10 +53,9 @@ export function parseAgeCapture(body: unknown): AgeCapture | null {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) || email.length > 254) return null
   if (!weakest || !PILLARS.includes(weakest)) return null
 
-  const calendarAge = Math.round(Number(b.calendarAge) || 0)
-  if (calendarAge < 18 || calendarAge > 100) return null
-  const bodyAge = Math.min(110, Math.max(18, Math.round(Number(b.bodyAge) || 0)))
-  const delta = Math.min(30, Math.max(-30, Math.round(Number(b.delta) || 0)))
+  const score = Math.min(100, Math.max(0, Math.round(Number(b.score) || 0)))
+  const band = typeof b.band === 'string' && (BANDS as readonly string[]).includes(b.band) ? (b.band as Band) : null
+  if (!band) return null
 
   const rawScores = (typeof b.scores === 'object' && b.scores !== null ? b.scores : {}) as Record<string, unknown>
   const clamp = (v: unknown) => Math.min(100, Math.max(0, Math.round(Number(v) || 0)))
@@ -62,7 +65,7 @@ export function parseAgeCapture(body: unknown): AgeCapture | null {
     unwind: clamp(rawScores.unwind),
     fuel: clamp(rawScores.fuel),
   }
-  return { accountId, firstName, email, phone, calendarAge, bodyAge, delta, weakestPillar: weakest, scores }
+  return { accountId, firstName, email, phone, score, band, weakestPillar: weakest, scores }
 }
 
 // Hosted-page cache: generation fetches brand + guides + logo.
@@ -145,7 +148,7 @@ export async function ageCheckRoutes(app: FastifyInstance) {
         })
       }
       logger.info(
-        { accountId: account.id, weakest: parsed.weakestPillar, delta: parsed.delta },
+        { accountId: account.id, weakest: parsed.weakestPillar, score: parsed.score },
         '[age-check] lead captured → GHL',
       )
       return reply.send({ ok: true })

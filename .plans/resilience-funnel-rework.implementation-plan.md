@@ -1,6 +1,15 @@
 # Resilience Funnel Rework — implementation plan
 
-Status: PLANNED (locked with Veit 2026-10-26). Supersedes the "Biological
+Status: IN PRODUCTION (Phase 1 gate PASSED 2026-10-26 — all four review
+decisions returned same day; packet claude.ai/artifact/9CP7TAN3jVDigaWvyQLJqT v2
+records them: (1) quiz copy approved as the BLEND — hook "How fast do you
+bounce back?", "full capacity" defines it in the subline + score line;
+(2) HBOT = BOTH (Dasha): stars in Unwind, supporting recovery section in
+Move covering the circulating-stem-cell research + longevity reputation,
+evidence-labeled; (3) titles locked, Move subtitled "How to get back to
+full capacity fast"; (4) register locked incl. the honest evidence table.)
+
+Originally locked with Veit 2026-10-26. Supersedes the "Biological
 Age Check + basics guides" funnel for the WELLNESS vertical only. Chiro is
 untouched everywhere.
 
