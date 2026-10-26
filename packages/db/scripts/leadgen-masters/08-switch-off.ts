@@ -1,80 +1,101 @@
-/** Wellness master 08 — The Art of Switching Off (Age Check pillar: unwind). */
+/** Wellness master 08 — The Deep Rest Protocol (resilience rework
+ *  2026-10-26; pillar: unwind; slug stays switch-off-guide). Starring
+ *  service: HBOT as the enforced deep-rest hour (Dasha: nervous system +
+ *  the stem-cell/longevity reputation, evidence-labeled). Supporting cast:
+ *  HRV literacy, breathwork, heat/cold contrast. */
 import type { MasterDocSpec } from '../../../../apps/api/src/leadgen/master-layout'
 import { wellnessDisclaimer } from './common'
 
+const evidenceTable = `<table>
+<tr><th>Tool or practice</th><th>Evidence status</th><th>Fair summary</th></tr>
+<tr><td>Deliberate daily downtime</td><td>Established</td><td>Chronic switched-on stress has decades of documentation; protected recovery time is the antidote with the deepest support.</td></tr>
+<tr><td>Slow breathing practices</td><td>Promising</td><td>Consistent small studies on calming the stress response in minutes; essentially free.</td></tr>
+<tr><td>Sauna habits</td><td>Promising</td><td>Large observational studies associate regular use with cardiovascular health; relaxing either way.</td></tr>
+<tr><td>Cold exposure</td><td>Promising for mood and alertness</td><td>Short-term effects are well documented; long-term claims are younger than the headlines suggest.</td></tr>
+<tr><td>HRV as a personal gauge</td><td>Promising</td><td>Useful as your own trend over weeks; meaningless as a comparison to anyone else.</td></tr>
+<tr><td>Hyperbaric oxygen</td><td>Exploratory for wellness uses</td><td>Established in hospital medicine for specific conditions; the wellness and longevity findings, including stem-cell and telomere studies, are small and early. The enforced deep-rest hour is beyond dispute.</td></tr>
+</table>`
+
 export const spec: MasterDocSpec = {
-  title: 'The Art of Switching Off',
-  subtitle: 'Why downtime is a skill, not a reward, and how busy people build it back into the week',
+  title: 'The Deep Rest Protocol',
+  subtitle: 'Nervous-system recovery for people who cannot sit still',
   coverAsset: 'w8_cover',
   coverChecklist: [
-    'The case for downtime: why rest is part of performance, not its opposite',
-    'Micro-pauses: two-minute resets that fit between meetings',
-    'The digital sunset: ending the workday on purpose',
-    'One protected hour a week, and how to defend it',
+    'Why being switched on is the real enemy, not stress itself',
+    'How to read your own nervous system: HRV and the morning pulse, in plain terms',
+    'The enforced-rest hour: what an oxygen chamber session actually is and feels like',
+    'Heat, cold and breath: the contrast toolkit, started gently',
   ],
   introHtml:
-    "<p>Most busy people treat downtime as what is left after everything important is done. The problem: nothing is ever done. So rest becomes the one appointment that always gets cancelled, and the body keeps score... shoulders that live near your ears, a jaw that aches by Friday, sleep that will not quite land.</p><p>Here is the reframe this guide is built on: switching off is a skill. Like any skill it has techniques, it improves with practice, and it was never supposed to depend on willpower alone. Athletes plan recovery as seriously as training. The rest of us can borrow the idea.</p>",
+    "<p>Here is the part the productivity culture got wrong: stress is not your enemy. Stress is just a demand, and bodies are built to meet demands. The damage comes from what happens after, or rather what does not happen: the switch back down. A nervous system that stays revved between demands never does its repair work, and that shows up everywhere, from sleep to patience to how long a sore muscle stays sore.</p><p>If you are the kind of person who cannot sit still, telling you to relax is useless advice. This guide takes the other route: tools and structures that switch you off whether your calendar likes it or not.</p><p><strong>The one-sentence version:</strong> recovery is a skill with equipment, and the skill is trainable.</p>",
   blocks: [
-    { kind: 'part', title: 'The case' },
+    { kind: 'part', title: 'Reading your own dashboard', startOnNewPage: true },
     {
       kind: 'section',
-      heading: 'Rest is part of the work',
-      slotName: 'case_for_rest',
-      unnumbered: true,
-      defaultHtml:
-        '<p>Your stress system was designed for short emergencies, not for a calendar that never closes. When the pressure never fully switches off, the body stays subtly braced: tense muscles, shallow breathing, a mind that rereads the same page three times.</p><p>Deliberate downtime is how the system resets. People who build it in do not get less done; they tend to get more done, with fewer of the Friday-night crashes. The goal of this guide is not less ambition. It is a nervous system that gets to stand down between rounds.</p>',
-      tipHtml:
-        'A quick self-check: drop your shoulders right now. If they had somewhere to go, your body was carrying tension you had stopped noticing. That is the signal this guide works on.',
-    },
-    { kind: 'part', title: 'During the day' },
-    {
-      kind: 'section',
-      heading: 'Micro-pauses: the two-minute reset',
-      slotName: 'micro_pauses',
+      heading: 'Your nervous system, in two numbers',
+      slotName: 'hrv',
       unnumbered: true,
       figure: { asset: 'w8_exhale' },
       defaultHtml:
-        '<p>You do not need an empty afternoon to switch off. You need small, repeatable pauses that interrupt the build-up before it compounds. Two minutes, done several times a day, outperforms one heroic spa day a quarter.</p>',
+        '<p>You do not need a lab to see your stress state. Two numbers, both free, tell most of the story.</p>',
       frozenHtml:
-        '<ul><li><strong>The long exhale:</strong> breathe in for four counts, out for six to eight. Six slow rounds. The extended exhale is the fastest calm-down lever you own.</li><li><strong>The window reset:</strong> stand, look at something far away for 60 seconds, roll your shoulders. Eyes and neck relax together.</li><li><strong>The transition walk:</strong> two minutes of walking between tasks, without the phone. Let one thing end before the next begins.</li><li><strong>The single-task cup:</strong> drink one coffee or tea while doing absolutely nothing else. It is harder, and better, than it sounds.</li></ul>',
+        '<ul><li><strong>Morning resting pulse.</strong> Thirty seconds, before coffee. When it drifts up over several days, your system is carrying load it has not put down.</li><li><strong>Heart rate variability, if you own a wearable.</strong> HRV is the tiny variation between heartbeats, and higher generally means a system with room to flex. The two honest rules: compare yourself only to your own baseline, never to anyone else, and read weekly trends, never single mornings. A system under chronic load shows falling HRV across weeks, and that is your cue to take the rest of this guide seriously.</li></ul>',
+      tipHtml:
+        'The fastest lever in the whole guide: exhale longer than you inhale for two minutes. Slow breathing with long exhales is the rare technique with promising research, zero cost, and effects you can feel the first time.',
     },
-    { kind: 'part', title: 'Ending the day' },
+    { kind: 'part', title: 'The enforced-rest hour', startOnNewPage: true },
     {
       kind: 'section',
-      heading: 'The digital sunset',
-      slotName: 'digital_sunset',
+      heading: 'The chamber: rest you cannot interrupt',
+      slotName: 'hbot',
       unnumbered: true,
       figure: { asset: 'w8_sunset' },
       defaultHtml:
-        '<p>Work used to end when you left the building. Now it ends only when you decide it does, which means many days never end at all. A digital sunset is a chosen time when the working day is declared over, marked by a small closing ritual your brain learns to trust.</p>',
+        '<p>For people who cannot sit still, the most effective rest is the kind you cannot get up from. A hyperbaric session is exactly that: you settle into the chamber, the pressure rises gently, your ears pop like on a plane, and for the next hour your only job is to be horizontal. Most people read. A remarkable number simply fall asleep. Phones do not follow you in. For one engineered hour, you are off duty, and no notification can argue.</p>',
       frozenHtml:
-        '<ul><li><strong>Pick the time</strong> and tell the people who need to know. Consistency makes it believable, to them and to you.</li><li><strong>Write the handover note to tomorrow-you:</strong> three lines on where things stand and what is first. Open loops are what keep the mind at work.</li><li><strong>Close the lid, physically.</strong> Laptop shut, work apps off the home screen, notifications silenced until morning.</li><li><strong>Cross a threshold:</strong> get changed, step outside, put music on. Any small act that says the evening has started.</li></ul>',
+        '<p>Now the part you may have heard on longevity podcasts, told honestly. Hyperbaric oxygen is established hospital medicine for specific conditions, and that is not what a wellness session is. On the wellness side, researchers have run small studies measuring things like circulating stem cells and markers associated with cellular aging, with intriguing early results. Intriguing and early are the honest words: the studies are small, replication is young, and anyone promising you regeneration by the hour is ahead of the data. What we can promise is the part nobody disputes: a scheduled hour of deep, uninterruptible rest, which for a switched-on nervous system is precisely the medicine this guide is about. A short screening conversation comes first, covering ears, sinuses and a few conditions, and that screening is a sign of a studio doing it right.</p>',
+    },
+    { kind: 'part', title: 'The contrast toolkit' },
+    {
+      kind: 'section',
+      heading: 'Heat, cold, and the art of the deliberate shock',
+      slotName: 'contrast',
+      unnumbered: true,
+      defaultHtml:
+        '<p>Heat and cold are the oldest nervous-system tools there are, and the modern research is catching up to the tradition. The principle is the same for both: a short, strong, deliberate stress, followed by a clean recovery, teaches the system that it can go up and come back down. That round trip is the exact skill a switched-on system has forgotten.</p>',
+      frozenHtml:
+        '<ul><li><strong>Heat:</strong> sauna sessions leave most people measurably calmer, and large observational studies associate the regular habit with cardiovascular health. Start with less time than you think you want.</li><li><strong>Cold:</strong> the short-term effects on mood and alertness are well documented, and the first ninety seconds are the honest price. Start warm-ended: cool showers before ice baths, always with easy breathing as the goal.</li><li><strong>The rule for both:</strong> never a toughness contest. Time and temperature are adjustable, and the win is a calm exit, not a dramatic entry.</li></ul>',
+    },
+    { kind: 'part', title: 'Reading the evidence like an adult', startOnNewPage: true },
+    {
+      kind: 'section',
+      heading: 'Every tool in this guide, placed honestly',
+      slotName: 'evidence',
+      unnumbered: true,
+      defaultHtml: '<p>Here is where everything above actually stands:</p>',
+      frozenHtml: evidenceTable,
       tipHtml:
-        'Working from home? The commute used to do the switching for you. Replace it with a fake one: a ten-minute walk around the block at closing time, out the door as if leaving, back in as if arriving home.',
+        'Why we label our own tools this way, including the famous chamber: a studio that calls everything a miracle is selling. The honest map is the one worth following.',
     },
-    { kind: 'part', title: 'The weekly anchor', startOnNewPage: true },
+    { kind: 'part', title: 'Your 30-day experiment' },
     {
       kind: 'section',
-      heading: 'One protected hour',
-      slotName: 'protected_hour',
+      heading: 'One month, one protected hour',
+      slotName: 'experiment',
       unnumbered: true,
       defaultHtml:
-        '<p>Daily pauses keep the pressure from compounding. A weekly anchor goes deeper: one hour, same time each week, that belongs to switching off and nothing else. Put it in the calendar like a meeting, because it is one... with the person who has to carry the rest of your week.</p><p>What fills the hour matters less than its protection. A long walk without headphones. A bath and a book. A float, a massage, a quiet hour somewhere phones do not follow. People who keep a standing quiet hour describe the same thing: the week starts organizing itself around the recovery, instead of recovery scavenging whatever the week leaves behind.</p>',
+        '<p>The experiment for this input is the simplest in the series and the hardest to keep: one protected, screen-free hour per week, on the calendar, defended like a meeting.</p>',
       frozenHtml:
-        '<ul><li><strong>Book it recurring,</strong> not week by week. Decisions made once survive busy seasons.</li><li><strong>Defend it out loud:</strong> "I have something on" is a complete sentence.</li><li><strong>Phone stays behind</strong> or goes to airplane mode. Half-present does not count.</li><li><strong>If it gets cancelled,</strong> it gets rescheduled the same week... that is the whole rule.</li></ul>',
+        '<p>Fill it however you like: the breath practice, a sauna round, a chamber session, a walk without headphones. Track the same two numbers each morning: the thirty-second pulse and one word for your state. Watch what three or four protected hours do to the weekly trend. Then retake your Body Resilience Score and see what the unwind input says. One month, one hour a week, your own data.</p>',
     },
-    { kind: 'part', title: 'An honest note' },
     {
       kind: 'section',
-      heading: 'When stress will not shift',
-      slotName: 'honest_note',
+      heading: 'If you want the hour handed to you',
+      slotName: 'close',
       unnumbered: true,
       defaultHtml:
-        '<p>Habits handle everyday pressure remarkably well. Some seasons are heavier than habits. If you have practiced the pauses, kept the sunset, and protected the hour for a few weeks and still feel flat, wired, or close to the edge most days, that is information, not failure.</p>',
-      frozenHtml:
-        '<ul><li>Sleep that stays broken despite a calm evening routine</li><li>Dread that arrives every morning, not just before big days</li><li>Losing interest in things that normally recharge you</li><li>Leaning harder on alcohol or late-night scrolling to come down</li></ul><p>Those patterns deserve a conversation with a qualified professional: your doctor, a psychologist, or a counsellor. Asking early is the competent move, exactly like seeing a physio before a niggle becomes an injury.</p>',
+        '<p>If defending an hour against your own calendar sounds like the hard part, that is literally what we are for. A first visit walks through where your weeks leak recovery, and which tool gives you the most switch-off per minute. Some people need a protocol. Some just need a door that closes. We have both.</p>',
     },
   ],
-  offerHeadline: 'Want a standing quiet hour on someone else’s calendar too?',
-  disclaimerHtml: wellnessDisclaimer('The Art of Switching Off'),
+  disclaimerHtml: wellnessDisclaimer('The Deep Rest Protocol'),
 }

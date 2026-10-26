@@ -33,10 +33,10 @@ const MASTERS: { slug: string; description: string; vertical: string; spec: Mast
   { slug: 'morning-habits-spine', description: '7 morning habit swaps that protect the spine', vertical: 'chiro', spec: morningHabits },
   { slug: 'better-sleep-without-pills', description: 'Sleep position, pillow, mattress + wind-down', vertical: 'chiro', spec: betterSleep },
   { slug: 'first-chiropractic-visit', description: 'First-visit walkthrough, myths vs facts, questions to ask', vertical: 'chiro', spec: firstVisit },
-  { slug: 'everyday-strength-guide', description: 'Wellness: 5 movements, 20-minute week, lighter-load options', vertical: 'wellness', spec: everydayStrength },
-  { slug: 'better-sleep-guide', description: 'Wellness: consistency, light, bedroom, 60-minute wind-down', vertical: 'wellness', spec: wellnessSleep },
-  { slug: 'switch-off-guide', description: 'Wellness: micro-pauses, digital sunset, protected hour', vertical: 'wellness', spec: switchOff },
-  { slug: 'everyday-fuel-guide', description: 'Wellness: half-plate, hydration, caffeine/alcohol timing, rhythm', vertical: 'wellness', spec: everydayFuel },
+  { slug: 'everyday-strength-guide', description: 'Wellness: bounce-back science, BFR smart load, recovery stack, 30-day experiment', vertical: 'wellness', spec: everydayStrength },
+  { slug: 'better-sleep-guide', description: 'Wellness: temperature+light levers, engineered wind-down hour, sleep-data literacy', vertical: 'wellness', spec: wellnessSleep },
+  { slug: 'switch-off-guide', description: 'Wellness: nervous-system recovery, HBOT deep-rest hour, heat/cold contrast', vertical: 'wellness', spec: switchOff },
+  { slug: 'everyday-fuel-guide', description: 'Wellness: deficiencies + heavy metals (test not guess), peptide landscape, hydration', vertical: 'wellness', spec: everydayFuel },
   { slug: 'first-wellness-visit', description: 'Wellness: first-visit walkthrough, what sessions feel like, myths, questions', vertical: 'wellness', spec: firstWellnessVisit },
 ]
 
