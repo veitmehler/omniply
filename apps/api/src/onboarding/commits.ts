@@ -999,13 +999,21 @@ async function finishProbeSideEffects(ctx: StepContext, placeId: string): Promis
     const { probePlace } = await import('../lib/google/places')
     const brand = await prisma.brandSettings.findUnique({
       where: { userId: ctx.userId },
-      select: { openingHours: true },
+      select: { openingHours: true, geolocation: true },
     })
     const probe = await probePlace(placeId) // 24h-cached upstream of onboarding timing
     if (probe) {
       if (probe.name) ctx.stepData.googleListingName = probe.name
       if (probe.openingHours && !brand?.openingHours?.trim()) {
         await brandUpsert(ctx.userId, { openingHours: probe.openingHours })
+      }
+      // The GBP listing address IS the public-facing address (what patients
+      // see on Maps) — the right source for guides/CTA pages, and distinct
+      // from the GHL business profile's OFFICIAL verification details
+      // (Whealth: different country!). FILL ONLY WHEN EMPTY (Veit
+      // 2026-10-26): a hand-edited Settings value always wins.
+      if (probe.formattedAddress && !brand?.geolocation?.trim()) {
+        await brandUpsert(ctx.userId, { geolocation: probe.formattedAddress })
       }
       const { ingestReviews } = await import('../lib/google/review-ingest')
       await ingestReviews(ctx.accountId, 'places-probe', probe.reviews, placeId)
