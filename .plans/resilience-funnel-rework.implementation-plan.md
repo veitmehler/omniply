@@ -9,7 +9,21 @@ Move covering the circulating-stem-cell research + longevity reputation,
 evidence-labeled; (3) titles locked, Move subtitled "How to get back to
 full capacity fast"; (4) register locked incl. the honest evidence table.)
 
-Originally locked with Veit 2026-10-26. Supersedes the "Biological
+Originally locked with Veit 2026-10-26.
+
+EXECUTION STATUS 2026-10-26 (same day):
+- Phase 2 DONE + deployed (7f11eac): quiz reworked, age question removed,
+  score+band capture, /resilience-score slug w/ in-place WP migration
+  (PROVEN live on Whealth's site), 102 tests green.
+- Phase 3 DONE + deployed + SEEDED both envs: four masters rewritten,
+  15 monoline SVGs, local build validation dash-free; Whealth's guides
+  re-enqueued for compile, her CTA preset + quiz page + trigger link all
+  updated (hosted quiz verified serving the new copy).
+- Phase 4 READY FOR VEIT: .documentation/wellness-nurture-paste-sheet.md
+  (duplicate his approved sample x5, paste, link, delete old HTML set),
+  then nurture workflow wiring + snapshot save + plan creation.
+- Phase 5 after his compiles land: eyeball one regenerated guide PDF,
+  full funnel E2E (quiz → capture → tags → delivery → guide link). Supersedes the "Biological
 Age Check + basics guides" funnel for the WELLNESS vertical only. Chiro is
 untouched everywhere.
 
