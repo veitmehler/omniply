@@ -40,7 +40,7 @@ at every guide regeneration. A typo = a silently dead drip link.
 ### Edit 2 — quiz trigger link: KEEP THE NAME `omniply-spine-check`
 - [ ] Do NOT rename it to anything age-check. The repoint code looks for
       the literal legacy name and already writes the vertical-correct URL
-      (wellness → the Biological Age Check) into it. Renaming it makes the
+      (wellness → the Body Resilience Score) into it. Renaming it makes the
       repoint log "link not found" and skip.
 
 ### Edit 3 — comment-keyword workflow: ONE keyword only
@@ -52,7 +52,7 @@ keyword workflows; keep/create exactly one:
 Public comment reply stays: "Just sent it to your DMs!"
 Social config: the onboarding consent step (commitCta) now writes the
 dm_keyword preset per vertical automatically —
-`WELLNESS | the Biological Age Check`.
+`WELLNESS | the Body Resilience Score`.
 
 ### Edit 4 — nurture workflow
 - [ ] Trigger: Contact Tag Added, OR across the four wellness

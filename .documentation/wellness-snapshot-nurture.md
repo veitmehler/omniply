@@ -40,7 +40,7 @@ name and trigger link. Template below; per-branch values in the table.
 
 Hi {{contact.first_name}},
 
-Thanks for taking the Biological Age Check. Based on your answers, the
+Thanks for taking the Body Resilience Score. Based on your answers, the
 pillar with the most easy ground to gain is the one this guide covers, so
 here it is:
 
@@ -57,10 +57,10 @@ The team at {{location.name}}
 
 | Branch tag | {{GUIDE TITLE}} | Trigger link |
 |---|---|---|
-| leadgen-everyday-strength-guide | Everyday Strength | omniply-guide-everyday-strength-guide |
-| leadgen-better-sleep-guide | Better Sleep, Night After Night | omniply-guide-better-sleep-guide |
-| leadgen-switch-off-guide | The Art of Switching Off | omniply-guide-switch-off-guide |
-| leadgen-everyday-fuel-guide | Everyday Fuel | omniply-guide-everyday-fuel-guide |
+| leadgen-everyday-strength-guide | Bounce Back Stronger | omniply-guide-everyday-strength-guide |
+| leadgen-better-sleep-guide | The Sleep Upgrade | omniply-guide-better-sleep-guide |
+| leadgen-switch-off-guide | The Deep Rest Protocol | omniply-guide-switch-off-guide |
+| leadgen-everyday-fuel-guide | The Invisible Fuel Layer | omniply-guide-everyday-fuel-guide |
 
 ---
 
@@ -77,11 +77,11 @@ your DMs!"
 
 | Keyword | Asset | Trigger link |
 |---|---|---|
-| WELLNESS | Biological Age Check | omniply-spine-check (quiz link; vertical-aware repoint) |
+| WELLNESS | Body Resilience Score | omniply-spine-check (quiz link; vertical-aware repoint) |
 
 Caption CTAs: the onboarding consent step (commitCta) writes the
 per-account `dm_keyword` preset automatically per vertical:
-`WELLNESS | the Biological Age Check`.
+`WELLNESS | the Body Resilience Score`.
 
 ---
 
@@ -95,7 +95,7 @@ per-account `dm_keyword` preset automatically per vertical:
 
 Hi {{contact.first_name}},
 
-Yesterday you took the Biological Age Check and picked up one of our guides.
+Yesterday you took the Body Resilience Score and picked up one of our guides.
 Quick question: did you get a chance to open it yet?
 
 If not, no guilt. It is sitting in your inbox from us, and it will still be
@@ -129,7 +129,7 @@ The team at {{location.name}}
 
 Hi {{contact.first_name}},
 
-A pattern we see all the time: someone takes the Biological Age Check,
+A pattern we see all the time: someone takes the Body Resilience Score,
 sees their weakest pillar, and then starts working on a different one. The
 runner with the ragged sleep schedule signs up for more running. The
 exhausted professional with zero downtime buys a new mattress.
@@ -159,6 +159,6 @@ reads these.
 ## Workflow end
 
 - Add Opportunity: pipeline "New Client", stage "New lead", source
-  "Age Check".
+  "Resilience Score".
 - Exit on: appointment booked (appointment tag) or opportunity stage moved,
   mirroring the chiro workflow's exit behavior.
