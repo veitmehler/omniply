@@ -40,12 +40,55 @@ Decisions locked 2026-10-26:
   honesty IS the positioning) → self-experiment with metrics (HRV,
   resting HR). Per-account slot personalization adapts modality sections
   to each clinic's actual services.
-  - move → smarter load: BFR/KAATSU, strength science
-  - sleep → temperature, light, PEMF, what sleep-staging data means
-  - unwind → nervous-system regulation: HRV, breathwork, heat/cold
-  - fuel → hydration/electrolytes, timing, what to measure
-  - **Peptides are EXCLUDED from all lead magnets** (claims/regulatory
-    minefield; consult-room topic only).
+
+### Guide skeleton (locked 2026-10-26 from Dasha's priority services)
+
+Her most-profitable, least-time services anchor the content: HBOT,
+peptide consults, the Recovery package (whole-body vibration +
+compression + PEMF), and mineral/heavy-metal screening (Oligoscan).
+**Architecture rule: guides stay PILLAR-LED (quiz coherence — weakest
+input → its guide); hero services get a STARRING SECTION in their
+natural pillar, never a guide of their own.** Every guide ends at the
+same door: book the visit / book the consult.
+
+- **move** → the Recovery package stars (WBV + compression + PEMF as
+  the post-exertion stack) + BFR/KAATSU smart-load science.
+- **sleep** → PEMF wind-down, temperature/light, what sleep-staging
+  data actually tells you (Recovery package supporting role).
+- **unwind** → HBOT stars: the 60-90min enforced deep-rest session as
+  the ultimate switch-off; nervous-system frame (HRV, breathwork,
+  heat/cold contrast) around it. OPEN (ask Dasha in the Phase 1
+  review): HBOT's final placement unwind vs move — she knows how
+  clients talk about it.
+- **fuel** → PROBLEM-FIRST, two beyond-basics topics under the
+  "test, don't guess" spine:
+  1. *The invisible fuel layer*: mineral/vitamin deficiencies +
+     heavy-metal exposure that harm resilience and extend recovery.
+     Claims lanes (this chapter needs peptide-level discipline):
+     deficiencies = ESTABLISHED science, write freely (iron/fatigue,
+     magnesium/sleep+muscle, D, B12 — the strongest "established" rows
+     of the whole series); heavy metals = real toxicology, carefully
+     fenced — documented exposure routes (fish, old pipes, rice,
+     smoking) and documented effects on energy/nervous system/cognition,
+     NEVER the detox-industry "your fatigue is probably toxins"
+     narrative, NO recovery-time claims for metals (evidence too weak),
+     NO detox-protocol promises. **The DEVICE is de-centered**: testing
+     appears as the natural "how you find out" step, device name
+     slot-personalized per clinic (also sidesteps validating any
+     specific device's accuracy; framing = "a snapshot that guides the
+     conversation, not a diagnosis") — generalizes to any clinic with
+     any testing offering.
+  2. *The peptide landscape* — EXCLUSION REVERSED 2026-10-26 under
+     three guardrails: (a) a SECTION in the fuel guide, never a
+     standalone guide; (b) landscape-level ONLY — what peptides are as
+     a class, why the excitement, evidence maturity per the standard
+     table (mostly animal/small-trial, labeled as exactly that), the
+     sourcing/regulatory gray-market reality; NO named protocols, NO
+     dosing, NO per-substance use-case promises; (c) slot-gated to
+     clinics that actually offer peptide consults. The compliance
+     constraint IS the pitch: unregulated gray market → "this is
+     exactly why you do this with a professional" → consult CTA.
+  Plus hydration/electrolytes + timing as the pillar's habit layer.
 - **Art**: monoline restyle — thin consistent stroke, precise small
   diagrams (HRV curve, session timeline, pressure diagram), same palette
   (#1F3A5F/#FAF0D7/#F4F8F7/#D7EBE8/#35507A/#52709E) but line-led, premium
@@ -70,16 +113,16 @@ Decisions locked 2026-10-26:
 
 ## Phases
 
-**Phase 0 — Dasha's input (Veit, now):** ask her which services/topics
-she most wants the guides to teach (she is the audience expert and the
-referral-pipeline voice). Her list anchors the modality stacks.
+**Phase 0 — Dasha's input: DONE 2026-10-26** (HBOT, peptide consults,
+Recovery package, mineral/heavy-metal screening → the guide skeleton
+above).
 
 **Phase 1 — Review packet (me, ~half day):** one artifact for Veit+Dasha:
 quiz treatment (headline, subline, result-screen copy, band names, retake
-invitation), outlines for all four guides in the new register, ONE guide
-fully drafted (move/BFR — clearest beyond-the-basics story), and two
-sample monoline figures. GATE: both approve register + art before mass
-production.
+invitation), outlines for all four guides on the locked skeleton, ONE
+guide fully drafted (move — the Recovery-package/BFR story), two sample
+monoline figures, and the HBOT-placement question for Dasha. GATE: both
+approve register + art before mass production.
 
 **Phase 2 — Quiz rework (me, ~half day):** age-check template copy +
 scoring narrative (score math replaces age-delta math; AGE_MATH block
