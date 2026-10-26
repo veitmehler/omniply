@@ -145,70 +145,76 @@ export function buildMasterHtml(spec: MasterDocSpec): string {
   /* ── Cover ── */
   .cover { height: 297mm; background: {{brand.headerColor}}; color: #fff; display: flex; flex-direction: column; justify-content: space-between; padding: 24mm 22mm; page-break-after: always; }
   .cover .logo img { max-height: 22mm; max-width: 60mm; }
-  .cover .logo-fallback { font-size: 20px; font-weight: 700; letter-spacing: .5px; }
-  .cover .eyebrow { font-size: 12px; letter-spacing: 2.2px; text-transform: uppercase; opacity: .85; margin-bottom: 5mm; }
-  .cover h1 { font-size: 38px; line-height: 1.15; font-weight: 700; max-width: 150mm; }
-  .cover .subtitle { margin-top: 6mm; font-size: 16px; line-height: 1.5; opacity: .92; max-width: 140mm; }
+  .cover .logo-fallback { font-size: 24px; font-weight: 700; letter-spacing: .5px; }
+  .cover .eyebrow { font-size: 14px; letter-spacing: 2.2px; text-transform: uppercase; opacity: .85; margin-bottom: 5mm; }
+  .cover h1 { font-size: 44px; line-height: 1.15; font-weight: 700; max-width: 150mm; }
+  .cover .subtitle { margin-top: 6mm; font-size: 21px; line-height: 1.5; opacity: .92; max-width: 140mm; }
   .cover .accent-bar { width: 42mm; height: 2.5mm; background: {{brand.accentColor}}; margin: 8mm 0 0; border-radius: 2px; }
   .cover .cover-art { background: #fff; border-radius: 3mm; padding: 6mm; margin-top: 9mm; max-width: 128mm; }
   .cover .cover-art svg { width: 100%; height: auto; display: block; }
-  .cover-checklist { list-style: none; margin-top: 8mm; font-size: 13.5px; line-height: 2; max-width: 140mm; }
+  .cover-checklist { list-style: none; margin-top: 8mm; font-size: 18px; line-height: 2; max-width: 140mm; }
   .cover-checklist li::before { content: '✓'; color: {{brand.accentColor}}; font-weight: 700; margin-right: 3mm; }
-  .cover .cover-footer { font-size: 13px; opacity: .85; }
+  .cover .cover-footer { font-size: 15px; opacity: .85; }
 
   /* ── Content pages ── */
   .content { padding: 0 22mm; }
-  .part-title { color: {{brand.headerColor}}; font-size: 15px; text-transform: uppercase; letter-spacing: 1.8px; border-bottom: 0.6mm solid {{brand.accentColor}}; padding-bottom: 2.5mm; margin: 10mm 0 8mm; page-break-after: avoid; }
+  .page-title { margin: 2mm 0 10mm; }
+  .page-title .pt-eyebrow { font-size: 14px; letter-spacing: 2px; text-transform: uppercase; color: {{brand.accentColor}}; font-weight: 700; }
+  .page-title h1 { font-size: 34px; line-height: 1.15; color: {{brand.headerColor}}; margin-top: 2.5mm; }
+  .page-title .pt-sub { font-size: 19px; line-height: 1.45; color: #5b6673; margin-top: 3mm; max-width: 155mm; }
+  .page-title .pt-bar { width: 34mm; height: 2mm; background: {{brand.accentColor}}; border-radius: 2px; margin-top: 5mm; }
+  .part-title { color: {{brand.headerColor}}; font-size: 19px; text-transform: uppercase; letter-spacing: 1.8px; border-bottom: 0.6mm solid {{brand.accentColor}}; padding-bottom: 2.5mm; margin: 10mm 0 8mm; page-break-after: avoid; }
   .part-lede { margin: -4mm 0 7mm; }
   .part-break { page-break-before: always; }
-  .part-numbered { display: flex; align-items: center; gap: 4mm; text-transform: none; letter-spacing: 0; font-size: 20px; }
-  .part-num { width: 9.5mm; height: 9.5mm; font-size: 14px; }
+  .part-numbered { display: flex; align-items: center; gap: 4mm; text-transform: none; letter-spacing: 0; font-size: 26px; }
+  .part-num { width: 10.5mm; height: 10.5mm; font-size: 16px; }
   .content-section { margin-bottom: 10mm; }
   .section-head { page-break-inside: avoid; }
-  h2 { color: {{brand.headerColor}}; font-size: 18px; margin-bottom: 4mm; display: flex; align-items: center; gap: 4mm; page-break-after: avoid; }
-  .section-num { display: inline-flex; align-items: center; justify-content: center; width: 8.5mm; height: 8.5mm; border-radius: 50%; background: {{brand.accentColor}}; color: #fff; font-size: 13px; flex-shrink: 0; }
-  .section-body { font-size: 13px; line-height: 1.62; }
-  .section-body p { margin-bottom: 3.5mm; }
+  h2 { color: {{brand.headerColor}}; font-size: 26px; margin-bottom: 4mm; display: flex; align-items: center; gap: 4mm; page-break-after: avoid; }
+  .section-num { display: inline-flex; align-items: center; justify-content: center; width: 9.5mm; height: 9.5mm; border-radius: 50%; background: {{brand.accentColor}}; color: #fff; font-size: 15px; flex-shrink: 0; }
+  .section-body { font-size: 20px; line-height: 1.6; }
+  .section-body p { margin-bottom: 4.5mm; }
   .section-body ul, .section-body ol { margin: 2mm 0 3.5mm 6mm; }
   .section-body li { margin-bottom: 1.8mm; }
   .section-body p, .section-body li { orphans: 3; widows: 3; }
   .section-body table { page-break-inside: auto; }
   .section-body tr { page-break-inside: avoid; }
-  .section-body table { width: 100%; border-collapse: collapse; font-size: 11.5px; margin: 3mm 0 4mm; }
+  .section-body table { width: 100%; border-collapse: collapse; font-size: 16px; margin: 3mm 0 4mm; }
   .section-body th, .section-body td { border: 0.3mm solid #dfe5e8; padding: 2.5mm 3mm; text-align: left; vertical-align: top; }
   .section-body th { background: color-mix(in srgb, {{brand.headerColor}} 8%, #ffffff); color: {{brand.headerColor}}; }
   .doc-figure { margin: 4mm 0 5mm; page-break-inside: avoid; }
   .doc-figure svg { width: 100%; height: auto; display: block; }
-  .doc-figure figcaption { font-size: 11px; color: #667; text-align: center; margin-top: 1.5mm; }
-  .tip-box { background: color-mix(in srgb, {{brand.accentColor}} 9%, #ffffff); border-left: 1.2mm solid {{brand.accentColor}}; padding: 4mm 5mm; margin-top: 4mm; font-size: 12.5px; line-height: 1.55; border-radius: 0 2mm 2mm 0; page-break-inside: avoid; }
-  .tip-label { display: block; font-weight: 700; color: {{brand.accentColor}}; font-size: 11px; text-transform: uppercase; letter-spacing: .8px; margin-bottom: 1.5mm; }
+  .doc-figure figcaption { font-size: 14px; color: #667; text-align: center; margin-top: 1.5mm; }
+  .tip-box { background: color-mix(in srgb, {{brand.accentColor}} 9%, #ffffff); border-left: 1.2mm solid {{brand.accentColor}}; padding: 4mm 5mm; margin-top: 4mm; font-size: 18px; line-height: 1.55; border-radius: 0 2mm 2mm 0; page-break-inside: avoid; }
+  .tip-label { display: block; font-weight: 700; color: {{brand.accentColor}}; font-size: 13px; text-transform: uppercase; letter-spacing: .8px; margin-bottom: 1.5mm; }
 
   /* ── Stretch cards (2-up) ── */
   .stretch-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6mm; margin-bottom: 10mm; }
   .stretch-card { border: 0.35mm solid #dfe5e8; border-radius: 3mm; padding: 5mm; page-break-inside: avoid; }
-  .stretch-card h3 { color: {{brand.headerColor}}; font-size: 14px; display: flex; align-items: center; gap: 3mm; margin-bottom: 3mm; }
+  .stretch-card h3 { color: {{brand.headerColor}}; font-size: 20px; display: flex; align-items: center; gap: 3mm; margin-bottom: 3mm; }
   .stretch-card .section-num { width: 7mm; height: 7mm; font-size: 11.5px; }
   .stretch-card .doc-figure { margin: 0 0 3mm; }
   .stretch-card .doc-figure svg { max-height: 44mm; width: auto; max-width: 100%; margin: 0 auto; }
-  .stretch-card .how, .stretch-card .why { font-size: 11.5px; line-height: 1.55; margin-top: 2.5mm; }
-  .mini-label { display: block; font-weight: 700; color: {{brand.accentColor}}; font-size: 10px; text-transform: uppercase; letter-spacing: .8px; margin-bottom: 1mm; }
+  .stretch-card .how, .stretch-card .why { font-size: 16px; line-height: 1.55; margin-top: 2.5mm; }
+  .mini-label { display: block; font-weight: 700; color: {{brand.accentColor}}; font-size: 12px; text-transform: uppercase; letter-spacing: .8px; margin-bottom: 1mm; }
 
   /* ── Back page ── */
   .back-page { page-break-before: always; height: 250mm; display: flex; flex-direction: column; text-align: center; padding: 10mm 25mm 0; }
   .back-main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-  .back-page h2 { justify-content: center; font-size: 26px; }
+  .back-page h2 { justify-content: center; font-size: 32px; }
   .back-page .accent-bar { width: 34mm; height: 2mm; background: {{brand.accentColor}}; border-radius: 2px; margin: 5mm auto 0; }
   .back-logo { margin-top: 10mm; }
   .back-logo img { max-height: 16mm; max-width: 55mm; }
   .offer-box { background: {{brand.headerColor}}; border-left: 1.5mm solid {{brand.accentColor}}; border-radius: 3mm; padding: 7mm 12mm; margin-top: 8mm; width: 100%; max-width: 135mm; box-sizing: border-box; color: #fff; }
-  .offer-box .offer-label { font-weight: 700; color: {{brand.accentColor}}; filter: brightness(1.6); font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px; }
-  .offer-box .offer-text { font-size: 15px; line-height: 1.5; margin-top: 2.5mm; font-weight: 700; }
-  .offer-box .offer-note { font-size: 12px; color: rgba(255,255,255,.8); margin-top: 2.5mm; }
+  .offer-box .offer-label { font-weight: 700; color: {{brand.accentColor}}; filter: brightness(1.6); font-size: 13px; text-transform: uppercase; letter-spacing: 1.2px; }
+  .offer-box .offer-text { font-size: 20px; line-height: 1.5; margin-top: 2.5mm; font-weight: 700; }
+  .offer-box .offer-note { font-size: 15px; color: rgba(255,255,255,.8); margin-top: 2.5mm; }
   /* Same width as the offer box (Veit 2026-09-14: the two CTA boxes must align). */
-  .back-page .cta-btn { display: block; margin-top: 8mm; background: {{brand.accentColor}}; color: #fff; padding: 5.5mm 14mm; border-radius: 3mm; font-size: 17px; font-weight: 700; width: 100%; max-width: 135mm; box-sizing: border-box; text-decoration: none; }
-  .back-page .cta-btn .cta-phone { display: block; font-size: 26px; font-weight: 800; letter-spacing: 0.5px; margin-top: 7mm; }
-  .back-page .contact { margin-top: 9mm; font-size: 13px; line-height: 1.9; color: {{brand.fontColor}}; }
-  .disclaimer { margin: 6mm auto 2mm; font-size: 9.5px; line-height: 1.5; color: #777; max-width: 160mm; }
+  .back-page .cta-btn { display: block; margin-top: 8mm; background: {{brand.accentColor}}; color: #fff; padding: 5.5mm 14mm; border-radius: 3mm; font-size: 22px; font-weight: 700; width: 100%; max-width: 135mm; box-sizing: border-box; text-decoration: none; }
+  .back-page .cta-btn .cta-phone { display: block; font-size: 32px; font-weight: 800; letter-spacing: 0.5px; margin-top: 7mm; }
+  .back-page .contact { margin-top: 9mm; font-size: 17px; line-height: 1.8; color: {{brand.fontColor}}; }
+  .disclaimer-page { page-break-before: always; height: 250mm; display: flex; flex-direction: column; padding: 0 25mm; }
+  .disclaimer { margin-top: auto; margin-bottom: 0; font-size: 13px; line-height: 1.55; color: #777; max-width: 160mm; }
 </style>
 </head>
 <body>
@@ -231,6 +237,12 @@ export function buildMasterHtml(spec: MasterDocSpec): string {
 <!--SPLIT-->
 
 <div class="content">
+  <div class="page-title">
+    <div class="pt-eyebrow">${esc(spec.eyebrow ?? 'A free guide from')} {{brand.organizationName}}</div>
+    <h1>${esc(spec.title)}</h1>
+    <p class="pt-sub">${esc(spec.subtitle)}</p>
+    <div class="pt-bar"></div>
+  </div>
   <section class="content-section">
     <div class="section-body"><slot name="intro">${spec.introHtml ?? 'A short, warm introduction to this guide and who it helps.'}</slot></div>
   </section>
@@ -258,6 +270,9 @@ ${body}
   </div>
   <div class="back-logo" data-optional="logoDarkUrl"><img src="{{brand.logoDarkUrl}}"/></div>
   </div>
+</div>
+
+<div class="disclaimer-page">
   <p class="disclaimer">${spec.disclaimerHtml}</p>
 </div>
 

@@ -38,7 +38,17 @@ export function paperFormatFor(countryCode: string | null | undefined): 'letter'
   return LETTER_COUNTRIES.has(countryCode.trim().toUpperCase()) ? 'letter' : 'a4'
 }
 export function applyPaperSize(html: string, format: 'letter' | 'a4'): string {
-  return format === 'letter' ? html.replace(/height:\s*297mm/g, 'height: 279.4mm') : html
+  if (format !== 'letter') return html
+  return (
+    html
+      .replace(/height:\s*297mm/g, 'height: 279.4mm')
+      // Content-page full-height blocks (back page, disclaimer page): the
+      // printable area is paper height minus the 18mm top + 26mm bottom
+      // print margins — A4 253mm, Letter 235.4mm. The hardcoded 250mm
+      // overflowed Letter and pushed the disclaimer onto a stray page
+      // (PDF review round 1, finding #6).
+      .replace(/height:\s*250mm/g, 'height: 232mm')
+  )
 }
 
 interface SlotMeta {
@@ -196,6 +206,49 @@ export function headerIsLight(headerColor: string): boolean {
   return relativeLuminance(headerColor) > 0.45
 }
 
+/**
+ * Compact the Places weekday_text block (7 verbose lines) into one line for
+ * the CTA page (PDF review round 1, finding #5): consecutive days with
+ * identical hours group ("Mon-Fri 9 AM-5 PM · Sat 9 AM-12 PM · Sun Closed").
+ * Anything unparseable returns UNCHANGED — a weird value must never eat the
+ * hours. Exported for tests.
+ */
+export function compactOpeningHours(raw: string): string {
+  const input = raw.trim()
+  if (!input) return ''
+  const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+  const ABBR = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+  const lines = input.split(/\n+/).map((l) => l.trim()).filter(Boolean)
+  const byDay = new Map<number, string>()
+  for (const line of lines) {
+    const m = /^([A-Za-z]+)\s*:\s*(.+)$/.exec(line)
+    if (!m) return input
+    const di = DAYS.findIndex((d) => d.toLowerCase() === m[1].toLowerCase())
+    if (di === -1) return input
+    // Normalize Google's narrow spaces and en-dashes; shorten ":00".
+    const hours = m[2]
+      .replace(/[–—]/g, '-')
+      .replace(/[   ]/g, ' ')
+      .replace(/\s*-\s*/g, '-')
+      .replace(/:00(\s*[AP]M)/gi, '$1')
+      .replace(/\s+/g, ' ')
+      .trim()
+    byDay.set(di, hours)
+  }
+  if (byDay.size === 0) return input
+  const groups: Array<{ from: number; to: number; hours: string }> = []
+  for (let d = 0; d < 7; d++) {
+    const hours = byDay.get(d)
+    if (hours === undefined) continue
+    const last = groups[groups.length - 1]
+    if (last && last.to === d - 1 && last.hours === hours) last.to = d
+    else groups.push({ from: d, to: d, hours })
+  }
+  return groups
+    .map((g) => `${g.from === g.to ? ABBR[g.from] : `${ABBR[g.from]}-${ABBR[g.to]}`} ${g.hours}`)
+    .join(' · ')
+}
+
 async function brandTokensFor(userId: string): Promise<BrandTokens> {
   const brand = await prisma.brandSettings.findUnique({ where: { userId } })
   const headerColor = brand?.nlHeaderBgColor ?? brand?.diagramPrimaryColor ?? '#0b2545'
@@ -216,19 +269,28 @@ async function brandTokensFor(userId: string): Promise<BrandTokens> {
         ? 'Call us to book your appointment'
         : brand?.socialCallToAction ?? 'Book an appointment',
     bookingUrl: brand?.bookingUrl ?? '',
-    openingHours: brand?.openingHours ?? '',
+    openingHours: compactOpeningHours(brand?.openingHours ?? ''),
     // Reader offer must be EVERGREEN (decision 2026-09-14): PDFs live in
     // patients' hands for months, and the newsletter offers are seasonal —
     // the first-created one put "New Year" on a September guide. Seasonal
     // offers stay newsletter-only; guides always carry the evergreen line.
     readerOffer: 'Ask about our new-patient assessment when you book',
-    // The cover renders on headerColor: dark headers get the light
-    // (white-on-transparent) logo variant, LIGHT headers get the dark one —
-    // same contrast rule as the ink below. Legacy single-logo + org logo as
-    // fallbacks either way.
-    logoUrl: lightHeader
-      ? (brand?.nlLogoDarkUrl ?? brand?.nlLogoUrl ?? brand?.organizationLogoUrl ?? '')
-      : (brand?.nlLogoLightUrl ?? brand?.nlLogoUrl ?? brand?.organizationLogoUrl ?? ''),
+    // The client's onboarding/template logo choice WINS (fix 2026-10-26 —
+    // guides ignored nlHeaderLogoVariant since the beginning, PDF review
+    // round 1 finding #8): 'original' renders the true-colour cutout
+    // (nlLogoUrl holds the picked variant), explicit light/dark likewise.
+    // Only an unset choice falls back to the cover-luminance contrast rule.
+    logoUrl:
+      (brand?.nlHeaderLogoVariant === 'original'
+        ? (brand?.nlLogoColorUrl ?? brand?.nlLogoUrl)
+        : brand?.nlHeaderLogoVariant === 'light'
+          ? brand?.nlLogoLightUrl
+          : brand?.nlHeaderLogoVariant === 'dark'
+            ? brand?.nlLogoDarkUrl
+            : null) ??
+      (lightHeader
+        ? (brand?.nlLogoDarkUrl ?? brand?.nlLogoUrl ?? brand?.organizationLogoUrl ?? '')
+        : (brand?.nlLogoLightUrl ?? brand?.nlLogoUrl ?? brand?.organizationLogoUrl ?? '')),
     // Back page renders on white → the dark (navy-on-transparent) variant.
     logoDarkUrl: brand?.nlLogoDarkUrl ?? brand?.organizationLogoUrl ?? '',
     // Platform convention (matches social/carousel theming): newsletter palette

@@ -139,6 +139,62 @@ async function recolor(mask: Mask, rgb: { r: number; g: number; b: number }, bbo
   return sharp(composed).extract(bbox).png().toBuffer()
 }
 
+/**
+ * Luminance-preserving recolour (variants v2, Veit 2026-10-26): the flat
+ * fill above turns colour-differentiated iconography into a featureless
+ * silhouette. Here the single variant colour keeps the SOURCE's tonal
+ * structure: each pixel's luminance is contrast-stretched across the logo's
+ * own range and mapped onto the alpha channel (darker source detail renders
+ * stronger, lighter detail fainter but never below a visibility floor).
+ * A tonally flat logo (one-colour wordmark) has no range to stretch and
+ * falls back to the flat recolour — identical output to v1 for those.
+ */
+async function recolorTonal(
+  srcBuf: Buffer,
+  mask: Mask,
+  rgb: { r: number; g: number; b: number },
+  bbox: BBox,
+): Promise<Buffer> {
+  const { width, height, alpha } = mask
+  const src = await sharp(srcBuf)
+    .resize(width, height, { fit: 'fill' })
+    .removeAlpha()
+    .raw()
+    .toBuffer()
+  const lin = (c: number) => {
+    const v = c / 255
+    return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)
+  }
+  // Pass 1: the logo's own luminance range (opaque pixels only).
+  let lMin = 1
+  let lMax = 0
+  const lum = new Float32Array(width * height)
+  for (let p = 0; p < width * height; p++) {
+    const i = p * 3
+    const L = 0.2126 * lin(src[i]) + 0.7152 * lin(src[i + 1]) + 0.0722 * lin(src[i + 2])
+    lum[p] = L
+    if (alpha[p] > 32) {
+      if (L < lMin) lMin = L
+      if (L > lMax) lMax = L
+    }
+  }
+  const range = lMax - lMin
+  if (range < 0.08) return recolor(mask, rgb, bbox) // tonally flat → v1 behavior
+  // Pass 2: alpha' = mask × (floor + (1 - floor) × (1 - Lnorm)).
+  const FLOOR_INTENSITY = 0.38
+  const out = Buffer.alloc(width * height)
+  for (let p = 0; p < width * height; p++) {
+    const ln = Math.min(1, Math.max(0, (lum[p] - lMin) / range))
+    out[p] = Math.round(alpha[p] * (FLOOR_INTENSITY + (1 - FLOOR_INTENSITY) * (1 - ln)))
+  }
+  const solid = await sharp({ create: { width, height, channels: 3, background: rgb } }).raw().toBuffer()
+  const composed = await sharp(solid, { raw: { width, height, channels: 3 } })
+    .joinChannel(out, { raw: { width, height, channels: 1 } })
+    .png()
+    .toBuffer()
+  return sharp(composed).extract(bbox).png().toBuffer()
+}
+
 /** Original-colour RGBA: the source pixels under the mask's alpha, cropped. */
 export async function colorCutout(srcBuf: Buffer, mask: Mask, bbox: BBox): Promise<Buffer> {
   const rgb = await sharp(srcBuf)
@@ -229,8 +285,8 @@ export async function processLogo(
   const mask = await buildMask(srcBuf, sourceUrl)
   const bbox = alphaBBox(mask)
 
-  const lightBuf = await recolor(mask, { r: 255, g: 255, b: 255 }, bbox)
-  const darkBuf = await recolor(mask, hexToRgb(darkHex), bbox)
+  const lightBuf = await recolorTonal(srcBuf, mask, { r: 255, g: 255, b: 255 }, bbox)
+  const darkBuf = await recolorTonal(srcBuf, mask, hexToRgb(darkHex), bbox)
   const colorBuf = await colorCutout(srcBuf, mask, bbox)
   const colorLuminance = await avgOpaqueLuminance(colorBuf)
 
