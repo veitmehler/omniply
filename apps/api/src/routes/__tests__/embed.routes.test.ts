@@ -139,6 +139,54 @@ describe('POST /embed/session', () => {
     await app.close()
   })
 
+  it('grants an AGENCY-type identity operator access without a roster seat', async () => {
+    accountMemberFindFirst.mockResolvedValueOnce(null)
+    const app = await build()
+    const res = await app.inject({
+      method: 'POST', url: '/embed/session',
+      payload: { encryptedData: payload({ type: 'agency', email: 'veit@agency.com', userName: 'Veit' }) },
+    })
+    expect(res.statusCode).toBe(200)
+    const body = res.json()
+    expect(body.seatRequired).toBeUndefined()
+    expect(body.operator).toBe(true)
+    expect(body.token).toBeTruthy()
+    expect(userCreate).toHaveBeenCalled()
+    await app.close()
+  })
+
+  it('never promotes an operator to account owner', async () => {
+    accountMemberFindFirst.mockResolvedValueOnce(null)
+    accountFindUnique.mockResolvedValue({ onboardingCompletedAt: null, status: 'active', ownerUserId: 'owner_1' })
+    // Owner lookup inside the promotion block would find a placeholder —
+    // the operator guard must prevent it from ever being consulted.
+    userFindUnique.mockImplementation(async (args: { where?: Record<string, unknown> }) => {
+      if (args?.where?.id === 'owner_1') return { accountId: 'acct_1', id: 'owner_1', clerkId: 'ghlowner:loc_1' }
+      return null
+    })
+    const app = await build()
+    const res = await app.inject({
+      method: 'POST', url: '/embed/session',
+      payload: { encryptedData: payload({ type: 'agency', email: 'veit@agency.com' }) },
+    })
+    expect(res.statusCode).toBe(200)
+    expect(res.json().operator).toBe(true)
+    // Promotion side effects (settings re-home, owner delete) never ran.
+    expect(userUpdate).not.toHaveBeenCalled()
+    await app.close()
+  })
+
+  it('a location-type identity is NOT an operator even with no roster', async () => {
+    accountMemberFindFirst.mockResolvedValueOnce(null)
+    const app = await build()
+    const res = await app.inject({
+      method: 'POST', url: '/embed/session',
+      payload: { encryptedData: payload({ type: 'location' }) },
+    })
+    expect(res.json().seatRequired).toBe(true)
+    await app.close()
+  })
+
   it('lets the buyer claim the placeholder owner row via email match', async () => {
     userFindFirst.mockImplementation(async (args: { where?: Record<string, unknown> }) => {
       if (args?.where?.email === 'dr@clinic.com') {

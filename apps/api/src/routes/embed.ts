@@ -123,6 +123,21 @@ export async function embedRoutes(app: FastifyInstance) {
       }
       const accountId = ownerUser.accountId
 
+      // Operator access (Option B, Veit 2026-10-26): AGENCY-type SSO
+      // identities are Omniply operators — the agency credential IS the
+      // authorization (they already hold full GHL access to the location).
+      // Operators bypass the seat gate but are NEVER added to the roster,
+      // never consume a seat, never get promoted to owner, and every
+      // session is logged. Location-type users keep the audit-#15 gate
+      // byte-identical.
+      const isOperator = String(ctx.type ?? '').toLowerCase() === 'agency'
+      if (isOperator) {
+        logger.info(
+          { accountId, ghlUserId: ctx.userId, role: ctx.role ?? null, email: ctx.email ?? null },
+          '[embed] OPERATOR session (agency SSO)',
+        )
+      }
+
       // Resolve or create the user, SCOPED TO THIS ACCOUNT. The same GHL human
       // (agency admin, multi-clinic owner) may open several sub-accounts, each
       // its own tenant — one User row per (account, ghlUserId). Authorization
@@ -154,11 +169,12 @@ export async function embedRoutes(app: FastifyInstance) {
         // NO silent auto-join (Veit 2026-09-16; also audit finding #15): a
         // seat must exist BEFORE this person opens the app — created either
         // via Settings → Team or automatically when they're sent an edit
-        // request. Roster membership (by email) is the gate.
+        // request. Roster membership (by email) is the gate. Agency-type
+        // operators are the one explicit exception (no roster, no seat).
         const roster = ctx.email
           ? await prisma.accountMember.findFirst({ where: { accountId, email: ctx.email.toLowerCase() } })
           : null
-        if (!roster) {
+        if (!roster && !isOperator) {
           logger.info({ accountId, ghlUserId: ctx.userId }, '[embed] SSO user has no seat — access denied')
           return reply.status(200).send({ seatRequired: true })
         }
@@ -171,11 +187,14 @@ export async function embedRoutes(app: FastifyInstance) {
             clerkId: await freeGhlClerkId(ctx.userId, accountId),
             ghlUserId: ctx.userId,
             email,
-            name: ctx.userName ?? roster.name ?? null,
+            name: ctx.userName ?? roster?.name ?? null,
             accountId,
           },
         })
-        logger.info({ userId: user.id, accountId }, '[embed] roster member activated seat via SSO')
+        logger.info(
+          { userId: user.id, accountId, operator: isOperator },
+          isOperator ? '[embed] operator user row created (no seat consumed)' : '[embed] roster member activated seat via SSO',
+        )
       }
 
       // Auto-provisioned accounts have a placeholder owner until the buyer's
@@ -185,7 +204,10 @@ export async function embedRoutes(app: FastifyInstance) {
         select: { onboardingCompletedAt: true, status: true, ownerUserId: true },
       })
       try {
-        if (accountRow?.ownerUserId && accountRow.ownerUserId !== user.id) {
+        // Operators NEVER claim ownership: promotion is for the buyer's
+        // first open, and an agency admin peeking at a fresh account must
+        // not become its owner or re-home its GHL settings.
+        if (!isOperator && accountRow?.ownerUserId && accountRow.ownerUserId !== user.id) {
           const owner = await prisma.user.findUnique({
             where: { id: accountRow.ownerUserId },
             select: { id: true, clerkId: true },
@@ -217,6 +239,7 @@ export async function embedRoutes(app: FastifyInstance) {
         accountId,
         accountStatus: account?.status ?? 'active',
         onboardingCompleted: !!account?.onboardingCompletedAt,
+        operator: isOperator,
       })
     },
   )

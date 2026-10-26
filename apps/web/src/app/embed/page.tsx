@@ -82,7 +82,9 @@ export default function EmbedEntry() {
   }
 
   const { session } = state
-  if (!session.onboardingCompleted) {
+  // Operators never enter the client's onboarding chat (their answers
+  // would pollute the client's session) — they always get the shell.
+  if (!session.onboardingCompleted && !session.operator) {
     return (
       <OnboardingChat
         onCompleted={() => {
@@ -95,7 +97,7 @@ export default function EmbedEntry() {
 
   // Post-onboarding: the full client shell (Content · Lead Magnets ·
   // Settings) — GHL clients manage everything from inside the iframe.
-  return <EmbedShell justCompletedOnboarding={justCompletedRef.current} />
+  return <EmbedShell justCompletedOnboarding={justCompletedRef.current} operator={session.operator} />
 }
 
 function Centered({ children }: { children: React.ReactNode }) {

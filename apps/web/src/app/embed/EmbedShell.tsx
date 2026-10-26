@@ -26,7 +26,13 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'settings', label: 'Settings' },
 ]
 
-export function EmbedShell({ justCompletedOnboarding = false }: { justCompletedOnboarding?: boolean }) {
+export function EmbedShell({
+  justCompletedOnboarding = false,
+  operator = false,
+}: {
+  justCompletedOnboarding?: boolean
+  operator?: boolean
+}) {
   // Guides need review right after onboarding — land there; content lands
   // otherwise (the everyday surface).
   const [tab, setTab] = useState<Tab>(justCompletedOnboarding ? 'leadmagnets' : 'content')
@@ -85,6 +91,11 @@ export function EmbedShell({ justCompletedOnboarding = false }: { justCompletedO
 
   return (
     <div className="min-h-screen" style={{ background: heroBackground, ...embedTheme }}>
+      {operator && (
+        <div className="bg-amber-500/90 px-4 py-1.5 text-center text-xs font-semibold tracking-wide text-black">
+          OPERATOR VIEW · agency access, not a client seat · actions are logged
+        </div>
+      )}
       <div className="sticky top-0 z-20 border-b border-border bg-[rgb(26,32,44)]">
         <nav className="mx-auto flex max-w-4xl gap-1 px-4">
           {TABS.map((t) => (

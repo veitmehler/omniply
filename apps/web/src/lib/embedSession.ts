@@ -17,6 +17,9 @@ export interface EmbedSession {
   accountStatus: string
   onboardingCompleted: boolean
   provisioningPending?: boolean
+  /** Agency-type SSO identity (Omniply staff): no seat, banner shown,
+   * never routed into the client's onboarding chat. */
+  operator?: boolean
 }
 
 let session: EmbedSession | null = null
