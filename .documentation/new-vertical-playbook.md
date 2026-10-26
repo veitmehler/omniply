@@ -67,6 +67,12 @@ section D), `wellness-snapshot-nurture.md` (nurture copy + keyword),
    (dupes, dates, seasonal integrity, claims scan), import both envs.
    Vertical-specific ingredient language may be FINE per the claims policy
    (wellness recipes may say detox/immune-support — they sell nothing).
+   ⚠️ **START THE CALENDARS IN THE CURRENT MONTH, not the next one.** The
+   wellness calendars began Nov 1 while the pilot onboarded Oct 22: her
+   content plan's first ten days were legitimately empty, which reads as
+   "something is broken" (it triggered a generation freeze before we found
+   the cause). The billing window offers every date in the cycle; dates
+   without calendar topics simply produce nothing.
 6. **Quiz**: build under its own module (apps/api/src/age-check/ is the
    template), dispatch in `lib/quiz.ts` (onboarding publish, linktree
    label+URL, trigger-link repoint). Capture: vertical lead tag + matched
@@ -110,9 +116,17 @@ section D), `wellness-snapshot-nurture.md` (nurture copy + keyword),
 ## C. Hard-won GHL facts (these cost us real debugging time)
 
 1. **GHL snapshot cloning copies custom-value KEYS but STRIPS their
-   VALUES.** Consequences:
-   - You cannot ship a value in a snapshot. "Neutral default" values
-     (pending-page URLs etc.) arrive EMPTY in clones.
+   VALUES** (evidence status 2026-10-26: ONE airtight proof — the
+   `omniply_vertical` key written with value 'wellness' at 17:30 arrived
+   on an 18:56 clone as the key with an EMPTY value; the other empty
+   values are consistent but could also be stale-snapshot artifacts. The
+   GHL community generally believes values DO travel, so run the 5-minute
+   controlled test before relying on either story: dummy value on the
+   template → re-save snapshot → throwaway sub-account → look → delete).
+   DESIGN POSTURE either way: assume values don't survive; treat it as a
+   bonus if they do. Consequences:
+   - Ship no load-bearing value in a snapshot. "Neutral default" values
+     (pending-page URLs etc.) may arrive EMPTY in clones.
    - The vertical therefore rides in a marker KEY NAME:
      `omniply_vertical_<key>` custom value in the snapshot (value
      irrelevant). Auto-provision reads the key pattern. A hand-set
@@ -125,10 +139,16 @@ section D), `wellness-snapshot-nurture.md` (nurture copy + keyword),
    layouts must be copy-pasted from the UI's code view; attaching emails
    to steps is always manual.
 3. **Email templates (library) DO travel in snapshots** — but trigger-link
-   merge ids inside them DON'T survive replication. URLs a template needs
-   per-location go through custom values written by our code at send-time
-   semantics (the omniply_review_url pattern). Trigger links INSIDE
-   workflow emails DO survive (the guide-drip design relies on it).
+   merge ids inside them DON'T survive replication. WHY (the model that
+   predicts all of this): every asset in a clone gets a NEW id, and the
+   snapshot loader rewrites id references only in asset types it parses —
+   workflow definitions are structured data it understands (trigger links
+   in workflow email steps get remapped; the guide-drip design relies on
+   it), while email-template bodies are opaque HTML it never touches
+   (`{{trigger_link.<id>}}` arrives pointing at the source location's id —
+   dead, silently). RULE: put per-location meaning in NAMES, never ids —
+   custom-value merge tags reference by name and survive everything
+   (the omniply_review_url pattern, the vertical marker key).
 4. **Email builder API recipe**: POST /emails/builder {locationId,
    type:'html'|'blank', title, body} returns 201 but installs DEFAULT
    content; then POST /emails/builder/data {locationId, templateId,
@@ -236,10 +256,23 @@ What stays manual per clinic BY DESIGN: `agentBookingConfig.services`
 6. **Limiting the first burst**: the ContentBatch runs sequentially;
    deleting its `pending` ContentBatchItem rows (never the generating
    ones) trims it safely to any size. Items can be re-added later from
-   the content plan.
+   the content plan. ⚠️ BUT a server-side stop does NOT disable the
+   onboarding finale's "Start generating my first month" button — the
+   client clicked it again 4 minutes after our trim and a FRESH
+   full-month batch ran to completion (~$12, all safely held in review).
+   `ContentBatch.createdByUserId` tells you who started any batch. If you
+   must freeze generation, tell the human at the screen too.
 7. Step buttons that look stuck: `pending` cards poll with a "Check
    again"; a faded button is either the busy flag (reload) or a
    validation (see F1).
+8. **A deploy-killed generation job can orphan its topic**: an
+   `in_progress` ArticleJob that died (telltale: tiny totalCost, no gate
+   verdict, hours old) blocks regeneration of its topic — the batch
+   idempotence skips topics with any non-failed job. Mark the corpse
+   `failed` to free the topic. The batch ITEM self-heals via the 45-min
+   dead-item timeout; the ArticleJob row does not.
+9. **An empty-looking first week is usually the calendar, not a bug** —
+   see B5's calendar start-month rule before debugging the planner.
 
 ## G. Per-vertical cost of the rails (what vertical #3 actually needs)
 
