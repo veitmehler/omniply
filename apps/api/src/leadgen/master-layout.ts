@@ -207,7 +207,7 @@ export function buildMasterHtml(spec: MasterDocSpec): string {
   .back-page .accent-bar { width: 34mm; height: 3px; background: {{brand.accentColor}}; border-radius: 2px; margin: 5mm auto 0; }
   .back-logo { margin-top: 7mm; }
   .back-logo img { max-height: 16mm; max-width: 55mm; }
-  .offer-box { background: {{brand.headerColor}}; border-left: 1.5mm solid {{brand.accentColor}}; border-radius: 3mm; padding: 6mm 12mm; margin-top: 6mm; width: 100%; max-width: 135mm; box-sizing: border-box; color: #fff; }
+  .offer-box { background: {{brand.headerColor}}; border-left: 1.5mm solid {{brand.accentColor}}; border-radius: 3mm; padding: 6mm 12mm; margin-top: 6mm; width: 100%; max-width: 135mm; box-sizing: border-box; color: {{brand.coverInk}}; }
   .offer-box .offer-label { font-weight: 700; color: {{brand.accentColor}}; filter: brightness(1.6); font-size: 13px; text-transform: uppercase; letter-spacing: 1.2px; }
   .offer-box .offer-text { font-size: 20px; line-height: 1.5; margin-top: 2.5mm; font-weight: 700; }
   .offer-box .offer-note { font-size: 15px; color: rgba(255,255,255,.8); margin-top: 2.5mm; }
