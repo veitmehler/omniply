@@ -72,6 +72,11 @@ export interface BrandTokens {
   logoDarkUrl: string
   headerColor: string
   accentColor: string
+  /** CTA buttons follow the client's BUTTON color (round-4 finding: guides
+   * painted buttons with the accent, ignoring nlButtonColor — Whealth's
+   * amber buttons everywhere else, olive in the PDF). */
+  buttonColor: string
+  buttonTextColor: string
   fontColor: string
   /** Contrast-computed ink for anything rendered ON headerColor (cover, strip). */
   coverInk: string
@@ -297,6 +302,8 @@ async function brandTokensFor(userId: string): Promise<BrandTokens> {
     // first, then the settings-page brand colors (diagram* fields), then defaults.
     headerColor,
     accentColor: brand?.nlLinkColor ?? brand?.diagramSecondaryColor ?? '#2a6f97',
+    buttonColor: brand?.nlButtonColor ?? brand?.nlLinkColor ?? brand?.diagramSecondaryColor ?? '#2a6f97',
+    buttonTextColor: brand?.nlButtonTextColor ?? '#ffffff',
     fontColor: brand?.nlFontColor ?? brand?.diagramTextColor ?? '#222222',
     coverInk: lightHeader ? (brand?.nlFontColor ?? '#1f2937') : '#ffffff',
   }

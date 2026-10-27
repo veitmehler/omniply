@@ -210,7 +210,8 @@ export function buildMasterHtml(spec: MasterDocSpec): string {
   .offer-box .offer-text { font-size: 20px; line-height: 1.5; margin-top: 2.5mm; font-weight: 700; }
   .offer-box .offer-note { font-size: 15px; color: rgba(255,255,255,.8); margin-top: 2.5mm; }
   /* Same width as the offer box (Veit 2026-09-14: the two CTA boxes must align). */
-  .back-page .cta-btn { display: block; margin-top: 8mm; background: {{brand.accentColor}}; color: #fff; padding: 5.5mm 14mm; border-radius: 3mm; font-size: 22px; font-weight: 700; width: 100%; max-width: 135mm; box-sizing: border-box; text-decoration: none; }
+  .back-page .cta-btn { display: block; margin-top: 8mm; background: {{brand.buttonColor}}; color: {{brand.buttonTextColor}}; padding: 5.5mm 14mm; border-radius: 3mm; font-size: 22px; font-weight: 700; width: 100%; max-width: 135mm; box-sizing: border-box; text-decoration: none; }
+  .back-page .cta-btn.cta-secondary { background: transparent; border: 0.8mm solid {{brand.buttonColor}}; color: {{brand.headerColor}}; margin-top: 5mm; }
   .back-page .cta-btn .cta-phone { display: block; font-size: 32px; font-weight: 800; letter-spacing: 0.5px; margin-top: 7mm; }
   .back-page .contact { margin-top: 9mm; font-size: 17px; line-height: 1.8; color: {{brand.fontColor}}; }
   .disclaimer-page { page-break-before: always; height: 250mm; display: flex; flex-direction: column; padding: 0 25mm; }
@@ -260,11 +261,11 @@ ${body}
     <div class="offer-note">Mention this guide when you book.</div>
   </div>
   <a class="cta-btn" href="tel:{{brand.phoneTel}}">{{brand.bookingCta}}<span class="cta-phone" data-optional="phone">{{brand.phone}}</span></a>
+  <a class="cta-btn cta-secondary" href="{{brand.bookingUrl}}" data-optional="bookingUrl">Book online</a>
   <div class="contact">
     <strong>{{brand.organizationName}}</strong><br/>
     {{brand.address}}<br/>
     <span data-optional="phone"><a href="tel:{{brand.phoneTel}}" style="color:inherit;text-decoration:none">{{brand.phone}}</a> · </span><span data-optional="email">{{brand.email}}</span><br/>
-    <span data-optional="bookingUrl">Book online: {{brand.bookingUrl}}<br/></span>
     <span data-optional="openingHours">{{brand.openingHours}}<br/></span>
     {{brand.website}}
   </div>
