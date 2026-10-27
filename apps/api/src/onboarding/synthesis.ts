@@ -174,6 +174,8 @@ ${transcripts.slice(0, 8000)}
 
 ${articleSample ? `SOURCE B — REAL WRITTEN SAMPLE (borrow the written register: structure, sentence discipline, formatting habits):\n${articleSample.slice(0, 12_000)}` : 'SOURCE B: none — derive written register conservatively from the spoken material (professional, clear, warm).'}
 
+The instruction is for PROSE READ ON A PAGE (articles, newsletters, guides). The sample may be a script, talk, slide deck or outline — NEVER tell the AI to reproduce such format artifacts: no stage directions or bracketed cues (e.g. [PAUSE]), no act/scene/slide headers, no speaker labels, no delivery notes. Translate what they signal (rhythm, emphasis, dramatic build) into prose-writing guidance instead.
+
 Return STRICT JSON: {"writingStyle": "two paragraphs of style instructions, no meta-commentary"}`,
     'onboarding.writing_style',
     0.3,
