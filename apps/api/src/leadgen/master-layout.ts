@@ -153,7 +153,8 @@ export function buildMasterHtml(spec: MasterDocSpec): string {
   .cover .cover-art { background: #fff; border-radius: 3mm; padding: 6mm; margin-top: 9mm; max-width: 128mm; }
   .cover .cover-art svg { width: 100%; height: auto; display: block; }
   .cover-checklist { list-style: none; margin-top: 8mm; font-size: 18px; line-height: 2; max-width: 140mm; }
-  .cover-checklist li::before { content: '✓'; color: {{brand.accentColor}}; font-weight: 700; margin-right: 3mm; }
+  .cover-checklist li { position: relative; padding-left: 9mm; }
+  .cover-checklist li::before { content: '✓'; color: {{brand.accentColor}}; font-weight: 700; position: absolute; left: 0; top: 0; }
   .cover .cover-footer { font-size: 15px; opacity: .85; }
 
   /* ── Content pages ── */
@@ -163,7 +164,7 @@ export function buildMasterHtml(spec: MasterDocSpec): string {
   .page-title h1 { font-size: 34px; line-height: 1.15; color: {{brand.headerColor}}; margin-top: 2.5mm; }
   .page-title .pt-sub { font-size: 19px; line-height: 1.45; color: #5b6673; margin-top: 3mm; max-width: 155mm; }
   .page-title .pt-bar { width: 34mm; height: 2mm; background: {{brand.accentColor}}; border-radius: 2px; margin-top: 5mm; }
-  .part-title { color: {{brand.headerColor}}; font-size: 19px; text-transform: uppercase; letter-spacing: 1.8px; border-bottom: 0.6mm solid {{brand.accentColor}}; padding-bottom: 2.5mm; margin: 10mm 0 8mm; page-break-after: avoid; }
+  .part-title { color: {{brand.headerColor}}; font-size: 19px; text-transform: uppercase; letter-spacing: 1.8px; border-bottom: 0.6mm solid {{brand.accentColor}}; padding-bottom: 2.5mm; margin: 2mm 0 8mm; page-break-before: always; page-break-after: avoid; }
   .part-lede { margin: -4mm 0 7mm; }
   .part-break { page-break-before: always; }
   .part-numbered { display: flex; align-items: center; gap: 4mm; text-transform: none; letter-spacing: 0; font-size: 26px; }
@@ -199,21 +200,21 @@ export function buildMasterHtml(spec: MasterDocSpec): string {
   .mini-label { display: block; font-weight: 700; color: {{brand.accentColor}}; font-size: 12px; text-transform: uppercase; letter-spacing: .8px; margin-bottom: 1mm; }
 
   /* ── Back page ── */
-  .back-page { page-break-before: always; height: 250mm; display: flex; flex-direction: column; text-align: center; padding: 10mm 25mm 0; }
+  .back-page { page-break-before: always; height: 250mm; display: flex; flex-direction: column; text-align: center; padding: 5mm 25mm 0; }
   .back-main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
   .back-page h2 { justify-content: center; font-size: 32px; }
   .back-page .accent-bar { width: 34mm; height: 2mm; background: {{brand.accentColor}}; border-radius: 2px; margin: 5mm auto 0; }
-  .back-logo { margin-top: 10mm; }
+  .back-logo { margin-top: 7mm; }
   .back-logo img { max-height: 16mm; max-width: 55mm; }
-  .offer-box { background: {{brand.headerColor}}; border-left: 1.5mm solid {{brand.accentColor}}; border-radius: 3mm; padding: 7mm 12mm; margin-top: 8mm; width: 100%; max-width: 135mm; box-sizing: border-box; color: #fff; }
+  .offer-box { background: {{brand.headerColor}}; border-left: 1.5mm solid {{brand.accentColor}}; border-radius: 3mm; padding: 6mm 12mm; margin-top: 6mm; width: 100%; max-width: 135mm; box-sizing: border-box; color: #fff; }
   .offer-box .offer-label { font-weight: 700; color: {{brand.accentColor}}; filter: brightness(1.6); font-size: 13px; text-transform: uppercase; letter-spacing: 1.2px; }
   .offer-box .offer-text { font-size: 20px; line-height: 1.5; margin-top: 2.5mm; font-weight: 700; }
   .offer-box .offer-note { font-size: 15px; color: rgba(255,255,255,.8); margin-top: 2.5mm; }
   /* Same width as the offer box (Veit 2026-09-14: the two CTA boxes must align). */
-  .back-page .cta-btn { display: block; margin-top: 8mm; background: {{brand.buttonColor}}; color: {{brand.buttonTextColor}}; padding: 5.5mm 14mm; border-radius: 3mm; font-size: 22px; font-weight: 700; width: 100%; max-width: 135mm; box-sizing: border-box; text-decoration: none; }
-  .back-page .cta-btn.cta-secondary { background: transparent; border: 0.8mm solid {{brand.buttonColor}}; color: {{brand.headerColor}}; margin-top: 5mm; }
+  .back-page .cta-btn { display: block; margin-top: 6mm; background: {{brand.buttonColor}}; color: {{brand.buttonTextColor}}; padding: 5.5mm 14mm; border-radius: 3mm; font-size: 22px; font-weight: 700; width: 100%; max-width: 135mm; box-sizing: border-box; text-decoration: none; }
+  .back-page .cta-btn.cta-secondary { background: transparent; border: 0.8mm solid {{brand.buttonColor}}; color: {{brand.headerColor}}; margin-top: 4mm; }
   .back-page .cta-btn .cta-phone { display: block; font-size: 32px; font-weight: 800; letter-spacing: 0.5px; margin-top: 7mm; }
-  .back-page .contact { margin-top: 9mm; font-size: 17px; line-height: 1.8; color: {{brand.fontColor}}; }
+  .back-page .contact { margin-top: 5mm; font-size: 17px; line-height: 1.7; color: {{brand.fontColor}}; }
   .disclaimer-page { page-break-before: always; height: 250mm; display: flex; flex-direction: column; padding: 0 25mm; }
   .disclaimer { margin-top: auto; margin-bottom: 0; font-size: 13px; line-height: 1.55; color: #777; max-width: 160mm; }
 </style>
@@ -262,6 +263,7 @@ ${body}
   </div>
   <a class="cta-btn" href="tel:{{brand.phoneTel}}">{{brand.bookingCta}}<span class="cta-phone" data-optional="phone">{{brand.phone}}</span></a>
   <a class="cta-btn cta-secondary" href="{{brand.bookingUrl}}" data-optional="bookingUrl">Book online</a>
+  <div class="back-logo" data-optional="logoDarkUrl"><img src="{{brand.logoDarkUrl}}"/></div>
   <div class="contact">
     <strong>{{brand.organizationName}}</strong><br/>
     {{brand.address}}<br/>
@@ -269,7 +271,6 @@ ${body}
     <span data-optional="openingHours">{{brand.openingHours}}<br/></span>
     {{brand.website}}
   </div>
-  <div class="back-logo" data-optional="logoDarkUrl"><img src="{{brand.logoDarkUrl}}"/></div>
   </div>
 </div>
 
