@@ -94,6 +94,7 @@ model Account {
   // Provider config (direct-cliniko/nookal): businessId, practitionerIds,
   // appointmentTypeId, etc. Keys live in the ApiKey table.
   agentBookingConfig     Json?
+  mutedSenders          AgentMutedSender[]
   agentAppointments      AgentAppointment[]
   pmsSyncState           PmsSyncState?
   pmsPatientIndex        PmsPatientIndex[]
@@ -109,6 +110,24 @@ model Account {
 
   @@index([articleCalendarId])
   @@map("accounts")
+}
+
+// Bot-loop guard (2026-10-27): automated counterparts (courier bots etc.)
+// muted per account+visitor; GHL contact carries WhatsApp DND as the
+// clinic-visible marker — lifting that DND un-mutes (human override).
+model AgentMutedSender {
+  id           String    @id @default(cuid())
+  accountId    String
+  account      Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  visitorKey   String
+  ghlContactId String?
+  channel      String? // messenger channel at detection time (WhatsApp | FB | IG)
+  reason       String // self-identified-bot | repeated-messages | manual
+  createdAt    DateTime  @default(now())
+  expiresAt    DateTime?
+
+  @@unique([accountId, visitorKey])
+  @@map("agent_muted_senders")
 }
 
 // One appointment the AI agent booked into GHL (missed-call sweep Part 4a).

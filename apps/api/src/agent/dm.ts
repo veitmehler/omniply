@@ -3,6 +3,7 @@ import { logger } from '../lib/logger'
 import { getGhlCredentials } from '../lib/ghl/settings'
 import { getGhlContactTags, sendGhlConversationMessage } from '../lib/ghl/client'
 import { runAgentTurn } from './engine'
+import { applyBotGuard } from './bot-guard'
 
 /**
  * Social DM transport (transport 2 of the transport-agnostic agent core).
@@ -139,6 +140,24 @@ export async function processDmTurn(data: DmJobData): Promise<void> {
   const hit = tags.find((t) => SUPPRESS_TAGS.includes(t.toLowerCase().trim()))
   if (hit) {
     logger.info({ accountId: data.accountId, contactId: data.contactId, tag: hit }, '[agent-dm] suppressed — skipping')
+    return
+  }
+
+  // Bot-loop guard (layer 3): automated counterparts are muted BEFORE any
+  // LLM spend — see agent/bot-guard.ts (Silpo Pack incident, 2026-10-27).
+  const guard = await applyBotGuard({
+    accountId: data.accountId,
+    visitorKey: `ghl:${data.contactId}`,
+    ghlContactId: data.contactId,
+    message: data.message,
+    channel: sendType,
+    apiKey: creds.apiKey,
+  })
+  if (guard.skip) {
+    logger.info(
+      { accountId: data.accountId, contactId: data.contactId, reason: guard.reason },
+      '[agent-dm] bot-guard skip',
+    )
     return
   }
 

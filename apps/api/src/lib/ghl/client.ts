@@ -634,6 +634,40 @@ export async function createGhlContactNote(apiKey: string, contactId: string, bo
   })
 }
 
+/** WhatsApp DND state of a contact — the clinic-visible mute marker.
+ *  null = contact unreadable (fail open on the guard's unmute check). */
+export async function getGhlContactWhatsAppDnd(apiKey: string, contactId: string): Promise<boolean | null> {
+  try {
+    const data = await ghlRequest<{ contact?: { dndSettings?: Record<string, { status?: string }> } }>(
+      apiKey,
+      `/contacts/${contactId}`,
+    )
+    return data.contact ? data.contact.dndSettings?.WhatsApp?.status === 'active' : null
+  } catch {
+    return null
+  }
+}
+
+/** Set channel-scoped DND (WhatsApp) on a contact — merges existing settings
+ *  so other channels' DND state is preserved. */
+export async function setGhlContactWhatsAppDnd(apiKey: string, contactId: string, message: string): Promise<boolean> {
+  try {
+    const data = await ghlRequest<{ contact?: { dndSettings?: Record<string, unknown> } }>(
+      apiKey,
+      `/contacts/${contactId}`,
+    )
+    const dndSettings = {
+      ...(data.contact?.dndSettings ?? {}),
+      WhatsApp: { status: 'active', message: message.slice(0, 160), code: '' },
+    }
+    await ghlRequest<unknown>(apiKey, `/contacts/${contactId}`, { method: 'PUT', body: { dndSettings } })
+    return true
+  } catch (err) {
+    logger.warn({ err, contactId }, '[ghl] WhatsApp DND set failed')
+    return false
+  }
+}
+
 /**
  * Resolve the "Guide Link" contact custom field id for a location (snapshot
  * asset, 2026-07-28: the single per-contact field the nurture email merges —
