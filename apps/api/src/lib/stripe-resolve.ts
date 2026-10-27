@@ -7,21 +7,29 @@
  * contact in the SELLING location — which collides when one person checks
  * out for several clinics. None of those may bind an account.
  *
- * The only immutable chain is:
- *   Stripe subscription id (parent.subscription_details.subscription)
- *     → GHL SaaS API /saas-api/public-api/locations?subscriptionId=…
- *     → GHL locationId (created once at provisioning)
- *     → account (ghlSettings.ghlLocationId → owner → account).
+ * The only immutable chain is the Stripe subscription id
+ * (parent.subscription_details.subscription) matched against GHL's own
+ * record of it on the purchased location: GET /locations/{id} exposes
+ * settings.saasSettings.planDetails.subscriptionId (verified live
+ * 2026-10-27 — works with both our agency and location tokens; the
+ * dedicated SaaS API rejects every token type a sub-account app or agency
+ * PIT can produce, so it is deliberately NOT used).
  *
- * After the first resolution the subscription id is persisted on the
- * account, so renewals match directly without the GHL call.
+ * Binding happens from both directions: provisioning stores the new
+ * location's subscription id on the account the moment it exists, and
+ * resolution scans recent unbound accounts' location records for a held
+ * event's subscription id. Either path alone is deterministic at any
+ * signup volume; after first binding, renewals match directly.
  */
 import { prisma } from '@omniply/shared'
 import { logger } from './logger'
 import { getAgencyToken } from './ghl/app-oauth'
 
-const SAAS_LOCATIONS_URL = 'https://services.leadconnectorhq.com/saas-api/public-api/locations'
-const SAAS_API_VERSION = '2021-04-15'
+const LOCATIONS_URL = 'https://services.leadconnectorhq.com/locations'
+const API_VERSION = '2021-07-28'
+/** How far back an unbound account is still a candidate for event matching. */
+const CANDIDATE_WINDOW_DAYS = 30
+const CANDIDATE_CAP = 25
 
 export interface StripeEventFields {
   subscriptionId: string | null
@@ -77,40 +85,47 @@ export function extractFields(obj: Record<string, unknown>): StripeEventFields {
   }
 }
 
-/** GHL SaaS API: which location(s) does this Stripe subscription belong to? */
-export async function saasLocationsForSubscription(subscriptionId: string): Promise<string[]> {
-  const agency = await getAgencyToken()
-  if (!agency) {
-    logger.warn('[stripe-resolve] no agency token — SaaS lookup unavailable')
-    return []
-  }
-  const url = `${SAAS_LOCATIONS_URL}?subscriptionId=${encodeURIComponent(subscriptionId)}&companyId=${encodeURIComponent(agency.companyId)}`
-  const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${agency.token}`, Version: SAAS_API_VERSION, Accept: 'application/json' },
-  })
-  if (!res.ok) {
-    logger.warn({ status: res.status, subscriptionId }, '[stripe-resolve] SaaS locations lookup failed')
-    return []
-  }
-  const body = (await res.json().catch(() => null)) as unknown
-  const arr = Array.isArray(body) ? body : ((body as { locations?: unknown })?.locations ?? [])
-  return (Array.isArray(arr) ? arr : []).filter((x): x is string => typeof x === 'string' && !!x)
+export interface LocationSaasSubscription {
+  subscriptionId: string | null
+  customerId: string | null
+  subscriptionStatus: string | null
 }
 
-async function accountIdForLocation(locationId: string): Promise<string | null> {
-  const gs = await prisma.ghlSettings.findFirst({
-    where: { ghlLocationId: locationId },
-    select: { userId: true },
+/** GHL's own billing linkage, straight off the location record. */
+export async function fetchLocationSaasSubscription(locationId: string): Promise<LocationSaasSubscription | null> {
+  const agency = await getAgencyToken()
+  if (!agency) {
+    logger.warn('[stripe-resolve] no agency token — location lookup unavailable')
+    return null
+  }
+  const res = await fetch(`${LOCATIONS_URL}/${encodeURIComponent(locationId)}`, {
+    headers: { Authorization: `Bearer ${agency.token}`, Version: API_VERSION, Accept: 'application/json' },
   })
-  if (!gs) return null
-  const acct = await prisma.account.findFirst({ where: { ownerUserId: gs.userId }, select: { id: true } })
-  return acct?.id ?? null
+  if (!res.ok) {
+    logger.warn({ status: res.status, locationId }, '[stripe-resolve] location lookup failed')
+    return null
+  }
+  const body = (await res.json().catch(() => null)) as {
+    location?: { settings?: { saasSettings?: Record<string, unknown> } }
+    settings?: { saasSettings?: Record<string, unknown> }
+  } | null
+  const saas = (body?.location?.settings?.saasSettings ?? body?.settings?.saasSettings) as
+    | { customerId?: unknown; subscriptionStatus?: unknown; planDetails?: { subscriptionId?: unknown } }
+    | undefined
+  if (!saas) return null
+  return {
+    subscriptionId: str(saas.planDetails?.subscriptionId),
+    customerId: str(saas.customerId),
+    subscriptionStatus: str(saas.subscriptionStatus),
+  }
 }
 
 /**
  * Resolve the owning account for a Stripe event. Immutable identifiers only:
- * bound subscription id, else subscription id → GHL location → account.
- * Returns null for events that cannot be resolved yet (held + retried).
+ * a bound subscription id matches directly; otherwise recent unbound
+ * accounts' location records are checked for GHL's own copy of the
+ * subscription id. Returns null for events that cannot be resolved yet
+ * (held + retried by the reresolve cron).
  */
 export async function resolveAccount(fields: StripeEventFields): Promise<string | null> {
   const { subscriptionId } = fields
@@ -122,10 +137,24 @@ export async function resolveAccount(fields: StripeEventFields): Promise<string 
   })
   if (bound) return bound.id
 
-  const locations = await saasLocationsForSubscription(subscriptionId)
-  for (const loc of locations) {
-    const accountId = await accountIdForLocation(loc)
-    if (accountId) return accountId
+  const candidates = await prisma.account.findMany({
+    where: {
+      stripeSubscriptionId: null,
+      createdAt: { gte: new Date(Date.now() - CANDIDATE_WINDOW_DAYS * 24 * 60 * 60 * 1000) },
+    },
+    orderBy: { createdAt: 'desc' },
+    take: CANDIDATE_CAP,
+    select: { id: true, ownerUserId: true },
+  })
+  for (const cand of candidates) {
+    if (!cand.ownerUserId) continue
+    const gs = await prisma.ghlSettings.findFirst({
+      where: { userId: cand.ownerUserId },
+      select: { ghlLocationId: true },
+    })
+    if (!gs?.ghlLocationId) continue
+    const saas = await fetchLocationSaasSubscription(gs.ghlLocationId)
+    if (saas?.subscriptionId && saas.subscriptionId === subscriptionId) return cand.id
   }
   return null
 }

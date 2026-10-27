@@ -12,6 +12,7 @@
 import { randomBytes } from 'node:crypto'
 import { prisma, encrypt } from '@omniply/shared'
 import { mintLocationToken } from './app-oauth'
+import { fetchLocationSaasSubscription, bindStripeIdentity } from '../stripe-resolve'
 import { logger } from '../logger'
 
 const GHL_BASE = 'https://services.leadconnectorhq.com'
@@ -215,6 +216,31 @@ export async function provisionLocation(
   // sub-account is born at purchase, so users with phones cannot exist yet —
   // this window always found nobody. ensureStaffContacts runs at the
   // onboarding finale instead (routes/onboarding.ts), when setup is done.
+
+  // Billing pre-bind (2026-10-27): GHL stores the purchase's Stripe
+  // subscription id on the location record (saasSettings.planDetails) — read
+  // it now so every billing event, including a first invoice that raced this
+  // provisioning, matches the account by direct subscription-id lookup.
+  // Best-effort: the reresolve cron covers any miss from the other direction.
+  try {
+    const saas = await fetchLocationSaasSubscription(locationId)
+    if (saas?.subscriptionId) {
+      await bindStripeIdentity(account.id, {
+        subscriptionId: saas.subscriptionId,
+        customerId: saas.customerId,
+        email: null,
+        metadata: {},
+      })
+      logger.info(
+        { locationId, accountId: account.id, subscriptionId: saas.subscriptionId, subscriptionStatus: saas.subscriptionStatus },
+        '[auto-provision] Stripe subscription pre-bound from location record',
+      )
+    } else {
+      logger.info({ locationId, accountId: account.id }, '[auto-provision] no SaaS subscription on location record (yet) — reresolve cron will bind')
+    }
+  } catch (err) {
+    logger.warn({ err, locationId, accountId: account.id }, '[auto-provision] subscription pre-bind failed — reresolve cron will bind')
+  }
 
   logger.info({ locationId, accountId: account.id, source, ownerEmail, vertical }, '[auto-provision] account provisioned')
   return account.id

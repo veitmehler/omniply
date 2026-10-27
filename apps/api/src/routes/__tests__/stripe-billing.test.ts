@@ -7,12 +7,14 @@ const accountFindFirst = vi.fn()
 const userFindFirst = vi.fn()
 const stripeEventCreate = vi.fn()
 const stripeEventUpdate = vi.fn()
+const accountFindMany = vi.fn()
 const ghlSettingsFindFirst = vi.fn()
 vi.mock('@omniply/shared', () => ({
   prisma: {
     account: {
       findUnique: (...a: unknown[]) => accountFindUnique(...a),
       findFirst: (...a: unknown[]) => accountFindFirst(...a),
+      findMany: (...a: unknown[]) => accountFindMany(...a),
       update: (...a: unknown[]) => accountUpdate(...a),
     },
     user: { findFirst: (...a: unknown[]) => userFindFirst(...a) },
@@ -27,9 +29,13 @@ const getAgencyToken = vi.fn()
 vi.mock('../../lib/ghl/app-oauth', () => ({
   getAgencyToken: (...a: unknown[]) => getAgencyToken(...a),
 }))
-// The SaaS locations lookup goes through global fetch.
-const saasLocations = vi.fn<() => string[]>(() => [])
-vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => saasLocations() })))
+// The location-record lookup goes through global fetch; the stub returns a
+// GHL location body whose saasSettings carries this subscription id.
+const locationSub = vi.fn<() => string | null>(() => null)
+vi.stubGlobal('fetch', vi.fn(async () => ({
+  ok: true,
+  json: async () => ({ location: { settings: { saasSettings: { customerId: 'cus_shared', subscriptionStatus: 'active', planDetails: { subscriptionId: locationSub() } } } } }),
+})))
 vi.mock('../../lib/logger', () => ({ logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() } }))
 const applyBillingEvent = vi.fn()
 vi.mock('../../lib/account-lifecycle', () => ({
@@ -89,8 +95,9 @@ beforeEach(() => {
   stripeEventUpdate.mockResolvedValue({})
   accountUpdate.mockResolvedValue({})
   ghlSettingsFindFirst.mockResolvedValue(null)
+  accountFindMany.mockResolvedValue([])
   getAgencyToken.mockResolvedValue(null)
-  saasLocations.mockReturnValue([])
+  locationSub.mockReturnValue(null)
   applyBillingEvent.mockResolvedValue({ applied: true, duplicate: false })
 })
 
@@ -135,11 +142,11 @@ describe('POST /stripe/events', () => {
     await app.close()
   })
 
-  it('first payment: resolves subscription -> GHL location -> account and binds the subscription id', async () => {
+  it('first payment: matches the subscription id on an unbound account\'s location record', async () => {
     getAgencyToken.mockResolvedValue({ token: 't', companyId: 'comp_1' })
-    saasLocations.mockReturnValue(['LOC_1'])
-    ghlSettingsFindFirst.mockResolvedValue({ userId: 'user_1' })
-    accountFindFirst.mockResolvedValue({ id: 'acct_9' })
+    accountFindMany.mockResolvedValue([{ id: 'acct_9', ownerUserId: 'user_1' }])
+    ghlSettingsFindFirst.mockResolvedValue({ ghlLocationId: 'LOC_1' })
+    locationSub.mockReturnValue('sub_1')
     const app = await build()
     const res = await post(app, invoiceEvent())
     expect(res.statusCode).toBe(200)
