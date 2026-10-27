@@ -21,6 +21,7 @@ import { mcpRoutes } from './mcp/routes'
 import { voiceAgentRoutes } from './routes/voice-agent'
 import { voiceAssistantRoutes } from './routes/voice-assistant'
 import { pmsRoutes } from './routes/pms'
+import { agentBookingRoutes } from './routes/agent-booking'
 import { marketingRoutes } from './routes/marketing'
 import { articlesPublicRoutes } from './routes/articles-public'
 import { ghlReviewRoutes } from './routes/ghl-reviews'
@@ -124,6 +125,7 @@ async function main() {
   await app.register(voiceAgentRoutes, { prefix: '/api' })
   await app.register(voiceAssistantRoutes, { prefix: '/api' })
   await app.register(pmsRoutes, { prefix: '/api' })
+  await app.register(agentBookingRoutes, { prefix: '/api' })
   await app.register(marketingRoutes, { prefix: '/api' })
   await app.register(articlesPublicRoutes, { prefix: '/api' })
   await app.register(ghlReviewRoutes, { prefix: '/api' })

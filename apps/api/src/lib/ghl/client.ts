@@ -1049,6 +1049,25 @@ export async function countGhlAppointments(
   return count
 }
 
+/** Booked events on one calendar in [startMs, endMs] (exclusiveWith filter). */
+export async function listGhlCalendarEvents(
+  apiKey: string,
+  locationId: string,
+  calendarId: string,
+  startMs: number,
+  endMs: number,
+): Promise<{ startTime: string; endTime: string; appointmentStatus?: string }[]> {
+  const data = await ghlRequest<{ events?: { startTime?: string; endTime?: string; appointmentStatus?: string }[] }>(
+    apiKey,
+    `/calendars/events?locationId=${encodeURIComponent(locationId)}&calendarId=${encodeURIComponent(calendarId)}&startTime=${startMs}&endTime=${endMs}`,
+    { version: CALENDARS_VERSION },
+  )
+  return (data.events ?? []).filter(
+    (e): e is { startTime: string; endTime: string; appointmentStatus?: string } =>
+      typeof e.startTime === 'string' && typeof e.endTime === 'string',
+  )
+}
+
 /** Unread-conversation count for the location (AI Employee dashboard). */
 export async function countUnreadGhlConversations(apiKey: string, locationId: string): Promise<number | null> {
   try {

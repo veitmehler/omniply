@@ -10,7 +10,7 @@
 import { prisma } from '@omniply/shared'
 import { logger } from '../lib/logger'
 import { providerFor, isDirectMode, normalizeBookingMode, type BookingMode } from '../lib/booking'
-import { parseBookingServices, type BookingService } from '../lib/booking/services'
+import { parseBookingServices, servicesForMode, serviceProviderTarget, type BookingService } from '../lib/booking/services'
 
 export interface OfferedSlot {
   /** Exact ISO string from the free-slots endpoint — the book_appointment token. */
@@ -143,6 +143,59 @@ export function pickSlots(all: string[], now: Date, timezone: string | null, cap
   return out
 }
 
+/** Busy-interval filter for exclusiveWith services: a slot survives only if
+ *  [start, start+duration) overlaps no booked (non-cancelled) event on the
+ *  excluded services' calendars. Event-fetch failures fail OPEN (slots kept)
+ *  — GHL's own same-staff blocking remains the first line of defense. */
+async function applyExclusiveWithFilter(
+  ownerUserId: string,
+  services: BookingService[],
+  fetched: ServiceSlots[],
+  startMs: number,
+  endMs: number,
+): Promise<void> {
+  const { getGhlCredentials } = await import('../lib/ghl/settings')
+  const { listGhlCalendarEvents } = await import('../lib/ghl/client')
+  const creds = await getGhlCredentials(ownerUserId)
+  if (!creds) return
+  const byKey = new Map(services.map((s) => [s.key, s]))
+  const busyByCalendar = new Map<string, { start: number; end: number }[]>()
+  for (const svc of services) {
+    if (!svc.exclusiveWith?.length) continue
+    const mine = fetched.find((f) => f.key === svc.key)
+    if (!mine || !mine.slots.length) continue
+    const busy: { start: number; end: number }[] = []
+    for (const exKey of svc.exclusiveWith) {
+      const exCal = byKey.get(exKey)?.calendarId
+      if (!exCal) continue
+      if (!busyByCalendar.has(exCal)) {
+        try {
+          const events = await listGhlCalendarEvents(creds.apiKey, creds.locationId, exCal, startMs, endMs)
+          busyByCalendar.set(
+            exCal,
+            events
+              .filter((e) => e.appointmentStatus !== 'cancelled')
+              .map((e) => ({ start: Date.parse(e.startTime), end: Date.parse(e.endTime) }))
+              .filter((iv) => Number.isFinite(iv.start) && Number.isFinite(iv.end)),
+          )
+        } catch (err) {
+          logger.warn({ err, calendarId: exCal }, '[agent] exclusiveWith event fetch failed — filter skipped for this calendar')
+          busyByCalendar.set(exCal, [])
+        }
+      }
+      busy.push(...(busyByCalendar.get(exCal) ?? []))
+    }
+    if (!busy.length) continue
+    const durMs = (svc.durationMinutes ?? 60) * 60 * 1000
+    mine.slots = mine.slots.filter((slot) => {
+      const s = Date.parse(slot.startIso)
+      if (!Number.isFinite(s)) return true
+      const e = s + durMs
+      return !busy.some((iv) => s < iv.end && e > iv.start)
+    })
+  }
+}
+
 export async function bookingInfoFor(accountId: string, ownerUserId: string): Promise<BookingInfo> {
   const hit = cache.get(accountId)
   if (hit && hit.expires > Date.now()) return hit.info
@@ -165,15 +218,19 @@ export async function bookingInfoFor(accountId: string, ownerUserId: string): Pr
       const timezone = settings?.socialTimezone ?? null
       const now = Date.now()
       const windowEnd = now + WINDOW_DAYS * 24 * 60 * 60 * 1000
-      const services = mode === 'direct-ghl' ? parseBookingServices(account?.agentBookingConfig) : null
+      const services = isDirectMode(mode)
+        ? servicesForMode(parseBookingServices(account?.agentBookingConfig), mode)
+        : null
       if (services) {
-        // Multi-service: one inventory per service calendar. A single
-        // calendar failing must not blank the other services' times.
+        // Multi-service: one inventory per service target (GHL calendar or
+        // Cliniko appointment type). A single target failing must not blank
+        // the other services' times.
         const fetched = await Promise.all(
           services.map(async (svc: BookingService): Promise<ServiceSlots> => {
             try {
+              const target = serviceProviderTarget(mode, account?.agentBookingConfig ?? null, svc, null)
               const all = await provider.freeSlots(
-                { accountId, ownerUserId, config: account?.agentBookingConfig ?? null, calendarId: svc.calendarId },
+                { accountId, ownerUserId, config: target.config, calendarId: target.calendarId },
                 now,
                 windowEnd,
               )
@@ -184,6 +241,12 @@ export async function bookingInfoFor(accountId: string, ownerUserId: string): Pr
             }
           }),
         )
+        // exclusiveWith (GHL only): subtract BOOKED events of the listed
+        // services' calendars from this service's offered slots (e.g. a
+        // consultation that needs the owner free while anything else runs).
+        if (mode === 'direct-ghl' && services.some((s) => s.exclusiveWith?.length)) {
+          await applyExclusiveWithFilter(ownerUserId, services, fetched, now, windowEnd)
+        }
         const withSlots = fetched.filter((s) => s.slots.length > 0)
         info = withSlots.length
           ? { mode, bookable: true, slots: withSlots.flatMap((s) => s.slots), services: withSlots }

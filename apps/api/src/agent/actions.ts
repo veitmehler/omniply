@@ -395,8 +395,8 @@ export async function executeBooking(
   // Multi-service (wellness plan Phase 1): a named service books on ITS
   // calendar. The validator already pinned slot↔service; an unknown key here
   // means config changed mid-conversation — fail loudly, never book wrong.
-  const { parseBookingServices } = await import('../lib/booking/services')
-  const services = mode === 'direct-ghl' ? parseBookingServices(account?.agentBookingConfig) : null
+  const { parseBookingServices, servicesForMode, serviceProviderTarget } = await import('../lib/booking/services')
+  const services = servicesForMode(parseBookingServices(account?.agentBookingConfig), mode)
   const service = action.service ? (services?.find((s) => s.key === action.service) ?? null) : null
   if (action.service && !service) throw new Error(`Unknown booking service '${action.service}'`)
 
@@ -429,8 +429,7 @@ export async function executeBooking(
     {
       accountId: ctx.accountId,
       ownerUserId: ctx.ownerUserId,
-      config: account?.agentBookingConfig ?? null,
-      calendarId: service?.calendarId ?? account?.agentBookingCalendarId ?? null,
+      ...serviceProviderTarget(mode, account?.agentBookingConfig ?? null, service, account?.agentBookingCalendarId ?? null),
     },
     {
       slotStart: action.slotStart,
