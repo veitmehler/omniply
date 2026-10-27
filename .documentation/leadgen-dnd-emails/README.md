@@ -43,10 +43,10 @@ re-capture a layout, use the builder's network tab (`builder/data` request).
 | Guide delivery - First Visit | Your guide is here + one quick question |
 | Sunday read - First Visit | Your guide is here + one quick question |
 | Sunday read - Bounce Back Stronger | Your guide is here + one quick question |
-| Guide pitch - Bounce Back Stronger | Your results are capped by your recovery |
-| Guide pitch - The Sleep Upgrade | Tired of being tired? |
-| Guide pitch - The Deep Rest Protocol | Stress is not your enemy |
-| Guide pitch - The Invisible Fuel Layer | Two people eat the same. One recovers faster. |
+| Bonus Guide - Bounce Back Stronger | Your results are capped by your recovery |
+| Bonus Guide - The Sleep Upgrade | Tired of being tired? |
+| Bonus Guide - The Deep Rest Protocol | Stress is not your enemy |
+| Bonus Guide - The Invisible Fuel Layer | Two people eat the same. One recovers faster. |
 
 Preheaders are baked into each template (previewText).
 
@@ -54,11 +54,11 @@ Preheaders are baked into each template (previewText).
 
 | Branch (requested guide / tag) | 1 | 2 | 3 | 4 | 5 |
 |---|---|---|---|---|---|
-| The Sleep Upgrade | delivery SU | Sunday read FV | pitch BB | pitch IF | pitch DR |
-| Bounce Back Stronger | delivery BB | Sunday read FV | pitch SU | pitch IF | pitch DR |
-| First Visit | delivery FV | Sunday read BB | pitch SU | pitch IF | pitch DR |
-| The Deep Rest Protocol | delivery DR | Sunday read FV | pitch BB | pitch SU | pitch IF |
-| The Invisible Fuel Layer | delivery IF | Sunday read FV | pitch BB | pitch SU | pitch DR |
+| The Sleep Upgrade | delivery SU | Sunday read FV | bonus BB | bonus IF | bonus DR |
+| Bounce Back Stronger | delivery BB | Sunday read FV | bonus SU | bonus IF | bonus DR |
+| First Visit | delivery FV | Sunday read BB | bonus SU | bonus IF | bonus DR |
+| The Deep Rest Protocol | delivery DR | Sunday read FV | bonus BB | bonus SU | bonus IF |
+| The Invisible Fuel Layer | delivery IF | Sunday read FV | bonus BB | bonus SU | bonus DR |
 
 (BB=Bounce Back Stronger, SU=Sleep Upgrade, DR=Deep Rest Protocol,
 IF=Invisible Fuel Layer, FV=First Visit. Mirrors the chiro branch shapes.)
@@ -89,17 +89,17 @@ Same 11-template shape, copy verbatim from the workflow export
 | Guide delivery - Pain Normal or Warning Sign | Your guide is here + one quick question |
 | Sunday read - First Chiropractic Visit | Your guide is here + one quick question |
 | Sunday read - Desk Worker's Survival Guide | Your desk is winning. Here's how to fight back. |
-| Guide pitch - Desk Worker's Survival Guide | Your desk is winning. Here's how to fight back. |
-| Guide pitch - Better Sleep Without Pills | Tired of being tired? |
-| Guide pitch - Pain Normal or Warning Sign | "That pain'll go away on its own", or will it? |
-| Guide pitch - 7 Morning Habits | You're sabotaging your spine before breakfast |
+| Bonus Guide - Desk Worker's Survival Guide | Your desk is winning. Here's how to fight back. |
+| Bonus Guide - Better Sleep Without Pills | Tired of being tired? |
+| Bonus Guide - Pain Normal or Warning Sign | "That pain'll go away on its own", or will it? |
+| Bonus Guide - 7 Morning Habits | You're sabotaging your spine before breakfast |
 
 ### Chiro branch assignment (matches the existing workflow's order)
 
 | Branch | 1 | 2 | 3 | 4 | 5 |
 |---|---|---|---|---|---|
-| Better Sleep Without Pills | delivery BS | Sunday read FV | pitch DW | pitch PW | pitch MH |
-| Desk Worker's Survival Guide | delivery DW | Sunday read FV | pitch BS | pitch PW | pitch MH |
-| First Chiropractic Visit | delivery FV | Sunday read DW | pitch BS | pitch PW | pitch MH |
-| 7 Morning Habits | delivery MH | Sunday read FV | pitch DW | pitch BS | pitch PW |
-| Pain Normal or Warning Sign | delivery PW | Sunday read FV | pitch DW | pitch BS | pitch MH |
+| Better Sleep Without Pills | delivery BS | Sunday read FV | bonus DW | bonus PW | bonus MH |
+| Desk Worker's Survival Guide | delivery DW | Sunday read FV | bonus BS | bonus PW | bonus MH |
+| First Chiropractic Visit | delivery FV | Sunday read DW | bonus BS | bonus PW | bonus MH |
+| 7 Morning Habits | delivery MH | Sunday read FV | bonus DW | bonus BS | bonus PW |
+| Pain Normal or Warning Sign | delivery PW | Sunday read FV | bonus DW | bonus BS | bonus MH |

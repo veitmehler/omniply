@@ -108,7 +108,7 @@ const EMAILS = VERT === 'chiro' ? {
       { t: `Eight hours in a chair does something quietly relentless to your spine, and the sock you'll blame when your back finally "goes out" had nothing to do with it.` },
       { t: `The Desk Worker's Survival Guide is our field manual for people who can't quit sitting but refuse to accept what it's doing to them: the 6-step desk reset, the posture traps almost everyone falls into, and the ten-minute daily routine that beats an hour of weekend hero stretching.` },
       { link: 'dw', rest: ' to download your report.' }] },
-  "Guide pitch - Desk Worker's Survival Guide": {
+  "Bonus Guide - Desk Worker's Survival Guide": {
     subject: "Your desk is winning. Here's how to fight back.", preview: 'Need to set up your desk properly? Here is how...',
     items: [
       { t: `Eight hours in a chair does something quietly relentless to your spine, and the sock you'll blame when your back finally "goes out" had nothing to do with it.` },
@@ -116,7 +116,7 @@ const EMAILS = VERT === 'chiro' ? {
       { link: 'dw', rest: ' to access the guide.' },
       { t: 'Prefer to have someone look at your sitting situation specifically? If so:' },
       { link: 'booking', rest: ' to schedule an appointment.' }] },
-  'Guide pitch - Better Sleep Without Pills': {
+  'Bonus Guide - Better Sleep Without Pills': {
     subject: 'Tired of being tired?', preview: "Do you wake up feeling you've been hit by a truck? Here's why...",
     items: [
       { t: `If you're waking up stiff, sore, or more exhausted than when you went to bed, the problem often isn't how long you sleep. It's what your body is doing for those eight hours.` },
@@ -124,7 +124,7 @@ const EMAILS = VERT === 'chiro' ? {
       { link: 'bs', rest: ' to access the guide.' },
       { t: 'Prefer to have someone look at your sleeping situation specifically? If so:' },
       { link: 'booking', rest: ' to schedule an appointment.' }] },
-  'Guide pitch - Pain Normal or Warning Sign': {
+  'Bonus Guide - Pain Normal or Warning Sign': {
     subject: `"That pain'll go away on its own", or will it?`, preview: 'Did you experience some aches and pain recently?',
     items: [
       { t: 'Some aches genuinely are nothing. Others are your body filing a report nobody reads until it escalates. The tricky part is that the two often feel identical for weeks.' },
@@ -133,7 +133,7 @@ const EMAILS = VERT === 'chiro' ? {
       { link: 'pw', rest: ' to access the report.' },
       { t: `Already have a feeling it's the second kind? Trust that feeling. Get it checked out properly:` },
       { link: 'booking', rest: ' to schedule an appointment.' }] },
-  'Guide pitch - 7 Morning Habits': {
+  'Bonus Guide - 7 Morning Habits': {
     subject: "You're sabotaging your spine before breakfast", preview: 'Feeling tight in the morning? Do this...',
     items: [
       { t: `The first 30 minutes after you wake up set your spine's tone for the whole day, and most of us fill them with a greatest-hits collection of terrible ideas:` },
@@ -172,7 +172,7 @@ const EMAILS = VERT === 'chiro' ? {
       { t: 'Here is the idea that changes how you train: fitness is not built during exercise. Exercise is the signal. The building happens afterward, while you recover.' },
       { t: 'The guide covers the stress, recover, adapt cycle, the recovery tools worth knowing, and a 30-day experiment to test it on your own body:' },
       { link: 'bb', rest: ' to download your guide.' }] },
-  'Guide pitch - Bounce Back Stronger': {
+  'Bonus Guide - Bounce Back Stronger': {
     subject: 'Your results are capped by your recovery', preview: 'Training hard? The gains happen in between.',
     items: [
       { t: 'You already know the basics. Lift things, move often, do not sit all day. The layer after the basics is what actually happens between one effort and the next.' },
@@ -181,7 +181,7 @@ const EMAILS = VERT === 'chiro' ? {
       { link: 'bb', rest: ' to access the guide.' },
       { t: 'Prefer to have someone look at your recovery specifically? If so:' },
       { link: 'booking', rest: ' to schedule an appointment.' }] },
-  'Guide pitch - The Sleep Upgrade': {
+  'Bonus Guide - The Sleep Upgrade': {
     subject: 'Tired of being tired?', preview: 'The famous sleep rules cover timing. Timing is only one input.',
     items: [
       { t: 'You know the rules. Keep a schedule, skip the late espresso, put the phone away. If some mornings are still rough, that is because the famous rules cover the timing of sleep, and timing is only one of its inputs.' },
@@ -189,7 +189,7 @@ const EMAILS = VERT === 'chiro' ? {
       { link: 'su', rest: ' to access the guide.' },
       { t: 'Prefer to have someone look at your sleep specifically? If so:' },
       { link: 'booking', rest: ' to schedule an appointment.' }] },
-  'Guide pitch - The Deep Rest Protocol': {
+  'Bonus Guide - The Deep Rest Protocol': {
     subject: 'Stress is not your enemy', preview: 'The damage comes from what does not happen after.',
     items: [
       { t: 'Stress is just a demand, and bodies are built to meet demands. The damage comes from what happens after, or rather what does not happen: the switch back down.' },
@@ -198,7 +198,7 @@ const EMAILS = VERT === 'chiro' ? {
       { link: 'dr', rest: ' to access the guide.' },
       { t: 'Rather have someone walk you through it in person? If so:' },
       { link: 'booking', rest: ' to schedule an appointment.' }] },
-  'Guide pitch - The Invisible Fuel Layer': {
+  'Bonus Guide - The Invisible Fuel Layer': {
     subject: 'Two people eat the same. One recovers faster.', preview: 'Your plate cannot show you your actual status.',
     items: [
       { t: 'You know how to eat. Vegetables, protein, water, not too much of the fun stuff. And yet fueling has a layer your plate cannot show you: your actual status.' },
