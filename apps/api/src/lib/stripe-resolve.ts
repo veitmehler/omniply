@@ -110,13 +110,17 @@ export async function fetchLocationSaasSubscription(locationId: string): Promise
     settings?: { saasSettings?: Record<string, unknown> }
   } | null
   const saas = (body?.location?.settings?.saasSettings ?? body?.settings?.saasSettings) as
-    | { customerId?: unknown; subscriptionStatus?: unknown; planDetails?: { subscriptionId?: unknown } }
+    | {
+        customerId?: unknown
+        subscriptionStatus?: unknown
+        planDetails?: { subscriptionId?: unknown; subscriptionStatus?: unknown }
+      }
     | undefined
   if (!saas) return null
   return {
     subscriptionId: str(saas.planDetails?.subscriptionId),
     customerId: str(saas.customerId),
-    subscriptionStatus: str(saas.subscriptionStatus),
+    subscriptionStatus: str(saas.subscriptionStatus) ?? str(saas.planDetails?.subscriptionStatus),
   }
 }
 
