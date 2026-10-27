@@ -143,19 +143,20 @@ export function buildMasterHtml(spec: MasterDocSpec): string {
   body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: {{brand.fontColor}}; }
 
   /* ── Cover ── */
-  .cover { height: 297mm; background: {{brand.headerColor}}; color: #fff; display: flex; flex-direction: column; justify-content: space-between; padding: 24mm 22mm; page-break-after: always; }
+  .cover { position: relative; height: 297mm; background: {{brand.headerColor}}; color: #fff; display: flex; flex-direction: column; padding: 24mm 22mm; page-break-after: always; box-sizing: border-box; }
+  .cover > div:not(.logo):not(.cover-footer) { margin: auto 0; }
   .cover .logo img { max-height: 22mm; max-width: 60mm; }
   .cover .logo-fallback { font-size: 24px; font-weight: 700; letter-spacing: .5px; }
   .cover .eyebrow { font-size: 14px; letter-spacing: 2.2px; text-transform: uppercase; opacity: .85; margin-bottom: 5mm; }
   .cover h1 { font-size: 44px; line-height: 1.15; font-weight: 700; max-width: 150mm; }
   .cover .subtitle { margin-top: 6mm; font-size: 21px; line-height: 1.5; opacity: .92; max-width: 140mm; }
-  .cover .accent-bar { width: 42mm; height: 2.5mm; background: {{brand.accentColor}}; margin: 8mm 0 0; border-radius: 2px; }
+  .cover .accent-bar { width: 42mm; height: 3px; background: {{brand.accentColor}}; margin: 8mm 0 0; border-radius: 2px; }
   .cover .cover-art { background: #fff; border-radius: 3mm; padding: 6mm; margin-top: 9mm; max-width: 128mm; }
   .cover .cover-art svg { width: 100%; height: auto; display: block; }
   .cover-checklist { list-style: none; margin-top: 8mm; font-size: 18px; line-height: 2; max-width: 140mm; }
   .cover-checklist li { position: relative; padding-left: 9mm; }
   .cover-checklist li::before { content: '✓'; color: {{brand.accentColor}}; font-weight: 700; position: absolute; left: 0; top: 0; }
-  .cover .cover-footer { font-size: 15px; opacity: .85; }
+  .cover .cover-footer { position: absolute; left: 0; right: 0; bottom: 5mm; text-align: center; font-size: 12px; opacity: .85; }
 
   /* ── Content pages ── */
   .content { padding: 0 22mm; }
@@ -163,7 +164,7 @@ export function buildMasterHtml(spec: MasterDocSpec): string {
   .page-title .pt-eyebrow { font-size: 14px; letter-spacing: 2px; text-transform: uppercase; color: {{brand.accentColor}}; font-weight: 700; }
   .page-title h1 { font-size: 34px; line-height: 1.15; color: {{brand.headerColor}}; margin-top: 2.5mm; }
   .page-title .pt-sub { font-size: 19px; line-height: 1.45; color: #5b6673; margin-top: 3mm; max-width: 155mm; }
-  .page-title .pt-bar { width: 34mm; height: 2mm; background: {{brand.accentColor}}; border-radius: 2px; margin-top: 5mm; }
+  .page-title .pt-bar { width: 34mm; height: 3px; background: {{brand.accentColor}}; border-radius: 2px; margin-top: 5mm; }
   .part-title { color: {{brand.headerColor}}; font-size: 19px; text-transform: uppercase; letter-spacing: 1.8px; border-bottom: 0.6mm solid {{brand.accentColor}}; padding-bottom: 2.5mm; margin: 2mm 0 8mm; page-break-before: always; page-break-after: avoid; }
   .part-lede { margin: -4mm 0 7mm; }
   .part-break { page-break-before: always; }
@@ -203,7 +204,7 @@ export function buildMasterHtml(spec: MasterDocSpec): string {
   .back-page { page-break-before: always; height: 250mm; display: flex; flex-direction: column; text-align: center; padding: 5mm 25mm 0; }
   .back-main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
   .back-page h2 { justify-content: center; font-size: 32px; }
-  .back-page .accent-bar { width: 34mm; height: 2mm; background: {{brand.accentColor}}; border-radius: 2px; margin: 5mm auto 0; }
+  .back-page .accent-bar { width: 34mm; height: 3px; background: {{brand.accentColor}}; border-radius: 2px; margin: 5mm auto 0; }
   .back-logo { margin-top: 7mm; }
   .back-logo img { max-height: 16mm; max-width: 55mm; }
   .offer-box { background: {{brand.headerColor}}; border-left: 1.5mm solid {{brand.accentColor}}; border-radius: 3mm; padding: 6mm 12mm; margin-top: 6mm; width: 100%; max-width: 135mm; box-sizing: border-box; color: #fff; }
