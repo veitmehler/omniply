@@ -121,6 +121,7 @@ export const QUEUES = {
   PMS_CONTACT_POLL: 'pms-contact-poll',
   SMS_CAPABILITY_PROBE: 'sms-capability-probe',
   GOOGLE_REVIEWS_BACKFILL: 'google-reviews-backfill',
+  STRIPE_EVENT_RERESOLVE: 'stripe-event-reresolve',
 } as const
 
 export type QueueName = (typeof QUEUES)[keyof typeof QUEUES]

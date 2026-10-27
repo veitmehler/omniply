@@ -7,6 +7,7 @@ const accountFindFirst = vi.fn()
 const userFindFirst = vi.fn()
 const stripeEventCreate = vi.fn()
 const stripeEventUpdate = vi.fn()
+const ghlSettingsFindFirst = vi.fn()
 vi.mock('@omniply/shared', () => ({
   prisma: {
     account: {
@@ -15,12 +16,20 @@ vi.mock('@omniply/shared', () => ({
       update: (...a: unknown[]) => accountUpdate(...a),
     },
     user: { findFirst: (...a: unknown[]) => userFindFirst(...a) },
+    ghlSettings: { findFirst: (...a: unknown[]) => ghlSettingsFindFirst(...a) },
     stripeEvent: {
       create: (...a: unknown[]) => stripeEventCreate(...a),
       update: (...a: unknown[]) => stripeEventUpdate(...a),
     },
   },
 }))
+const getAgencyToken = vi.fn()
+vi.mock('../../lib/ghl/app-oauth', () => ({
+  getAgencyToken: (...a: unknown[]) => getAgencyToken(...a),
+}))
+// The SaaS locations lookup goes through global fetch.
+const saasLocations = vi.fn<() => string[]>(() => [])
+vi.stubGlobal('fetch', vi.fn(async () => ({ ok: true, json: async () => saasLocations() })))
 vi.mock('../../lib/logger', () => ({ logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() } }))
 const applyBillingEvent = vi.fn()
 vi.mock('../../lib/account-lifecycle', () => ({
@@ -79,6 +88,9 @@ beforeEach(() => {
   stripeEventCreate.mockResolvedValue({})
   stripeEventUpdate.mockResolvedValue({})
   accountUpdate.mockResolvedValue({})
+  ghlSettingsFindFirst.mockResolvedValue(null)
+  getAgencyToken.mockResolvedValue(null)
+  saasLocations.mockReturnValue([])
   applyBillingEvent.mockResolvedValue({ applied: true, duplicate: false })
 })
 
@@ -123,40 +135,51 @@ describe('POST /stripe/events', () => {
     await app.close()
   })
 
-  it('first payment: binds by owner-email match and persists Stripe ids', async () => {
-    userFindFirst.mockResolvedValue({ accountId: 'acct_9' })
-    accountFindUnique.mockImplementation(async (args: { where?: Record<string, unknown> }) => {
-      if (args?.where?.id === 'acct_9') return { id: 'acct_9', stripeSubscriptionId: null }
-      return null
-    })
+  it('first payment: resolves subscription -> GHL location -> account and binds the subscription id', async () => {
+    getAgencyToken.mockResolvedValue({ token: 't', companyId: 'comp_1' })
+    saasLocations.mockReturnValue(['LOC_1'])
+    ghlSettingsFindFirst.mockResolvedValue({ userId: 'user_1' })
+    accountFindFirst.mockResolvedValue({ id: 'acct_9' })
     const app = await build()
     const res = await post(app, invoiceEvent())
     expect(res.statusCode).toBe(200)
     expect(accountUpdate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: 'acct_9' },
-        data: expect.objectContaining({
-          stripeCustomerId: 'cus_1',
-          stripeSubscriptionId: 'sub_1',
-          ghlContactId: 'contact_1',
-        }),
-      }),
+      expect.objectContaining({ where: { id: 'acct_9' }, data: { stripeSubscriptionId: 'sub_1' } }),
     )
     expect(applyBillingEvent).toHaveBeenCalledWith('acct_9', 'payment_cleared', expect.anything())
     await app.close()
   })
 
-  it('never re-homes an already-bound account on an email collision', async () => {
-    userFindFirst.mockResolvedValue({ accountId: 'acct_9' })
+  it('reads the subscription id from parent.subscription_details (newer Stripe shape)', async () => {
     accountFindUnique.mockImplementation(async (args: { where?: Record<string, unknown> }) => {
-      if (args?.where?.id === 'acct_9') return { id: 'acct_9', stripeSubscriptionId: 'sub_OTHER' }
+      if (args?.where?.stripeSubscriptionId === 'sub_nested') return { id: 'acct_n' }
       return null
     })
+    const app = await build()
+    const res = await post(
+      app,
+      invoiceEvent({ subscription: undefined, parent: { subscription_details: { subscription: 'sub_nested', metadata: { altId: 'SELLLOC' } } } }),
+    )
+    expect(res.statusCode).toBe(200)
+    expect(applyBillingEvent).toHaveBeenCalledWith('acct_n', 'payment_cleared', expect.anything())
+    await app.close()
+  })
+
+  it('never binds by customer id, email or contact id — unknown subscription is held', async () => {
+    // cus_1 is "already bound" to another account; buyer email and contactId
+    // match nothing relevant. The configurator shares customers across
+    // buyers, so none of these may resolve the account.
+    accountFindUnique.mockImplementation(async (args: { where?: Record<string, unknown> }) => {
+      if (args?.where?.stripeCustomerId === 'cus_1') return { id: 'acct_OTHER' }
+      return null
+    })
+    userFindFirst.mockResolvedValue({ accountId: 'acct_wrong' })
     const app = await build()
     const res = await post(app, invoiceEvent())
     expect(res.statusCode).toBe(202)
     expect(res.json()).toMatchObject({ held: true })
     expect(applyBillingEvent).not.toHaveBeenCalled()
+    expect(accountUpdate).not.toHaveBeenCalled()
     await app.close()
   })
 

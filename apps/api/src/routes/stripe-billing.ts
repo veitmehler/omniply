@@ -17,12 +17,21 @@
  * Config: STRIPE_WEBHOOK_SECRET (endpoint signing secret) and
  * STRIPE_BILLING_LOCATIONS (comma list of selling-location ids whose
  * subscriptions belong to this platform — other Stripe traffic is ignored).
+ *
+ * RESOLUTION REWORK 2026-10-27: binding is subscription-id-only (immutable),
+ * resolved through the GHL SaaS API to the purchased location. Customer id,
+ * contact id and email are never used to match — the configurator shares one
+ * Stripe customer across buyers (a second clinic's purchase was credited to
+ * the first bound account), and the rest are mutable. Unresolved events are
+ * held in stripe_events and re-resolved by the stripe-event-reresolve cron
+ * (provisioning can lag the first invoice by seconds).
  */
 import type { FastifyInstance } from 'fastify'
 import { prisma } from '@omniply/shared'
 import { logger } from '../lib/logger'
 import { verifyStripeSignature } from '../lib/stripe-webhook'
 import { applyBillingEvent, type BillingEventType } from '../lib/account-lifecycle'
+import { extractFields, resolveAccount, bindStripeIdentity } from '../lib/stripe-resolve'
 
 interface StripeEventBody {
   id?: string
@@ -40,66 +49,6 @@ const EVENT_MAP: Record<string, BillingEventType> = {
   // the invoice event that typically follows a resume.
   'customer.subscription.paused': 'payment_failed',
   'customer.subscription.resumed': 'payment_cleared',
-}
-
-function str(v: unknown): string | null {
-  return typeof v === 'string' && v ? v : null
-}
-
-/** Pull the fields we need from invoice or subscription objects. */
-function extractFields(obj: Record<string, unknown>): {
-  subscriptionId: string | null
-  customerId: string | null
-  email: string | null
-  metadata: Record<string, string>
-} {
-  const metaRaw =
-    (obj.metadata as Record<string, unknown> | undefined) ??
-    ((obj.subscription_details as { metadata?: Record<string, unknown> } | undefined)?.metadata as
-      | Record<string, unknown>
-      | undefined) ??
-    {}
-  const metadata: Record<string, string> = {}
-  for (const [k, v] of Object.entries(metaRaw)) if (typeof v === 'string') metadata[k] = v
-  return {
-    subscriptionId: str(obj.subscription) ?? (str(obj.object) === 'subscription' ? str(obj.id) : null),
-    customerId: str(obj.customer),
-    email: str(obj.customer_email) ?? str((obj as { customer_details?: { email?: unknown } }).customer_details?.email),
-    metadata,
-  }
-}
-
-async function resolveAccount(fields: ReturnType<typeof extractFields>): Promise<string | null> {
-  const { subscriptionId, customerId, email, metadata } = fields
-  if (subscriptionId) {
-    const a = await prisma.account.findUnique({ where: { stripeSubscriptionId: subscriptionId }, select: { id: true } })
-    if (a) return a.id
-  }
-  if (customerId) {
-    const a = await prisma.account.findUnique({ where: { stripeCustomerId: customerId }, select: { id: true } })
-    if (a) return a.id
-  }
-  const contactId = metadata.contactId ?? null
-  if (contactId) {
-    const a = await prisma.account.findFirst({ where: { ghlContactId: contactId }, select: { id: true } })
-    if (a) return a.id
-  }
-  // Phase-1 email match: an account whose owner has this email and no Stripe
-  // binding yet (never re-home an already-bound account on an email collision).
-  if (email) {
-    const owner = await prisma.user.findFirst({
-      where: { email: { equals: email, mode: 'insensitive' }, accountId: { not: null } },
-      select: { accountId: true },
-    })
-    if (owner?.accountId) {
-      const a = await prisma.account.findUnique({
-        where: { id: owner.accountId },
-        select: { id: true, stripeSubscriptionId: true },
-      })
-      if (a && !a.stripeSubscriptionId) return a.id
-    }
-  }
-  return null
 }
 
 export async function stripeBillingRoutes(app: FastifyInstance) {
@@ -176,14 +125,7 @@ export async function stripeBillingRoutes(app: FastifyInstance) {
         where: { stripeEventId: event.id },
         data: { accountId, matched: true },
       })
-      await prisma.account.update({
-        where: { id: accountId },
-        data: {
-          ...(fields.customerId ? { stripeCustomerId: fields.customerId } : {}),
-          ...(fields.subscriptionId ? { stripeSubscriptionId: fields.subscriptionId } : {}),
-          ...(fields.metadata.contactId ? { ghlContactId: fields.metadata.contactId } : {}),
-        },
-      })
+      await bindStripeIdentity(accountId, fields)
 
       const result = await applyBillingEvent(accountId, mapped, { stripeEventId: event.id, type: event.type })
       logger.info(
