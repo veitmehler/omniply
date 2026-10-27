@@ -1,0 +1,146 @@
+{
+  "sectionAttrs": {
+    "customFlags": { "layoutId": 1 },
+    "attributes": [
+      { "name": "padding-top", "default": 10, "unit": "px" },
+      { "name": "padding-bottom", "default": 10, "unit": "px" },
+      { "name": "padding-left", "default": 20, "unit": "px" },
+      { "name": "padding-right", "default": 20, "unit": "px" },
+      { "name": "background-color", "default": "#ffffff" },
+      { "name": "full-width", "default": false },
+      { "name": "background-url", "default": "" },
+      { "name": "background-size", "default": "" },
+      { "name": "border-color", "default": "" },
+      { "name": "border-top-width", "default": null, "unit": "px" },
+      { "name": "border-bottom-width", "default": null, "unit": "px" },
+      { "name": "border-left-width", "default": null, "unit": "px" },
+      { "name": "border-right-width", "default": null, "unit": "px" },
+      { "name": "border-width", "default": 0, "unit": "px" },
+      { "name": "border-bottom-left-radius", "default": null, "unit": "px" },
+      { "name": "border-bottom-right-radius", "default": null, "unit": "px" },
+      { "name": "border-top-left-radius", "default": null, "unit": "px" },
+      { "name": "border-top-right-radius", "default": null, "unit": "px" },
+      { "name": "border-radius", "default": 0, "unit": "px" },
+      { "name": "enable-padding", "default": true },
+      { "name": "margin-top", "default": 0, "unit": "px" },
+      { "name": "margin-bottom", "default": 0, "unit": "px" },
+      { "name": "margin-left", "default": "auto", "unit": "px" },
+      { "name": "margin-right", "default": "auto", "unit": "px" }
+    ],
+    "tagName": "mj-section"
+  },
+  "columnAttrs": {
+    "attributes": [{ "name": "width", "default": 100, "unit": "%" }],
+    "tagName": "mj-column"
+  },
+  "previewUrlAttrs": {
+    "attributes": [
+      { "name": "enable-padding", "default": true },
+      { "name": "padding-top", "default": 20, "unit": "px" },
+      { "name": "padding-bottom", "default": 10, "unit": "px" },
+      { "name": "padding-left", "default": 20, "unit": "px" },
+      { "name": "padding-right", "default": 20, "unit": "px" },
+      { "name": "line-height", "default": 1.25 },
+      { "name": "font-family", "default": "arial, helvetica, sans-serif" },
+      { "name": "font-size", "default": 14, "unit": "px" },
+      { "name": "font-family-paragraph", "default": "arial, helvetica, sans-serif" },
+      { "name": "container-background-color", "default": "" }
+    ],
+    "content": "<p style=\"text-align: center;\"><a target=\"_blank\" rel=\"noopener noreferrer nofollow\" href=\"{{email.view_in_browser_url}}\">View this email in browser</a></p>",
+    "tagName": "mj-preview-url"
+  },
+  "mainTextAttrs": {
+    "attributes": [
+      { "name": "font-family-paragraph", "default": "arial, helvetica, sans-serif" },
+      { "name": "line-height", "default": 1.25 },
+      { "name": "font-size", "default": 14, "unit": "px" },
+      { "name": "font-family", "default": "arial, helvetica, sans-serif" },
+      { "name": "padding-top", "default": 40, "unit": "px" },
+      { "name": "padding-bottom", "default": 10, "unit": "px" },
+      { "name": "padding-left", "default": 20, "unit": "px" },
+      { "name": "padding-right", "default": 20, "unit": "px" },
+      { "name": "enable-padding", "default": true },
+      { "name": "container-background-color", "default": "" }
+    ],
+    "tagName": "mj-text"
+  },
+  "dividerAttrs": {
+    "attributes": [
+      { "name": "enable-padding", "default": true },
+      { "name": "padding-top", "default": 40, "unit": "px" },
+      { "name": "padding-bottom", "default": 40, "unit": "px" },
+      { "name": "padding-left", "default": 20, "unit": "px" },
+      { "name": "padding-right", "default": 20, "unit": "px" },
+      { "name": "border-width", "default": 2, "unit": "px" },
+      { "name": "border-color", "default": "#cccccc" },
+      { "name": "border-style", "default": "solid" },
+      { "name": "width", "default": 35, "unit": "%" },
+      { "name": "align", "default": "left" }
+    ],
+    "tagName": "mj-divider"
+  },
+  "footerTextAttrs": {
+    "attributes": [
+      { "name": "font-family-paragraph", "default": "arial, helvetica, sans-serif" },
+      { "name": "line-height", "default": 1.25 },
+      { "name": "font-size", "default": 14, "unit": "px" },
+      { "name": "font-family", "default": "arial, helvetica, sans-serif" },
+      { "name": "enable-padding", "default": true },
+      { "name": "padding-top", "default": 10, "unit": "px" },
+      { "name": "padding-bottom", "default": 20, "unit": "px" },
+      { "name": "padding-left", "default": 20, "unit": "px" },
+      { "name": "padding-right", "default": 20, "unit": "px" },
+      { "name": "container-background-color", "default": "" }
+    ],
+    "content": "<p style=\"text-align: left;line-height: 1.25;\"><span style=\"font-size: 12px\">{{location.full_address}}</span></p><p style=\"margin: 0px;font-size: 16px;padding-left: 0px !important;font-family: verdana, geneva, sans-serif;\"><span style=\"font-size: 12px\">You requested this guide on our website. Don't want these emails? </span><br><span style=\"font-size: 12px\">Unsubscribe </span><a target=\"_self\" rel=\"noopener noreferrer nofollow\" href=\"{{unsubscribe_link}}\" title=\"here\"><span style=\"font-size: 12px\">here</span></a><span style=\"font-size: 12px\">.</span></p>",
+    "tagName": "mj-text"
+  },
+  "templateSettings": {
+    "body": [
+      { "default": 600, "name": "width", "unit": "px" },
+      { "default": "#EAF0F6", "name": "background-color" },
+      { "default": "#ffffff", "name": "body-color" },
+      { "default": 0, "name": "border-width" },
+      { "default": "#E53E3E", "name": "border-color" },
+      { "name": "body-bg-image-url", "default": "" },
+      { "name": "body-bg-image-repeat", "default": "no-repeat" },
+      { "name": "body-bg-image-position", "default": "center center" },
+      { "name": "body-bg-image-size", "default": "cover" }
+    ],
+    "button": [
+      { "default": "#2196F3", "name": "background-color" },
+      { "default": "10", "name": "border-radius", "unit": "px" },
+      { "default": "arial, helvetica, sans-serif", "name": "font-family" },
+      { "default": 16, "name": "font-size", "unit": "px" },
+      { "default": "", "name": "font-style" },
+      { "default": "", "name": "text-decoration" },
+      { "default": "bold", "name": "font-weight" },
+      { "default": "#ffffff", "name": "color" }
+    ],
+    "divider": [
+      { "default": 2, "name": "border-width", "unit": "px" },
+      { "default": "#FED7E2", "name": "border-color" },
+      { "default": "solid", "name": "border-style" }
+    ],
+    "text": [
+      { "default": "arial, helvetica, sans-serif", "name": "font-family-paragraph" },
+      { "default": "arial, helvetica, sans-serif", "name": "font-family-heading1" },
+      { "default": "arial, helvetica, sans-serif", "name": "font-family-heading2" },
+      { "default": 1.25, "name": "line-height" },
+      { "default": "#00a4bd", "name": "text-link-color" },
+      { "default": "", "name": "text-link-font-style" },
+      { "default": "", "name": "text-link-fonnt-weight" },
+      { "default": "underline", "name": "text-link-text-decoration" },
+      { "name": "enable-paragraph-config", "default": true },
+      { "name": "enable-heading-h1-config", "default": true },
+      { "name": "enable-heading-h2-config", "default": true },
+      { "name": "enable-heading-h3-config", "default": true },
+      { "name": "enable-heading-h4-config", "default": true },
+      { "name": "enable-heading-h5-config", "default": true },
+      { "name": "brand-custom-fonts", "default": "" }
+    ],
+    "header": [
+      { "name": "customCss", "default": "<style> /* custom styles */ </style>" }
+    ]
+  }
+}
