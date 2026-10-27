@@ -162,17 +162,17 @@ export function buildMasterHtml(spec: MasterDocSpec): string {
   .content { padding: 0 22mm; }
   .page-title { margin: 2mm 0 10mm; }
   .page-title .pt-eyebrow { font-size: 14px; letter-spacing: 2px; text-transform: uppercase; color: {{brand.accentColor}}; font-weight: 700; }
-  .page-title h1 { font-size: 34px; line-height: 1.15; color: {{brand.headerColor}}; margin-top: 2.5mm; }
+  .page-title h1 { font-size: 34px; line-height: 1.15; color: {{brand.paperInk}}; margin-top: 2.5mm; }
   .page-title .pt-sub { font-size: 19px; line-height: 1.45; color: #5b6673; margin-top: 3mm; max-width: 155mm; }
   .page-title .pt-bar { width: 34mm; height: 3px; background: {{brand.accentColor}}; border-radius: 2px; margin-top: 5mm; }
-  .part-title { color: {{brand.headerColor}}; font-size: 19px; text-transform: uppercase; letter-spacing: 1.8px; border-bottom: 0.6mm solid {{brand.accentColor}}; padding-bottom: 2.5mm; margin: 2mm 0 8mm; page-break-before: always; page-break-after: avoid; }
+  .part-title { color: {{brand.paperInk}}; font-size: 19px; text-transform: uppercase; letter-spacing: 1.8px; border-bottom: 0.6mm solid {{brand.accentColor}}; padding-bottom: 2.5mm; margin: 2mm 0 8mm; page-break-before: always; page-break-after: avoid; }
   .part-lede { margin: -4mm 0 7mm; }
   .part-break { page-break-before: always; }
   .part-numbered { display: flex; align-items: center; gap: 4mm; text-transform: none; letter-spacing: 0; font-size: 26px; }
   .part-num { width: 10.5mm; height: 10.5mm; font-size: 16px; }
   .content-section { margin-bottom: 10mm; }
   .section-head { page-break-inside: avoid; }
-  h2 { color: {{brand.headerColor}}; font-size: 26px; margin-bottom: 4mm; display: flex; align-items: center; gap: 4mm; page-break-after: avoid; }
+  h2 { color: {{brand.paperInk}}; font-size: 26px; margin-bottom: 4mm; display: flex; align-items: center; gap: 4mm; page-break-after: avoid; }
   .section-num { display: inline-flex; align-items: center; justify-content: center; width: 9.5mm; height: 9.5mm; border-radius: 50%; background: {{brand.accentColor}}; color: #fff; font-size: 15px; flex-shrink: 0; }
   .section-body { font-size: 20px; line-height: 1.6; }
   .section-body p { margin-bottom: 4.5mm; }
@@ -183,7 +183,7 @@ export function buildMasterHtml(spec: MasterDocSpec): string {
   .section-body tr { page-break-inside: avoid; }
   .section-body table { width: 100%; border-collapse: collapse; font-size: 16px; margin: 3mm 0 4mm; }
   .section-body th, .section-body td { border: 0.3mm solid #dfe5e8; padding: 2.5mm 3mm; text-align: left; vertical-align: top; }
-  .section-body th { background: color-mix(in srgb, {{brand.headerColor}} 8%, #ffffff); color: {{brand.headerColor}}; }
+  .section-body th { background: color-mix(in srgb, {{brand.paperInk}} 8%, #ffffff); color: {{brand.paperInk}}; }
   .doc-figure { margin: 4mm 0 5mm; page-break-inside: avoid; }
   .doc-figure svg { width: 100%; height: auto; display: block; }
   .doc-figure figcaption { font-size: 14px; color: #667; text-align: center; margin-top: 1.5mm; }
@@ -193,7 +193,7 @@ export function buildMasterHtml(spec: MasterDocSpec): string {
   /* ── Stretch cards (2-up) ── */
   .stretch-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6mm; margin-bottom: 10mm; }
   .stretch-card { border: 0.35mm solid #dfe5e8; border-radius: 3mm; padding: 5mm; page-break-inside: avoid; }
-  .stretch-card h3 { color: {{brand.headerColor}}; font-size: 20px; display: flex; align-items: center; gap: 3mm; margin-bottom: 3mm; }
+  .stretch-card h3 { color: {{brand.paperInk}}; font-size: 20px; display: flex; align-items: center; gap: 3mm; margin-bottom: 3mm; }
   .stretch-card .section-num { width: 7mm; height: 7mm; font-size: 11.5px; }
   .stretch-card .doc-figure { margin: 0 0 3mm; }
   .stretch-card .doc-figure svg { max-height: 44mm; width: auto; max-width: 100%; margin: 0 auto; }
@@ -210,10 +210,10 @@ export function buildMasterHtml(spec: MasterDocSpec): string {
   .offer-box { background: {{brand.headerColor}}; border-left: 1.5mm solid {{brand.accentColor}}; border-radius: 3mm; padding: 6mm 12mm; margin-top: 6mm; width: 100%; max-width: 135mm; box-sizing: border-box; color: {{brand.coverInk}}; }
   .offer-box .offer-label { font-weight: 700; color: {{brand.accentColor}}; filter: brightness(1.6); font-size: 13px; text-transform: uppercase; letter-spacing: 1.2px; }
   .offer-box .offer-text { font-size: 20px; line-height: 1.5; margin-top: 2.5mm; font-weight: 700; }
-  .offer-box .offer-note { font-size: 15px; color: rgba(255,255,255,.8); margin-top: 2.5mm; }
+  .offer-box .offer-note { font-size: 15px; color: {{brand.coverInk}}; opacity: .85; margin-top: 2.5mm; }
   /* Same width as the offer box (Veit 2026-09-14: the two CTA boxes must align). */
   .back-page .cta-btn { display: block; margin-top: 6mm; background: {{brand.buttonColor}}; color: {{brand.buttonTextColor}}; padding: 5.5mm 14mm; border-radius: 3mm; font-size: 22px; font-weight: 700; width: 100%; max-width: 135mm; box-sizing: border-box; text-decoration: none; }
-  .back-page .cta-btn.cta-secondary { background: transparent; border: 0.8mm solid {{brand.buttonColor}}; color: {{brand.headerColor}}; margin-top: 4mm; }
+  .back-page .cta-btn.cta-secondary { background: transparent; border: 0.8mm solid {{brand.buttonColor}}; color: {{brand.paperInk}}; margin-top: 4mm; }
   .back-page .cta-btn .cta-phone { display: block; font-size: 32px; font-weight: 800; letter-spacing: 0.5px; margin-top: 7mm; }
   .back-page .contact { margin-top: 5mm; font-size: 17px; line-height: 1.7; color: {{brand.fontColor}}; }
   .disclaimer-page { page-break-before: always; height: 250mm; display: flex; flex-direction: column; padding: 0 25mm; }

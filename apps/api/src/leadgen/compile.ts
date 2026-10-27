@@ -80,6 +80,10 @@ export interface BrandTokens {
   fontColor: string
   /** Contrast-computed ink for anything rendered ON headerColor (cover, strip). */
   coverInk: string
+  /** Ink for brand-colored TEXT ON PAPER (headings, part titles). headerColor
+   * when it is dark enough to read on white; a dark neutral when the clinic's
+   * header color is light (Elena's #e0e0e0 made every heading invisible). */
+  paperInk: string
   /** Paper size by clinic country (letter default; a4 for the A4 world). */
   paperFormat: 'letter' | 'a4'
 }
@@ -306,6 +310,7 @@ async function brandTokensFor(userId: string): Promise<BrandTokens> {
     buttonTextColor: brand?.nlButtonTextColor ?? '#ffffff',
     fontColor: brand?.nlFontColor ?? brand?.diagramTextColor ?? '#222222',
     coverInk: lightHeader ? (brand?.nlFontColor ?? '#1f2937') : '#ffffff',
+    paperInk: lightHeader ? (brand?.nlFontColor ?? '#1f2937') : headerColor,
   }
 }
 
