@@ -174,6 +174,21 @@ topics only), azavea.ai polish, cold-domain warmup start.
   before flipping prod. Chat/voice agents are Haiku 4.5 — UNAFFECTED.
 
 ### Post-launch backlog (from the 2026-10-09 test purchase)
+- **Trigger-link drift-heal cron (2026-10-28, safety net):** a snapshot push
+  that INCLUDES trigger links resets every sub-account link's redirect to the
+  source's value (clobbered demo + Elena 2026-10-27; repaired by one-off
+  2026-10-28). The operating rule — always push WITHOUT trigger links, refs
+  remap via clone lineage anyway (proven on Dasha's account 2026-10-28) —
+  prevents it, but a periodic heal protects against the mistake recurring and
+  against manual link edits in the CRM. Scope: pg-boss cron (hourly is cheap:
+  one GET /links/ per account, PUT only on drift) + admin heal-now route;
+  compares omniply-* links against DB ground truth and re-runs the existing
+  repoint fns — guides = leadGenDocument.driveLink, spine-check =
+  quizUrlForUser, booking = brand.bookingUrl || socialBioUrl, review =
+  reviewDeepLink(googlePlaceId); log every correction + ops summary when
+  anything was corrected (doubles as a "someone pushed with links" alarm).
+  Deliberately does NOT cover custom values (nothing forces those into a
+  push; the never-push-custom-values rule stands).
 - **Platform-INITIATED WhatsApp sends (Veit 2026-10-20, expected to matter):**
   today WhatsApp is reply-only by design — the agent answers on the channel a
   message arrived on (wellness plan Phase 2, f82f77d), which is always inside

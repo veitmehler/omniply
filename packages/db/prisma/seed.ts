@@ -2,7 +2,7 @@ import { PrismaClient } from '@prisma/client'
 import { NEWSLETTER_TEMPLATES } from './newsletter-prompts'
 import { CLIENT_STORY_TEMPLATES } from './client-story-prompts'
 import { PLAIN_LANGUAGE_TEMPLATES, PLAIN_LANGUAGE_CONFIGS } from './plain-language-prompts'
-import { AGENT_TEMPLATES } from './agent-prompts'
+import { AGENT_TEMPLATES, WELLNESS_AGENT_TEMPLATES } from './agent-prompts'
 import { DEAI_TEMPLATES, CAPTION_HOOK_SYSTEM, CAPTION_HOOK_USER } from './deai-prompts'
 
 const prisma = new PrismaClient()
@@ -1758,6 +1758,17 @@ async function main() {
     console.log(`  ✓ ${template.key}: ${template.stepName}`)
   }
   console.log(`Seeded ${AGENT_TEMPLATES.length} chat-agent prompt templates.`)
+
+  // Wellness-vertical agent overrides (create-only, admin-edit-safe like the default set).
+  for (const template of WELLNESS_AGENT_TEMPLATES) {
+    await prisma.promptTemplate.upsert({
+      where: { key_vertical: { key: template.key, vertical: 'wellness' } },
+      create: template,
+      update: {},
+    })
+    console.log(`  ✓ ${template.key} (wellness): ${template.stepName}`)
+  }
+  console.log(`Seeded ${WELLNESS_AGENT_TEMPLATES.length} wellness agent overrides.`)
 
   // Seed outline frameworks
   console.log('\nSeeding outline frameworks...')
