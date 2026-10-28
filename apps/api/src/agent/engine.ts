@@ -24,6 +24,7 @@ import {
   MAX_VISITOR_TURNS,
   checkRedFlags,
   checkReply,
+  detectVisitorLanguage,
   redFlagReply,
   safeFallbackReply,
   stripPunctuationDashes,
@@ -260,7 +261,7 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
 
   const redFlag = checkRedFlags(message)
   if (redFlag) {
-    const reply = redFlagReply(redFlag, ctx.countryCode)
+    const reply = redFlagReply(redFlag, ctx.countryCode, detectVisitorLanguage(message))
     await persistTurn({
       conversationId: conversation.id,
       visitorText: message,
@@ -571,7 +572,7 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
     const verdict = checkReply(reply)
     if (!verdict.ok) {
       logger.warn({ accountId: input.accountId, conversationId: conversation.id, reason: verdict.reason }, '[agent] post-filter replaced reply')
-      reply = safeFallbackReply(ctx.practiceName, ctx.phone)
+      reply = safeFallbackReply(ctx.practiceName, ctx.phone, detectVisitorLanguage(message))
       filtered = true
       flagReason = `post-filter:${verdict.reason}`
     } else {

@@ -189,6 +189,19 @@ topics only), azavea.ai polish, cold-domain warmup start.
   anything was corrected (doubles as a "someone pushed with links" alarm).
   Deliberately does NOT cover custom values (nothing forces those into a
   push; the never-push-custom-values rule stands).
+- **Spanish lead-gen docs + quiz (Veit 2026-10-28, "soon" but out of scope
+  now):** the Whealth pilot's guides and the Body Resilience Score quiz stay
+  English in v1 even though her site serves EN/ES/DE/FR/RU and the chat
+  agent already converses in all five. Scope when it lands: per-language
+  master variants (compile pipeline is language-agnostic, the masters are
+  not), quiz copy + result bands + capture emails localized, and the agent
+  offering the guide in the conversation's language when one exists (until
+  then it says the guide is in English). Spanish first — dominant second
+  language for her clientele. Related: multilingual GUARDRAIL lexicons
+  (red-flag + reply-filter + negation strips per language, localized
+  fallback/emergency strings, greeting via page locale) are a separate item,
+  gated on a per-language red-team of the live bot to size the actual
+  exposure before coding.
 - **Platform-INITIATED WhatsApp sends (Veit 2026-10-20, expected to matter):**
   today WhatsApp is reply-only by design — the agent answers on the channel a
   message arrived on (wellness plan Phase 2, f82f77d), which is always inside
