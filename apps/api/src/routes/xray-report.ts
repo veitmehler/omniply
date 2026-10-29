@@ -18,7 +18,7 @@ import { createHash } from 'node:crypto'
 import { readS3Object, uploadBufferWithKey } from '@omniply/shared'
 import { logger } from '../lib/logger'
 import { withRasterPage } from '../article-pipeline/enrichment/diagram-browser-pool'
-import { compute, scoreRead, verdictHtml, missedCallsPhrase, type XrayAnswers } from '../marketing/xray-math'
+import { compute, scoreRead, verdictHtml, missedCallsPhrase, type XrayAnswers, type XrayVertical } from '../marketing/xray-math'
 import { buildBarsHtml, buildDebriefHtml } from '../marketing/xray-debrief-template'
 
 const CHOICE_PTS = new Set([0, 3, 5, 7, 10])
@@ -30,6 +30,9 @@ interface ReportPayload {
   p?: string | null
   c?: string
   a: Record<string, unknown>
+  /** Sales vertical ('wellness'); anything else — incl. absent on every
+   *  pre-existing link — renders the original chiro debrief. */
+  vt?: string
 }
 
 function clamp(x: number, lo: number, hi: number): number {
@@ -46,7 +49,9 @@ function escapeHtml(s: string): string {
 }
 
 /** Strict-parse the payload; returns null on anything malformed. */
-export function parseReportPayload(dParam: string): { answers: XrayAnswers; preparedFor: string; currency: string } | null {
+export function parseReportPayload(
+  dParam: string,
+): { answers: XrayAnswers; preparedFor: string; currency: string; vertical: XrayVertical } | null {
   let payload: ReportPayload
   try {
     const json = Buffer.from(dParam, 'base64url').toString('utf8')
@@ -88,11 +93,15 @@ export function parseReportPayload(dParam: string): { answers: XrayAnswers; prep
     visitFee: clamp(Math.round(visitFee), 40, 150),
   }
 
+  const vertical: XrayVertical = payload.vt === 'wellness' ? 'wellness' : 'chiro'
   // Practice name wins; fall back to the lead's own name from the quiz gate.
-  const rawName = (typeof payload.p === 'string' && payload.p.trim()) || (typeof payload.n === 'string' && payload.n.trim()) || 'your practice'
+  const rawName =
+    (typeof payload.p === 'string' && payload.p.trim()) ||
+    (typeof payload.n === 'string' && payload.n.trim()) ||
+    (vertical === 'wellness' ? 'your center' : 'your practice')
   const preparedFor = escapeHtml(rawName.slice(0, 60))
   const currency = SYMBOLS[payload.c ?? ''] ? (payload.c as string) : 'USD'
-  return { answers, preparedFor, currency }
+  return { answers, preparedFor, currency, vertical }
 }
 
 // Tiny LRU: Map preserves insertion order; delete+set refreshes recency.
@@ -109,10 +118,11 @@ async function renderDebriefPdf(dParam: string, parsed: NonNullable<ReturnType<t
     return cached
   }
 
-  const { answers, preparedFor, currency } = parsed
+  const { answers, preparedFor, currency, vertical } = parsed
   const sym = SYMBOLS[currency]
   const money = (n: number) => sym + Math.round(n).toLocaleString('en-US')
   const r = compute(answers)
+  const V = (chiro: string, wellness: string) => (vertical === 'wellness' ? wellness : chiro)
 
   const now = new Date()
   const scanDate = `${String(now.getUTCDate()).padStart(2, '0')} ${MONTHS[now.getUTCMonth()]} ${now.getUTCFullYear()}`
@@ -122,9 +132,9 @@ async function renderDebriefPdf(dParam: string, parsed: NonNullable<ReturnType<t
     preparedFor,
     scanDate,
     totalScore: r.total,
-    scoreRead: scoreRead(r.total),
-    barsHtml: buildBarsHtml(r.scores, r.weakest),
-    verdictHtml: verdictHtml(answers, r, money),
+    scoreRead: scoreRead(r.total, vertical),
+    barsHtml: buildBarsHtml(r.scores, r.weakest, vertical),
+    verdictHtml: verdictHtml(answers, r, money, vertical),
     totalLeak: money(r.totalLeak),
     driftLeak: money(r.driftLeak),
     respLeak: money(r.responseLeak),
@@ -133,7 +143,7 @@ async function renderDebriefPdf(dParam: string, parsed: NonNullable<ReturnType<t
     missLine:
       r.missedCallsWeekly <= 0
         ? 'Based on your answers, inquiries get a live response... the leak below is what the remaining gaps cost.'
-        : 'That’s an estimated <b>' + money(r.responseLeak) + '/month</b> walking to whichever clinic answers first.',
+        : 'That’s an estimated <b>' + money(r.responseLeak) + V('/month</b> walking to whichever clinic answers first.', '/month</b> walking to whichever center answers first.'),
     missReframe:
       answers.b1 === 10 && answers.b2 === 10
         ? 'You’re tight... the numbers below show what closing the last gaps is worth.'
@@ -143,15 +153,15 @@ async function renderDebriefPdf(dParam: string, parsed: NonNullable<ReturnType<t
     feeYear: money(answers.visitFee * 12),
     aiLine:
       answers.inquiriesWeekly <= 0
-        ? 'Patients have started asking ChatGPT and Siri the question they used to type into Google: "who should I see about this?" As inquiries grow, being readable to the answer engines decides whether you come up at all.'
-        : 'Patients have started asking ChatGPT and Siri the question they used to type into Google: "who should I see about this?" An estimated <b>' +
+        ? V('Patients', 'Clients') + ' have started asking ChatGPT and Siri the question they used to type into Google: "who should I see about this?" As inquiries grow, being readable to the answer engines decides whether you come up at all.'
+        : V('Patients', 'Clients') + ' have started asking ChatGPT and Siri the question they used to type into Google: "who should I see about this?" An estimated <b>' +
           (r.aiResearchedWeekly < 1 ? '1 of your weekly inquiries' : Math.round(r.aiResearchedWeekly) + ' of your weekly inquiries') +
           '</b> now starts inside an AI assistant... and at your current visibility scores, roughly <b>' +
           Math.round(r.aiInvisibleShare * 100) +
-          '%</b> of those patients never find you at all. If the trend holds, that is a projected <b>' +
+          V('%</b> of those patients never find you at all. If the trend holds, that is a projected <b>', '%</b> of those clients never find you at all. If the trend holds, that is a projected <b>') +
           money(r.aiLeak) +
           '/month</b> on top of the leak above... one that no missed-call log will ever show you.',
-  })
+  }, vertical)
 
   const pdf = await withRasterPage(async (page) => {
     // 'load' suffices: the document is fully inline (data-URI images only).

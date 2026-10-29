@@ -37,15 +37,18 @@ export interface DebriefTemplateData {
   aiLine: string
 }
 
+import type { XrayVertical } from './xray-math'
+
 export function buildBarsHtml(
   scores: { content: number; speed: number; reviews: number; retention: number },
   weakest: string,
+  vertical: XrayVertical = 'chiro',
 ): string {
   const rows: Array<[string, string]> = [
     ['content', 'Content & Visibility'],
     ['speed', 'Speed-to-Lead & After-Hours'],
     ['reviews', 'Google Review Engine'],
-    ['retention', 'Patient Retention & Recall'],
+    ['retention', vertical === 'wellness' ? 'Client Retention & Recall' : 'Patient Retention & Recall'],
   ]
   return rows
     .map(([axis, label]) => {
@@ -61,10 +64,14 @@ export function buildBarsHtml(
     .join('\n')
 }
 
-export function buildDebriefHtml(d: DebriefTemplateData): string {
+export function buildDebriefHtml(d: DebriefTemplateData, vertical: XrayVertical = 'chiro'): string {
   const C = 2 * Math.PI * 52
   const arcOffset = (C * (1 - d.totalScore / 100)).toFixed(1)
   const P = (n: number) => 'P.' + String(n).padStart(2, '0') + ' — 15'
+  // Vertical copy selector (wellness-sales-funnel plan Phase 2). The chiro
+  // argument is VERBATIM the locked master-pitch copy — the fixture test
+  // asserts the chiro render stays byte-identical.
+  const V = (chiro: string, wellness: string) => (vertical === 'wellness' ? wellness : chiro)
 
   return `<!doctype html>
 <html lang="en">
@@ -243,7 +250,7 @@ ${d.barsHtml}
     <p style="margin: 0 0 4pt; font-size: 11.5pt; line-height: 1.5;">${d.missLine}</p>
     <p style="margin: 0 0 14pt; font-size: 9.5pt; color: var(--dim);">${d.missReframe}</p>
     <div class="leaksplit">
-      <div>Patient drift adds<b>${d.driftLeak}</b></div>
+      <div>${V('Patient drift adds', 'Client drift adds')}<b>${d.driftLeak}</b></div>
       <div>Total monthly leak<b>${d.totalLeak}</b></div>
     </div>
     <p class="punch">That's &asymp; <b>${d.mult}&times;</b> the monthly cost of fixing it. The pages that follow are the treatment plan.</p>
@@ -261,7 +268,7 @@ ${d.barsHtml}
   <div class="big" style="margin-bottom: 0.35in;">An X-ray doesn't lie.</div>
   <p class="body">It doesn't exaggerate, it doesn't flatter, and it doesn't care how long you've been in practice. It shows the thing you couldn't see. And once you've seen it, you can't unsee it.</p>
   <p class="body">You've seen yours. Your practice has a leak. Now you know roughly what it costs you every month, and you know which part of the machine is lagging behind.</p>
-  <p class="body">This is the treatment plan. Read it the way you'd want a patient to read yours: not as entertainment. As the difference between managing a problem and living with one.</p>
+  <p class="body">${V("This is the treatment plan. Read it the way you'd want a patient to read yours: not as entertainment. As the difference between managing a problem and living with one.", "This is the treatment plan. Read it the way you'd want a client to read their intake screening: not as entertainment. As the difference between managing a problem and living with one.")}</p>
   <div class="scanline" style="margin: 0.35in 0;"></div>
   <h2 class="sect" style="margin-top: 35px;">Why this is happening<br />to good practices.</h2>
   <p class="body">First, understand that the leak is not your fault. Three forces created it, none of them asked your permission, and all three are permanent.</p>
@@ -274,12 +281,12 @@ ${d.barsHtml}
   <div class="head"><span><b>X-Ray Debrief</b></span><span>02 &middot; The Big Change</span></div>
   <div class="forcenum" style="margin-top: 0;">01</div>
   <div class="forcename">The technology force</div>
-  <p class="body">132 million Americans<span class="fnmark">*</span> now use AI assistants to research and compare before they book. Patients ask them the question they used to type into Google... "who should I see about this?" The answer engines read the same signals a careful human would: reviews, real content, responsiveness. A practice those engines can't read doesn't lose the comparison. It never comes up.</p>
-  <p class="body">And underneath that newest layer, the old one still runs: every patient in your town carries every competitor's front desk in their pocket. When someone's back seizes at 9pm, they don't wait for your opening hours...</p>
+  <p class="body">132 million Americans<span class="fnmark">*</span> now use AI assistants to research and compare before they book. ${V('Patients', 'Clients')} ask them the question they used to type into Google... "who should I see about this?" The answer engines read the same signals a careful human would: reviews, real content, responsiveness. A ${V('practice', 'center')} those engines can't read doesn't lose the comparison. It never comes up.</p>
+  <p class="body">${V("And underneath that newest layer, the old one still runs: every patient in your town carries every competitor's front desk in their pocket. When someone's back seizes at 9pm, they don't wait for your opening hours...", "And underneath that newest layer, the old one still runs: every potential client in your town carries every competitor's front desk in their pocket. When someone decides at 9pm that the tension, the jet lag or the bad sleep finally has to go, they don't wait for your opening hours...")}</p>
   <p class="body">They search, they message, and they book with whoever answers. Google decides who exists. The map pack decides who gets the call. And now the answer engines read the same board.</p>
   <div class="forcenum" style="margin-top: 0.58in;">02</div>
   <div class="forcename">The social force</div>
-  <p class="body">Patients stopped calling back. Not because they're rude... because Amazon, Uber and a decade of instant everything trained them.</p>
+  <p class="body">${V('Patients', 'Clients')} stopped calling back. Not because they're rude... because Amazon, Uber and a decade of instant everything trained them.</p>
   <div class="statband">
     <div class="stat"><div class="n">78%<span class="fnmark">*</span></div><div class="l">of customers buy from whoever answers first</div></div>
     <div class="stat"><div class="n lime">100&times;<span class="fnmark">*</span></div><div class="l">more likely to connect in 5 min vs. 30 min</div></div>
@@ -295,7 +302,7 @@ ${d.barsHtml}
   <div class="head"><span><b>X-Ray Debrief</b></span><span>02 &middot; The Big Change</span></div>
   <div class="forcenum xl">03</div>
   <div class="forcename">The economic force</div>
-  <p class="body">The compounding asset in healthcare used to be location and reputation. Now it's attention and reviews. The practices growing right now are not better clinicians than you. They run better systems... and every month, the gap between good-clinician practices and good-system practices gets more expensive to close.</p>
+  <p class="body">${V('The compounding asset in healthcare used to be location and reputation. Now it\'s attention and reviews. The practices growing right now are not better clinicians than you. They run better systems... and every month, the gap between good-clinician practices and good-system practices gets more expensive to close.', 'The compounding asset in wellness used to be location and reputation. Now it\'s attention and reviews. The centers growing right now don\'t deliver better sessions than you. They run better systems... and every month, the gap between good-care centers and good-system centers gets more expensive to close.')}</p>
   <div class="quoteblock" style="border-color: var(--lime); margin-top: 0.55in;">
     <div class="big">Ten years ago, "great care plus word of mouth" was a growth strategy.<br /><br />Today that's a lottery ticket.</div>
   </div>
@@ -308,8 +315,8 @@ ${d.barsHtml}
   <div class="head"><span><b>X-Ray Debrief</b></span><span>03 &middot; The Belief Shift</span></div>
   <h2 class="sect">You've already tried the obvious fix. It's called <em>trying harder.</em></h2>
   <p class="body">The problem is that you and your staff are busy. Posting at 11 pm doesn't move the needle because everybody is asleep.</p>
-  <p class="body">Telling your front desk to follow up when it's quiet is a losing strategy because your clients expect instant answers today. And asking for a Google review when you remember, and only from the patients you're sure will say yes, means that other clinics win the Google Map pack.</p>
-  <p class="body">So the real problem is that you need to get consistent systematically. That's exactly what all the expensive chiropractic coaches sell.</p>
+  <p class="body">Telling your front desk to follow up when it's quiet is a losing strategy because your clients expect instant answers today. And asking for a Google review when you remember, and only from the ${V("patients you're sure will say yes, means that other clinics win the Google Map pack.", "clients you're sure will say yes, means that other centers win the Google Map pack.")}</p>
+  <p class="body">${V("So the real problem is that you need to get consistent systematically. That's exactly what all the expensive chiropractic coaches sell.", "So the real problem is that you need to get consistent systematically. That's exactly what all the expensive wellness-business coaches sell.")}</p>
   <p class="body">But then you hit the actual problem... it's not a discipline problem, it's a <b>physics problem.</b></p>
   <div class="big" style="margin: 0.32in 0; font-size: 27pt;">Attention now runs 24 hours a day. <span class="lime">Humans don't.</span></div>
   <p class="body">You need sleep. Your family needs you. Your kids need guidance. And sometimes you also need to rest...</p>
@@ -321,14 +328,14 @@ ${d.barsHtml}
 <div class="page">
   <span class="rm tl"></span><span class="rm tr"></span><span class="rm bl"></span><span class="rm br"></span>
   <div class="head"><span><b>X-Ray Debrief</b></span><span>03 &middot; The Belief Shift</span></div>
-  <p class="body">And the leak this physics creates is the quietest one in your business: <b>patient drift.</b></p>
-  <p class="body">A patient finishes their care plan. They feel good, which means your care <em>worked</em>.</p>
+  <p class="body">And the leak this physics creates is the quietest one in your business: <b>${V('patient drift.', 'client drift.')}</b></p>
+  <p class="body">${V('A patient finishes their care plan. They feel good, which means your care <em>worked</em>.', 'A client finishes their package. They feel great, which means your care <em>worked</em>.')}</p>
   <p class="body">But then nothing happens. No contact, no content, no reason to think of you.</p>
-  <p class="body">Then eight months later their back flares up. But you are in a city full of clinics that answer faster than you, and they have likely multiple chiros saved in their phones... how many electricians do you have stored in <em>your</em> phone for emergencies?</p>
+  <p class="body">${V('Then eight months later their back flares up. But you are in a city full of clinics that answer faster than you, and they have likely multiple chiros saved in their phones... how many electricians do you have stored in <em>your</em> phone for emergencies?', 'Then eight months later the tension is back and the sleep is gone. But you are in a town full of studios that answer faster than you, and they likely have several saved in their phones... how many electricians do you have stored in <em>your</em> phone for emergencies?')}</p>
   <p class="body"><b>Exactly!</b></p>
   <p class="body">And if you don't, you'll call the first one listed in Google Maps that responds... correct?</p>
   <div class="quoteblock">
-    <div class="big"><span class="signal">Patients don't leave. They fade.</span> And fading is invisible in the appointment book until the quarter is already soft.</div>
+    <div class="big"><span class="signal">${V("Patients don't leave. They fade.", "Clients don't leave. They fade.")}</span> And fading is invisible in the appointment book until the quarter is already soft.</div>
   </div>
   <div class="foot"><span>${P(7)}</span><span>omniply.io</span></div>
 </div>
@@ -339,7 +346,7 @@ ${d.barsHtml}
   <div class="head"><span><b>X-Ray Debrief</b></span><span>04 &middot; The Mechanism</span></div>
   <h2 class="sect">The <span class="lime">Omniply Loop</span></h2>
   <p class="body">So the solution is what we call the <b>Omniply Loop</b> because it multiplies your omni-channel exposure where your clients pay attention all day.</p>
-  <p class="body">For a chiropractic practice that's tired of marketing being a second job, what fixes this is not a tool. It's a loop. Four parts, each feeding the next:</p>
+  <p class="body">${V("For a chiropractic practice that's tired of marketing being a second job, what fixes this is not a tool. It's a loop. Four parts, each feeding the next:", "For a wellness center that's tired of marketing being a second job, what fixes this is not a tool. It's a loop. Four parts, each feeding the next:")}</p>
   <div class="loopwrap">
     <svg width="430" height="430" viewBox="0 0 430 430">
       <defs>
@@ -384,17 +391,17 @@ ${d.barsHtml}
   <div class="head"><span><b>X-Ray Debrief</b></span><span>04 &middot; The Mechanism</span></div>
   <div class="part">
     <div class="partname"><span class="dot">&#9679;</span> Presence</div>
-    <p class="body">Real content — posts, articles, a newsletter your patients actually read — produced for your practice, in your voice, every week, without you writing a word. Presence is what makes patients think of you <em>before</em> the pain does.</p>
+    <p class="body">${V('Real content — posts, articles, a newsletter your patients actually read — produced for your practice, in your voice, every week, without you writing a word. Presence is what makes patients think of you <em>before</em> the pain does.', 'Real content — posts, articles, a newsletter your clients actually read — produced for your center, in your voice, every week, without you writing a word. Presence is what makes clients think of you <em>before</em> the slump does.')}</p>
     <p class="body">So when the emergency strikes, they remember who to call... you!</p>
   </div>
   <div class="part">
     <div class="partname"><span class="dot">&#9679;</span> Response</div>
-    <p class="body">AI chat and voice that answer in seconds, at 2pm while you're adjusting or at 2am while you're asleep. So your clients can book the appointment on the spot. The inquiry you answer instantly is the patient your competitor never meets.</p>
+    <p class="body">${V("AI chat and voice that answer in seconds, at 2pm while you're adjusting or at 2am while you're asleep. So your clients can book the appointment on the spot. The inquiry you answer instantly is the patient your competitor never meets.", "AI chat and voice that answer in seconds, at 2pm while you're mid-session or at 2am while you're asleep. So your clients can book the appointment on the spot. The inquiry you answer instantly is the client your competitor never meets.")}</p>
     <div class="inset">
       <div class="lbl">Remember</div>
       <p>Reach them inside five minutes and you're 100&times; more likely to even get them on the line... and 78% book with whoever they can schedule with first.</p>
     </div>
-    <p class="body">If not, they'll call the next chiro in the map pack without hesitation because they will go to whoever they can schedule the appointment with <em>first</em>!</p>
+    <p class="body">${V("If not, they'll call the next chiro in the map pack without hesitation because they will go to whoever they can schedule the appointment with <em>first</em>!", "If not, they'll call the next center in the map pack without hesitation because they will go to whoever they can schedule the appointment with <em>first</em>!")}</p>
   </div>
   <div class="foot"><span>${P(9)}</span><span>omniply.io</span></div>
 </div>
@@ -405,13 +412,13 @@ ${d.barsHtml}
   <div class="head"><span><b>X-Ray Debrief</b></span><span>04 &middot; The Mechanism</span></div>
   <div class="part">
     <div class="partname"><span class="dot">&#9679;</span> Proof</div>
-    <p class="body">A review engine that turns every happy patient into public evidence, automatically. Reviews compound like interest: invisible week to week, undeniable year to year.</p>
+    <p class="body">A review engine that turns every happy ${V('patient', 'client')} into public evidence, automatically. Reviews compound like interest: invisible week to week, undeniable year to year.</p>
     <p class="body">Plus, fresh reviews are one of the strongest signals that decide who ranks first and gets the top spot in Google's Map pack...</p>
     <p class="body">A constant stream of new reviews increases your chances to be the first listing like nothing else. So anyone new in town that needs your help, can find you on the first page.</p>
   </div>
   <div class="part">
     <div class="partname"><span class="dot">&#9679;</span> Recall</div>
-    <p class="body">Reactivation that never forgets a patient. Care plan ends, contact continues; nobody drifts unnoticed, and the ones who faded get a reason to come back... before the flare-up, not after.</p>
+    <p class="body">${V('Reactivation that never forgets a patient. Care plan ends, contact continues; nobody drifts unnoticed, and the ones who faded get a reason to come back... before the flare-up, not after.', 'Reactivation that never forgets a client. The package ends, contact continues; nobody drifts unnoticed, and the ones who faded get a reason to come back... before they burn out again, not after.')}</p>
   </div>
   <div class="foot"><span>${P(10)}</span><span>omniply.io</span></div>
 </div>
@@ -421,9 +428,9 @@ ${d.barsHtml}
   <span class="rm tl"></span><span class="rm tr"></span><span class="rm bl"></span><span class="rm br"></span>
   <div class="head"><span><b>X-Ray Debrief</b></span><span>04 &middot; The Mechanism</span></div>
   <div class="big" style="margin: 0.4in 0;">It's not four tools.<br /><span class="lime">It's one flywheel.</span></div>
-  <p class="body">Watch what the loop does: presence keeps patients warm &rarr; warm patients return, and leave reviews &rarr; reviews bring new inquiries &rarr; instant response converts them &rarr; recall keeps them.</p>
+  <p class="body">${V('Watch what the loop does: presence keeps patients warm &rarr; warm patients return, and leave reviews &rarr; reviews bring new inquiries &rarr; instant response converts them &rarr; recall keeps them.', 'Watch what the loop does: presence keeps clients warm &rarr; warm clients return, and leave reviews &rarr; reviews bring new inquiries &rarr; instant response converts them &rarr; recall keeps them.')}</p>
   <p class="body">Break any link and the leak reopens somewhere else, which is exactly why buying point-solutions has never fixed it.</p>
-  <p class="body">Which is exactly why all the chiro practice coaching just hands the discipline problem back to you. <b>The loop removes it.</b></p>
+  <p class="body">${V('Which is exactly why all the chiro practice coaching just hands the discipline problem back to you. <b>The loop removes it.</b>', 'Which is exactly why all the wellness-business coaching just hands the discipline problem back to you. <b>The loop removes it.</b>')}</p>
   <div class="foot"><span>${P(11)}</span><span>omniply.io</span></div>
 </div>
 
@@ -432,13 +439,13 @@ ${d.barsHtml}
   <span class="rm tl"></span><span class="rm tr"></span><span class="rm bl"></span><span class="rm br"></span>
   <div class="head"><span><b>X-Ray Debrief</b></span><span>05 &middot; The Prognosis</span></div>
   <h2 class="sect">The Prognosis.</h2>
-  <p class="body dim">What your practice looks like ninety days into treatment:</p>
+  <p class="body dim">${V('What your practice looks like ninety days into treatment:', 'What your center looks like ninety days into treatment:')}</p>
   <ul class="prog">
-    <li>The 2am back-spasm call answered, and booked, while you're asleep... so Monday's schedule fills itself before your competitor's front desk even gets in.</li>
-    <li>A newsletter your patients actually open... written, designed and sent every week, without you typing a word of it.</li>
+    <li>${V("The 2am back-spasm call answered, and booked, while you're asleep... so Monday's schedule fills itself before your competitor's front desk even gets in.", "The 2am \"can I still get in tomorrow?\" message answered, and booked, while you're asleep... so Monday's schedule fills itself before your competitor's front desk even gets in.")}</li>
+    <li>${V('A newsletter your patients actually open... written, designed and sent every week, without you typing a word of it.', 'A newsletter your clients actually open... written, designed and sent every week, without you typing a word of it.')}</li>
     <li>Fresh Google reviews arriving quietly every week... the compounding kind your competitors can't fake and can't catch up to.</li>
-    <li>Patients who "felt fine and faded" getting a reason to come back before the flare-up... not after they've already googled someone else.</li>
-    <li>Your name showing up between visits, so when the pain hits, there's no search... just "call my chiro."</li>
+    <li>${V('Patients who "felt fine and faded" getting a reason to come back before the flare-up... not after they\'ve already googled someone else.', 'Clients who "felt great and faded" getting a reason to come back before they slide back into old habits... not after they\'ve already googled someone else.')}</li>
+    <li>${V('Your name showing up between visits, so when the pain hits, there\'s no search... just "call my chiro."', 'Your name showing up between visits, so when they need a reset, there\'s no search... just "book my usual spot."')}</li>
     <li>And the one nobody puts on a features list: your evenings back. No more 11pm posting, no more "we should really ask for reviews"... no more marketing guilt.</li>
   </ul>
   <div class="foot"><span>${P(12)}</span><span>omniply.io</span></div>
@@ -448,16 +455,16 @@ ${d.barsHtml}
 <div class="page">
   <span class="rm tl"></span><span class="rm tr"></span><span class="rm bl"></span><span class="rm br"></span>
   <div class="head"><span><b>X-Ray Debrief</b></span><span>06 &middot; The Economics</span></div>
-  <h2 class="sect">The one-patient math.</h2>
+  <h2 class="sect">${V('The one-patient math.', 'The one-client math.')}</h2>
   <p class="body">Now the part your X-Ray already did for you.</p>
-  <p class="body">Take your average visit fee. A typical patient's first year is worth roughly twelve visits of it. The whole system costs $397 a month.</p>
+  <p class="body">${V("Take your average visit fee. A typical patient's first year is worth roughly twelve visits of it. The whole system costs $397 a month.", "Take your average session fee. A typical client's first year is worth roughly twelve sessions of it. The whole system costs $397 a month.")}</p>
   <div class="mathrow">
-    <div class="mathcard"><div class="v" style="color: var(--dim);">${d.fee} &times; 12 = ${d.feeYear}</div><div class="k">one patient's first year, at your fee</div></div>
+    <div class="mathcard"><div class="v" style="color: var(--dim);">${d.fee} &times; 12 = ${d.feeYear}</div><div class="k">${V("one patient's first year, at your fee", "one client's first year, at your fee")}</div></div>
     <div class="vs">VS</div>
     <div class="mathcard"><div class="v lime">$397</div><div class="k">the whole system / month</div></div>
   </div>
   <div class="quoteblock" style="border-color: var(--lime);">
-    <div class="big" style="font-size: 26pt;">Recovering one patient a month pays for the entire system. The second one is profit.</div>
+    <div class="big" style="font-size: 26pt;">${V('Recovering one patient a month pays for the entire system. The second one is profit.', 'Recovering one client a month pays for the entire system. The second one is profit.')}</div>
   </div>
   <p class="body">And your X-Ray told you the leak is bigger than two: <b>${d.totalLeak}/month &asymp; ${d.mult}&times;</b> the cost of fixing it.</p>
   <p class="body">That's the entire business case. No projections, no hockey sticks... just your own numbers, doing arithmetic you can check.</p>
@@ -468,11 +475,11 @@ ${d.barsHtml}
 <div class="page">
   <span class="rm tl"></span><span class="rm tr"></span><span class="rm bl"></span><span class="rm br"></span>
   <div class="head"><span><b>X-Ray Debrief</b></span><span>07 &middot; The Prize</span></div>
-  <p class="body">Omniply is not marketing software with a chiropractic template. It's built for chiropractic only. The content engine knows the difference between a subluxation and a slogan.</p>
+  <p class="body">${V("Omniply is not marketing software with a chiropractic template. It's built for chiropractic only. The content engine knows the difference between a subluxation and a slogan.", "Omniply is not marketing software with a wellness template. It's built for wellness &amp; longevity centers. The content engine knows the difference between a protocol and a platitude.")}</p>
   <p class="body">The onboarding reads your website, your brand, your specialties, and the system starts producing in hours, not weeks.</p>
   <p class="body"><b>We're not asking you to become a marketer. We're asking you to stop having to be one.</b></p>
   <p class="body">$397 a month. Everything in the loop. Cancel anytime. No setup fees, no lock-in, no salesperson.</p>
-  <p class="body">Which is why the next step isn't a call. It's the actual system, on screen: what it posts, how it answers, what the recall messages look like. Watch it the way you'd read a scan. Then decide like a doctor decides: <b>on the evidence.</b></p>
+  <p class="body">${V("Which is why the next step isn't a call. It's the actual system, on screen: what it posts, how it answers, what the recall messages look like. Watch it the way you'd read a scan. Then decide like a doctor decides: <b>on the evidence.</b>", "Which is why the next step isn't a call. It's the actual system, on screen: what it posts, how it answers, what the recall messages look like. Watch it the way you'd read a lab panel. Then decide the way you run your center: <b>on the evidence.</b>")}</p>
   <div class="ctabox">
     <div>
       <div class="t">Watch the Practice Autopilot Walkthrough &rarr;</div>
@@ -488,12 +495,12 @@ ${d.barsHtml}
   <span class="rm tl"></span><span class="rm tr"></span><span class="rm bl"></span><span class="rm br"></span>
   <div class="head"><span><b>X-Ray Debrief</b></span><span>08 &middot; The Close</span></div>
   <div class="big" style="margin: 0.5in 0 0.4in;">You've seen the X-ray.<br />You know what untreated looks like...</div>
-  <p class="body">You've watched it happen to patients who "felt fine."</p>
+  <p class="body">${V('You\'ve watched it happen to patients who "felt fine."', 'You\'ve watched it happen to clients who "felt great."')}</p>
   <div class="big lime" style="margin: 0.4in 0 0.8in;">Treatment starts the day you decide it does.</div>
   <div class="srcs">
     <b>* Sources:</b> Adyen Retail Report 2026: 132 million Americans — 42&ndash;51% of online shoppers — research purchases with AI assistants; Visa: 25% use one daily. The AI-era projection is a stated, adjustable projection computed from your own answers, never a measured fact. &nbsp;&middot;&nbsp; Oldroyd, J. — Lead Response Management Study (InsideSales, 2007): 100&times; contact odds within 5 minutes vs. 30. &nbsp;&middot;&nbsp; Oldroyd, McElheran &amp; Elkington, "The Short Life of Online Sales Leads," Harvard Business Review, March 2011 (1.25M leads): firms responding within an hour were nearly 7&times; as likely to qualify the lead as those an hour slower, and 60&times;+ vs. a day; average response 42 hours. &nbsp;&middot;&nbsp; Lead Connect survey: 78% of customers buy from the first responder.<br /><br />
     Leak estimates in this document are computed from your own X-Ray answers and stated, adjustable assumptions. They are illustrations, not guarantees or income claims.<br /><br />
-    &copy; Omniply &middot; omniply.io &middot; Built for chiropractic practices only.
+    &copy; Omniply &middot; omniply.io &middot; ${V('Built for chiropractic practices only.', 'Built for wellness &amp; longevity centers.')}
   </div>
   <div class="foot"><span>${P(15)}</span><span>omniply.io</span></div>
 </div>

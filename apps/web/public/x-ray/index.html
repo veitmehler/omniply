@@ -264,15 +264,33 @@
 
   <!-- ── HOOK ── -->
   <section class="screen hook active" id="s-hook">
-    <div class="meta">Radiographic assessment · Chiropractic practices</div>
-    <h1>You X-ray patients before treating them. Nobody's ever X-rayed <em>your practice</em>.</h1>
-    <p class="tagline">See the revenue your practice can't. Answer 12 quick questions and get your Practice Autopilot Score, the monthly figure your practice is silently leaking — and whether the new wave of AI assistants can even find you.</p>
+    <div class="meta" id="hookmeta">Radiographic assessment · Chiropractic practices</div>
+    <h1 id="hookh1">You X-ray patients before treating them. Nobody's ever X-rayed <em>your practice</em>.</h1>
+    <p class="tagline" id="hooktag">See the revenue your practice can't. Answer 12 quick questions and get your Practice Autopilot Score, the monthly figure your practice is silently leaking — and whether the new wave of AI assistants can even find you.</p>
     <div class="contract">
       <span>12 questions</span>
       <span>2 minutes</span>
       <span>Your leak, in dollars</span>
     </div>
     <button class="btn" id="start">Start my X-Ray</button>
+  </section>
+
+  <!-- ── VERTICAL (segmentation — shown only when the entry URL carries no ?v=) ── -->
+  <section class="screen" id="s-vert">
+    <div class="meta">Before we scan</div>
+    <div class="q">
+      <h2>What kind of practice do you run?</h2>
+      <div class="answers">
+        <button type="button" id="vert-chiro">Chiropractic practice</button>
+        <button type="button" id="vert-wellness">Wellness &amp; longevity center</button>
+        <button type="button" id="vert-other">Something else</button>
+      </div>
+      <div id="vert-otherwrap" hidden style="margin-top:14px;">
+        <input type="text" id="vert-othertext" placeholder="Tell us what you do — e.g. med spa, physio studio" maxlength="80"
+               style="width:100%;box-sizing:border-box;" />
+        <button class="btn" id="vert-othergo" style="margin-top:12px;">Continue</button>
+      </div>
+    </div>
   </section>
 
   <!-- ── QUESTIONS ── -->
@@ -291,7 +309,7 @@
     <div class="scanbox">
       <div class="scanline"></div>
       <div class="meta">Developing image&hellip;</div>
-      <h2 style="font-weight:650; font-size:22px;">Reading your practice.</h2>
+      <h2 style="font-weight:650; font-size:22px;" id="scanread">Reading your practice.</h2>
     </div>
   </section>
 
@@ -382,7 +400,7 @@
 
     <div class="film" id="foundbox" style="display:none">
       <div style="text-align:center;font-size:26px;line-height:1.25;font-weight:700;color:var(--lime)">Omniply is opening soon</div>
-      <p style="padding:30px 0;margin:0;font-size:16px;line-height:1.6;text-align:center;color:#fff"><b id="bridgeline"></b>Your X-Ray just showed you where patients quietly slip away. When Omniply goes live, the first twelve practices receive concierge onboarding: we build your entire system together in a live working session... your voice, your calendar, your first month of content... so you learn it while it takes shape. Those twelve also keep their monthly rate locked from day one, for as long as they stay. Once the twelve places are filled, the doors close while we get them up and running.</p>
+      <p style="padding:30px 0;margin:0;font-size:16px;line-height:1.6;text-align:center;color:#fff"><b id="bridgeline"></b><span id="bridgebody">Your X-Ray just showed you where patients quietly slip away. When Omniply goes live, the first twelve practices receive concierge onboarding: we build your entire system together in a live working session... your voice, your calendar, your first month of content... so you learn it while it takes shape. Those twelve also keep their monthly rate locked from day one, for as long as they stay. Once the twelve places are filled, the doors close while we get them up and running.</span></p>
       <button class="btn" id="joinbtn" type="button" style="display:block;margin:0 auto">Please notify me when it goes live</button>
       <div id="joinunder" style="text-align:center;font-size:12px;opacity:.75;margin-top:10px">One click. We already have your report on file.</div>
     </div>
@@ -572,53 +590,99 @@ if (typeof module !== 'undefined' && module.exports) module.exports = XRAY
   function sym () { return SYMBOLS[currency] || '$' }
   function money (n) { return sym() + Math.round(n).toLocaleString('en-US') }
 
-  // ── Question set (12 steps) ───────────────────────────────────────────────
-  var QUESTIONS = [
-    { id: 'a1', axis: 'Content & Visibility', text: 'How often does your practice post on social media?',
+  // ── Vertical segmentation (wellness-sales-funnel plan Phase 2) ────────────
+  // ?v=chiro|wellness preselects (the landing pages link with it); plain /x-ray
+  // traffic (nav links) gets the business-type question before the scan.
+  // 'other' keeps the original copy and rides the webhook as a demand signal.
+  var vertical = null
+  var verticalOther = ''
+  try {
+    var vParam = new URLSearchParams(location.search).get('v')
+    if (vParam === 'chiro' || vParam === 'wellness') vertical = vParam
+  } catch (e) { /* chooser will ask */ }
+  function W (chiro, wellness) { return vertical === 'wellness' ? wellness : chiro }
+
+  // ── Question set (12 steps; wording follows the vertical) ─────────────────
+  var QUESTIONS = null
+  function retAxis () { return W('Patient Retention & Recall', 'Client Retention & Recall') }
+  function initQuestions () {
+    QUESTIONS = [
+    { id: 'a1', axis: 'Content & Visibility', text: W('How often does your practice post on social media?', 'How often does your center post on social media?'),
       opts: [['Every day, or close to it', 10], ['A few times a week', 7], ['A few times a month', 3], ['Rarely or never', 0]] },
     { id: 'a2', axis: 'Content & Visibility', text: 'Who creates your marketing content?',
       opts: [['A system or agency — it happens without me', 10], ['A staff member, when there’s time', 7], ['I do it myself, usually late at night', 3], ['Nobody, really', 0]] },
-    { id: 'a3', axis: 'Content & Visibility', text: 'Do you send a regular email newsletter to your patient list?',
+    { id: 'a3', axis: 'Content & Visibility', text: W('Do you send a regular email newsletter to your patient list?', 'Do you send a regular email newsletter to your client list?'),
       opts: [['Weekly', 10], ['Monthly', 7], ['Occasionally, when we get to it', 3], ['Never', 0]] },
-    { id: 'b1', axis: 'Speed-to-Lead & After-Hours', text: 'A new patient calls while you’re adjusting — or after close. What happens?',
+    { id: 'b1', axis: 'Speed-to-Lead & After-Hours', text: W('A new patient calls while you’re adjusting — or after close. What happens?', 'A new client calls while you’re mid-session — or after close. What happens?'),
       opts: [['An AI or answering service books them on the spot', 10], ['Voicemail — we return calls the same day', 7], ['Voicemail — we call back when we can', 3], ['They just miss us', 0]] },
     { id: 'b2', axis: 'Speed-to-Lead & After-Hours', text: 'How fast do website forms and social messages get answered?',
       opts: [['Within minutes — it’s automated', 10], ['Same day', 7], ['Within a few days', 3], ['Honestly, some never get answered', 0]] },
     { id: 'inquiriesWeekly', axis: 'Speed-to-Lead & After-Hours', type: 'slider',
-      text: 'Roughly how many new-patient inquiries per week?', sub: 'Calls, messages and web forms combined',
+      text: W('Roughly how many new-patient inquiries per week?', 'Roughly how many new-client inquiries per week?'), sub: 'Calls, messages and web forms combined',
       min: 0, max: 50, step: 1, def: 10, unit: '/ week' },
-    { id: 'c1', axis: 'Google Review Engine', text: 'How many Google reviews does your practice have?',
+    { id: 'c1', axis: 'Google Review Engine', text: W('How many Google reviews does your practice have?', 'How many Google reviews does your center have?'),
       opts: [['300 or more', 10], ['100–299', 7], ['30–99', 3], ['Under 30', 0]] },
     { id: 'c2', axis: 'Google Review Engine', text: 'How do new Google reviews happen?',
-      opts: [['Automatically — every patient gets a request', 10], ['We ask when we remember', 7], ['Patients leave them on their own', 3], ['We avoid asking', 0]] },
-    { id: 'd1', axis: 'Patient Retention & Recall', text: 'A patient finishes their care plan. What happens next?',
-      opts: [['Automated recall — and we stay in touch with real content', 10], ['Front desk tries to rebook them', 7], ['We tell them to come back if the pain returns', 3], ['Nothing structured', 0]] },
-    { id: 'd2', axis: 'Patient Retention & Recall', text: 'How does your practice stay in touch between visits?',
+      opts: [[W('Automatically — every patient gets a request', 'Automatically — every client gets a request'), 10], ['We ask when we remember', 7], [W('Patients leave them on their own', 'Clients leave them on their own'), 3], ['We avoid asking', 0]] },
+    { id: 'd1', axis: retAxis(), text: W('A patient finishes their care plan. What happens next?', 'A client finishes their package. What happens next?'),
+      opts: [['Automated recall — and we stay in touch with real content', 10], ['Front desk tries to rebook them', 7], [W('We tell them to come back if the pain returns', 'We tell them to come back whenever they need us'), 3], ['Nothing structured', 0]] },
+    { id: 'd2', axis: retAxis(), text: W('How does your practice stay in touch between visits?', 'How does your center stay in touch between visits?'),
       opts: [['Regular valuable content — email, social, education', 10], ['Occasional promotions', 5], ['Holiday messages', 3], ['We don’t', 0]] },
-    { id: 'maintRate', axis: 'Patient Retention & Recall', type: 'slider',
-      text: 'What share of your patients come in on a regular maintenance schedule?',
+    { id: 'maintRate', axis: retAxis(), type: 'slider',
+      text: W('What share of your patients come in on a regular maintenance schedule?', 'What share of your clients come in on a regular schedule or membership?'),
       min: 0, max: 80, step: 5, def: 20, unit: '%', pct: true },
-    { id: 'numbers', axis: 'Patient Retention & Recall', type: 'sliders2',
-      text: 'Two quick numbers about your practice.',
-      s1: { id: 'activePatients', label: 'Active patients in your database (seen in the last 2 years)', min: 100, max: 5000, step: 50, def: 800 },
-      s2: { id: 'visitFee', label: 'Average visit fee', min: 40, max: 150, step: 5, def: 65, money: true } },
-  ]
+    { id: 'numbers', axis: retAxis(), type: 'sliders2',
+      text: W('Two quick numbers about your practice.', 'Two quick numbers about your center.'),
+      s1: { id: 'activePatients', label: W('Active patients in your database (seen in the last 2 years)', 'Active clients in your database (seen in the last 2 years)'), min: 100, max: 5000, step: 50, def: 800 },
+      s2: { id: 'visitFee', label: W('Average visit fee', 'Average session fee'), min: 40, max: 150, step: 5, def: 65, money: true } },
+    ]
+  }
 
   var answers = {}
   var idx = 0
   var STORE_KEY = 'omniply-xray-v1'
 
+  // Hook copy follows the vertical; plain nav traffic sees the generic line.
+  function paintHook () {
+    if (vertical === 'wellness') {
+      $('hookmeta').textContent = 'Radiographic assessment · Wellness & longevity centers'
+      $('hookh1').innerHTML = 'You screen every client before their first session. Nobody’s ever screened <em>your center</em>.'
+      $('hooktag').textContent = 'See the revenue your center can’t. Answer 12 quick questions and get your Practice Autopilot Score, the monthly figure your center is silently leaking — and whether the new wave of AI assistants can even find you.'
+    } else if (vertical === null) {
+      $('hookmeta').textContent = 'Radiographic assessment · Health & wellness practices'
+      $('hookh1').innerHTML = 'You assess every client before you treat them. Nobody’s ever X-rayed <em>your business</em>.'
+    }
+  }
+  paintHook()
+
   // ── Screens ───────────────────────────────────────────────────────────────
-  var screens = ['s-hook', 's-q', 's-scan', 's-gate', 's-results']
+  var screens = ['s-hook', 's-vert', 's-q', 's-scan', 's-gate', 's-results']
   function show (id) {
     screens.forEach(function (s) { $(s).classList.toggle('active', s === id) })
     window.scrollTo({ top: 0 })
   }
 
-  $('start').addEventListener('click', function () { idx = 0; show('s-q'); renderQuestion() })
+  function beginScan () {
+    initQuestions()
+    idx = 0
+    show('s-q')
+    renderQuestion()
+  }
+  $('start').addEventListener('click', function () {
+    if (vertical === null) { show('s-vert') } else { beginScan() }
+  })
+  $('vert-chiro').addEventListener('click', function () { vertical = 'chiro'; paintHook(); beginScan() })
+  $('vert-wellness').addEventListener('click', function () { vertical = 'wellness'; paintHook(); beginScan() })
+  $('vert-other').addEventListener('click', function () { $('vert-otherwrap').hidden = false; $('vert-othertext').focus() })
+  $('vert-othergo').addEventListener('click', function () {
+    verticalOther = ($('vert-othertext').value || '').trim().slice(0, 80)
+    vertical = 'other'
+    beginScan()
+  })
 
   // ── Question rendering ────────────────────────────────────────────────────
   function renderQuestion () {
+    if (!QUESTIONS) return // currency change before the scan starts
     var q = QUESTIONS[idx]
     var n = ('0' + (idx + 1)).slice(-2)
     $('qmeta').innerHTML = 'Scan ' + n + '/12 &middot; ' + q.axis
@@ -729,7 +793,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = XRAY
   // Report payload — stateless: all data rides in this base64url string.
   function reportData (lead) {
     try {
-      var json = JSON.stringify({ v: 1, n: lead.name, p: lead.practiceName, c: currency, a: answers })
+      var json = JSON.stringify({ v: 1, n: lead.name, p: lead.practiceName, c: currency, a: answers, vt: vertical === 'wellness' ? 'wellness' : undefined })
       return btoa(unescape(encodeURIComponent(json)))
         .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
     } catch (e) { return null }
@@ -772,6 +836,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = XRAY
       // rounded to one decimal so a GHL custom field can carry it later
       missedCallsWeekly: Math.round(result.missedCallsWeekly * 10) / 10,
       answers: answers,
+      vertical: vertical || 'chiro',
+      verticalOther: verticalOther || null,
       utm: utmParams(),
       referrer: document.referrer || null,
       ts: new Date().toISOString(),
@@ -788,15 +854,18 @@ if (typeof module !== 'undefined' && module.exports) module.exports = XRAY
   }
 
   function persist (lead, result) {
-    try { localStorage.setItem(STORE_KEY, JSON.stringify({ answers: answers, lead: lead, currency: currency, ts: Date.now() })) } catch (e) { /* noop */ }
+    try { localStorage.setItem(STORE_KEY, JSON.stringify({ answers: answers, lead: lead, currency: currency, vertical: vertical, verticalOther: verticalOther, ts: Date.now() })) } catch (e) { /* noop */ }
   }
 
   // ── Results ───────────────────────────────────────────────────────────────
+  function axisLabel (axis) {
+    return axis === 'retention' ? retAxis() : AXES[axis].label
+  }
   var AXIS_LABEL = {
-    content: 'Content & Visibility',
-    speed: 'Speed-to-Lead & After-Hours',
-    reviews: 'Google Review Engine',
-    retention: 'Patient Retention & Recall',
+    get content () { return axisLabel('content') },
+    get speed () { return axisLabel('speed') },
+    get reviews () { return axisLabel('reviews') },
+    get retention () { return axisLabel('retention') },
   }
 
   function reviewBandText () {
@@ -809,23 +878,26 @@ if (typeof module !== 'undefined' && module.exports) module.exports = XRAY
     var active = (answers.activePatients || 0).toLocaleString('en-US')
     switch (r.weakest) {
       case 'retention':
-        return '<b>The scan shows patient drift.</b> Only ' + maintPct + '% of your ~' + active +
-          ' active patients are on a regular schedule. The rest finished a care plan, felt fine, and drifted — until the next flare-up, at whichever clinic answers first. That drift alone is costing you an estimated <b>' + money(r.driftLeak) + '/month</b>.'
+        return W('<b>The scan shows patient drift.</b> Only ', '<b>The scan shows client drift.</b> Only ') + maintPct + '% of your ~' + active +
+          W(' active patients are on a regular schedule. The rest finished a care plan, felt fine, and drifted — until the next flare-up, at whichever clinic answers first. That drift alone is costing you an estimated <b>',
+            ' active clients are on a regular schedule. The rest finished a package, felt great, and drifted — until the next time they need you, at whichever center answers first. That drift alone is costing you an estimated <b>') + money(r.driftLeak) + '/month</b>.'
       case 'speed':
         return '<b>The scan shows missed connections.</b> Based on how calls and messages are handled, roughly ' +
           Math.round(r.missedShare * 100) + '% of your ' + (answers.inquiriesWeekly || 0) +
           ' weekly inquiries slip through — and most people who miss you once never try twice. They book with whoever answers. That’s an estimated <b>' + money(r.responseLeak) + '/month</b> walking to competitors.'
       case 'reviews':
-        return '<b>The scan shows an invisible practice.</b> With ' + reviewBandText() +
-          ' Google reviews, you’re outranked by clinics that are no better than you — just louder. Reviews are the first thing a new patient judges you on, and yours aren’t compounding. And it’s no longer just people reading them: AI assistants weigh the same reviews when they decide which practice to name.'
+        return W('<b>The scan shows an invisible practice.</b> With ', '<b>The scan shows an invisible center.</b> With ') + reviewBandText() +
+          W(' Google reviews, you’re outranked by clinics that are no better than you — just louder. Reviews are the first thing a new patient judges you on, and yours aren’t compounding. And it’s no longer just people reading them: AI assistants weigh the same reviews when they decide which practice to name.',
+            ' Google reviews, you’re outranked by centers that are no better than you — just louder. Reviews are the first thing a new client judges you on, and yours aren’t compounding. And it’s no longer just people reading them: AI assistants weigh the same reviews when they decide which center to name.')
       default:
-        return '<b>The scan shows silence.</b> Your practice goes quiet between visits — and silence reads as absence. Patients can’t stay loyal to a practice they never hear from, and prospects can’t find one that never shows up.'
+        return W('<b>The scan shows silence.</b> Your practice goes quiet between visits — and silence reads as absence. Patients can’t stay loyal to a practice they never hear from, and prospects can’t find one that never shows up.',
+          '<b>The scan shows silence.</b> Your center goes quiet between visits — and silence reads as absence. Clients can’t stay loyal to a center they never hear from, and prospects can’t find one that never shows up.')
     }
   }
 
   function scoreRead (total) {
     if (total >= 80) return 'Strong systems. The leak below shows what tightening the last gaps is worth.'
-    if (total >= 55) return 'A solid practice running on manual effort. The leak below is what manual costs.'
+    if (total >= 55) return W('A solid practice running on manual effort. The leak below is what manual costs.', 'A solid center running on manual effort. The leak below is what manual costs.')
     if (total >= 30) return 'Your care is likely excellent — your follow-up systems aren’t. That gap has a monthly price.'
     return 'Almost everything here depends on someone remembering to do it. Nobody can remember this much.'
   }
@@ -888,7 +960,13 @@ if (typeof module !== 'undefined' && module.exports) module.exports = XRAY
       : 'Sound low? Most owners only ever see the missed calls that leave a voicemail.'
     $('leakdrift').textContent = money(r.driftLeak)
     $('leaknum').innerHTML = money(r.totalLeak) + '<small>/mo</small>'
-    $('punch').innerHTML = 'That\u2019s &asymp; <b>' + r.priceMultiple + '&times;</b> the monthly cost of fixing it. Recovering <b>one patient a month</b> pays for the whole system.'
+    $('punch').innerHTML = 'That\u2019s &asymp; <b>' + r.priceMultiple + '&times;</b> the monthly cost of fixing it. Recovering <b>' + W('one patient a month', 'one client a month') + '</b> pays for the whole system.'
+    var bb = $('bridgebody')
+    if (bb && vertical === 'wellness') bb.textContent = 'Your X-Ray just showed you where clients quietly slip away. When Omniply opens to wellness & longevity centers, the first twelve receive concierge onboarding: we build your entire system together in a live working session... your voice, your calendars, your first month of content... so you learn it while it takes shape. Those twelve also keep their monthly rate locked from day one, for as long as they stay. Once the twelve places are filled, the doors close while we get them up and running.'
+    var sr = $('scanread')
+    if (sr) sr.textContent = W('Reading your practice.', 'Reading your center.')
+    // Carry the vertical into the walkthrough so its CTAs can route correctly.
+    if (vertical === 'wellness') $('cta').href = '/walkthrough?v=wellness'
     // Bridge line (missed-call sweep Part 3): carry the call count into the
     // waitlist/notify box so the number follows them to the next step.
     var bridge = $('bridgeline')
@@ -903,8 +981,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = XRAY
     var aiN = aiRaw < 1 ? '≈ 1' : '≈ ' + Math.round(aiRaw)
     var aiUnit = aiRaw < 1 ? 'inquiry most weeks' : (Math.round(aiRaw) === 1 ? 'inquiry a week' : 'inquiries a week')
     $('aicount').innerHTML = aiN + '<small> ' + aiUnit + ' now start inside an AI assistant</small>'
-    $('ailine').innerHTML = 'Patients have started asking ChatGPT and Siri the question they used to type into Google: &ldquo;who should I see about this?&rdquo; At your current visibility scores, an estimated <b>' +
-      Math.round(r.aiInvisibleShare * 100) + '%</b> of those patients never find you at all — if the trend holds, a projected <b>' +
+    $('ailine').innerHTML = W('Patients', 'Clients') + ' have started asking ChatGPT and Siri the question they used to type into Google: &ldquo;who should I see about this?&rdquo; At your current visibility scores, an estimated <b>' +
+      Math.round(r.aiInvisibleShare * 100) + W('%</b> of those patients never find you at all — if the trend holds, a projected <b>', '%</b> of those clients never find you at all — if the trend holds, a projected <b>') +
       money(r.aiLeak) + '/month</b> that no missed-call log will ever show you.'
   }
 
@@ -927,8 +1005,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = XRAY
     { key: 'MAINT_VISITS_PER_YEAR', label: 'Maintenance visits per year', min: 4, max: 14, step: 1, fmt: function (v) { return v + '/yr' } },
     { key: 'NO_CALLBACK_LOSS', label: 'Missed callers who never try again', min: 0.3, max: 0.85, step: 0.05, fmt: function (v) { return Math.round(v * 100) + '%' } },
     { key: 'WOULD_CONVERT', label: 'Of those, who would have booked', min: 0.3, max: 0.85, step: 0.05, fmt: function (v) { return Math.round(v * 100) + '%' } },
-    { key: 'FIRST_YEAR_VISITS', label: 'First-year visits of a new patient', min: 6, max: 20, step: 1, fmt: function (v) { return v + ' visits' } },
-    { key: 'AI_RESEARCH_SHARE', label: 'Patients who research via AI assistants first', min: 0.1, max: 0.5, step: 0.01, fmt: function (v) { return Math.round(v * 100) + '%' } },
+    { key: 'FIRST_YEAR_VISITS', get label () { return W('First-year visits of a new patient', 'First-year sessions of a new client') }, min: 6, max: 20, step: 1, fmt: function (v) { return v + W(' visits', ' sessions') } },
+    { key: 'AI_RESEARCH_SHARE', get label () { return W('Patients who research via AI assistants first', 'Clients who research via AI assistants first') }, min: 0.1, max: 0.5, step: 0.01, fmt: function (v) { return Math.round(v * 100) + '%' } },
   ]
   var overrides = {}
 
@@ -960,7 +1038,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = XRAY
   function paintFormula () {
     var o = Object.assign({}, XRAY.CONFIG, overrides)
     $('formula').innerHTML =
-      'DRIFT = patients &times; max(0, ' + Math.round(o.TARGET_MAINT_RATE * 100) + '% − your ' + Math.round((answers.maintRate || 0) * 100) + '%) &times; ' + Math.round(o.REALIZATION * 100) + '% &times; fee &times; ' + o.MAINT_VISITS_PER_YEAR + '/12<br>' +
+      'DRIFT = ' + W('patients', 'clients') + ' &times; max(0, ' + Math.round(o.TARGET_MAINT_RATE * 100) + '% − your ' + Math.round((answers.maintRate || 0) * 100) + '%) &times; ' + Math.round(o.REALIZATION * 100) + '% &times; fee &times; ' + o.MAINT_VISITS_PER_YEAR + '/12<br>' +
       'MISSED = inquiries/wk &times; 4.33 &times; missed-share(your answers) &times; ' + Math.round(o.NO_CALLBACK_LOSS * 100) + '% &times; ' + Math.round(o.WOULD_CONVERT * 100) + '% &times; (fee &times; ' + o.FIRST_YEAR_VISITS + ')<br>' +
       'AI (projection) = inquiries/wk &times; ' + Math.round(o.AI_RESEARCH_SHARE * 100) + '% &times; 4.33 &times; AI-invisible(your visibility scores) &times; ' + Math.round(o.WOULD_CONVERT * 100) + '% &times; (fee &times; ' + o.FIRST_YEAR_VISITS + ')'
   }
@@ -976,6 +1054,11 @@ if (typeof module !== 'undefined' && module.exports) module.exports = XRAY
     var saved = JSON.parse(localStorage.getItem(STORE_KEY) || 'null')
     if (saved && saved.answers && saved.lead && Date.now() - saved.ts < 1000 * 60 * 60 * 24 * 30) {
       answers = saved.answers
+      if (vertical === null && (saved.vertical === 'chiro' || saved.vertical === 'wellness' || saved.vertical === 'other')) {
+        vertical = saved.vertical
+        verticalOther = saved.verticalOther || ''
+        paintHook()
+      }
       currency = saved.currency || currency
       $('currency').value = currency
       $('f-name').value = saved.lead.name || ''

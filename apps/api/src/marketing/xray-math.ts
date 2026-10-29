@@ -168,6 +168,11 @@ export function missedCallsPhrase(raw: number): { big: string; unit: string } {
 
 // ── Copy builders (mirror the app's results screen) ───────────────────────────
 
+/** Sales-funnel vertical (wellness-sales-funnel plan Phase 2). 'chiro' output
+ *  is byte-identical to the pre-vertical copy — guarded by the debrief
+ *  fixture test. */
+export type XrayVertical = 'chiro' | 'wellness'
+
 export const AXIS_LABEL: Record<XrayResult['weakest'], string> = {
   content: 'Content & Visibility',
   speed: 'Speed-to-Lead & After-Hours',
@@ -175,9 +180,15 @@ export const AXIS_LABEL: Record<XrayResult['weakest'], string> = {
   retention: 'Patient Retention & Recall',
 }
 
-export function scoreRead(total: number): string {
+export function axisLabelsFor(vertical: XrayVertical): Record<XrayResult['weakest'], string> {
+  if (vertical === 'wellness') return { ...AXIS_LABEL, retention: 'Client Retention & Recall' }
+  return AXIS_LABEL
+}
+
+export function scoreRead(total: number, vertical: XrayVertical = 'chiro'): string {
+  const V = (c: string, w: string) => (vertical === 'wellness' ? w : c)
   if (total >= 80) return 'Strong systems. The leak below shows what tightening the last gaps is worth.'
-  if (total >= 55) return 'A solid practice running on manual effort. The leak below is what manual costs.'
+  if (total >= 55) return V('A solid practice running on manual effort. The leak below is what manual costs.', 'A solid center running on manual effort. The leak below is what manual costs.')
   if (total >= 30) return 'Your care is likely excellent — your follow-up systems aren’t. That gap has a monthly price.'
   return 'Almost everything here depends on someone remembering to do it. Nobody can remember this much.'
 }
@@ -187,14 +198,18 @@ export function reviewBandText(c1pts: number): string {
 }
 
 /** money() must match the quiz page's formatting (symbol + en-US grouping). */
-export function verdictHtml(a: XrayAnswers, r: XrayResult, money: (n: number) => string): string {
+export function verdictHtml(a: XrayAnswers, r: XrayResult, money: (n: number) => string, vertical: XrayVertical = 'chiro'): string {
+  const V = (c: string, w: string) => (vertical === 'wellness' ? w : c)
   const maintPct = Math.round((a.maintRate || 0) * 100)
   const active = (a.activePatients || 0).toLocaleString('en-US')
   switch (r.weakest) {
     case 'retention':
       return (
-        '<b>The scan shows patient drift.</b> Only ' + maintPct + '% of your ~' + active +
-        ' active patients are on a regular schedule. The rest finished a care plan, felt fine, and drifted — until the next flare-up, at whichever clinic answers first. That drift alone is costing you an estimated <b>' +
+        V('<b>The scan shows patient drift.</b> Only ', '<b>The scan shows client drift.</b> Only ') + maintPct + '% of your ~' + active +
+        V(
+          ' active patients are on a regular schedule. The rest finished a care plan, felt fine, and drifted — until the next flare-up, at whichever clinic answers first. That drift alone is costing you an estimated <b>',
+          ' active clients are on a regular schedule. The rest finished a package, felt great, and drifted — until the next time they need you, at whichever center answers first. That drift alone is costing you an estimated <b>',
+        ) +
         money(r.driftLeak) + '/month</b>.'
       )
     case 'speed':
@@ -206,12 +221,16 @@ export function verdictHtml(a: XrayAnswers, r: XrayResult, money: (n: number) =>
       )
     case 'reviews':
       return (
-        '<b>The scan shows an invisible practice.</b> With ' + reviewBandText(a.c1) +
-        ' Google reviews, you’re outranked by clinics that are no better than you — just louder. Reviews are the first thing a new patient judges you on, and yours aren’t compounding. And it’s no longer just people reading them: AI assistants weigh the same reviews when they decide which practice to name.'
+        V('<b>The scan shows an invisible practice.</b> With ', '<b>The scan shows an invisible center.</b> With ') + reviewBandText(a.c1) +
+        V(
+          ' Google reviews, you’re outranked by clinics that are no better than you — just louder. Reviews are the first thing a new patient judges you on, and yours aren’t compounding. And it’s no longer just people reading them: AI assistants weigh the same reviews when they decide which practice to name.',
+          ' Google reviews, you’re outranked by centers that are no better than you — just louder. Reviews are the first thing a new client judges you on, and yours aren’t compounding. And it’s no longer just people reading them: AI assistants weigh the same reviews when they decide which center to name.',
+        )
       )
     default:
-      return (
-        '<b>The scan shows silence.</b> Your practice goes quiet between visits — and silence reads as absence. Patients can’t stay loyal to a practice they never hear from, and prospects can’t find one that never shows up.'
+      return V(
+        '<b>The scan shows silence.</b> Your practice goes quiet between visits — and silence reads as absence. Patients can’t stay loyal to a practice they never hear from, and prospects can’t find one that never shows up.',
+        '<b>The scan shows silence.</b> Your center goes quiet between visits — and silence reads as absence. Clients can’t stay loyal to a center they never hear from, and prospects can’t find one that never shows up.',
       )
   }
 }
