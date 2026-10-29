@@ -189,6 +189,14 @@ topics only), azavea.ai polish, cold-domain warmup start.
   anything was corrected (doubles as a "someone pushed with links" alarm).
   Deliberately does NOT cover custom values (nothing forces those into a
   push; the never-push-custom-values rule stands).
+- **Widget greeting + chips in the page's language (Veit 2026-10-28):** the
+  chat replies now follow the visitor's language (7c42f4c), but the static
+  opening statement, suggestion chips/buttons and the disclosure line from
+  GET /agent/boot are English-only. Scope: the embed loader passes the host
+  page's locale (her site serves /es /de /fr /ru, so document lang or the
+  URL prefix), boot returns greeting/chips/disclosure localized per language
+  (per-vertical strings like the greeting prompt row, or a translations map),
+  English fallback. Also covers the agent panel's UI chrome labels if any.
 - **Spanish lead-gen docs + quiz (Veit 2026-10-28, "soon" but out of scope
   now):** the Whealth pilot's guides and the Body Resilience Score quiz stay
   English in v1 even though her site serves EN/ES/DE/FR/RU and the chat

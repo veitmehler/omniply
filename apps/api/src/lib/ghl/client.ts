@@ -634,6 +634,17 @@ export async function createGhlContactNote(apiKey: string, contactId: string, bo
   })
 }
 
+/** A contact's phone number — null when absent or unreadable (owner-mute
+ *  check fails open: no phone, no match, normal handling). */
+export async function getGhlContactPhone(apiKey: string, contactId: string): Promise<string | null> {
+  try {
+    const data = await ghlRequest<{ contact?: { phone?: string | null } }>(apiKey, `/contacts/${contactId}`)
+    return data.contact?.phone ?? null
+  } catch {
+    return null
+  }
+}
+
 /** WhatsApp DND state of a contact — the clinic-visible mute marker.
  *  null = contact unreadable (fail open on the guard's unmute check). */
 export async function getGhlContactWhatsAppDnd(apiKey: string, contactId: string): Promise<boolean | null> {

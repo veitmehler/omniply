@@ -43,3 +43,20 @@ describe('normalizeForRepeat', () => {
     expect(normalizeForRepeat('Can I book for Friday?')).not.toBe(normalizeForRepeat('Can I book for Monday?'))
   })
 })
+
+// ── Owner-number mute (2026-10-29) ──────────────────────────────────────────
+import { phonesMatch } from '../bot-guard'
+
+describe('phonesMatch', () => {
+  it('matches across formatting and country-code variants', () => {
+    expect(phonesMatch('+1 809-348-4444', '8093484444')).toBe(true)
+    expect(phonesMatch('(809) 348 4444', '+18093484444')).toBe(true)
+    expect(phonesMatch('+1 210 960 8070', '210-960-8070')).toBe(true)
+  })
+  it('rejects different numbers and too-short inputs', () => {
+    expect(phonesMatch('+1 809-348-4444', '+1 809-348-4445')).toBe(false)
+    expect(phonesMatch('4444', '4444')).toBe(false)
+    expect(phonesMatch(null, '+18093484444')).toBe(false)
+    expect(phonesMatch('+18093484444', undefined)).toBe(false)
+  })
+})

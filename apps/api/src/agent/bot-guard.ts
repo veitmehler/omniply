@@ -21,6 +21,7 @@ import { logger } from '../lib/logger'
 import { sendFailureAlert } from '../lib/alerts'
 import {
   createGhlContactNote,
+  getGhlContactPhone,
   getGhlContactWhatsAppDnd,
   setGhlContactWhatsAppDnd,
 } from '../lib/ghl/client'
@@ -73,6 +74,56 @@ export interface BotGuardInput {
 export interface BotGuardResult {
   skip: boolean
   reason?: string
+}
+
+// ── Owner-number mute (2026-10-29: the owner's own setup/test messages hit
+// the DM responder — e.g. Instagram wiring — and the agent chatted back).
+// A sender whose contact phone IS one of the clinic's own numbers is the
+// clinic, not a visitor: skip silently, no mute row, no DND, no note.
+// Fails open everywhere (no phone / unreadable contact → normal handling).
+
+/** Last-10-digit comparison — tolerant of +1/formatting differences. */
+export function phonesMatch(a: string | null | undefined, b: string | null | undefined): boolean {
+  const da = (a ?? '').replace(/\D/g, '')
+  const db = (b ?? '').replace(/\D/g, '')
+  if (da.length < 7 || db.length < 7) return false
+  return da.slice(-10) === db.slice(-10)
+}
+
+const OWNER_NUMBERS_TTL_MS = 15 * 60 * 1000
+const ownerNumbersCache = new Map<string, { numbers: string[]; expires: number }>()
+
+async function ownerNumbersForAccount(accountId: string): Promise<string[]> {
+  const hit = ownerNumbersCache.get(accountId)
+  if (hit && hit.expires > Date.now()) return hit.numbers
+  const numbers: string[] = []
+  const account = await prisma.account.findUnique({
+    where: { id: accountId },
+    select: { ownerUserId: true },
+  })
+  if (account?.ownerUserId) {
+    const brand = await prisma.brandSettings.findUnique({
+      where: { userId: account.ownerUserId },
+      select: { organizationPhone: true },
+    })
+    if (brand?.organizationPhone) numbers.push(brand.organizationPhone)
+  }
+  const voice = await prisma.voiceAgentConfig.findUnique({
+    where: { accountId },
+    select: { phoneNumber: true, rescueNumber: true },
+  })
+  if (voice?.phoneNumber) numbers.push(voice.phoneNumber)
+  if (voice?.rescueNumber) numbers.push(voice.rescueNumber)
+  ownerNumbersCache.set(accountId, { numbers, expires: Date.now() + OWNER_NUMBERS_TTL_MS })
+  return numbers
+}
+
+async function isOwnerSender(input: BotGuardInput): Promise<boolean> {
+  const numbers = await ownerNumbersForAccount(input.accountId)
+  if (!numbers.length) return false
+  const phone = await getGhlContactPhone(input.apiKey, input.ghlContactId)
+  if (!phone) return false
+  return numbers.some((n) => phonesMatch(n, phone))
 }
 
 async function hasBookingHistory(accountId: string, ghlContactId: string): Promise<boolean> {
@@ -149,6 +200,16 @@ export async function applyBotGuard(input: BotGuardInput): Promise<BotGuardResul
     } else {
       return { skip: true, reason: 'muted' }
     }
+  }
+
+  // 1b. The clinic's own number messaging itself (owner setup/test traffic):
+  // quiet skip — the owner is never a lead, and replying is pure noise.
+  if (await isOwnerSender(input)) {
+    logger.info(
+      { accountId: input.accountId, contactId: input.ghlContactId },
+      '[bot-guard] sender phone matches a clinic-own number — owner skip',
+    )
+    return { skip: true, reason: 'owner-number' }
   }
 
   // 2. Self-identified bot (pre-LLM, zero tokens).
