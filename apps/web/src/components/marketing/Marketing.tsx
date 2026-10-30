@@ -470,7 +470,7 @@ export function SiteHeader({ vertical }: { vertical?: string }) {
             className="rounded-lg px-4 py-2 font-bold"
             style={{ background: TOKENS.lime, color: '#0B0B0C' }}
           >
-            X-Ray My Practice
+            X-Ray My Business
           </a>
         </nav>
       </div>

@@ -45,7 +45,7 @@ const FAQ_ITEMS: FaqEntry[] = [
   },
   {
     q: 'What is included in the $397?',
-    a: 'Everything in the loop. Weekly articles, the weekly newsletter with 25,000 email sends a month, social posts with designed graphics, branded lead-magnet guides, the 2-Minute Spine Check for your website, the AI response and recall systems, and the review growth engine. No per-piece fees, no content credits, no surprise line items.',
+    a: 'Everything in the loop. Weekly articles, the weekly newsletter with 25,000 email sends a month, social posts with designed graphics, branded lead-magnet guides, a lead-capture quiz for your website (the 2-Minute Spine Check for chiropractors, the Body Resilience Score for wellness centers), the AI response and recall systems, and the review growth engine. No per-piece fees, no content credits, no surprise line items.',
   },
   {
     q: 'What does "visible to AI assistants" actually mean?',
@@ -87,11 +87,24 @@ export default function HomePage() {
             <div className="mt-1 text-sm text-white/60">The full story, built for your world.</div>
           </a>
           <a
+            href="/wellness"
+            className="rounded-xl border p-6 transition-transform hover:scale-[1.01]"
+            style={{ borderColor: TOKENS.lime, background: 'rgba(195,244,59,0.06)' }}
+          >
+            <div className="text-xs font-bold uppercase tracking-widest" style={{ color: TOKENS.lime }}>
+              Live now
+            </div>
+            <div className="mt-2 text-xl font-bold text-white">For wellness &amp; longevity centers &rarr;</div>
+            <div className="mt-1 text-sm text-white/60">HBOT, IV, cold plunge, massage, longevity... your version.</div>
+          </a>
+        </div>
+        <div className="mt-4">
+          <a
             href={XRAY_URL}
-            className="rounded-xl border border-white/15 p-6 transition-transform hover:scale-[1.01]"
+            className="block rounded-xl border border-white/15 p-6 transition-transform hover:scale-[1.005]"
           >
             <div className="text-xs font-bold uppercase tracking-widest text-white/50">2 minutes</div>
-            <div className="mt-2 text-xl font-bold text-white">X-Ray your practice &rarr;</div>
+            <div className="mt-2 text-xl font-bold text-white">X-Ray your business &rarr;</div>
             <div className="mt-1 text-sm text-white/60">
               Four system scores, a dollar figure on what is quietly leaking, and whether AI assistants can
               find you.
@@ -160,11 +173,21 @@ export default function HomePage() {
               Seasonal spine calendar, healthcare-safe claims, recall built for care plans.
             </div>
           </a>
-          <div className="rounded-xl border p-6" style={{ borderColor: TOKENS.line }}>
+          <a href="/wellness" className="rounded-xl border-2 p-6 transition-transform hover:scale-[1.01]" style={{ borderColor: TOKENS.accent }}>
+            <div className="text-xs font-bold uppercase tracking-widest" style={{ color: TOKENS.accentDeep }}>Live</div>
+            <div className="mt-2 text-xl font-bold">Wellness &amp; Longevity Centers &rarr;</div>
+            <div className="mt-1 text-sm" style={{ color: TOKENS.muted }}>
+              Recovery and longevity calendar, claims-safe content, per-service booking, a front desk that
+              answers in five languages.
+            </div>
+          </a>
+          <div className="rounded-xl border p-6 sm:col-span-2" style={{ borderColor: TOKENS.line }}>
             <div className="text-xs font-bold uppercase tracking-widest" style={{ color: TOKENS.muted }}>In the pipeline</div>
             <div className="mt-2 text-xl font-bold" style={{ color: TOKENS.muted }}>More practice types</div>
             <div className="mt-1 text-sm" style={{ color: TOKENS.muted }}>
               The loop is universal. The tailoring takes time, and we do one profession properly at a time.
+              Run something else? Take the X-Ray anyway and tell us what you do... that list decides what we
+              build next.
             </div>
           </div>
         </div>
@@ -202,14 +225,14 @@ export default function HomePage() {
           cannot skip a week.
         </P>
         <div className="my-12 h-px w-full" style={{ background: '#343434' }} />
-        <H2>Start where the doctors start: with the X-Ray.</H2>
+        <H2>Start where the evidence starts: with the X-Ray.</H2>
         <P lead>
-          Two minutes, twelve questions... four system scores, a dollar figure on what your practice is
+          Two minutes, twelve questions... four system scores, a dollar figure on what your business is
           quietly leaking every month, and a read on whether AI assistants can even find you. No call, no
           pitch. A report and a number.
         </P>
         <Cta href={XRAY_URL} sub="2 minutes · free · your report is yours to keep">
-          X-Ray My Practice
+          X-Ray My Business
         </Cta>
         <p className="mt-6 text-center text-sm text-white/50">
           Prefer to see the system first? <a href="/walkthrough" className="underline">Watch the walkthrough</a>
