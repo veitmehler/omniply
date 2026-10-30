@@ -438,7 +438,7 @@ export function StatBand({ onDark }: { onDark?: boolean }) {
 }
 
 /* ── Slim branding header (site pages) ───────────────────────────────────── */
-export function SiteHeader({ vertical }: { vertical?: string }) {
+export function SiteHeader({ vertical, walkthroughHref = '/walkthrough', xrayHref = XRAY_URL }: { vertical?: string; walkthroughHref?: string; xrayHref?: string }) {
   return (
     <header
       className="sticky top-0 z-50 px-6 py-4"
@@ -456,7 +456,7 @@ export function SiteHeader({ vertical }: { vertical?: string }) {
           <Link href="/articles" className="text-white/60 hover:text-white">
             Articles
           </Link>
-          <a href="/walkthrough" className="hidden text-white/60 hover:text-white sm:inline">
+          <a href={walkthroughHref} className="hidden text-white/60 hover:text-white sm:inline">
             Walkthrough
           </a>
           <Link href="/about" className="hidden text-white/60 hover:text-white md:inline">
@@ -466,7 +466,7 @@ export function SiteHeader({ vertical }: { vertical?: string }) {
             Contact
           </Link>
           <a
-            href={XRAY_URL}
+            href={xrayHref}
             className="rounded-lg px-4 py-2 font-bold"
             style={{ background: TOKENS.lime, color: '#0B0B0C' }}
           >

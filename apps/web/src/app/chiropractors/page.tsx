@@ -89,7 +89,7 @@ const FAQ_ITEMS: FaqEntry[] = [
 export default function ChiropractorsPage() {
   return (
     <main>
-      <SiteHeader vertical="For Chiropractors" />
+      <SiteHeader vertical="For Chiropractors" walkthroughHref="/walkthrough?v=chiro" xrayHref={`${XRAY_URL}?v=chiro`} />
       {/* ── Hook: AI booking (angle sweep 2026-10-09; missed calls is the second beat) ── */}
       <Section dark>
         <Eyebrow>Omniply for Chiropractors</Eyebrow>
@@ -323,7 +323,7 @@ export default function ChiropractorsPage() {
           X-Ray My Practice
         </Cta>
         <p className="mt-6 text-center text-sm text-white/50">
-          Or see the system first: <a href="/walkthrough" className="underline">watch the walkthrough</a>
+          Or see the system first: <a href="/walkthrough?v=chiro" className="underline">watch the walkthrough</a>
         </p>
       </Section>
 

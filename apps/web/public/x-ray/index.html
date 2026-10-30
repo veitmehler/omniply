@@ -603,8 +603,18 @@ if (typeof module !== 'undefined' && module.exports) module.exports = XRAY
   try {
     var vParam = new URLSearchParams(location.search).get('v')
     if (vParam === 'chiro' || vParam === 'wellness') vertical = vParam
+    if (!vertical) {
+      // Remembered from any Omniply page (walkthrough, earlier visit) — a
+      // known visitor skips the business-type question.
+      var sv = localStorage.getItem('omniply-vertical')
+      if (sv === 'chiro' || sv === 'wellness') vertical = sv
+    }
+    if (vertical) localStorage.setItem('omniply-vertical', vertical)
   } catch (e) { /* chooser will ask */ }
   function W (chiro, wellness) { return vertical === 'wellness' ? wellness : chiro }
+  function rememberVertical () {
+    try { if (vertical === 'chiro' || vertical === 'wellness') localStorage.setItem('omniply-vertical', vertical) } catch (e) { /* noop */ }
+  }
 
   // ── Question set (12 steps; wording follows the vertical) ─────────────────
   var QUESTIONS = null
@@ -675,8 +685,8 @@ if (typeof module !== 'undefined' && module.exports) module.exports = XRAY
   $('start').addEventListener('click', function () {
     if (vertical === null) { show('s-vert') } else { beginScan() }
   })
-  $('vert-chiro').addEventListener('click', function () { vertical = 'chiro'; paintHook(); beginScan() })
-  $('vert-wellness').addEventListener('click', function () { vertical = 'wellness'; paintHook(); beginScan() })
+  $('vert-chiro').addEventListener('click', function () { vertical = 'chiro'; rememberVertical(); paintHook(); beginScan() })
+  $('vert-wellness').addEventListener('click', function () { vertical = 'wellness'; rememberVertical(); paintHook(); beginScan() })
   $('vert-other').addEventListener('click', function () { $('vert-otherwrap').hidden = false; $('vert-othertext').focus() })
   $('vert-othergo').addEventListener('click', function () {
     verticalOther = ($('vert-othertext').value || '').trim().slice(0, 80)
@@ -942,7 +952,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = XRAY
 
     $('verdict').innerHTML = verdictText(r)
     paintLeakCard(r)
-    if ($('cta')) $('cta').href = XRAY.CONFIG.VIDEO_URL
+    if ($('cta')) $('cta').href = XRAY.CONFIG.VIDEO_URL + ((vertical === 'wellness' || vertical === 'chiro') ? '?v=' + vertical : '')
 
     renderAssumptions(r)
   }
@@ -959,7 +969,7 @@ if (typeof module !== 'undefined' && module.exports) module.exports = XRAY
     $('misscount').innerHTML = big + '<small> ' + unit + '</small>'
     $('missline').innerHTML = raw <= 0
       ? 'Based on your answers, inquiries get a live response — the leak below is what the remaining gaps cost.'
-      : 'That’s an estimated <b>' + money(r.responseLeak) + '/month</b> walking to whichever clinic answers first.'
+      : 'That’s an estimated <b>' + money(r.responseLeak) + W('/month</b> walking to whichever clinic answers first.', '/month</b> walking to whichever center answers first.')
     $('missreframe').textContent = (answers.b1 === 10 && answers.b2 === 10)
       ? 'You’re tight — the numbers below show what closing the last gaps is worth.'
       : 'Sound low? Most owners only ever see the missed calls that leave a voicemail.'
@@ -970,8 +980,6 @@ if (typeof module !== 'undefined' && module.exports) module.exports = XRAY
     if (bb && vertical === 'wellness') bb.textContent = 'Your X-Ray just showed you where clients quietly slip away. When Omniply opens to wellness & longevity centers, the first twelve receive concierge onboarding: we build your entire system together in a live working session... your voice, your calendars, your first month of content... so you learn it while it takes shape. Those twelve also keep their monthly rate locked from day one, for as long as they stay. Once the twelve places are filled, the doors close while we get them up and running.'
     var sr = $('scanread')
     if (sr) sr.textContent = W('Reading your practice.', 'Reading your center.')
-    // Carry the vertical into the walkthrough so its CTAs can route correctly.
-    if (vertical === 'wellness') $('cta').href = '/walkthrough?v=wellness'
     // Bridge line (missed-call sweep Part 3): carry the call count into the
     // waitlist/notify box so the number follows them to the next step.
     var bridge = $('bridgeline')

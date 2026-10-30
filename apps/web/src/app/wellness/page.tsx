@@ -95,7 +95,7 @@ const FAQ_ITEMS: FaqEntry[] = [
 export default function WellnessPage() {
   return (
     <main>
-      <SiteHeader vertical="For Wellness & Longevity Centers" />
+      <SiteHeader vertical="For Wellness & Longevity Centers" walkthroughHref="/walkthrough?v=wellness" xrayHref={WELLNESS_XRAY} />
       {/* ── Hook: AI booking (same angle hierarchy as chiro) ── */}
       <Section dark>
         <Eyebrow>Omniply for Wellness &amp; Longevity Centers</Eyebrow>

@@ -91,14 +91,14 @@
   <div class="wordmark"><b>Omniply</b> · Walkthrough</div>
   <div class="meta">The Practice Autopilot Walkthrough</div>
   <h1>The exact system, on screen.</h1>
-  <p class="sub">No sales call, no pressure — watch the system that makes you the practice AI assistants can find, understand, talk to, and book... and plugs each leak your X-Ray found. Then decide.</p>
+  <p class="sub" id="wt-sub">No sales call, no pressure — watch the system that makes you the practice AI assistants can find, understand, talk to, and book... and plugs each leak your X-Ray found. Then decide.</p>
 
   <div class="frame" id="frame">
     <!-- When the video is ready, replace this placeholder with the embed:
          <iframe src="VIDEO_EMBED_URL" allow="autoplay; fullscreen" allowfullscreen></iframe> -->
     <div class="placeholder">
       <div class="meta">Video in production</div>
-      <p>The full walkthrough is being filmed right now. Your X-Ray report includes everything it covers — and we'll email you the moment it's live. Haven't scanned yet? <a href="/x-ray">Get your Practice X-Ray</a>.</p>
+      <p>The full walkthrough is being filmed right now. Your X-Ray report includes everything it covers — and we'll email you the moment it's live. Haven't scanned yet? <a href="/x-ray" id="wt-xraylink">Get your Practice X-Ray</a>.</p>
     </div>
   </div>
 
@@ -111,7 +111,7 @@
 
   <div class="buy">
     <div class="price" style="text-align:center;font-size:40px;font-weight:800;color:var(--lime)">$397<small style="font-size:16px;font-weight:600;color:#fff;opacity:.8"> / month</small></div>
-    <p style="padding:18px 0 22px;margin:0 auto;font-size:17px;line-height:1.6;text-align:center;color:#fff;max-width:560px">Everything in the walkthrough — content engine, AI chat &amp; voice, review engine, recall &amp; reactivation — set up for your practice. Cancel anytime.</p>
+    <p id="wt-buycopy" style="padding:18px 0 22px;margin:0 auto;font-size:17px;line-height:1.6;text-align:center;color:#fff;max-width:560px">Everything in the walkthrough — content engine, AI chat &amp; voice, review engine, recall &amp; reactivation — set up for your practice. Cancel anytime.</p>
     <a class="btn" id="checkout" href="#" style="display:block;margin:0 auto;text-align:center;max-width:360px">Put my practice on autopilot</a>
     <div class="under" id="buyunder" style="text-align:center;font-size:12px;opacity:.8;margin-top:10px">Setup in days, not months · no lock-in</div>
     <button class="consult-link" type="button" data-consult-open>Prefer to talk it through first? Book a 15-minute consultation &rarr;</button>
@@ -122,8 +122,8 @@
 <div class="consult-overlay" id="consult-overlay" role="dialog" aria-modal="true" aria-label="Book a 15-minute practice consultation">
   <div class="consult-box">
     <button class="consult-close" id="consult-close" aria-label="Close">&times;</button>
-    <h3>15-minute practice consultation</h3>
-    <p class="sub">With the founder. Bring your X-Ray results if you have them. No pitch &mdash; just straight answers about your practice.</p>
+    <h3 id="consult-title">15-minute practice consultation</h3>
+    <p class="sub" id="consult-sub">With the founder. Bring your X-Ray results if you have them. No pitch &mdash; just straight answers about your practice.</p>
     <div id="consult-frame"></div>
   </div>
 </div>
@@ -132,8 +132,45 @@
 <script>
 (function () {
   'use strict'
+  // ── Vertical resolution (wellness-sales-funnel: every link carries the
+  // vertical). ?v= wins; else the vertical remembered by any Omniply page;
+  // else the X-Ray page's own store; default = chiro (the original page).
+  var WT_VERTICAL = null
+  try {
+    var vp = new URLSearchParams(location.search).get('v')
+    if (vp === 'chiro' || vp === 'wellness') WT_VERTICAL = vp
+    if (!WT_VERTICAL) {
+      var sv = localStorage.getItem('omniply-vertical')
+      if (sv === 'chiro' || sv === 'wellness') WT_VERTICAL = sv
+    }
+    if (!WT_VERTICAL) {
+      var xr = JSON.parse(localStorage.getItem('omniply-xray-v1') || 'null')
+      if (xr && (xr.vertical === 'chiro' || xr.vertical === 'wellness')) WT_VERTICAL = xr.vertical
+    }
+    if (WT_VERTICAL) localStorage.setItem('omniply-vertical', WT_VERTICAL)
+  } catch (e) { /* chiro default */ }
+  var IS_WELLNESS = WT_VERTICAL === 'wellness'
+
+  if (IS_WELLNESS) {
+    document.title = 'The Practice Autopilot Walkthrough — Omniply for Wellness Centers'
+    var sub = document.getElementById('wt-sub')
+    if (sub) sub.textContent = 'No sales call, no pressure — watch the system that makes you the center AI assistants can find, understand, talk to, and book... and plugs each leak your X-Ray found. Then decide.'
+    var ch1 = document.querySelector('.chapter[data-axis="retention"]')
+    if (ch1) ch1.innerHTML = '<span class="n">Chapter 1</span>Client Retention &amp; Recall — the drift leak'
+    var bc = document.getElementById('wt-buycopy')
+    if (bc) bc.textContent = 'Everything in the walkthrough — content engine, AI chat & voice, review engine, recall & reactivation — set up for your center. Cancel anytime.'
+    var xl = document.getElementById('wt-xraylink')
+    if (xl) { xl.href = '/x-ray?v=wellness'; xl.textContent = 'Get your X-Ray' }
+    var mh = document.getElementById('consult-title')
+    if (mh) mh.textContent = '15-minute consultation'
+    var ms = document.getElementById('consult-sub')
+    if (ms) ms.innerHTML = 'With the founder. Bring your X-Ray results if you have them. No pitch &mdash; just straight answers about your center.'
+  }
+
   var CONFIG = {
-    CHECKOUT_URL: 'https://secure.omniply.io/chiropractors',
+    CHECKOUT_URL: IS_WELLNESS
+      ? 'https://secure.omniply.io/wellness-clinics'
+      : 'https://secure.omniply.io/chiropractors',
     // Self-hosted final cut (v1, 2026-10-06, ~13 min) + poster frame.
     VIDEO_URL: 'https://cdn.omniply.io/system/walkthrough/omniply-demo-video-v2.mp4',
     POSTER_URL: 'https://cdn.omniply.io/system/walkthrough/omniply-demo-video-v1-poster.jpg',
@@ -160,6 +197,7 @@
   }
   if (Date.now() >= LAUNCH_TS && CONFIG.CHECKOUT_URL) {
     btn.href = CONFIG.CHECKOUT_URL
+    if (IS_WELLNESS) btn.textContent = 'Put my center on autopilot'
   } else if (Date.now() < LAUNCH_TS) {
     // Pre-launch: the buy box sells the founding cohort instead of a dead button.
     var alreadyJoined = false
