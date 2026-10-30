@@ -189,6 +189,13 @@ topics only), azavea.ai polish, cold-domain warmup start.
   anything was corrected (doubles as a "someone pushed with links" alarm).
   Deliberately does NOT cover custom values (nothing forces those into a
   push; the never-push-custom-values rule stands).
+- **"Other" X-Ray vertical (Veit 2026-10-30):** the X-Ray's "Something else"
+  leads currently ride the CHIRO inbound webhook (payload carries
+  vertical:'other' + their free-text business type) and therefore enter the
+  chiro nurture drip — accepted for now. When enough accumulate: a third
+  "other" path — its own inbound-webhook workflow + neutral drip copy +
+  neutral debrief wording variant — and mine the collected free-text
+  descriptions as the vertical-#3 shortlist.
 - **Widget greeting + chips in the page's language (Veit 2026-10-28):** the
   chat replies now follow the visitor's language (7c42f4c), but the static
   opening statement, suggestion chips/buttons and the disclosure line from

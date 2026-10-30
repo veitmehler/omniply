@@ -45,6 +45,7 @@ const isPublicRoute = createRouteMatcher([
   // Public marketing pages (reviewable on any host).
   '/home(.*)',
   '/chiropractors(.*)',
+  '/wellness(.*)',
   '/about(.*)',
   '/contact(.*)',
   '/data-security(.*)',

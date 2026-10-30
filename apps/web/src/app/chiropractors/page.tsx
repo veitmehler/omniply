@@ -103,7 +103,7 @@ export default function ChiropractorsPage() {
           you miss keep booking with whoever answered, and patients fade between visits, invisibly, until
           the quarter is already soft. There is a 2-minute way to put a number on all of it, in dollars.
         </P>
-        <Cta href={XRAY_URL} sub="12 questions · 2 minutes · your missed calls, your AI visibility, and your monthly leak in dollars">
+        <Cta href={`${XRAY_URL}?v=chiro`} sub="12 questions · 2 minutes · your missed calls, your AI visibility, and your monthly leak in dollars">
           X-Ray My Practice
         </Cta>
       </Section>
@@ -319,7 +319,7 @@ export default function ChiropractorsPage() {
           $397 a month. Everything in the loop. Cancel anytime. We&apos;re not asking you to become
           a marketer... we&apos;re asking you to stop having to be one.
         </P>
-        <Cta href={XRAY_URL} sub="free · 2 minutes · your report is yours to keep">
+        <Cta href={`${XRAY_URL}?v=chiro`} sub="free · 2 minutes · your report is yours to keep">
           X-Ray My Practice
         </Cta>
         <p className="mt-6 text-center text-sm text-white/50">

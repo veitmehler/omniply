@@ -102,7 +102,7 @@ function HexDot() {
 }
 
 /* ── Diagram 1: sawtooth vs compounding consistency ─────────────────────── */
-export function ConsistencyGraph({ onDark }: { onDark?: boolean }) {
+export function ConsistencyGraph({ onDark, audienceLabel = 'Patient attention' }: { onDark?: boolean; audienceLabel?: string }) {
   const axis = onDark ? '#343434' : TOKENS.line
   const dim = onDark ? 'rgba(255,255,255,0.6)' : TOKENS.muted
   const curve = onDark ? TOKENS.lime : TOKENS.accent
@@ -113,7 +113,7 @@ export function ConsistencyGraph({ onDark }: { onDark?: boolean }) {
         <line x1="40" y1="220" x2="540" y2="220" stroke={axis} strokeWidth="2" />
         <line x1="40" y1="220" x2="40" y2="20" stroke={axis} strokeWidth="2" />
         <text x="290" y="248" textAnchor="middle" fontSize="13" fill={dim}>Months of marketing</text>
-        <text x="18" y="120" textAnchor="middle" fontSize="13" fill={dim} transform="rotate(-90 18 120)">Patient attention</text>
+        <text x="18" y="120" textAnchor="middle" fontSize="13" fill={dim} transform="rotate(-90 18 120)">{audienceLabel}</text>
         {/* sawtooth: bursts that decay */}
         <path d="M40 218 L80 150 L120 210 L160 140 L200 205 L240 155 L280 212 L330 160 L380 214" fill="none" stroke={dim} strokeWidth="3" strokeDasharray="1 0" opacity="0.75" />
         <text x="385" y="228" fontSize="13" fill={dim} fontWeight="700">Bursts (most practices)</text>
@@ -224,13 +224,13 @@ export function TouchpointGraph() {
 }
 
 /* ── Diagram 5: reactivation loop ───────────────────────────────────────── */
-export function ReactivationLoop() {
+export function ReactivationLoop({ visitsLabel = 'Patient visits', businessWord = 'practice' }: { visitsLabel?: string; businessWord?: string }) {
   return (
     <figure className="my-10">
       <svg viewBox="0 0 560 260" className="w-full">
         <circle cx="280" cy="130" r="95" fill="none" stroke={TOKENS.line} strokeWidth="2.5" strokeDasharray="6 7" />
         {[
-          { x: 280, y: 22, t1: 'Patient visits', t2: '' },
+          { x: 280, y: 22, t1: visitsLabel, t2: '' },
           { x: 425, y: 130, t1: 'Life gets busy,', t2: 'they drift' },
           { x: 280, y: 238, t1: 'Your newsletter', t2: 'lands anyway' },
           { x: 135, y: 130, t1: 'They rebook', t2: '' },
@@ -243,14 +243,14 @@ export function ReactivationLoop() {
         ))}
       </svg>
       <figcaption className="mt-2 text-center text-sm" style={{ color: TOKENS.muted }}>
-        Reactivation is the cheapest revenue in your practice. It only works if the reminder actually goes out.
+        Reactivation is the cheapest revenue in your {businessWord}. It only works if the reminder actually goes out.
       </figcaption>
     </figure>
   )
 }
 
 /* ── Pricing block ──────────────────────────────────────────────────────── */
-export function PricingBlock({ vertical }: { vertical?: boolean }) {
+export function PricingBlock({ vertical, peopleWord = 'patient' }: { vertical?: boolean; peopleWord?: string }) {
   return (
     <div id="pricing" className="my-8 rounded-2xl border-2 p-8 md:p-10" style={{ borderColor: TOKENS.accent, background: '#fff' }}>
       <div className="flex flex-wrap items-baseline gap-3">
@@ -259,7 +259,7 @@ export function PricingBlock({ vertical }: { vertical?: boolean }) {
       </div>
       <ul className="mt-6 space-y-2 text-lg">
         <li><strong>All content included.</strong> Articles, newsletters, social posts, lead magnets. No per-piece charges, ever.</li>
-        <li><strong>25,000 emails per month included.</strong> Your patient list hears from you weekly and it costs you nothing extra.</li>
+        <li><strong>25,000 emails per month included.</strong> Your {peopleWord} list hears from you weekly and it costs you nothing extra.</li>
         <li><strong>No contracts.</strong> Cancel any month. Keep everything already published, because it is yours.</li>
       </ul>
       <div className="mt-8 rounded-xl p-6" style={{ background: TOKENS.paper }}>
@@ -495,6 +495,8 @@ export function MarketingFooter() {
       <p>Omniply &middot; Marketing autopilot for local practices</p>
       <p className="mt-2">
         <a href="/chiropractors" className="underline">Chiropractor? See the version built for your practice</a>
+        <span className="mx-2 opacity-50">·</span>
+        <a href="/wellness" className="underline">Run a wellness &amp; longevity center? See yours</a>
       </p>
       <nav className="mt-6 flex flex-wrap justify-center gap-x-5 gap-y-2">
         {links.map((l) => (
