@@ -45,7 +45,7 @@ const FAQ_ITEMS: FaqEntry[] = [
   },
   {
     q: 'What is included in the $397?',
-    a: 'Everything in the loop. Weekly articles, the weekly newsletter with 25,000 email sends a month, social posts with designed graphics, branded lead-magnet guides, a lead-capture quiz for your website (the 2-Minute Spine Check for chiropractors, the Body Resilience Score for wellness centers), the AI response and recall systems, and the review growth engine. No per-piece fees, no content credits, no surprise line items.',
+    a: 'Everything in the loop. Weekly articles, the weekly newsletter with 25,000 email sends a month, social posts with designed graphics, branded lead-magnet guides, a branded, interactive self-assessment lead-capture quiz on your website, built for your profession, the AI response and recall systems, and the review growth engine. No per-piece fees, no content credits, no surprise line items.',
   },
   {
     q: 'What does "visible to AI assistants" actually mean?',

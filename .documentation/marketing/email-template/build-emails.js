@@ -21,9 +21,29 @@
 const { readFileSync, writeFileSync, mkdirSync } = require('node:fs')
 const { join } = require('node:path')
 
-const SRC = join(__dirname, '..', 'xray-nurture-sequence.md')
+// Vertical selection (wellness-sales-funnel plan Phase 5):
+//   node build-emails.js            → chiro (byte-identical to before)
+//   node build-emails.js wellness   → wellness master → ./out-wellness
+const VERTICALS = {
+  chiro: {
+    src: 'xray-nurture-sequence.md',
+    out: 'out',
+    signoff: 'To more patients,',
+    footerAudience: 'chiropractic practices',
+  },
+  wellness: {
+    src: 'xray-nurture-sequence-wellness.md',
+    out: 'out-wellness',
+    signoff: 'To more clients,',
+    footerAudience: 'wellness & longevity centers',
+  },
+}
+const VERTICAL = VERTICALS[process.argv[2] || 'chiro']
+if (!VERTICAL) { console.error('unknown vertical'); process.exit(1) }
+
+const SRC = join(__dirname, '..', VERTICAL.src)
 const LAYOUT = join(__dirname, 'xray-email-layout.html')
-const OUT = join(__dirname, 'out')
+const OUT = join(__dirname, VERTICAL.out)
 
 const md = readFileSync(SRC, 'utf8')
 const layout = readFileSync(LAYOUT, 'utf8')
@@ -84,7 +104,7 @@ function compileBody(body) {
     // signature: sign-off line above, SINGLE dash (house de-AI style — the
     // source's em-dash is rewritten)
     if (/^— Veit/.test(block)) {
-      html.push(`<p style="margin:26px 0 25px 0; color:#1A1A1C;">To more patients,</p>`)
+      html.push(`<p style="margin:26px 0 25px 0; color:#1A1A1C;">${VERTICAL.signoff}</p>`)
       html.push(`<p style="margin:0 0 4px 0; color:#1A1A1C;">${inline(block.replace(/^—\s*/, '- '))}</p>`)
       continue
     }
@@ -125,7 +145,10 @@ while ((m = emailRe.exec(md)) !== null) {
   const file = `email-${String(num).padStart(2, '0')}-day${day.replace(/\D/g, '') || day}.html`
   // function replacements: immune to $-substitution and to stray tokens elsewhere
   const compiled = compileBody(body.trim())
-  const out = layout.replace('__PREVIEW__', () => preview.trim()).replace('__BODY__', () => compiled)
+  const out = layout
+    .replace('__PREVIEW__', () => preview.trim())
+    .replace('__BODY__', () => compiled)
+    .replace('Marketing autopilot for chiropractic practices', 'Marketing autopilot for ' + VERTICAL.footerAudience)
   writeFileSync(join(OUT, file), out)
   index.push(`- **${file}** — Day ${day} · Subject: \`${subject.trim()}\` · Preview: \`${preview.trim()}\``)
   count++

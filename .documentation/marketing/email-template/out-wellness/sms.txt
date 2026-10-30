@@ -1,0 +1,14 @@
+X-Ray nurture — SMS bodies (paste into GHL SMS actions; only-if-phone branch)
+
+── SMS 1 · Day 1, morning (only if phone on file) ──
+Veit here (Omniply). Your X-Ray report: {{contact.xray_report_url}}
+Worth 3 quiet minutes. The drift number is the one to look at.
+
+── SMS 2 · Day 8, midday (only if phone on file) ──
+Quick question {{contact.first_name}} — did the ${{contact.xray_total_leak}}/mo
+number in your X-Ray surprise you? (I read replies) — Veit
+
+── SMS 3 · Day 22, midday (only if phone on file) ──
+No call, no pressure: omniply.io/walkthrough?v=wellness — the system that
+plugs the leak your X-Ray found, on screen... including the receptionist
+that answers at 2am. — Veit
