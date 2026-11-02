@@ -16,13 +16,15 @@ const evidenceTable = `<table>
 <tr><td>Whole-body vibration</td><td>Promising</td><td>Good short-term effects on flexibility and circulation; the long-term performance picture is still forming.</td></tr>
 <tr><td>PEMF</td><td>Exploratory</td><td>Long research history, mixed results; the scheduled rest is a sure thing.</td></tr>
 <tr><td>Hyperbaric oxygen for recovery</td><td>Exploratory</td><td>Researchers have measured interesting markers, including circulating stem cells, in small studies; performance claims outrun the data, so we will not make them.</td></tr>
-</table>`
+</table>
+<p style="font-size:15px;color:#5b6673"><strong>How to read the labels:</strong> Established means repeatedly shown in controlled studies on people. Promising means consistent results in smaller or short-term human studies. Exploratory means early human data or lab and animal research: interesting, not yet proven. Wherever this guide cites an effect, we mean studies in people, not rats.</p>`
 
 export const spec: MasterDocSpec = {
   title: 'Bounce Back Stronger',
   subtitle: 'How to get back to full capacity fast: for people who already train and want the part nobody taught them',
   coverAsset: 'w6_cover',
   coverChecklist: [
+    'In a hurry? A five-minute version up front',
     'Why your results are capped by recovery, not effort',
     'The smarter load: hard muscle work without heavy joints (BFR)',
     'The recovery stack: vibration, compression and PEMF, honestly explained',
@@ -31,6 +33,19 @@ export const spec: MasterDocSpec = {
   introHtml:
     "<p>You already know the basics. Lift things, move often, do not sit all day. If you are reading this, you have probably known that for years, and you probably do most of it. This guide is about the layer after the basics: what actually happens between one effort and the next, and how the people who keep performing for decades manage that gap on purpose.</p><p>Here is the idea that changes how you train: fitness is not built during exercise. Exercise is the signal. The building happens afterward, while you recover. Which means your results are capped not by how hard you can push, but by how well you bounce back.</p><p><strong>The one-sentence version:</strong> the stress, recover, adapt cycle has three parts, and skipping the middle one means the third never arrives.</p>",
   blocks: [
+    // Dasha review 2026-11-02 ("13 pages, where is the takeaway?"): the guide
+    // opens with the whole program in five steps; the depth stays behind it.
+    { kind: 'part', title: 'The five-minute version', startOnNewPage: true },
+    {
+      kind: 'section',
+      heading: 'Busy? Start here',
+      slotName: 'tldr',
+      unnumbered: true,
+      defaultHtml:
+        '<p>Everything in this guide, in five steps. The rest of the pages explain why each one works. Read on when you want the reasoning; you do not need it to start.</p>',
+      frozenHtml:
+        '<ol><li><strong>Take your baseline.</strong> Tomorrow morning, before coffee: pulse for thirty seconds, plus one word for how your body feels (fresh, normal, heavy). Under a minute, every morning.</li><li><strong>If you have not yet, take the Body Resilience Score.</strong> It is the two-minute self-assessment on our website, and it becomes your starting score for step five.</li><li><strong>Add one weekly recovery session.</strong> About an hour: vibration, compression, PEMF. Recovery is part of the program, not a day off.</li><li><strong>On days heavy loads are the wrong answer</strong> (cranky joints, long week), swap in a light-load BFR session instead of skipping strength work.</li><li><strong>Change exactly one thing for 30 days</strong> and watch your morning numbers. At the end, retake the Body Resilience Score and compare.</li></ol>',
+    },
     { kind: 'part', title: 'Why bounce-back is trainable', startOnNewPage: true },
     {
       kind: 'section',
@@ -84,7 +99,7 @@ export const spec: MasterDocSpec = {
         '<p>Here is where everything above actually stands:</p>',
       frozenHtml: evidenceTable,
       tipHtml:
-        'Why we label our own tools this way: because you should trust the rest of this guide. A studio that calls everything a miracle is selling. A studio that tells you what is established, what is promising and what is still being figured out is the one worth listening to.',
+        'These are the same labels we apply to our own tools when we decide what earns a place in a session.',
     },
     { kind: 'part', title: 'Your 30-day experiment' },
     {
@@ -95,7 +110,7 @@ export const spec: MasterDocSpec = {
       defaultHtml:
         '<p>Do not take our word for any of this. Run the experiment.</p>',
       frozenHtml:
-        '<p>Each morning before coffee, take your pulse for thirty seconds and note it with one word about how your body feels: fresh, normal, heavy. That is the whole measurement, no wearable required, though if you own one, its readiness or HRV number works too. Then change exactly one thing for 30 days: add one weekly recovery session, or swap one heavy day for a smarter-load day. Watch what your morning numbers do after hard efforts. Fast bounce-back is visible within days: the morning-after pulse returns to baseline sooner, and the heavy mornings get rarer.</p><p>At the end, retake your Body Resilience Score and compare. One month, one variable, your own data.</p>',
+        '<p>Each morning before coffee, take your pulse for thirty seconds and note it with one word about how your body feels: fresh, normal, heavy. That is the whole measurement, no wearable required. If you do own one, its readiness or HRV number works too. HRV is heart-rate variability: the natural variation in timing from one heartbeat to the next, and at rest, more variability generally signals a recovered nervous system. There is no universal good HRV number; baselines differ enormously between people, so compare you to you and watch the trend, not a target.</p><p>Then change exactly one thing for 30 days: add one weekly recovery session, or swap one heavy day for a smarter-load day. Watch what your morning numbers do after hard efforts. Fast bounce-back is visible within days: the morning-after pulse returns to baseline sooner, and the heavy mornings get rarer.</p><p>At the end, retake the Body Resilience Score, the two-minute self-assessment on our website that scores how well you bounce back, and compare it with where you started. One month, one variable, your own data.</p>',
     },
     {
       kind: 'section',
@@ -103,8 +118,10 @@ export const spec: MasterDocSpec = {
       slotName: 'close',
       unnumbered: true,
       defaultHtml:
-        '<p>If you would rather run that experiment with someone watching the details, that is what we do all day. A first visit walks through how you train, how you recover, and which single change your month should start with. No overhauls, no lectures, and your morning pulse gets the final vote.</p>',
+        '<p>If you would rather run that experiment with someone watching the details, book a consultation: that is what we do all day. We will walk through how you train, how you recover, and which single change your month should start with. No overhauls, no lectures, and your morning pulse gets the final vote.</p>',
     },
   ],
+  ctaParagraphHtml:
+    'If this guide resonates, book a consultation. We will look at how you train and how you recover, and map which of these tools, if any, earn a place in your month.',
   disclaimerHtml: wellnessDisclaimer('Bounce Back Stronger'),
 }

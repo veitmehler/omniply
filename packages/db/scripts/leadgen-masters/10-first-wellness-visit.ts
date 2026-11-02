@@ -1,5 +1,11 @@
 /** Wellness master 10 — What to Expect at Your First Visit (not quiz-matched;
- *  offered on the Age Check results page, mirroring chiro master 05). */
+ *  offered on the Age Check results page, mirroring chiro master 05).
+ *  Dasha repositioning 2026-11-02 (Veit-triaged): first visit = TASTER DAY
+ *  (day pass): guided reset sequence ice bath → vibration → PEMF →
+ *  compression, ~3h, ends in an ORIENTATION CHAT with "the practitioner"
+ *  (never a named person — what happens when she is not there, Veit) that is
+ *  pointers-not-consultation (protects Rule-1 posture + the paid consult).
+ *  NO PRICES in lead-gen documents (Veit rule): price lives on site/bot. */
 import type { MasterDocSpec } from '../../../../apps/api/src/leadgen/master-layout'
 import { wellnessDisclaimer } from './common'
 
@@ -15,28 +21,40 @@ const mythsTable = `<table>
 
 export const spec: MasterDocSpec = {
   title: 'What to Expect at Your First Visit',
-  subtitle: 'The walkthrough, what each session actually feels like, and the questions worth asking, so you can walk in relaxed',
+  subtitle: 'The taster day: try the tools yourself, feel a guided reset station by station, and walk in relaxed',
   coverAsset: 'w10_cover',
   coverChecklist: [
-    'The full first visit, step by step (with typical timings)',
-    'What six common recovery tools actually feel like, in plain terms',
-    'Six common myths, held up against the facts',
-    'The exact questions to ask any wellness studio before you commit',
+    'In a hurry? A five-minute version up front',
+    'The taster day: one visit, the main tools, no commitment',
+    'A guided reset sequence, station by station, strong start to soft landing',
+    'What each tool feels like, in plain terms',
+    'Six myths, and the questions worth asking any studio',
   ],
   introHtml:
-    "<p>Walking into a recovery and wellness studio for the first time can feel like visiting the future. There are chambers and mats and boots and bands, and it is not obvious what any of them feel like, what you are supposed to wear, or whether you are about to be talked into a membership.</p><p>This guide removes the mystery. It walks you through exactly what happens on a first visit, describes what the most common tools feel like from the inside, clears up the myths, and arms you with the questions that help you judge any studio for yourself.</p><p><strong>The one-sentence version:</strong> a first visit is mostly conversation, a relaxed look at how you move, sleep, unwind and fuel up, and one gentle guided session, and nothing happens without your understanding and consent.</p>",
+    "<p>The best way to understand a recovery and wellness studio is not a tour, a brochure or a sales chat. It is a day pass: one unhurried visit where you try the main tools yourself, guided the whole way, and feel what your nervous system does with a few hours it rarely gets.</p><p>This guide walks you through that taster day station by station, describes what each tool feels like from the inside, clears up the myths, and arms you with the questions that help you judge any studio for yourself.</p><p><strong>The one-sentence version:</strong> your first visit is a guided reset sequence through the main tools, ending with a short conversation about what fits your goals, and nothing happens without your understanding and consent.</p>",
   blocks: [
-    { kind: 'part', title: 'The walkthrough', startOnNewPage: true },
+    { kind: 'part', title: 'The five-minute version', startOnNewPage: true },
     {
       kind: 'section',
-      heading: 'Your first visit, step by step',
+      heading: 'Busy? Start here',
+      slotName: 'tldr',
+      unnumbered: true,
+      defaultHtml:
+        '<p>Everything in this guide, in five steps. The rest of the pages explain what each station feels like. Read on when you want the detail; you do not need it to book.</p>',
+      frozenHtml:
+        '<ol><li><strong>Book a day pass,</strong> on our website or with the front desk. Comfortable clothes, water, swimwear if you want the ice bath.</li><li><strong>Take the Body Resilience Score beforehand,</strong> the two-minute self-assessment on our website, so the closing conversation starts from your numbers.</li><li><strong>Plan about three hours:</strong> a guided reset sequence through the main stations, strong start, soft landing, unhurried between.</li><li><strong>Finish with a short orientation chat</strong> with the practitioner: which services fit your goals, in the center and beyond it. Pointers, not a medical consultation.</li><li><strong>Decide nothing on day one.</strong> The day pass is the whole commitment; if a rhythm makes sense afterward, you will know.</li></ol>',
+    },
+    { kind: 'part', title: 'The taster day', startOnNewPage: true },
+    {
+      kind: 'section',
+      heading: 'The reset sequence, station by station',
       slotName: 'walkthrough',
       unnumbered: true,
       figure: { asset: 'w10_timeline' },
       defaultHtml:
-        '<p>Total time: plan for roughly 60 to 90 minutes. Follow-up sessions are shorter, typically 20 to 45 minutes depending on what you are doing. The first visit is longer because it starts with the most important tool in the building: a conversation about you.</p>',
+        '<p>Plan about three hours in all, with warm-up, changeovers and no clock-watching between stations. The sequence is built like a wave: a strong, wake-everything-up start, then progressively softer stations until your nervous system lands somewhere it rarely gets to go on a weekday.</p>',
       frozenHtml:
-        '<ul><li><strong>Welcome and goals (10 to 15 minutes):</strong> what brought you in, how you have been feeling, and what "better" would look like for you. No forms-only intake; a real chat.</li><li><strong>Assessment (15 to 20 minutes):</strong> a relaxed look at how you move, how you sleep, where your stress sits, and how you fuel your days. Nothing strenuous, nothing graded.</li><li><strong>Try a session (20 to 40 minutes):</strong> your first guided modality, chosen together based on the conversation. Everything is explained before it starts, and every setting is adjustable.</li><li><strong>Your plan (about 10 minutes):</strong> what a sensible rhythm could look like for your actual week, what it costs, and what to expect over the first month. You decide from there.</li></ul>',
+        '<ol><li><strong>Ice bath (2 to 5 minutes).</strong> The strong, honest start. The first ninety seconds are the price, easy breathing is the goal, and the exit is always yours. Afterward comes the glow everyone talks about.</li><li><strong>Vibration plate (about 10 minutes).</strong> You stand or move gently while the platform wakes your muscles with rapid contractions you could not produce on purpose. Circulation up, stiffness down.</li><li><strong>PEMF mat (20 to 30 minutes).</strong> You lie down. Some people feel a gentle pulse, many feel nothing at all and simply rest. This is where the descent starts.</li><li><strong>Compression boots (20 to 30 minutes).</strong> The soft landing: rhythmic waves squeeze from the feet upward while you lie back. A remarkable number of people fall asleep here, which is the point.</li><li><strong>The orientation chat (10 to 15 minutes).</strong> You sit down with the practitioner and talk through what you noticed, which services fit your goals, and what could help outside the center too. Pointers, not a medical consultation, and no pressure to decide anything.</li></ol>',
     },
     {
       kind: 'section',
@@ -45,7 +63,7 @@ export const spec: MasterDocSpec = {
       unnumbered: true,
       defaultHtml: '<p>No special preparation needed. These four things make the visit smoother:</p>',
       frozenHtml:
-        '<ul><li>Comfortable clothes you can move and relax in (for most sessions you stay dressed)</li><li>A list of medical conditions and medications, if any; some sessions (like oxygen chambers or band training) come with a short safety screening, and that screening is a sign of a good studio</li><li>Water, and swimwear or a change of clothes if the studio has heat, cold, or water-based sessions</li><li>Your questions; the end of this guide gives you a ready-made list</li></ul>',
+        '<ul><li>Comfortable clothes you can move and relax in (for most sessions you stay dressed)</li><li>A list of medical conditions and medications, if any; some sessions (like oxygen chambers or band training) come with a short safety screening, and that screening is a sign of a good studio</li><li>Water, swimwear and a towel for the ice bath, and a change of clothes for heat and water-based sessions</li><li>Your questions; the end of this guide gives you a ready-made list</li></ul>',
     },
     { kind: 'part', title: 'The tools', startOnNewPage: true },
     {
@@ -91,5 +109,7 @@ export const spec: MasterDocSpec = {
         '<p>Most recovery sessions are non-invasive and gentle, and the most common after-effect is feeling relaxed or pleasantly tired. The safety of your visit rests on two honest conversations: the studio asking about your health history, medications, pregnancy, recent surgery, and ear or sinus issues before the relevant sessions, and you answering openly. Keep your doctor in the loop about what you are doing, especially if you manage a medical condition, and remember that any session can be paused or stopped the moment something does not feel right.</p>',
     },
   ],
+  ctaParagraphHtml:
+    'If this guide resonates, book a day pass. One visit, the main tools, a short orientation chat at the end, and nothing to decide on day one.',
   disclaimerHtml: wellnessDisclaimer('What to Expect at Your First Visit'),
 }

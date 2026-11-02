@@ -79,6 +79,9 @@ export interface MasterDocSpec {
   blocks?: MasterBlock[]
   /** Back-page reader-offer box headline (offer text = {{brand.readerOffer}}). */
   offerHeadline?: string
+  /** Back-page CTA paragraph (slot default). Falls back to the chiro-era line;
+   *  wellness masters must set a consultation-framed one (Dasha review 2026-11-02). */
+  ctaParagraphHtml?: string
   /** Compliance/disclaimer text — ALWAYS rewriteEligible: false. */
   disclaimerHtml: string
 }
@@ -256,7 +259,7 @@ ${body}
   <div class="back-main">
   <h2>Ready for the next step?</h2>
   <div class="accent-bar"></div>
-  <p class="section-body" style="max-width:130mm"><slot name="cta_paragraph">If anything in this guide sounds like you, we'd love to help you get moving comfortably again.</slot></p>
+  <p class="section-body" style="max-width:130mm"><slot name="cta_paragraph">${spec.ctaParagraphHtml ?? "If anything in this guide sounds like you, we'd love to help you get moving comfortably again."}</slot></p>
   <div class="offer-box">
     <div class="offer-label">${esc(spec.offerHeadline ?? 'Reader offer')}</div>
     <div class="offer-text">{{brand.readerOffer}}</div>

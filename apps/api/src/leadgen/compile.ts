@@ -259,7 +259,11 @@ export function compactOpeningHours(raw: string): string {
 }
 
 async function brandTokensFor(userId: string): Promise<BrandTokens> {
-  const brand = await prisma.brandSettings.findUnique({ where: { userId } })
+  const [brand, user] = await Promise.all([
+    prisma.brandSettings.findUnique({ where: { userId } }),
+    prisma.user.findUnique({ where: { id: userId }, select: { account: { select: { vertical: true } } } }),
+  ])
+  const vertical = user?.account?.vertical ?? 'chiro'
   const headerColor = brand?.nlHeaderBgColor ?? brand?.diagramPrimaryColor ?? '#0b2545'
   const lightHeader = headerIsLight(headerColor)
   return {
@@ -283,7 +287,12 @@ async function brandTokensFor(userId: string): Promise<BrandTokens> {
     // patients' hands for months, and the newsletter offers are seasonal —
     // the first-created one put "New Year" on a September guide. Seasonal
     // offers stay newsletter-only; guides always carry the evergreen line.
-    readerOffer: 'Ask about our new-patient assessment when you book',
+    // Vertical-aware (Dasha review 2026-11-02): wellness centers have
+    // consultations and clients, not patient assessments.
+    readerOffer:
+      vertical === 'wellness'
+        ? 'Ask about our new-client consultation when you book'
+        : 'Ask about our new-patient assessment when you book',
     // The client's onboarding/template logo choice WINS (fix 2026-10-26 —
     // guides ignored nlHeaderLogoVariant since the beginning, PDF review
     // round 1 finding #8): 'original' renders the true-colour cutout
@@ -528,6 +537,13 @@ export async function compileLeadGenDocument(documentId: string, feedbackNote?: 
   }
 
   try {
+    // Template renames don't propagate to documents created earlier (title is
+    // copied at creation) — Dasha's "Everyday Strength" Drive file disagreed
+    // with the master's "Bounce Back Stronger" cover. Refresh on every compile.
+    if (doc.title !== doc.template.name) {
+      await prisma.leadGenDocument.update({ where: { id: doc.id }, data: { title: doc.template.name } })
+      doc.title = doc.template.name
+    }
     const tokens = await brandTokensFor(doc.userId)
     const settings = await prisma.settings.findUnique({ where: { userId: doc.userId }, select: { writingStyle: true } })
     const slotMeta = (doc.template.slotMeta as Record<string, SlotMeta>) ?? {}
