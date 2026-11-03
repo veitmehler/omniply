@@ -20,6 +20,7 @@ import { listGhlCalendars } from '../lib/ghl/client'
 import { clinikoAccountOverview, clinicoApiKeyFor } from '../lib/booking/cliniko'
 import { parseBookingServices, type BookingService } from '../lib/booking/services'
 import { clearBookingCacheFor } from '../agent/booking'
+import { publishBookingPage, bookingWidgetDomain } from '../lib/booking-page'
 import { getSystemApiKey } from '../lib/system-keys'
 import { getLLMAdapter } from '../article-pipeline/llm/factory'
 import { instrumentCall } from '../lib/net/instrument'
@@ -257,7 +258,11 @@ export async function agentBookingRoutes(app: FastifyInstance) {
       })
     }
 
-    const config = { ...clinikoRoot, services }
+    // Root extras like widgetDomain (booking-page feature) are admin-set and
+    // must survive a Settings save, which rebuilds this object from scratch.
+    const existingAcc = await prisma.account.findUnique({ where: { id: who.accountId }, select: { agentBookingConfig: true } })
+    const prevWidgetDomain = bookingWidgetDomain(existingAcc?.agentBookingConfig)
+    const config = { ...(prevWidgetDomain ? { widgetDomain: prevWidgetDomain } : {}), ...clinikoRoot, services }
     const parsed = parseBookingServices(config as never)
     if (!parsed || parsed.length !== services.length) {
       return reply.status(400).send({ error: 'Config failed validation — nothing was saved' })
@@ -272,6 +277,9 @@ export async function agentBookingRoutes(app: FastifyInstance) {
     })
     clearBookingCacheFor(who.accountId)
     logger.info({ accountId: who.accountId, provider, services: parsed.map((s: BookingService) => s.key) }, '[agent-booking] services saved')
+    // Keep the public /book-online page in step with the bookable set
+    // (best-effort, never blocks the save; skips itself when not applicable).
+    void publishBookingPage(who.ownerUserId)
     return { ok: true, mode: provider === 'ghl' ? 'direct-ghl' : 'direct-cliniko', services: parsed }
   })
 }
