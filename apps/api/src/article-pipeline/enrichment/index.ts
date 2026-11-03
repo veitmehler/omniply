@@ -880,6 +880,12 @@ export async function buildDiagramRestyleConfig(
   jobId: string,
   brandStyle: Awaited<ReturnType<typeof brandSettingsForUser>>,
 ): Promise<DiagramRestyleConfig | null> {
+  // Ops/bench kill-switch: articles keep the plain Mermaid SVG (the proven
+  // no-key fallback) instead of spending Gemini image credits on restyling.
+  if (process.env.DIAGRAM_RESTYLE_DISABLED === '1') {
+    logger.info({ jobId }, '[enrichment] diagram AI restyle disabled by env flag — SVG only')
+    return null
+  }
   const geminiKey = await getSystemApiKey('gemini')
   if (!geminiKey) {
     logger.info({ jobId }, '[enrichment] no Gemini key — skipping diagram AI restyle')
