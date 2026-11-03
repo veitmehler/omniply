@@ -1,5 +1,14 @@
 import { describe, it, expect } from 'vitest'
-import { buildBookingPageHtml, bookingWidgetDomain } from '../booking-page'
+import { buildBookingPageHtml, bookingWidgetDomain, bookingWhatsappNumber } from '../booking-page'
+
+describe('bookingWhatsappNumber', () => {
+  it('normalizes to digits and bounds the length', () => {
+    expect(bookingWhatsappNumber({ whatsapp: '+1 809-348-4444' })).toBe('18093484444')
+    expect(bookingWhatsappNumber({ whatsapp: '123' })).toBeNull()
+    expect(bookingWhatsappNumber({})).toBeNull()
+    expect(bookingWhatsappNumber(null)).toBeNull()
+  })
+})
 
 describe('bookingWidgetDomain', () => {
   it('accepts a clean https domain and strips trailing slashes', () => {
@@ -55,5 +64,12 @@ describe('buildBookingPageHtml', () => {
     expect(html).toContain('Whealth Recovery Center')
     expect(html).not.toContain('<img')
     expect(html).not.toContain('tel:')
+    expect(html).not.toContain('wa.me')
+  })
+  it('renders the WhatsApp button below the phone row when a number is given', () => {
+    const html = buildBookingPageHtml({ ...base, whatsapp: '18093484444' })
+    expect(html).toContain('https://wa.me/18093484444?text=')
+    expect(html).toContain('Message us on WhatsApp')
+    expect(html.indexOf('wa.me')).toBeGreaterThan(html.indexOf('tel:'))
   })
 })

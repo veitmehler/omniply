@@ -20,7 +20,7 @@ import { listGhlCalendars } from '../lib/ghl/client'
 import { clinikoAccountOverview, clinicoApiKeyFor } from '../lib/booking/cliniko'
 import { parseBookingServices, type BookingService } from '../lib/booking/services'
 import { clearBookingCacheFor } from '../agent/booking'
-import { publishBookingPage, bookingWidgetDomain } from '../lib/booking-page'
+import { publishBookingPage, bookingWidgetDomain, bookingWhatsappNumber } from '../lib/booking-page'
 import { getSystemApiKey } from '../lib/system-keys'
 import { getLLMAdapter } from '../article-pipeline/llm/factory'
 import { instrumentCall } from '../lib/net/instrument'
@@ -262,7 +262,13 @@ export async function agentBookingRoutes(app: FastifyInstance) {
     // must survive a Settings save, which rebuilds this object from scratch.
     const existingAcc = await prisma.account.findUnique({ where: { id: who.accountId }, select: { agentBookingConfig: true } })
     const prevWidgetDomain = bookingWidgetDomain(existingAcc?.agentBookingConfig)
-    const config = { ...(prevWidgetDomain ? { widgetDomain: prevWidgetDomain } : {}), ...clinikoRoot, services }
+    const prevWhatsapp = bookingWhatsappNumber(existingAcc?.agentBookingConfig)
+    const config = {
+      ...(prevWidgetDomain ? { widgetDomain: prevWidgetDomain } : {}),
+      ...(prevWhatsapp ? { whatsapp: prevWhatsapp } : {}),
+      ...clinikoRoot,
+      services,
+    }
     const parsed = parseBookingServices(config as never)
     if (!parsed || parsed.length !== services.length) {
       return reply.status(400).send({ error: 'Config failed validation — nothing was saved' })

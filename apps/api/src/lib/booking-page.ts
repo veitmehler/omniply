@@ -41,8 +41,10 @@ export function buildBookingPageHtml(opts: {
   accent: string
   services: BookingPageService[]
   phone?: string | null
+  /** E.164-ish digits for a wa.me link; renders a WhatsApp button under the phone row. */
+  whatsapp?: string | null
 }): string {
-  const { organizationName, logoUrl, headerBg, buttonColor, buttonTextColor, accent, services, phone } = opts
+  const { organizationName, logoUrl, headerBg, buttonColor, buttonTextColor, accent, services, phone, whatsapp } = opts
   const buttons = services
     .map(
       (s) =>
@@ -51,6 +53,9 @@ export function buildBookingPageHtml(opts: {
     .join('\n')
   const phoneRow = phone
     ? `<div style="text-align:center;color:${accent};font-size:15px;padding-top:14px;">Prefer to talk? Call us at <a href="tel:${esc(phone.replace(/[^+\d]/g, ''))}" style="color:${accent};font-weight:600;">${esc(phone)}</a></div>`
+    : ''
+  const whatsappRow = whatsapp
+    ? `<div style="text-align:center;padding-top:12px;"><a href="https://wa.me/${esc(whatsapp.replace(/[^\d]/g, ''))}?text=${encodeURIComponent("Hi! I'd like to book an appointment.")}" target="_blank" rel="noopener" style="display:inline-block;background:#25D366;color:#ffffff;text-decoration:none;font-size:16px;font-weight:600;padding:12px 22px;border-radius:999px;">Message us on WhatsApp</a></div>`
     : ''
   return `<div style="margin:0 auto;max-width:520px;padding:0 0 40px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
 <div style="background:${headerBg};border-radius:0 0 18px 18px;padding:36px 24px 30px;text-align:center;">
@@ -61,7 +66,17 @@ ${logoUrl ? `<img src="${esc(logoUrl)}" alt="${esc(organizationName)}" style="ma
 ${buttons}
 </div>
 ${phoneRow}
+${whatsappRow}
 </div>`
+}
+
+/** WhatsApp number stored on the booking config JSON (admin-set, optional). */
+export function bookingWhatsappNumber(config: unknown): string | null {
+  if (!config || typeof config !== 'object') return null
+  const raw = (config as { whatsapp?: unknown }).whatsapp
+  if (typeof raw !== 'string') return null
+  const digits = raw.replace(/[^\d]/g, '')
+  return digits.length >= 8 && digits.length <= 15 ? digits : null
 }
 
 /** The widget domain stored on the booking config JSON (admin-set, optional). */
@@ -126,6 +141,7 @@ export async function publishBookingPage(userId: string): Promise<string | null>
       accent: brand.nlLinkColor ?? '#2a6f97',
       services: services.map((s) => ({ label: s.label, url: `${domain}/widget/booking/${s.calendarId}` })),
       phone: brand.organizationPhone ?? null,
+      whatsapp: bookingWhatsappNumber(account.agentBookingConfig),
     })
 
     const wp = (path: string, init?: RequestInit) =>
