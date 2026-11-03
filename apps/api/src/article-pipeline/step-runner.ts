@@ -297,14 +297,17 @@ export class StepRunner {
           },
         })
 
-        // Write LLMUsage row (combined across both phases)
+        // Write LLMUsage row (combined across both phases). Model from the
+        // RESPONSE, not the template: the adapter may resolve the configured id
+        // to an env-overridden one (anthropic-models.ts) and telemetry must
+        // show what actually ran.
         await prisma.lLMUsage.create({
           data: {
             userId: this.ctx.userId,
             jobId: this.jobId,
             source: `pipeline_step_${this.stepNumber}`,
             provider,
-            model,
+            model: llmResponse.model ?? model,
             inputTokens: totalInputTokens,
             outputTokens: totalOutputTokens,
             cost: totalCost,
