@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import OpenAI from 'openai'
 import Anthropic from '@anthropic-ai/sdk'
+import { ANTHROPIC_SONNET } from '../article-pipeline/llm/anthropic-models'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { prisma } from '@omniply/shared'
 import { cleanText } from '../lib/utils'
@@ -24,7 +25,7 @@ async function getOrCreateUser(clerkId: string) {
 const SYSTEM_PROVIDER_ORDER = ['openai', 'anthropic', 'gemini', 'openrouter'] as const
 const SYSTEM_DEFAULT_MODELS: Record<string, string> = {
   openai: 'gpt-4o-mini',
-  anthropic: 'claude-3-5-sonnet-20241022',
+  anthropic: ANTHROPIC_SONNET,
   gemini: 'gemini-3.5-flash',
   openrouter: 'openai/gpt-4o-mini',
 }
@@ -134,7 +135,7 @@ async function generateWithAnthropic(
   const anthropic = new Anthropic({ apiKey })
   const systemMessage = buildSystemMessage(writingStyle)
   const response = await anthropic.messages.create({
-    model: model || 'claude-3-5-sonnet-20241022',
+    model: model || ANTHROPIC_SONNET,
     max_tokens: maxTokens,
     system: systemMessage,
     messages: [{ role: 'user', content: prompt }],
@@ -402,7 +403,7 @@ export async function aiRoutes(app: FastifyInstance) {
               generatedContent = await generateWithOpenAI(apiKey, prompt, maxTokens, selectedModel || 'gpt-4o-mini', writingStyle)
               break
             case 'anthropic':
-              generatedContent = await generateWithAnthropic(apiKey, prompt, maxTokens, selectedModel || 'claude-3-5-sonnet-20241022', writingStyle)
+              generatedContent = await generateWithAnthropic(apiKey, prompt, maxTokens, selectedModel || ANTHROPIC_SONNET, writingStyle)
               break
             case 'gemini':
               generatedContent = await generateWithGemini(apiKey, prompt, maxTokens, selectedModel || 'gemini-pro', writingStyle, isTwitterThread ? undefined : characterLimit)
@@ -542,7 +543,7 @@ CRITICAL: Do NOT quote, excerpt, or paraphrase ANY specific phrases, sentences, 
         case 'anthropic': {
           const anthropic = new Anthropic({ apiKey })
           const resp = await anthropic.messages.create({
-            model: selectedModel || 'claude-3-5-sonnet-20241022',
+            model: selectedModel || ANTHROPIC_SONNET,
             max_tokens: 300, system: systemMessage,
             messages: [{ role: 'user', content: userPrompt }],
           })

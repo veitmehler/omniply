@@ -4,8 +4,9 @@ import { calculateCost } from './cost-table'
 import type { LLMAdapter, LLMCallOptions, LLMResponse } from './adapter'
 import { LLMError } from './adapter'
 import { instrumentCall } from '../../lib/net/instrument'
+import { SONNET_45, resolveAnthropicModel, supportsTemperature } from './anthropic-models'
 
-const DEFAULT_MODEL = 'claude-sonnet-4-5-20250929'
+const DEFAULT_MODEL = SONNET_45
 
 // The SDK's own default is 10 minutes with 2 built-in retries (retried
 // automatically on timeout/429/5xx) — far too long to hold a worker slot for
@@ -50,7 +51,7 @@ export class AnthropicAdapter implements LLMAdapter {
     const apiKey = await getSystemApiKey('anthropic')
     if (!apiKey) throw new LLMError('No API key configured for provider: anthropic')
 
-    const model = options.model || DEFAULT_MODEL
+    const model = resolveAnthropicModel(options.model || DEFAULT_MODEL)
     const temperature = options.temperature ?? 0.7
     const maxTokens = options.maxTokens ?? 8192
 
@@ -60,7 +61,7 @@ export class AnthropicAdapter implements LLMAdapter {
         client.messages.create({
           model,
           max_tokens: maxTokens,
-          temperature,
+          ...(supportsTemperature(model) ? { temperature } : {}),
           ...(options.systemPrompt ? { system: options.systemPrompt } : {}),
           messages: [{ role: 'user', content: options.userPrompt }],
         }),

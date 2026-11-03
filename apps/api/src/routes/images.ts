@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import { prisma } from '@omniply/shared'
 import { getSystemApiKey } from '../lib/system-keys'
+import { ANTHROPIC_SONNET } from '../article-pipeline/llm/anthropic-models'
 import {
   generateImagePromptWithLLM,
   generateSimpleImagePrompt,
@@ -88,7 +89,7 @@ const IMAGE_SYSTEM_KEY_MAP: Record<string, string> = {
 const LLM_PROVIDER_ORDER = ['openai', 'anthropic', 'gemini'] as const
 const LLM_DEFAULT_MODELS: Record<string, string> = {
   openai: 'gpt-4o-mini',
-  anthropic: 'claude-3-5-sonnet-20241022',
+  anthropic: ANTHROPIC_SONNET,
   gemini: 'gemini-3.5-flash',
 }
 

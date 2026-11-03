@@ -84,7 +84,7 @@ No explanation. No commentary. No extra characters.`
       case 'anthropic': {
         const anthropic = new Anthropic({ apiKey: llmApiKey })
         const response = await anthropic.messages.create({
-          model: llmModel || 'claude-3-5-sonnet-20241022',
+          model: llmModel || 'claude-sonnet-5-5',
           max_tokens: 500,
           system: systemMessage,
           messages: [

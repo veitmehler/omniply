@@ -15,6 +15,10 @@ const COST_TABLE: Record<string, { input: number; output: number }> = {
   'gemini-pro': { input: 0.50, output: 1.50 },
 
   // Anthropic
+  'claude-sonnet-5-5': { input: 2.00, output: 10.00 },
+  // Haiku 5.5 base tier (prompts ≤100K tokens); the >100K tier is handled in
+  // calculateCost because the whole request re-rates when it crosses 100K.
+  'claude-haiku-5-5': { input: 0.10, output: 0.50 },
   'claude-sonnet-4-5-20250929': { input: 3.00, output: 15.00 },
   'claude-3-5-sonnet-20241022': { input: 3.00, output: 15.00 },
   'claude-3-opus-20240229': { input: 15.00, output: 75.00 },
@@ -37,7 +41,17 @@ export function getCostPerToken(model: string, type: 'input' | 'output'): number
   return entry[type]
 }
 
+// Haiku 5.5 bills the ENTIRE request at a 5x rate once the prompt exceeds
+// 100K tokens — a per-request tier, invisible to flat per-model rates.
+const HAIKU_55_LONG_PROMPT = { input: 0.50, output: 2.50 }
+
 export function calculateCost(model: string, inputTokens: number, outputTokens: number): number {
+  if (model.startsWith('claude-haiku-5-5') && inputTokens > 100_000) {
+    return Number((
+      (inputTokens / 1_000_000) * HAIKU_55_LONG_PROMPT.input +
+      (outputTokens / 1_000_000) * HAIKU_55_LONG_PROMPT.output
+    ).toFixed(8))
+  }
   const inputCost = (inputTokens / 1_000_000) * getCostPerToken(model, 'input')
   const outputCost = (outputTokens / 1_000_000) * getCostPerToken(model, 'output')
   return Number((inputCost + outputCost).toFixed(8))
