@@ -40,6 +40,12 @@
   .chapter.reco { border-color: var(--lime); color: var(--ink); }
   .chapter.reco .n { color: var(--lime); }
   .chapter.reco .n::after { content: " · recommended for you"; }
+  .pilots { margin-bottom: 34px; }
+  .pilots .meta { margin-bottom: 14px; }
+  .pilot-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+  .pilot { background: var(--bg1); border: 1px solid var(--line); border-left: 3px solid var(--lime); border-radius: 10px; padding: 18px 20px; }
+  .pilot b { display: block; font-size: 15px; margin-bottom: 6px; }
+  .pilot p { color: var(--dim); font-size: 14.5px; line-height: 1.55; }
   .buy { background: var(--bg1); border: 1px solid var(--line); border-radius: 14px; padding: 30px 26px; text-align: center; }
   .buy .price { font-size: clamp(34px, 7vw, 46px); font-weight: 750; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
   .buy .price small { font-size: 0.4em; font-weight: 500; color: var(--dim); }
@@ -109,6 +115,20 @@
     <div class="chapter" data-axis="content"><span class="n">Chapter 4</span>Content &amp; Visibility on autopilot</div>
   </div>
 
+  <div class="pilots">
+    <div class="meta">From the pilot program</div>
+    <div class="pilot-grid" id="pilot-grid">
+      <div class="pilot">
+        <b>First Pilot Chiro Practice</b>
+        <p>The practice in this video. Everything you'll watch — the receptionist answering, quoting real prices, booking real calendar slots by chat and phone — is this practice running live, not a mock-up. Its assistant has handled 120+ conversations, and it can even take bookings directly from other AI assistants.</p>
+      </div>
+      <div class="pilot">
+        <b>A Miami chiropractic clinic</b>
+        <p>Onboarded through the same checkout you'll use: the account provisioned itself with no human setup, and the assistant and content engine were live the same day. The first content run delivered 5 articles, 90 social posts, 6 branded lead-magnet guides and a 30-day nurture sequence — before the week was out.</p>
+      </div>
+    </div>
+  </div>
+
   <div class="buy">
     <div class="price" style="text-align:center;font-size:40px;font-weight:800;color:var(--lime)">$397<small style="font-size:16px;font-weight:600;color:#fff;opacity:.8"> / month</small></div>
     <p id="wt-buycopy" style="padding:18px 0 22px;margin:0 auto;font-size:17px;line-height:1.6;text-align:center;color:#fff;max-width:560px">Everything in the walkthrough — content engine, AI chat &amp; voice, review engine, recall &amp; reactivation — set up for your practice. Cancel anytime.</p>
@@ -165,6 +185,10 @@
     if (mh) mh.textContent = '15-minute consultation'
     var ms = document.getElementById('consult-sub')
     if (ms) ms.innerHTML = 'With the founder. Bring your X-Ray results if you have them. No pitch &mdash; just straight answers about your center.'
+    var pg = document.getElementById('pilot-grid')
+    if (pg) {
+      pg.innerHTML = '<div class="pilot"><b>A wellness &amp; longevity center</b><p>Live pilot: the assistant answers on web chat and WhatsApp in five languages and books twelve services, Saturdays included. In its first two weeks it held 38 conversations, while the content engine produced 9 newsletters and 6 branded lead-magnet guides &mdash; each one ready to approve from a phone.</p></div>'
+    }
   }
 
   var CONFIG = {

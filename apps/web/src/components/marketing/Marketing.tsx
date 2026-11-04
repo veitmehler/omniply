@@ -250,12 +250,12 @@ export function ReactivationLoop({ visitsLabel = 'Patient visits', businessWord 
 }
 
 /* ── Pricing block ──────────────────────────────────────────────────────── */
-export function PricingBlock({ vertical, peopleWord = 'patient' }: { vertical?: boolean; peopleWord?: string }) {
+export function PricingBlock({ vertical, peopleWord = 'patient', walkthroughHref = '/walkthrough' }: { vertical?: boolean; peopleWord?: string; walkthroughHref?: string }) {
   return (
     <div id="pricing" className="my-8 rounded-2xl border-2 p-8 md:p-10" style={{ borderColor: TOKENS.accent, background: '#fff' }}>
       <div className="flex flex-wrap items-baseline gap-3">
-        <span className="text-5xl font-extrabold" style={{ color: TOKENS.ink }}>$397</span>
-        <span className="text-xl" style={{ color: TOKENS.muted }}>per month. That is the whole number.</span>
+        <span className="text-4xl font-extrabold" style={{ color: TOKENS.ink }}>One flat monthly subscription.</span>
+        <span className="text-xl" style={{ color: TOKENS.muted }}>Everything included. No contracts.</span>
       </div>
       <ul className="mt-6 space-y-2 text-lg">
         <li><strong>All content included.</strong> Articles, newsletters, social posts, lead magnets. No per-piece charges, ever.</li>
@@ -270,6 +270,11 @@ export function PricingBlock({ vertical, peopleWord = 'patient' }: { vertical?: 
           thing dropped when the week gets busy. Which is exactly when the compounding curve resets to zero.
         </p>
       </div>
+      <p className="mt-6 text-lg">
+        <a href={walkthroughHref} className="font-bold underline" style={{ color: TOKENS.accentDeep }}>
+          Watch the walkthrough video for all the details →
+        </a>
+      </p>
     </div>
   )
 }

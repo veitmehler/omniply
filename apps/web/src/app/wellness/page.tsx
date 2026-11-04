@@ -75,7 +75,7 @@ const FAQ_ITEMS: FaqEntry[] = [
     a: 'Completely. We never write, buy or fake reviews. The system makes it effortless for genuinely happy clients to leave one: a printed QR card for your front desk that opens your Google review form, plus well-timed follow-ups. The reviews are real. There are simply more of them, because asking finally happens consistently.',
   },
   {
-    q: 'What exactly does $397 include? Any hidden costs?',
+    q: 'What exactly does the subscription include? Any hidden costs?',
     a: 'Everything in the loop: weekly client-education articles, the weekly newsletter with 25,000 email sends included, social posts with designed graphics, your branded lead-magnet guides, the Body Resilience Score quiz on your website, the AI response and recall systems, and the review engine. No per-piece fees, no content credits, no surprises.',
   },
   {
@@ -286,11 +286,11 @@ export default function WellnessPage() {
         <H2>Recovering one client a month pays for the entire system.</H2>
         <P>
           Take your average session fee. A typical client&apos;s first year is worth roughly twelve sessions of
-          it. The whole system costs $397 a month. <strong>One recovered client covers it. The second one is
+          it. <strong>One recovered client covers the entire system for the month. The second one is
           profit.</strong> That&apos;s the whole business case... your own numbers, doing arithmetic you can
           check. The X-Ray does it for you, with every assumption shown.
         </P>
-        <PricingBlock peopleWord="client" />
+        <PricingBlock peopleWord="client" walkthroughHref="/walkthrough?v=wellness" />
       </Section>
 
       {/* ── Founder ── */}
@@ -326,7 +326,7 @@ export default function WellnessPage() {
           what it posts, what the recall messages look like. No call. No salesperson.
         </P>
         <P>
-          $397 a month. Everything in the loop. Cancel anytime. We&apos;re not asking you to become
+          One flat monthly subscription. Everything in the loop. Cancel anytime. We&apos;re not asking you to become
           a marketer... we&apos;re asking you to stop having to be one.
         </P>
         <Cta href={WELLNESS_XRAY} sub="free · 2 minutes · your report is yours to keep">
