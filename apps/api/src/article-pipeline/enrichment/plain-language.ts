@@ -23,11 +23,24 @@ export const PL_BOX_LABELS = [
   'Think of It This Way',
   'What This Means for You',
   'The Simple Version',
+  'Picture It Like This',
+  'Here Is the Idea',
+  'In Everyday Terms',
 ] as const
 
 // Mirrors enrichment/index.ts GEO_EXCLUDE (kept local — index.ts imports from
 // this module, so importing back from it would be circular).
 const SECTION_EXCLUDE = /^(faq|frequently asked questions|conclusion|key takeaways)\b/i
+
+// B5 anti-uniformity dials (2026-11-04): detectors and readers key on the
+// device repeating wall-to-wall, so density is capped and the packaging of
+// each concept explanation is drawn by a per-article seeded lottery — the
+// same explanation renders as flowing prose more often than as a labeled box.
+const MAX_BOXES_PER_ARTICLE = 2
+const MAX_GLOSSES_PER_ARTICLE = 8
+const CONCEPT_INLINE_P = 0.5 // inline paragraph, no box chrome
+const CONCEPT_BOXED_P = 0.3 // labeled box (remainder is skipped entirely)
+const BOX_CLOSER_QUESTION_P = 0.25
 
 const MAX_TERMS_PER_SECTION = 2
 const MAX_GLOSS_CHARS = 480
@@ -72,6 +85,36 @@ function stableHash(seed: string): number {
 
 export function rotatedLabel(seed: string): string {
   return PL_BOX_LABELS[stableHash(seed) % PL_BOX_LABELS.length]
+}
+
+/** Deterministic per-article RNG (mulberry32): every article draws its own
+ *  layout, but a given jobId reproduces exactly — debuggable randomness. */
+export function seededRng(seed: string): () => number {
+  let t = stableHash(seed)
+  return () => {
+    t = (t + 0x6d2b79f5) >>> 0
+    let x = Math.imul(t ^ (t >>> 15), t | 1)
+    x ^= x + Math.imul(x ^ (x >>> 7), x | 61)
+    return ((x ^ (x >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+function pickLabel(rng: () => number, used: Set<string>): string {
+  const pool = PL_BOX_LABELS.filter((l) => !used.has(l))
+  const from = pool.length > 0 ? pool : PL_BOX_LABELS
+  const label = from[Math.floor(rng() * from.length)]
+  used.add(label)
+  return label
+}
+
+const CLOSER_QUESTION =
+  'End with one short, fresh question that turns the image toward the reader. Never a stock phrase; never reuse a question pattern from elsewhere in the article.'
+const CLOSER_PLAIN =
+  'End on the image itself or the practical point. Do NOT end with a question.'
+
+/** Inline rendering of a concept story: same content, no box chrome. */
+export function buildInlineHtml(storyText: string): string {
+  return `<p>${escapeHtml(storyText)}</p>`
 }
 
 /** Case-insensitive index of `needle` in `haystack`, or -1. */
@@ -311,7 +354,8 @@ interface PlannedGloss {
 }
 
 interface PlannedBox {
-  label: string
+  form: 'boxed' | 'inline'
+  label: string | null
   subject: string
   anchorQuote: string | null
   text: string
@@ -332,6 +376,7 @@ export interface PlainLanguagePassResult {
   outputTokens: number
   injectedGlosses: number
   injectedBoxes: number
+  injectedInline: number
 }
 
 export interface ArticlePassArgs {
@@ -358,6 +403,7 @@ export async function runPlainLanguagePass(args: ArticlePassArgs): Promise<Plain
     outputTokens: 0,
     injectedGlosses: 0,
     injectedBoxes: 0,
+    injectedInline: 0,
   }
 
   await prisma.plainLanguageBlock.deleteMany({ where: { sitePageId } })
@@ -365,12 +411,19 @@ export async function runPlainLanguagePass(args: ArticlePassArgs): Promise<Plain
   const sections = extractH2Sections(html).filter((s) => !SECTION_EXCLUDE.test(s.heading.trim()))
   if (sections.length === 0) return result
 
+  const rng = seededRng(jobId)
+  const usedLabels = new Set<string>()
+  let plannedGlossTotal = 0
+  let plannedBoxTotal = 0
+  let lastBoxedSectionIdx = -2
+
   const exemplars = formatExemplars(config)
   const explainedTerms = new Set<string>()
   const usedImagery: string[] = []
   const plans: SectionPlan[] = []
 
-  for (const section of sections) {
+  for (let sectionIdx = 0; sectionIdx < sections.length; sectionIdx++) {
+    const section = sections[sectionIdx]
     const plan: SectionPlan = { position: section.position, sectionHtml: section.sectionHtml, glosses: [], box: null }
     try {
       const sectionText = stripTags(section.sectionHtml).slice(0, SECTION_TEXT_CAP)
@@ -397,6 +450,7 @@ export async function runPlainLanguagePass(args: ArticlePassArgs): Promise<Plain
         .filter((t): t is { term: string; sentence?: string } => Boolean(t.term?.trim()))
         .slice(0, MAX_TERMS_PER_SECTION)
       for (const t of terms) {
+        if (plannedGlossTotal >= MAX_GLOSSES_PER_ARTICLE) break
         const norm = t.term.trim().toLowerCase()
         if (explainedTerms.has(norm)) continue
         const generated = await generateVerified({
@@ -411,6 +465,7 @@ export async function runPlainLanguagePass(args: ArticlePassArgs): Promise<Plain
         result.outputTokens += generated?.usage.outputTokens ?? 0
         if (!generated) continue
         explainedTerms.add(norm)
+        plannedGlossTotal++
         // Feed the actual opening imagery forward (not just the term name) so later
         // sections don't reuse the same metaphor vehicle (hose, bridge, ...).
         usedImagery.push(generated.text.slice(0, 80))
@@ -419,24 +474,41 @@ export async function runPlainLanguagePass(args: ArticlePassArgs): Promise<Plain
 
       const concept = detect.data.concept
       if (concept?.summary?.trim()) {
-        const generated = await generateVerified({
-          kind: 'concept',
-          vars: { ...baseVars, conceptSummary: concept.summary.trim() },
-          config,
-          maxChars: MAX_STORY_CHARS,
-          logCtx: { jobId, position: section.position, concept: concept.summary },
-        })
-        result.cost += generated?.usage.cost ?? 0
-        result.inputTokens += generated?.usage.inputTokens ?? 0
-        result.outputTokens += generated?.usage.outputTokens ?? 0
-        if (generated) {
-          usedImagery.push(generated.text.slice(0, 80))
-          plan.box = {
-            label: rotatedLabel(`${sitePageId}:${section.position}`),
-            subject: concept.summary.trim(),
-            anchorQuote: concept.anchorQuote?.trim() || null,
-            text: generated.text,
-            usage: generated.usage,
+        // Form lottery first (before any LLM spend): inline prose most often,
+        // a labeled box sometimes, nothing at all for the remainder. Boxes are
+        // additionally capped per article and never land in adjacent sections.
+        const draw = rng()
+        let form: 'inline' | 'boxed' | 'skip' =
+          draw < CONCEPT_INLINE_P ? 'inline' : draw < CONCEPT_INLINE_P + CONCEPT_BOXED_P ? 'boxed' : 'skip'
+        if (form === 'boxed' && (plannedBoxTotal >= MAX_BOXES_PER_ARTICLE || sectionIdx - lastBoxedSectionIdx <= 1)) {
+          form = 'inline'
+        }
+        if (form !== 'skip') {
+          const closerStyle = form === 'boxed' && rng() < BOX_CLOSER_QUESTION_P ? CLOSER_QUESTION : CLOSER_PLAIN
+          const generated = await generateVerified({
+            kind: 'concept',
+            vars: { ...baseVars, conceptSummary: concept.summary.trim(), closerStyle },
+            config,
+            maxChars: MAX_STORY_CHARS,
+            logCtx: { jobId, position: section.position, concept: concept.summary, form },
+          })
+          result.cost += generated?.usage.cost ?? 0
+          result.inputTokens += generated?.usage.inputTokens ?? 0
+          result.outputTokens += generated?.usage.outputTokens ?? 0
+          if (generated) {
+            usedImagery.push(generated.text.slice(0, 80))
+            if (form === 'boxed') {
+              plannedBoxTotal++
+              lastBoxedSectionIdx = sectionIdx
+            }
+            plan.box = {
+              form,
+              label: form === 'boxed' ? pickLabel(rng, usedLabels) : null,
+              subject: concept.summary.trim(),
+              anchorQuote: concept.anchorQuote?.trim() || null,
+              text: generated.text,
+              usage: generated.usage,
+            }
           }
         }
       }
@@ -463,7 +535,11 @@ export async function runPlainLanguagePass(args: ArticlePassArgs): Promise<Plain
       }
     }
     if (plan.box) {
-      const inserted = insertBoxAfterAnchor(section, plan.box.anchorQuote, buildBoxHtml(plan.box.label, plan.box.text, args.accentHex))
+      const blockHtml =
+        plan.box.form === 'boxed'
+          ? buildBoxHtml(plan.box.label ?? PL_BOX_LABELS[0], plan.box.text, args.accentHex)
+          : buildInlineHtml(plan.box.text)
+      const inserted = insertBoxAfterAnchor(section, plan.box.anchorQuote, blockHtml)
       if (inserted) {
         section = inserted
         applied.push({ kind: 'concept', subject: plan.box.subject, label: plan.box.label, text: plan.box.text, usage: plan.box.usage })
@@ -481,7 +557,8 @@ export async function runPlainLanguagePass(args: ArticlePassArgs): Promise<Plain
 
     for (const a of applied) {
       if (a.kind === 'term') result.injectedGlosses++
-      else result.injectedBoxes++
+      else if (a.label !== null) result.injectedBoxes++
+      else result.injectedInline++
       await prisma.plainLanguageBlock
         .create({
           data: {
@@ -573,7 +650,7 @@ export async function runNewsletterPlainLanguage(args: NewsletterPassArgs): Prom
     if (concept?.summary?.trim()) {
       const generated = await generateVerified({
         kind: 'concept',
-        vars: { ...baseVars, alreadyUsedMetaphors: usedImagery.join(', ') || 'none yet', conceptSummary: concept.summary.trim() },
+        vars: { ...baseVars, alreadyUsedMetaphors: usedImagery.join(', ') || 'none yet', conceptSummary: concept.summary.trim(), closerStyle: CLOSER_PLAIN },
         config,
         maxChars: MAX_STORY_CHARS,
         logCtx: { newsletter: true, concept: concept.summary },

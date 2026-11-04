@@ -366,7 +366,7 @@ export async function runArticleEnrichment(jobId: string): Promise<void> {
       totalInputTokens += pl.inputTokens
       totalOutputTokens += pl.outputTokens
       logger.info(
-        { jobId, glosses: pl.injectedGlosses, boxes: pl.injectedBoxes, cost: pl.cost },
+        { jobId, glosses: pl.injectedGlosses, boxes: pl.injectedBoxes, inline: pl.injectedInline, cost: pl.cost },
         '[enrichment] plain-language pass complete',
       )
     } else {
