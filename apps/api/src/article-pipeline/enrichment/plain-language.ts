@@ -112,6 +112,59 @@ const CLOSER_QUESTION =
 const CLOSER_PLAIN =
   'End on the image itself or the practical point. Do NOT end with a question.'
 
+// B6 (2026-11-04): the device CONTENT read fine in detector testing, but
+// near-every injection opened with the same "Think of… / Picture…" scaffold,
+// which stacked to 10+ identical openers per article once inline forms landed.
+// The opener is now a per-device seeded draw, and the classic scaffold is
+// rationed to one use per article.
+const OPENER_THINK_OF_P = 0.15
+export const OPENER_SCENE =
+  'OPENER STYLE (hard rule): open with a one-sentence everyday moment happening to a person, told in your own voice. Never open with "Think of", "Picture" or "Imagine".'
+export const OPENER_WEAVE =
+  'OPENER STYLE (hard rule): weave the comparison into the middle of a sentence ("…works like…", "…much the way a… does"). Never open with "Think of", "Picture" or "Imagine".'
+export const OPENER_PLAIN =
+  'OPENER STYLE (hard rule): no metaphor scaffold at all. Explain it plainly in everyday words and concrete nouns, as if answering someone across the table. Never open with "Think of", "Picture" or "Imagine".'
+export const OPENER_THINK_OF =
+  'OPENER STYLE: you may open with "Think of…" or "Picture…" this one time.'
+
+/** Story opener draw: the classic scaffold at most once per article, the rest
+ *  split evenly across scene/weave/plain. */
+export function pickStoryOpener(rng: () => number, state: { thinkOfUsed: boolean }): string {
+  if (!state.thinkOfUsed && rng() < OPENER_THINK_OF_P) {
+    state.thinkOfUsed = true
+    return OPENER_THINK_OF
+  }
+  const pool = [OPENER_SCENE, OPENER_WEAVE, OPENER_PLAIN]
+  return pool[Math.floor(rng() * pool.length)]
+}
+
+/** Gloss opener draw: glosses are 1-2 sentences, so only weave/plain fit. */
+export function pickGlossOpener(rng: () => number): string {
+  return rng() < 0.5 ? OPENER_WEAVE : OPENER_PLAIN
+}
+
+// Deterministic output gates (B6). The generators are handed the article and
+// asked to explain a concept "from" it, so they sometimes write from outside
+// the byline ("the article notes…") — a persona break that reads as a prompt
+// artifact once the text is spliced into first-person prose. Nothing else in
+// the pipeline scans for this (pl_verify checks factual fidelity only), so it
+// is caught here, before the paid verify call.
+export const STANCE_LEAK_RE =
+  /\b(?:the|this)\s+(?:article|passage|excerpt|piece)\b|\bthe author\b|\bas\s+(?:mentioned|noted|described)\s+(?:above|earlier)\b/i
+export const SCAFFOLD_OPENER_RE = /^\s*(?:think of|picture|imagine)\b/i
+
+/** Returns a rejection reason if the generated text breaks stance or opens
+ *  with a banned scaffold, or null if it passes. */
+export function lexicalGateReason(text: string, allowScaffoldOpener: boolean): string | null {
+  if (STANCE_LEAK_RE.test(text)) {
+    return 'it refers to "the article"/"the author" instead of speaking as the author in first person'
+  }
+  if (!allowScaffoldOpener && SCAFFOLD_OPENER_RE.test(text)) {
+    return 'it opens with "Think of"/"Picture"/"Imagine", which your OPENER STYLE forbids'
+  }
+  return null
+}
+
 /** Inline rendering of a concept story: same content, no box chrome. */
 export function buildInlineHtml(storyText: string): string {
   return `<p>${escapeHtml(storyText)}</p>`
@@ -312,13 +365,25 @@ async function generateVerified(args: GenerateArgs): Promise<{ text: string; usa
   const responses: LLMResponse[] = []
   let restrictions = args.config.restrictions
 
+  const allowScaffoldOpener = args.vars.openerStyle === OPENER_THINK_OF
   for (let attempt = 1; attempt <= 2; attempt++) {
-    const written = await runNewsletterPrompt(key, { ...args.vars, restrictions })
+    const written = await runNewsletterPrompt(key, { openerStyle: '', ...args.vars, restrictions })
     responses.push(written.response)
     if (args.onResponse) await args.onResponse(written.response)
     const text = (await sanitizeDashesText(written.content, args.logCtx)).trim()
     if (!text || text.length > args.maxChars) {
       logger.warn({ ...args.logCtx, attempt, len: text.length }, '[plain-language] generated text empty/oversized — skipping')
+      return null
+    }
+
+    // Free deterministic gate before the paid verify call.
+    const gateReason = lexicalGateReason(text, allowScaffoldOpener)
+    if (gateReason) {
+      logger.warn({ ...args.logCtx, attempt, gateReason }, '[plain-language] lexical gate failed')
+      if (attempt === 1) {
+        restrictions = `${args.config.restrictions}\n\nYOUR PREVIOUS ATTEMPT WAS REJECTED BECAUSE ${gateReason} — fix exactly this.`
+        continue
+      }
       return null
     }
 
@@ -413,6 +478,7 @@ export async function runPlainLanguagePass(args: ArticlePassArgs): Promise<Plain
 
   const rng = seededRng(jobId)
   const usedLabels = new Set<string>()
+  const openerState = { thinkOfUsed: false }
   let plannedGlossTotal = 0
   let plannedBoxTotal = 0
   let lastBoxedSectionIdx = -2
@@ -455,7 +521,7 @@ export async function runPlainLanguagePass(args: ArticlePassArgs): Promise<Plain
         if (explainedTerms.has(norm)) continue
         const generated = await generateVerified({
           kind: 'term',
-          vars: { ...baseVars, term: t.term.trim(), sentence: t.sentence ?? '' },
+          vars: { ...baseVars, term: t.term.trim(), sentence: t.sentence ?? '', openerStyle: pickGlossOpener(rng) },
           config,
           maxChars: MAX_GLOSS_CHARS,
           logCtx: { jobId, position: section.position, term: t.term },
@@ -487,7 +553,7 @@ export async function runPlainLanguagePass(args: ArticlePassArgs): Promise<Plain
           const closerStyle = form === 'boxed' && rng() < BOX_CLOSER_QUESTION_P ? CLOSER_QUESTION : CLOSER_PLAIN
           const generated = await generateVerified({
             kind: 'concept',
-            vars: { ...baseVars, conceptSummary: concept.summary.trim(), closerStyle },
+            vars: { ...baseVars, conceptSummary: concept.summary.trim(), closerStyle, openerStyle: pickStoryOpener(rng, openerState) },
             config,
             maxChars: MAX_STORY_CHARS,
             logCtx: { jobId, position: section.position, concept: concept.summary, form },
@@ -612,6 +678,8 @@ export async function runNewsletterPlainLanguage(args: NewsletterPassArgs): Prom
 
     const exemplars = formatExemplars(config)
     const usedImagery: string[] = []
+    const nlRng = seededRng(args.labelSeed)
+    const nlOpenerState = { thinkOfUsed: false }
     const baseVars = {
       sectionExcerpt: bodyText,
       writingStyle: voice.writingStyle,
@@ -631,7 +699,7 @@ export async function runNewsletterPlainLanguage(args: NewsletterPassArgs): Prom
       if (explained.has(norm)) continue
       const generated = await generateVerified({
         kind: 'term',
-        vars: { ...baseVars, alreadyUsedMetaphors: usedImagery.join(', ') || 'none yet', term: t.term.trim(), sentence: t.sentence ?? '' },
+        vars: { ...baseVars, alreadyUsedMetaphors: usedImagery.join(', ') || 'none yet', term: t.term.trim(), sentence: t.sentence ?? '', openerStyle: pickGlossOpener(nlRng) },
         config,
         maxChars: MAX_GLOSS_CHARS,
         logCtx: { newsletter: true, term: t.term },
@@ -650,7 +718,7 @@ export async function runNewsletterPlainLanguage(args: NewsletterPassArgs): Prom
     if (concept?.summary?.trim()) {
       const generated = await generateVerified({
         kind: 'concept',
-        vars: { ...baseVars, alreadyUsedMetaphors: usedImagery.join(', ') || 'none yet', conceptSummary: concept.summary.trim(), closerStyle: CLOSER_PLAIN },
+        vars: { ...baseVars, alreadyUsedMetaphors: usedImagery.join(', ') || 'none yet', conceptSummary: concept.summary.trim(), closerStyle: CLOSER_PLAIN, openerStyle: pickStoryOpener(nlRng, nlOpenerState) },
         config,
         maxChars: MAX_STORY_CHARS,
         logCtx: { newsletter: true, concept: concept.summary },

@@ -7,7 +7,64 @@ import {
   buildBoxHtml,
   buildBoxMarker,
   insertBoxAfterAnchor,
+  seededRng,
+  pickStoryOpener,
+  pickGlossOpener,
+  lexicalGateReason,
+  OPENER_THINK_OF,
+  OPENER_WEAVE,
+  OPENER_PLAIN,
+  OPENER_SCENE,
 } from '../plain-language'
+
+describe('pickStoryOpener', () => {
+  it('rations the think-of scaffold to at most one per article', () => {
+    for (let seed = 0; seed < 25; seed++) {
+      const rng = seededRng(`job-${seed}`)
+      const state = { thinkOfUsed: false }
+      const draws = Array.from({ length: 12 }, () => pickStoryOpener(rng, state))
+      expect(draws.filter((d) => d === OPENER_THINK_OF).length).toBeLessThanOrEqual(1)
+    }
+  })
+
+  it('is deterministic per seed and varies styles across many draws', () => {
+    const a = seededRng('stable'), b = seededRng('stable')
+    const sa = { thinkOfUsed: false }, sb = { thinkOfUsed: false }
+    for (let i = 0; i < 8; i++) expect(pickStoryOpener(a, sa)).toBe(pickStoryOpener(b, sb))
+    const rng = seededRng('variety')
+    const state = { thinkOfUsed: false }
+    const styles = new Set(Array.from({ length: 30 }, () => pickStoryOpener(rng, state)))
+    expect(styles.size).toBeGreaterThanOrEqual(3)
+  })
+
+  it('gloss openers only use weave/plain', () => {
+    const rng = seededRng('gloss')
+    for (let i = 0; i < 20; i++) {
+      expect([OPENER_WEAVE, OPENER_PLAIN]).toContain(pickGlossOpener(rng))
+    }
+  })
+})
+
+describe('lexicalGateReason', () => {
+  it('rejects outside-the-byline stance leaks', () => {
+    expect(lexicalGateReason('Your discs behave like sponges, and the article notes that load shifts.', true)).toMatch(/the article/)
+    expect(lexicalGateReason('The article describes this as down-regulating.', true)).toBeTruthy()
+    expect(lexicalGateReason('This passage calls it time-sensitive.', true)).toBeTruthy()
+    expect(lexicalGateReason('As mentioned above, discs rehydrate overnight.', true)).toBeTruthy()
+  })
+
+  it('rejects banned scaffold openers unless allowed', () => {
+    expect(lexicalGateReason('Think of a dry sponge left on the sink.', false)).toMatch(/OPENER STYLE/)
+    expect(lexicalGateReason('  Picture a garden hose with a kink.', false)).toBeTruthy()
+    expect(lexicalGateReason('Think of a dry sponge left on the sink.', true)).toBeNull()
+  })
+
+  it('passes normal first-person prose, including mid-sentence imagery', () => {
+    expect(lexicalGateReason('Your discs work like sponges: squeeze them all day and they stiffen.', false)).toBeNull()
+    expect(lexicalGateReason('I tell my clients to think of it as a hinge that needs oil.', false)).toBeNull()
+    expect(lexicalGateReason(OPENER_SCENE.length > 0 ? 'A kettle left on the bench cools slowly; muscle warms the same way.' : '', false)).toBeNull()
+  })
+})
 
 describe('rotatedLabel', () => {
   it('is stable for the same seed', () => {

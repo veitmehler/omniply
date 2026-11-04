@@ -1,6 +1,17 @@
 import type { BrandSettings, PlatformSettings, OutlineFramework } from '@prisma/client'
 import { prisma, brandSettingsForUser } from '@omniply/shared'
 import { getGlobalExcludedKeywords } from './keyword-validator'
+import { seededRng } from './enrichment/plain-language'
+
+// B6 (2026-11-04): per-article closing move, drawn deterministically from the
+// jobId. A fixed "allowed closer" rule made the model end EVERY article the
+// same sanctioned way; a per-job draw is the only reliable variety mechanism.
+const CLOSER_DIRECTIVES = [
+  'End the article with one short, fresh question that turns the final point toward the reader. Never the exact words "How about you?".',
+  'End the article by returning to the person or scene from your opening story: one or two sentences showing where they landed. No closing question.',
+  'End the article with one concrete, doable next step for the reader. No closing question.',
+  'End the article on a short, confident plain statement. No closing question, no callback.',
+] as const
 
 // Maps generic {{<step_name>_output}} variable suffixes to step numbers
 const STEP_NAME_MAP: Record<string, number> = {
@@ -229,6 +240,9 @@ async function resolveVariable(name: string, ctx: PipelineContext): Promise<stri
 
     case 'writing_style':
       return getWritingStyle(ctx)
+
+    case 'closer_directive':
+      return CLOSER_DIRECTIVES[Math.floor(seededRng(`closer:${ctx.jobId}`)() * CLOSER_DIRECTIVES.length)]
 
     case 'google_guidelines': {
       const ps = await getPlatformSettings(ctx)
