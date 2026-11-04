@@ -4,7 +4,7 @@ import { calculateCost } from './cost-table'
 import type { LLMAdapter, LLMCallOptions, LLMResponse } from './adapter'
 import { LLMError } from './adapter'
 import { instrumentCall } from '../../lib/net/instrument'
-import { SONNET_45, resolveAnthropicModel, supportsTemperature } from './anthropic-models'
+import { SONNET_45, resolveAnthropicModel, supportsTemperature, thinkingConfigFor } from './anthropic-models'
 
 const DEFAULT_MODEL = SONNET_45
 
@@ -57,19 +57,27 @@ export class AnthropicAdapter implements LLMAdapter {
 
     try {
       const client = new Anthropic({ apiKey, timeout: ANTHROPIC_TIMEOUT_MS, maxRetries: ANTHROPIC_SDK_MAX_RETRIES })
-      const response = await instrumentCall({ provider: 'anthropic', op: `messages.create:${model}` }, () =>
-        client.messages.create({
-          model,
-          max_tokens: maxTokens,
-          ...(supportsTemperature(model) ? { temperature } : {}),
-          ...(options.systemPrompt ? { system: options.systemPrompt } : {}),
-          messages: [{ role: 'user', content: options.userPrompt }],
-        }),
-      )
+      const call = (thinking: { type: string } | null) =>
+        instrumentCall({ provider: 'anthropic', op: `messages.create:${model}` }, () =>
+          client.messages.create({
+            model,
+            max_tokens: maxTokens,
+            ...(supportsTemperature(model) ? { temperature } : {}),
+            ...(thinking ? { thinking: thinking as never } : {}),
+            ...(options.systemPrompt ? { system: options.systemPrompt } : {}),
+            messages: [{ role: 'user', content: options.userPrompt }],
+          }),
+        )
 
-      const textBlock = response.content.find(
-        (b): b is Anthropic.TextBlock => b.type === 'text',
-      )
+      const thinkingCfg = thinkingConfigFor(model, maxTokens)
+      let response = await call(thinkingCfg)
+      let textBlock = response.content.find((b): b is Anthropic.TextBlock => b.type === 'text')
+      if (!textBlock?.text?.trim() && thinkingCfg?.type === 'adaptive') {
+        // Thinking consumed the whole window and no text came back — retry
+        // once with thinking off rather than failing the step.
+        response = await call({ type: 'between_tools' })
+        textBlock = response.content.find((b): b is Anthropic.TextBlock => b.type === 'text')
+      }
       const text = textBlock?.text ?? ''
       if (!text.trim()) throw new LLMError('Anthropic returned empty response')
 

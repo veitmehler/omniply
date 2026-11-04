@@ -43,3 +43,24 @@ export function supportsTemperature(model: string): boolean {
     model.startsWith('claude-3')
   )
 }
+
+/**
+ * 5.x models think adaptively by default, and thinking tokens bill as output
+ * AND share the max_tokens window with the text. On small-budget calls
+ * (glosses, captions, subject lines) the model can spend the entire window
+ * thinking and return no text at all — observed as "Anthropic returned empty
+ * response" across the whole plain-language pass (bench 2026-11-04). The API
+ * offers no numeric budget on these models: only adaptive vs between_tools
+ * (= off for plain text calls). So: small calls get thinking off; large calls
+ * keep adaptive (brevity is steered via prompts, verified via usage logs).
+ */
+export const SMALL_CALL_THINKING_OFF_BELOW = Number(process.env.ANTHROPIC_THINKING_OFF_BELOW_TOKENS ?? 2048)
+
+export function supportsThinkingControl(model: string): boolean {
+  return model.startsWith('claude-sonnet-5') || model.startsWith('claude-haiku-5') || model.startsWith('claude-opus-5')
+}
+
+export function thinkingConfigFor(model: string, maxTokens: number): { type: 'adaptive' } | { type: 'between_tools' } | null {
+  if (!supportsThinkingControl(model)) return null
+  return maxTokens < SMALL_CALL_THINKING_OFF_BELOW ? { type: 'between_tools' } : { type: 'adaptive' }
+}
