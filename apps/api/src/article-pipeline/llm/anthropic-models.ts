@@ -60,7 +60,14 @@ export function supportsThinkingControl(model: string): boolean {
   return model.startsWith('claude-sonnet-5') || model.startsWith('claude-haiku-5') || model.startsWith('claude-opus-5')
 }
 
-export function thinkingConfigFor(model: string, maxTokens: number): { type: 'adaptive' } | { type: 'between_tools' } | null {
+/** The thinking-off value differs per family (probed 2026-11-04): Sonnet 5.x
+ *  rejects "disabled" and wants "between_tools"; Haiku 5.x rejects
+ *  "between_tools" and wants "disabled". */
+export function thinkingOffTypeFor(model: string): 'between_tools' | 'disabled' {
+  return model.startsWith('claude-haiku') ? 'disabled' : 'between_tools'
+}
+
+export function thinkingConfigFor(model: string, maxTokens: number): { type: string } | null {
   if (!supportsThinkingControl(model)) return null
-  return maxTokens < SMALL_CALL_THINKING_OFF_BELOW ? { type: 'between_tools' } : { type: 'adaptive' }
+  return maxTokens < SMALL_CALL_THINKING_OFF_BELOW ? { type: thinkingOffTypeFor(model) } : { type: 'adaptive' }
 }

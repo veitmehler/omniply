@@ -4,7 +4,7 @@ import { calculateCost } from './cost-table'
 import type { LLMAdapter, LLMCallOptions, LLMResponse } from './adapter'
 import { LLMError } from './adapter'
 import { instrumentCall } from '../../lib/net/instrument'
-import { SONNET_45, resolveAnthropicModel, supportsTemperature, thinkingConfigFor } from './anthropic-models'
+import { SONNET_45, resolveAnthropicModel, supportsTemperature, thinkingConfigFor, thinkingOffTypeFor } from './anthropic-models'
 
 const DEFAULT_MODEL = SONNET_45
 
@@ -70,12 +70,22 @@ export class AnthropicAdapter implements LLMAdapter {
         )
 
       const thinkingCfg = thinkingConfigFor(model, maxTokens)
-      let response = await call(thinkingCfg)
+      let response: Anthropic.Message
+      try {
+        response = await call(thinkingCfg)
+      } catch (err) {
+        // Thinking-type vocabulary varies per model family and release; a 400
+        // naming the thinking param must never take a surface down — fall back
+        // to the model's default thinking behavior.
+        const msg = err instanceof Error ? err.message : String(err)
+        if (thinkingCfg && msg.includes('thinking')) response = await call(null)
+        else throw err
+      }
       let textBlock = response.content.find((b): b is Anthropic.TextBlock => b.type === 'text')
       if (!textBlock?.text?.trim() && thinkingCfg?.type === 'adaptive') {
         // Thinking consumed the whole window and no text came back — retry
         // once with thinking off rather than failing the step.
-        response = await call({ type: 'between_tools' })
+        response = await call({ type: thinkingOffTypeFor(model) })
         textBlock = response.content.find((b): b is Anthropic.TextBlock => b.type === 'text')
       }
       const text = textBlock?.text ?? ''
