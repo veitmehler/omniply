@@ -647,7 +647,7 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
   const guide = guideFor(ctx, action)
   const whatsappUrl =
     channel === 'web' && action?.type === 'request_human'
-      ? await whatsappHandoffUrl(input.accountId, ctx.practiceName, action.name, message).catch(() => null)
+      ? await whatsappHandoffUrl(input.accountId, ctx.practiceName, action.name, conversation.id, message).catch(() => null)
       : null
   return { ...base, reply, action, guideTitle: guide.title, guideLink: guide.link, whatsappUrl, ended: null }
 }
@@ -664,13 +664,25 @@ async function whatsappHandoffUrl(
   accountId: string,
   practiceName: string,
   visitorName: string | null,
+  conversationId: string,
   lastMessage: string,
 ): Promise<string | null> {
   const account = await prisma.account.findUnique({ where: { id: accountId }, select: { agentBookingConfig: true } })
   const cfg = account?.agentBookingConfig as { whatsapp?: unknown } | null
   const digits = typeof cfg?.whatsapp === 'string' ? cfg.whatsapp.replace(/\D/g, '') : ''
   if (digits.length < 8 || digits.length > 15) return null
-  const lang = detectVisitorLanguage(lastMessage)
+  // Detect over the recent visitor messages JOINED — a short final message
+  // ("quiero hablar con una persona real") lacks the diacritics/signal the
+  // conservative detector needs and fell back to English (live test
+  // 2026-11-05); the earlier turns carry the real language evidence.
+  const recent = await prisma.agentMessage.findMany({
+    where: { conversationId, role: 'visitor' },
+    orderBy: { createdAt: 'desc' },
+    take: 5,
+    select: { content: true },
+  })
+  const corpus = [...recent.map((m) => String(m.content ?? '')), lastMessage].join(' ')
+  const lang = detectVisitorLanguage(corpus)
   const first = (visitorName ?? '').trim().split(/\s+/)[0] || null
   const texts: Record<string, string> = {
     en: `Hi${first ? `, I'm ${first}` : ''}! I was just chatting with the ${practiceName} website assistant and I'd like to continue with someone from the team.`,
