@@ -44,7 +44,7 @@ import { runConsistencyAudit } from './consistency-audit'
 import { restructureHtmlWithGeo, type GeoSectionData } from './geo-html-restructurer'
 import { sanitizeGeoQuestion } from './geo-question-sanitizer'
 import { normalizeH2Questions } from '../approval-service'
-import { loadPlainLanguageConfig, runPlainLanguagePass } from './plain-language'
+import { loadPlainLanguageConfig, runPlainLanguagePass, seededRng } from './plain-language'
 import { generateKeyTakeaways } from './key-takeaways-generator'
 import { generateDiagramCaption } from './diagram-caption-generator'
 import { selectWordPressCategory } from './wp-category-selector'
@@ -61,6 +61,32 @@ import { overlayLogo } from './diagram-logo'
 import { processLogo } from '../../newsletter/logo-process'
 
 const CDN_BASE = process.env.CDN_BASE ?? ''
+
+// B7 (2026-11-04): answer-first GEO shape. The visible per-section summary
+// block duplicated the prose below it (a detector tell and a reader tax), so
+// in this mode no div is injected and no H2→H3 restatement pair is created;
+// the section's opening paragraph (written answer-first by the article step)
+// carries the answer, and sectionEnrichment.summary becomes a verbatim
+// extract of it so downstream schema stays faithful to visible text.
+const GEO_ANSWER_FIRST = process.env.GEO_ANSWER_FIRST === '1'
+// B7: per-article seeded structure lottery (TOC present or not, takeaways as
+// bullets / short prose / absent) so the page skeleton varies across the
+// calendar instead of showing the full template every time.
+const STRUCTURE_VARIETY = process.env.STRUCTURE_VARIETY === '1'
+
+/** First paragraph of a section as plain text, truncated at a sentence
+ * boundary — the visible text that backs the schema answer in answer-first
+ * mode. */
+export function extractFirstParagraphText(sectionHtml: string, maxChars = 350): string | null {
+  const m = sectionHtml.match(/<p[^>]*>([\s\S]*?)<\/p>/i)
+  if (!m) return null
+  const text = stripTags(m[1]).replace(/\s+/g, ' ').trim()
+  if (!text) return null
+  if (text.length <= maxChars) return text
+  const cut = text.slice(0, maxChars)
+  const lastEnd = Math.max(cut.lastIndexOf('. '), cut.lastIndexOf('! '), cut.lastIndexOf('? '))
+  return lastEnd > 60 ? cut.slice(0, lastEnd + 1) : cut
+}
 
 const GEO_EXCLUDE =
   /^(faq|frequently asked questions|conclusion|key takeaways)\b/i
@@ -266,25 +292,32 @@ export async function runArticleEnrichment(jobId: string): Promise<void> {
       let summary: string | undefined
       const sectionHtml =
         baseSections.find((s) => s.position === e.position)?.sectionHtml ?? ''
-      const plainBody = stripTags(sectionHtml).slice(0, 8000)
-      try {
-        const s104 = await generateAiSummary({
-          question,
-          sectionContent: plainBody,
-          jobId,
-          position: e.position,
-        })
-        summary = s104.summary
-        totalCost += s104.cost
-        totalInputTokens += s104.inputTokens
-        totalOutputTokens += s104.outputTokens
-        qCost += s104.cost
-        qIn += s104.inputTokens
-        qOut += s104.outputTokens
-        qProv = s104.provider
-        qModel = s104.model
-      } catch (err) {
-        logger.warn({ jobId, err, position: e.position }, '[enrichment] geo 104 failed')
+      if (GEO_ANSWER_FIRST) {
+        // Answer-first: the schema answer is a verbatim extract of the
+        // section's visible opening paragraph — no generated summary, no
+        // LLM spend, and nothing on record that the page doesn't show.
+        summary = extractFirstParagraphText(sectionHtml) ?? undefined
+      } else {
+        const plainBody = stripTags(sectionHtml).slice(0, 8000)
+        try {
+          const s104 = await generateAiSummary({
+            question,
+            sectionContent: plainBody,
+            jobId,
+            position: e.position,
+          })
+          summary = s104.summary
+          totalCost += s104.cost
+          totalInputTokens += s104.inputTokens
+          totalOutputTokens += s104.outputTokens
+          qCost += s104.cost
+          qIn += s104.inputTokens
+          qOut += s104.outputTokens
+          qProv = s104.provider
+          qModel = s104.model
+        } catch (err) {
+          logger.warn({ jobId, err, position: e.position }, '[enrichment] geo 104 failed')
+        }
       }
 
       geoByPosition.set(e.position, {
@@ -330,7 +363,7 @@ export async function runArticleEnrichment(jobId: string): Promise<void> {
     }
 
     if (geoByPosition.size > 0) {
-      geoHtml = restructureHtmlWithGeo(bodyHtml, baseSections, geoByPosition)
+      geoHtml = restructureHtmlWithGeo(bodyHtml, baseSections, geoByPosition, { answerFirst: GEO_ANSWER_FIRST })
     }
     // Normalise question-style H2s (append `?`) before the TOC is built so
     // TOC display text matches the headings that appear in the article body.
@@ -384,26 +417,40 @@ export async function runArticleEnrichment(jobId: string): Promise<void> {
 
   let keyTakeawaysHtml: string | null = null
   let tocHtml: string | null = null
+  // B7 structure lottery: seeded per job so re-runs reproduce. Without the
+  // flag every article gets the full skeleton (bullets + TOC), as before.
+  const structRng = seededRng(`structure:${jobId}`)
+  const tkDraw = structRng()
+  const takeawaysMode: 'bullets' | 'prose' | 'none' = !STRUCTURE_VARIETY
+    ? 'bullets'
+    : tkDraw < 0.5 ? 'bullets' : tkDraw < 0.8 ? 'prose' : 'none'
+  const wantToc = !STRUCTURE_VARIETY || structRng() < 0.6
+  if (STRUCTURE_VARIETY) {
+    logger.info({ jobId, takeawaysMode, wantToc }, '[enrichment] structure lottery')
+  }
   // Default: inject heading IDs on body alone (used when key-takeaways generation fails).
   // Overridden inside the try block with a shared-pass result to keep ToC anchors aligned.
   let bodyWithIds = injectHeadingIds(bodyOnly)
   try {
-    const kt = await generateKeyTakeaways({
-      bodyHtml: geoHtml,
-      primaryKeyword,
-      jobId,
-    })
-    totalCost += kt.cost
-    totalInputTokens += kt.inputTokens
-    totalOutputTokens += kt.outputTokens
-    keyTakeawaysHtml = kt.sectionHtml
+    if (takeawaysMode !== 'none') {
+      const kt = await generateKeyTakeaways({
+        bodyHtml: geoHtml,
+        primaryKeyword,
+        jobId,
+        style: takeawaysMode,
+      })
+      totalCost += kt.cost
+      totalInputTokens += kt.inputTokens
+      totalOutputTokens += kt.outputTokens
+      keyTakeawaysHtml = kt.sectionHtml
+    }
 
     // Run injectHeadingIds once on the full concatenated HTML so the shared
     // `used` set guarantees ToC href anchors match body heading ids exactly,
     // even when multiple headings share a slug prefix.
     const BODY_SEP = '<!--BODY_START-->'
-    const stemForToc = injectHeadingIds(intro + kt.sectionHtml + BODY_SEP + bodyOnly)
-    tocHtml = buildTocHtml(extractHeadingsForToc(stemForToc))
+    const stemForToc = injectHeadingIds(intro + (keyTakeawaysHtml ?? '') + BODY_SEP + bodyOnly)
+    if (wantToc) tocHtml = buildTocHtml(extractHeadingsForToc(stemForToc))
     // Extract the body portion (with IDs) from the combined result
     const sepIdx = stemForToc.indexOf(BODY_SEP)
     if (sepIdx >= 0) {

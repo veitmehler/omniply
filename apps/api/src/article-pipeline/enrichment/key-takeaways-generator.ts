@@ -33,10 +33,20 @@ Example format:
 
 const MAX_HTML = 30_000
 
+const PROSE_OVERRIDE = `
+
+FORMAT OVERRIDE (replaces the list rules above): do NOT write a bullet list.
+Write ONE tight paragraph of 2-3 declarative sentences giving the article's
+bottom line, with the same specificity rules (real numbers, names, entities
+from the article only). No bold labels, no list markup.
+Respond with ONLY the paragraph wrapped in <p>…</p>.`
+
 export async function generateKeyTakeaways(opts: {
   bodyHtml: string
   primaryKeyword: string
   jobId: string
+  /** 'bullets' (default, the classic list) or 'prose' (a short-version paragraph). */
+  style?: 'bullets' | 'prose'
 }): Promise<{
   sectionHtml: string
   inputTokens: number
@@ -46,9 +56,11 @@ export async function generateKeyTakeaways(opts: {
   const t = await loadPromptTemplate(107)
   const provider = (t?.defaultProvider ?? 'anthropic').toLowerCase()
   const model = t?.defaultModel ?? 'claude-sonnet-4-5-20250929'
+  const prose = opts.style === 'prose'
   const userPrompt = (t?.userPrompt ?? DEF_USER)
     .replace(/\{\{bodyHtml\}\}/g, opts.bodyHtml.slice(0, MAX_HTML))
     .replace(/\{\{primaryKeyword\}\}/g, opts.primaryKeyword || '')
+    + (prose ? PROSE_OVERRIDE : '')
 
   const adapter = getLLMAdapter(provider)
   const run = await withGeoRetry(`geo_key_takeaways_${opts.jobId}`, () =>
@@ -64,7 +76,9 @@ export async function generateKeyTakeaways(opts: {
     cleanTextOutput(run.content).trim().replace(/^```(?:html)?\s*/i, '').replace(/```\s*$/i, ''),
     { jobId: opts.jobId, surface: 'key_takeaways' },
   )
-  const sectionHtml = `<section class="key-takeaways" aria-label="Key Takeaways">\n<h2 id="key-takeaways-heading">Key Takeaways</h2>\n${listInner}\n</section>`
+  const sectionHtml = prose
+    ? `<section class="key-takeaways" aria-label="The short version">\n<h2 id="key-takeaways-heading">The short version</h2>\n${listInner}\n</section>`
+    : `<section class="key-takeaways" aria-label="Key Takeaways">\n<h2 id="key-takeaways-heading">Key Takeaways</h2>\n${listInner}\n</section>`
 
   return {
     sectionHtml,

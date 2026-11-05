@@ -165,6 +165,49 @@ export function lexicalGateReason(text: string, allowScaffoldOpener: boolean): s
   return null
 }
 
+// B7 (2026-11-04): cross-layer metaphor-vehicle registry. The B6 Gemini round
+// flagged the same vehicle (sponge, honey…) recurring across the base article
+// and the injected devices — three generators that never saw each other's
+// imagery. The registry is seeded from the base article, grown per device,
+// fed to the prompts as the ban list, and enforced here deterministically.
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+/** Returns a rejection reason if the text reuses a registered vehicle. */
+export function vehicleReuseReason(text: string, vehicles: Iterable<string>): string | null {
+  for (const v of vehicles) {
+    const w = v.trim()
+    if (w.length < 3) continue
+    if (new RegExp(`\\b${escapeRegExp(w)}`, 'i').test(text)) {
+      return `it reuses the imagery "${w}", which this article has already used once`
+    }
+  }
+  return null
+}
+
+/** LLM vehicle extraction via the pl_extract_vehicles template. Fail-soft:
+ *  a missing template or any error returns [] and the pass behaves as before. */
+export async function extractVehicles(
+  text: string,
+  logCtx: Record<string, unknown>,
+  onResponse?: (r: LLMResponse) => Promise<void>,
+): Promise<string[]> {
+  try {
+    const res = await runNewsletterJsonPrompt<{ vehicles?: string[] }>('pl_extract_vehicles', {
+      text: text.slice(0, 12000),
+    })
+    if (onResponse) await onResponse(res.response)
+    return (res.data.vehicles ?? [])
+      .filter((v): v is string => typeof v === 'string' && v.trim().length >= 3)
+      .map((v) => v.trim().toLowerCase())
+      .slice(0, 40)
+  } catch (err) {
+    logger.warn({ ...logCtx, err }, '[plain-language] vehicle extraction skipped')
+    return []
+  }
+}
+
 /** Inline rendering of a concept story: same content, no box chrome. */
 export function buildInlineHtml(storyText: string): string {
   return `<p>${escapeHtml(storyText)}</p>`
@@ -354,6 +397,9 @@ interface GenerateArgs {
   maxChars: number
   logCtx: Record<string, unknown>
   onResponse?: (r: LLMResponse) => Promise<void>
+  /** Metaphor vehicles already used anywhere in the article (base prose or
+   * earlier devices) — reuse is rejected deterministically. */
+  bannedVehicles?: Iterable<string>
 }
 
 /**
@@ -377,7 +423,9 @@ async function generateVerified(args: GenerateArgs): Promise<{ text: string; usa
     }
 
     // Free deterministic gate before the paid verify call.
-    const gateReason = lexicalGateReason(text, allowScaffoldOpener)
+    const gateReason =
+      lexicalGateReason(text, allowScaffoldOpener) ??
+      (args.bannedVehicles ? vehicleReuseReason(text, args.bannedVehicles) : null)
     if (gateReason) {
       logger.warn({ ...args.logCtx, attempt, gateReason }, '[plain-language] lexical gate failed')
       if (attempt === 1) {
@@ -485,7 +533,17 @@ export async function runPlainLanguagePass(args: ArticlePassArgs): Promise<Plain
 
   const exemplars = formatExemplars(config)
   const explainedTerms = new Set<string>()
-  const usedImagery: string[] = []
+  // Vehicle registry: seeded from the base article's own imagery so devices
+  // never double a metaphor the author already spent (B6's main residual tell).
+  const tallyUsage = async (r: LLMResponse) => {
+    result.cost += r.cost
+    result.inputTokens += r.tokens.input
+    result.outputTokens += r.tokens.output
+  }
+  const usedImagery: string[] = await extractVehicles(stripTags(html), { jobId, scope: 'base-article' }, tallyUsage)
+  if (usedImagery.length > 0) {
+    logger.info({ jobId, baseVehicles: usedImagery }, '[plain-language] base-article vehicles registered')
+  }
   const plans: SectionPlan[] = []
 
   for (let sectionIdx = 0; sectionIdx < sections.length; sectionIdx++) {
@@ -521,10 +579,11 @@ export async function runPlainLanguagePass(args: ArticlePassArgs): Promise<Plain
         if (explainedTerms.has(norm)) continue
         const generated = await generateVerified({
           kind: 'term',
-          vars: { ...baseVars, term: t.term.trim(), sentence: t.sentence ?? '', openerStyle: pickGlossOpener(rng) },
+          vars: { ...baseVars, alreadyUsedMetaphors: usedImagery.join(', ') || 'none yet', term: t.term.trim(), sentence: t.sentence ?? '', openerStyle: pickGlossOpener(rng) },
           config,
           maxChars: MAX_GLOSS_CHARS,
           logCtx: { jobId, position: section.position, term: t.term },
+          bannedVehicles: usedImagery,
         })
         result.cost += generated?.usage.cost ?? 0
         result.inputTokens += generated?.usage.inputTokens ?? 0
@@ -532,9 +591,8 @@ export async function runPlainLanguagePass(args: ArticlePassArgs): Promise<Plain
         if (!generated) continue
         explainedTerms.add(norm)
         plannedGlossTotal++
-        // Feed the actual opening imagery forward (not just the term name) so later
-        // sections don't reuse the same metaphor vehicle (hose, bridge, ...).
-        usedImagery.push(generated.text.slice(0, 80))
+        // Register this device's actual vehicles so later devices can't reuse them.
+        usedImagery.push(...await extractVehicles(generated.text, { jobId, position: section.position, scope: 'gloss' }, tallyUsage))
         plan.glosses.push({ term: t.term.trim(), text: generated.text, usage: generated.usage })
       }
 
@@ -553,16 +611,17 @@ export async function runPlainLanguagePass(args: ArticlePassArgs): Promise<Plain
           const closerStyle = form === 'boxed' && rng() < BOX_CLOSER_QUESTION_P ? CLOSER_QUESTION : CLOSER_PLAIN
           const generated = await generateVerified({
             kind: 'concept',
-            vars: { ...baseVars, conceptSummary: concept.summary.trim(), closerStyle, openerStyle: pickStoryOpener(rng, openerState) },
+            vars: { ...baseVars, alreadyUsedMetaphors: usedImagery.join(', ') || 'none yet', conceptSummary: concept.summary.trim(), closerStyle, openerStyle: pickStoryOpener(rng, openerState) },
             config,
             maxChars: MAX_STORY_CHARS,
             logCtx: { jobId, position: section.position, concept: concept.summary, form },
+            bannedVehicles: usedImagery,
           })
           result.cost += generated?.usage.cost ?? 0
           result.inputTokens += generated?.usage.inputTokens ?? 0
           result.outputTokens += generated?.usage.outputTokens ?? 0
           if (generated) {
-            usedImagery.push(generated.text.slice(0, 80))
+            usedImagery.push(...await extractVehicles(generated.text, { jobId, position: section.position, scope: 'story' }, tallyUsage))
             if (form === 'boxed') {
               plannedBoxTotal++
               lastBoxedSectionIdx = sectionIdx

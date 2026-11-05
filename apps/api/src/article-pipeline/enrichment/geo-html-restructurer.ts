@@ -48,6 +48,7 @@ export function restructureHtmlWithGeo(
   bodyHtml: string,
   _sections: H2Section[],
   geoByPosition: Map<number, GeoSectionData>,
+  opts?: { answerFirst?: boolean },
 ): string {
   let result = bodyHtml
   const n = extractH2Sections(result).length
@@ -69,21 +70,30 @@ export function restructureHtmlWithGeo(
     if (!h2Match) continue
     const titleInner = h2Match[1]
     const afterFirstH2 = cur.sectionHtml.slice(h2Match[0].length)
-    const demotedRest = demoteH3ToH4(afterFirstH2)
     const qEsc = escapeHtml(q)
-    const summaryBlock =
-      geo.summary?.trim()
-        ? `\n<div class="geo-summary" data-question="${qEsc}"><p>${escapeHtml(geo.summary.trim())}</p></div>\n`
-        : '\n'
 
     // Clean IDs: plain slugs, no prefixes or position suffixes
     const h2Id = uniqueId(slugify(q), usedIds)
-    const h3Id = uniqueId(cur.anchor, usedIds)
 
-    const newSection =
-      `<h2 id="${h2Id}">${q}</h2>${summaryBlock}` +
-      `<h3 id="${h3Id}">${titleInner}</h3>` +
-      demotedRest
+    let newSection: string
+    if (opts?.answerFirst) {
+      // B7 answer-first shape: the question simply replaces the heading. No
+      // visible summary block (the section's opening paragraph IS the answer,
+      // written by the article step) and no demoted copy of the original
+      // title — the injected H2→H3 restatement pair was a detector tell and
+      // reads redundant to people too. Inner h3s keep their level.
+      newSection = `<h2 id="${h2Id}">${q}</h2>\n` + afterFirstH2
+    } else {
+      const summaryBlock =
+        geo.summary?.trim()
+          ? `\n<div class="geo-summary" data-question="${qEsc}"><p>${escapeHtml(geo.summary.trim())}</p></div>\n`
+          : '\n'
+      const h3Id = uniqueId(cur.anchor, usedIds)
+      newSection =
+        `<h2 id="${h2Id}">${q}</h2>${summaryBlock}` +
+        `<h3 id="${h3Id}">${titleInner}</h3>` +
+        demoteH3ToH4(afterFirstH2)
+    }
 
     const start = result.indexOf(cur.sectionHtml)
     if (start === -1) continue

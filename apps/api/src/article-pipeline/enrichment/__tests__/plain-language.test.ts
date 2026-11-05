@@ -11,6 +11,7 @@ import {
   pickStoryOpener,
   pickGlossOpener,
   lexicalGateReason,
+  vehicleReuseReason,
   OPENER_THINK_OF,
   OPENER_WEAVE,
   OPENER_PLAIN,
@@ -42,6 +43,24 @@ describe('pickStoryOpener', () => {
     for (let i = 0; i < 20; i++) {
       expect([OPENER_WEAVE, OPENER_PLAIN]).toContain(pickGlossOpener(rng))
     }
+  })
+})
+
+describe('vehicleReuseReason', () => {
+  it('rejects a registered vehicle on word boundary, case-insensitive', () => {
+    expect(vehicleReuseReason('Your discs behave like a Sponge left on the sink.', ['sponge', 'honey'])).toMatch(/sponge/)
+    expect(vehicleReuseReason('Stir a jar of honey on a cold morning.', ['sponge', 'honey'])).toMatch(/honey/)
+    expect(vehicleReuseReason('It works like a rusty gate hinge.', ['rusty gate'])).toBeTruthy()
+  })
+
+  it('matches plural/inflected forms via prefix but not unrelated words', () => {
+    expect(vehicleReuseReason('Two sponges side by side.', ['sponge'])).toBeTruthy()
+    expect(vehicleReuseReason('The response was immediate.', ['sponge'])).toBeNull()
+    expect(vehicleReuseReason('A completely fresh image here.', ['honey', 'garden hose'])).toBeNull()
+  })
+
+  it('ignores empty and too-short vehicles', () => {
+    expect(vehicleReuseReason('anything at all', ['', 'a', 'of'])).toBeNull()
   })
 })
 
