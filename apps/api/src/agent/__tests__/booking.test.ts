@@ -1,5 +1,65 @@
 import { describe, it, expect } from 'vitest'
-import { pickSlots, labelForSlot } from '../booking'
+import { pickSlots, labelForSlot, parseBookingFocus, windowLineFor, localDayIso } from '../booking'
+
+describe('parseBookingFocus', () => {
+  const services = [
+    { key: 'hbot', label: 'HBOT Session', synonyms: ['hyperbaric', 'oxygen chamber'] },
+    { key: 'acupuncture', label: 'Acupuncture', synonyms: ['acupuntura'] },
+  ]
+  const now = new Date('2026-11-05T15:00:00Z') // Thursday
+
+  it('matches service + weekday to the next occurrence in clinic tz', () => {
+    const f = parseBookingFocus('do you have HBOT on friday?', services, 'America/Santo_Domingo', now)
+    expect(f).toEqual({ serviceKeys: ['hbot'], dayIso: '2026-11-06' })
+  })
+
+  it('matches synonyms, Spanish days, today and tomorrow', () => {
+    expect(parseBookingFocus('oxygen chamber tomorrow pls', services, 'America/Santo_Domingo', now)?.dayIso).toBe('2026-11-06')
+    expect(parseBookingFocus('acupuntura el sábado', services, 'America/Santo_Domingo', now)?.dayIso).toBe('2026-11-07')
+    expect(parseBookingFocus('hbot today', services, 'America/Santo_Domingo', now)?.dayIso).toBe('2026-11-05')
+  })
+
+  it('needs BOTH a service and a day', () => {
+    expect(parseBookingFocus('do you have anything on friday?', services, null, now)).toBeNull()
+    expect(parseBookingFocus('tell me about HBOT', services, null, now)).toBeNull()
+  })
+
+  it('same weekday as today means today, and two services both match', () => {
+    expect(parseBookingFocus('hbot thursday', services, 'America/Santo_Domingo', now)?.dayIso).toBe('2026-11-05')
+    const f = parseBookingFocus('hbot or acupuncture on saturday?', services, 'America/Santo_Domingo', now)
+    expect(f?.serviceKeys.sort()).toEqual(['acupuncture', 'hbot'])
+  })
+})
+
+describe('windowLineFor', () => {
+  const cfg = {
+    openHours: [
+      { daysOfTheWeek: [1, 2, 3, 4, 5], hours: [{ openHour: 10, openMinute: 0, closeHour: 18, closeMinute: 0 }] },
+      { daysOfTheWeek: [6], hours: [{ openHour: 10, openMinute: 0, closeHour: 15, closeMinute: 0 }] },
+    ],
+    slotDurationMinutes: 60,
+  }
+
+  it('states close AND last start (Saturday acupuncture: until 3, last start 2)', () => {
+    const line = windowLineFor('Acupuncture', cfg, 60, '2026-11-07', 'Saturday, November 7')
+    expect(line).toBe('Acupuncture — Saturday, November 7: 10:00 AM to 3:00 PM; the last appointment starts at 2:00 PM.')
+  })
+
+  it('weekday window with a non-hour duration', () => {
+    const line = windowLineFor('PEMF', cfg, 30, '2026-11-06', 'Friday, November 6')
+    expect(line).toContain('to 6:00 PM; the last appointment starts at 5:30 PM.')
+  })
+
+  it('null on a closed day', () => {
+    expect(windowLineFor('Acupuncture', cfg, 60, '2026-11-08', 'Sunday, November 8')).toBeNull()
+  })
+})
+
+describe('localDayIso', () => {
+  it('maps a UTC instant to the clinic-local date', () => {
+    expect(localDayIso('2026-11-06T03:30:00Z', 'America/Santo_Domingo')).toBe('2026-11-05')
+  })
+})
 
 const TZ = 'America/Phoenix'
 const NOW = new Date('2026-10-05T16:00:00Z') // Monday 9:00 AM Phoenix

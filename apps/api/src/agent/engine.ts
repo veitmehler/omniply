@@ -353,7 +353,7 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
   // Social DMs and rescue calls stay tier-less.
   const booking: BookingInfo =
     (channel === 'voice' && !messageMode) || channel === 'web'
-      ? await bookingInfoFor(input.accountId, ctx.ownerUserId)
+      ? await bookingInfoFor(input.accountId, ctx.ownerUserId, message)
       : { mode: 'off', bookable: false, slots: [], services: null }
   const groupedSlotLines = (slots = booking.slots): string[] => {
     const lines: string[] = []
@@ -361,7 +361,10 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
     for (const s of slots) {
       if (s.dayLabel !== day) {
         day = s.dayLabel
-        lines.push(`${day}${s.relative ? ` (${s.relative})` : ''}:`)
+        // PARTIAL (2026-11-05): thinned day groups are a SAMPLE — labelling
+        // them stops the model presenting a sample's last time as "the
+        // latest availability" (Whealth HBOT incident).
+        lines.push(`${day}${s.relative ? ` (${s.relative})` : ''}${s.sampled ? ' (PARTIAL — only a sample of this day is shown; more times usually exist)' : ''}:`)
       }
       lines.push(`  ${s.startIso} = ${s.timeLabel}`)
     }
@@ -374,9 +377,22 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
     booking.services
       ? booking.services.flatMap((svc) => [
           `SERVICE ${svc.key} — ${svc.label}:`,
+          ...(svc.windowLines?.length
+            ? [`  HOURS (authoritative): ${svc.windowLines.join(' ')}`]
+            : []),
           ...groupedSlotLines(svc.slots).map((l) => `  ${l}`),
         ])
       : groupedSlotLines()
+  const hasPartialDays = booking.slots.some((s) => s.sampled)
+  const partialRules: string[] = hasPartialDays
+    ? [
+        'Day groups marked PARTIAL show only a SAMPLE of that day: NEVER call a PARTIAL day\'s last listed time "the latest" or "the last" availability, and never deny an unlisted time on a PARTIAL day — say you\'ll check, and ask them to confirm the service and the day; the full list for that day appears once they do.',
+        'When a HOURS line is present for a service, it is the ONLY source for "how late / until when" answers: give the closing time AND the last-appointment start time from it, and never present a last start time as "open until".',
+        'If the visitor asks for a time TODAY that is after today\'s last listed slot, say plainly that today\'s last appointment has passed (or is taken) BEFORE offering another day — never switch days silently.',
+      ]
+    : [
+        'If the visitor asks for a time TODAY that is after today\'s last listed slot, say plainly that today\'s last appointment has passed (or is taken) BEFORE offering another day — never switch days silently.',
+      ]
   const serviceRules: string[] = booking.services
     ? [
         'Times are listed PER SERVICE, and each service books separately. FIRST make sure which service they want — ask when it is not stated (name the services in plain words, never the codes). Only offer times from THAT service\'s list, and never mix times across services.',
@@ -387,27 +403,29 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
   const bookingBlock = booking.bookable
     ? isVoiceBooking
       ? [
-        'DIRECT BOOKING IS AVAILABLE ON THIS CALL. The complete list of bookable times (the raw value before each time is what you attach — the time is what you say):',
+        'DIRECT BOOKING IS AVAILABLE ON THIS CALL. The bookable times (the raw value before each time is what you attach — the time is what you say; a day marked PARTIAL shows only a sample):',
         ...slotListLines(),
         ...serviceRules,
+        ...partialRules,
         'When the caller wants an appointment: make sure you have their name and number first (reuse details already known; read a new number back digit by digit). Offer AT MOST THREE times in one reply, each at a DIFFERENT hour, spread across what is available (for example one morning, one midday, one late afternoon) — more than three spoken times in a row is impossible to follow on the phone, and NEVER read the whole list. When they ask about a specific time or day, answer just for that: offer it if listed, otherwise the nearest listed time, said plainly ("the closest I have is four o\'clock"). When they choose, attach book_appointment with slotStart set to the EXACT raw value for that time plus their name and phone, and confirm it aloud in the same reply ("You are booked for Tuesday, October sixth at ten A M — the team will see you then.").',
         'NEVER invent, accept, or imply a time that is not in the list. Only when nothing listed suits the caller: offer a callback instead (request_callback) with their preferred time in their own words.',
         'The moment the caller NAMES a time ("tomorrow at 6"), CHECK the list BEFORE anything else — even before asking for their name or number. If that exact time is not listed, say so in that same reply and offer the nearest listed time instead. Never repeat or carry an unlisted time forward, and never say "you are all set", "booked" or any confirmation while you are still collecting details: a confirmation exists only in the reply that attaches book_appointment with a listed raw value.',
         'You can only book for the PERSON ON THIS CALL. You CANNOT book for a spouse, child, or anyone else: for additional people, collect their names and take a front-desk callback (request_callback) to set those up — and NEVER say or imply that another person\'s appointment is booked.',
         'An appointment exists ONLY when you attached book_appointment for it with a listed raw value. Never claim, confirm, or imply a booking you did not attach that way — if one did not go through, say so plainly and offer a callback.',
-        'Day groups may be marked (TODAY) or (TOMORROW) — that mapping is authoritative. When the caller names a day (today, tomorrow, a weekday), offer times FROM THAT GROUP first. NEVER say a day is booked, full, or unavailable unless that day has NO group in the list: absence from the list is the ONLY evidence of unavailability.',
+        'Day groups may be marked (TODAY) or (TOMORROW) — that mapping is authoritative. When the caller names a day (today, tomorrow, a weekday), offer times FROM THAT GROUP first. NEVER say a day is booked, full, or unavailable unless that day has NO group in the list AND is within the next two days: absence further out may just mean the sample skipped it — offer to check.',
         'After confirming a booking, if no email is in KNOWN VISITOR DETAILS, ALWAYS offer ONCE — in the same reply as the booking confirmation — to email the appointment details; follow the EMAIL ADDRESSES BY VOICE procedure (spell-confirm before attaching add_contact_email); the confirmation email then sends automatically.',
       ].join('\n')
       : [
-          'DIRECT BOOKING IS AVAILABLE IN THIS CHAT. The complete list of bookable times (the raw value before each time is what you attach — the time is what you write):',
+          'DIRECT BOOKING IS AVAILABLE IN THIS CHAT. The bookable times (the raw value before each time is what you attach — the time is what you write; a day marked PARTIAL shows only a sample):',
           ...slotListLines(),
           ...serviceRules,
+          ...partialRules,
           'When the visitor wants an appointment: collect their full name and best phone number first (plain digits with hyphens). Offer at most THREE times, each at a different hour, spread across what is available — never paste the whole list. When they ask about a specific time or day, answer just for that: offer it if listed, otherwise the nearest listed time. When they choose, attach book_appointment with slotStart set to the EXACT raw value for that time plus their name and phone, and confirm it in the same reply ("You\'re booked for Tuesday, October 6 at 10:00 AM — the team will see you then.").',
           'NEVER invent, accept, or imply a time that is not in the list. Only when nothing listed suits them: offer a callback instead (request_callback) with their preferred time in their own words.',
           'The moment the visitor NAMES a time ("tomorrow at 6pm"), CHECK the list BEFORE anything else — even before asking for their name or phone. If that exact time is not listed, say so in that same reply and offer the nearest listed time instead. Never repeat or carry an unlisted time forward, and never say "you\'re all set", "booked" or any confirmation while you are still collecting details: a confirmation exists only in the reply that attaches book_appointment with a listed raw value.',
           'You can only book for the PERSON IN THIS CHAT. You CANNOT book for a spouse, child, or anyone else: for additional people, collect their names and take a front-desk callback (request_callback) to set those up — and NEVER say or imply that another person\'s appointment is booked.',
           'An appointment exists ONLY when you attached book_appointment for it with a listed raw value. Never claim, confirm, or imply a booking you did not attach that way — if one did not go through, say so plainly and offer a callback.',
-          'Day groups may be marked (TODAY) or (TOMORROW) — that mapping is authoritative. When the caller names a day (today, tomorrow, a weekday), offer times FROM THAT GROUP first. NEVER say a day is booked, full, or unavailable unless that day has NO group in the list: absence from the list is the ONLY evidence of unavailability.',
+          'Day groups may be marked (TODAY) or (TOMORROW) — that mapping is authoritative. When the caller names a day (today, tomorrow, a weekday), offer times FROM THAT GROUP first. NEVER say a day is booked, full, or unavailable unless that day has NO group in the list AND is within the next two days: absence further out may just mean the sample skipped it — offer to check.',
           'After confirming a booking, if no email is known, ALWAYS offer ONCE — in the same reply as the booking confirmation — to email the appointment details; when they give an address, attach add_contact_email — the confirmation email then sends automatically. Never promise an email you were not given an address for.',
         ].join('\n')
     : booking.mode === 'advisory-gcal' && booking.slots.length

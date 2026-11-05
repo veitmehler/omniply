@@ -1028,6 +1028,36 @@ export async function listGhlCalendars(apiKey: string, locationId: string): Prom
   return data.calendars ?? []
 }
 
+/** Calendar availability config (agent "how late does X run" lines, 2026-11-05):
+ *  weekly open-hours blocks + slot duration. Null on any failure — the
+ *  caller simply omits the service-hours line. */
+export interface GhlCalendarConfig {
+  /** 0=Sunday … 6=Saturday, per GHL's openHours daysOfTheWeek. */
+  openHours: Array<{ daysOfTheWeek: number[]; hours: Array<{ openHour: number; openMinute: number; closeHour: number; closeMinute: number }> }>
+  slotDurationMinutes: number | null
+}
+
+export async function getGhlCalendarConfig(apiKey: string, calendarId: string): Promise<GhlCalendarConfig | null> {
+  try {
+    const data = await ghlRequest<{ calendar?: Record<string, unknown> }>(
+      apiKey,
+      `/calendars/${encodeURIComponent(calendarId)}`,
+      { version: CALENDARS_VERSION },
+    )
+    const cal = data.calendar
+    if (!cal) return null
+    const rawHours = Array.isArray(cal.openHours) ? (cal.openHours as GhlCalendarConfig['openHours']) : []
+    const dur = typeof cal.slotDuration === 'number' && cal.slotDuration > 0 ? cal.slotDuration : null
+    const unit = typeof cal.slotDurationUnit === 'string' ? cal.slotDurationUnit : 'mins'
+    return {
+      openHours: rawHours,
+      slotDurationMinutes: dur === null ? null : unit === 'hours' ? dur * 60 : dur,
+    }
+  } catch {
+    return null
+  }
+}
+
 /** Appointment count across ALL the location's calendars in [startMs, endMs],
  *  cancelled excluded (AI Employee dashboard "Practice" band). Null = the
  *  listing failed; per-calendar failures just skip that calendar. */
