@@ -74,54 +74,112 @@ h2 { font-size: 14px; letter-spacing: .1em; text-transform: uppercase; color: va
 .consult-alt { font-size:12.5px; color:var(--muted); margin-top:10px; text-align:center; }
 .consult-alt a { color:inherit; }
 button.btn { font: inherit; cursor: pointer; border: none; }
+
+.eyebrow { font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); font-weight: 700; margin: 0 0 8px; }
+.sec h2 { font-size: clamp(21px, 3.6vw, 26px); line-height: 1.2; margin: 0 0 14px; text-wrap: balance; letter-spacing: 0; text-transform: none; color: var(--ink); }
+.sec p { margin: 0 0 12px; font-size: 16.5px; }
+.sec p.muted { color: var(--muted); font-size: 14px; }
+.forces { display: grid; gap: 12px; }
+.forces .card { font-size: 15.5px; }
+.loop { display: grid; gap: 12px; }
+.loop .row { display: flex; gap: 12px; align-items: flex-start; }
+.loop .dot { flex: 0 0 auto; width: 24px; height: 24px; border-radius: 50%; background: var(--lime); color: var(--lime-ink); font-weight: 800; font-size: 13px; display: flex; align-items: center; justify-content: center; margin-top: 2px; }
+.loop b { display: block; }
+.loop span { color: var(--muted); font-size: 15px; }
+.flywheel { border-left: 4px solid var(--lime); margin-top: 14px; }
+.prog { padding-left: 0; list-style: none; margin: 0 0 14px; display: grid; gap: 9px; }
+.prog li { padding-left: 26px; position: relative; font-size: 16px; }
+.prog li::before { content: "✓"; position: absolute; left: 0; top: 3px; color: var(--lime-ink); background: var(--lime); width: 18px; height: 18px; border-radius: 50%; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+.hero h1 { font-size: clamp(28px, 5.4vw, 40px); }
+button.btn.ghost { border: 2px solid var(--navy-2); background: transparent; }
+
+.eyebrow { font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); font-weight: 700; margin: 0 0 8px; }
+.sec h2 { font-size: clamp(21px, 3.6vw, 26px); line-height: 1.2; margin: 0 0 14px; text-wrap: balance; letter-spacing: 0; text-transform: none; color: var(--ink); }
+.sec p { margin: 0 0 12px; font-size: 16.5px; }
+.sec p.muted { color: var(--muted); font-size: 14px; }
+.forces { display: grid; gap: 12px; }
+.forces .card { font-size: 15.5px; }
+.loop { display: grid; gap: 12px; }
+.loop .row { display: flex; gap: 12px; align-items: flex-start; }
+.loop .dot { flex: 0 0 auto; width: 24px; height: 24px; border-radius: 50%; background: var(--lime); color: var(--lime-ink); font-weight: 800; font-size: 13px; display: flex; align-items: center; justify-content: center; margin-top: 2px; }
+.loop b { display: block; }
+.loop span { color: var(--muted); font-size: 15px; }
+.flywheel { border-left: 4px solid var(--lime); margin-top: 14px; }
+.prog { padding-left: 0; list-style: none; margin: 0 0 14px; display: grid; gap: 9px; }
+.prog li { padding-left: 26px; position: relative; font-size: 16px; }
+.prog li::before { content: "✓"; position: absolute; left: 0; top: 3px; color: var(--lime-ink); background: var(--lime); width: 18px; height: 18px; border-radius: 50%; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+.hero h1 { font-size: clamp(28px, 5.4vw, 40px); }
+button.btn.ghost { border: 2px solid var(--navy-2); background: transparent; }
+
+.stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 14px 0 4px; }
+@media (min-width: 560px) { .stats { grid-template-columns: repeat(4, 1fr); } }
+.stat { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 12px; }
+.stat b { display: block; font-size: 22px; line-height: 1.1; color: var(--ink); margin-bottom: 4px; }
+.stat span { font-size: 12.5px; color: var(--muted); line-height: 1.35; display: block; }
 </style>
 </head>
 <body>
 <div class="hero"><div class="hero-inner">
   <div class="brand">Omniply</div>
-  <h1>Your front desk never sleeps.</h1>
-  <p>An AI receptionist that answers every inquiry and books real appointments on your calendars, around the clock — plus done-for-you articles, newsletters and social content that keep your schedule full.</p>
-  <p class="who">Built for wellness &amp; longevity centers: HBOT and IV lounges, cold-plunge and sauna studios, massage and bodywork practices, longevity clinics.</p>
+  <h1>When someone asks an AI assistant where to recover in your town... can it even find you?</h1>
+  <p>132 million Americans now use AI assistants to research and compare before they book. If you don't know the answer... probably not. And if an AI assistant can't understand your website, or talk to it, it will simply book the next center down the road. Meanwhile the inquiries you miss keep booking with whoever answered, and clients fade between visits, invisibly, until the quarter is already soft.</p>
+  <p class="who">HBOT or IV lounge, cold-plunge and sauna studio, massage and bodywork practice, longevity clinic... if clients book sessions with you, this is built for you.</p>
 </div></div>
 <div class="wrap">
 
   <div class="sec">
-    <h2>What you get</h2>
-    <div class="card get">
-      <div class="row"><div class="dot">1</div><div><b>A receptionist that books, 24/7</b><span>Website chat and phone. It answers questions, quotes your real prices, and books guests straight into your calendars — including the inquiries that arrive after closing.</span></div></div>
-      <div class="row"><div class="dot">2</div><div><b>No more missed calls</b><span>Busy line, lunch rush, or 9 PM tourist with a question: every missed conversation is caught, answered and turned into a booking or a callback for your team.</span></div></div>
-      <div class="row"><div class="dot">3</div><div><b>Reviews that make AI recommend you</b><span>When people ask ChatGPT or their phone's assistant where to go, review strength decides who gets named. Omniply asks, collects and grows your reviews on autopilot.</span></div></div>
-      <div class="row"><div class="dot">4</div><div><b>Done-for-you content</b><span>Articles, newsletters and social posts written for your services, every week, ready to approve from your phone. Serves international guests in five languages.</span></div></div>
-    </div>
+    <p class="eyebrow">Why this is happening</p>
+    <h2>Three forces created the leak. None of them asked your permission.</h2>
+    <div class="forces"><div class="card"><strong>The technology force.</strong> Clients now ask AI assistants the question they used to type into Google... "who should I see about this?" For the assistant to send them your way, it has to find your center, understand your website, and increasingly it wants to talk to it... and book. The answer engines read the same signals a careful human would: reviews, real content, responsiveness. A center those engines can't read doesn't lose the comparison. It never comes up. And underneath that newest layer, the old one still runs: every potential client in your town carries every competitor's front desk in their pocket. When someone decides at 9pm that the tension, the jet lag or the bad sleep finally has to go, they don't wait for your opening hours... they search, they message, and they book with whoever answers. Google decides who exists. The map pack decides who gets the call.</div><div class="card"><strong>The social force.</strong> Clients stopped calling back. Not because they're rude... because Amazon, Uber and a decade of instant everything trained them. Princeton researchers showed people form trust judgments in a tenth of a second, before a single rational thought. Your future client doesn't compare certifications. They call the name they already know, and they book with whoever answers first.</div><div class="card"><strong>The economic force.</strong> The compounding asset in wellness used to be location and reputation. Now it's attention and reviews. The centers growing right now don't deliver better sessions than you. They run better systems... and every month, the gap gets more expensive to close.</div></div>
+    <div class="stats"><div class="stat"><b>132M</b><span>Americans research with AI assistants before they buy</span></div><div class="stat"><b>78%</b><span>of customers buy from whoever answers first</span></div><div class="stat"><b>100×</b><span>more likely to connect in 5 min vs. 30 min</span></div><div class="stat"><b>2 days</b><span>the average business response time</span></div></div>
+    <p style="margin-top:14px"><strong>Ten years ago, "great care plus word of mouth" was a growth strategy. Today that's a lottery ticket.</strong></p>
+    <p class="muted">Sources: Adyen Retail Report 2026; Oldroyd, Lead Response Management Study (InsideSales, 2007); Oldroyd, McElheran & Elkington, Harvard Business Review, March 2011; Lead Connect survey.</p>
   </div>
 
   <div class="sec">
-    <h2>What It'll Do For You</h2>
-    <div class="card case">
-      <p><b>Live pilot: a wellness &amp; longevity center</b></p>
-      <p>The assistant answers on website chat and WhatsApp in <b>five languages</b> and books <b>twelve services, Saturdays included</b>. In its first two weeks it held <b>38 conversations</b> with guests and answered their pricing and service questions on the spot — including the ones that arrived after closing.</p>
-      <p>In the same two weeks, the content engine produced <b>9 newsletters and 6 branded lead-magnet guides</b>, each one ready for the owner to approve from a phone.</p>
-    </div>
+    <p class="eyebrow">Why effort can't fix it</p>
+    <h2>You've already tried the obvious fix. It's called trying harder.</h2>
+    <p>Posting at 11pm doesn't move the needle because everybody is asleep. Telling your front desk to follow up when it's quiet loses to clients who expect instant answers. Asking for a Google review when you remember, from the clients you're sure will say yes, means other centers win the map pack.</p><p>So the real problem is that you need to get consistent systematically. That's exactly what the expensive wellness-business coaches sell. But then you hit the actual problem... <strong>it's not a discipline problem. It's a physics problem.</strong></p><p><strong>Attention now runs 24 hours a day. Humans don't.</strong></p><p>You need sleep. Your family needs you. And you cannot out-hustle a force that never sleeps... you can only out-system it. The centers that grow are simply the ones where the system runs anyway.</p>
+    <h2 style="margin-top:22px">A client finishes their package. They feel great. Then nothing happens.</h2>
+    <p>No contact, no content, no reason to think of you. Eight months later the tension is back and the sleep is gone... in a town full of studios that answer faster than you.</p><p><strong>Every client who stopped coming has a body that did not stop needing recovery.</strong> They did not leave you. Life got loud, and nobody tapped them on the shoulder.</p>
   </div>
 
   <div class="sec">
-    <h2>Here's What To Do Next</h2>
-    <div class="card steps">
-      <div><b>One 15-minute call.</b> We look at your services and calendars together.</div>
-      <div><b>We build everything within a week.</b> Assistant, content engine, reviews — trained on your center, your prices, your voice.</div>
+    <p class="eyebrow">Here's what I got</p>
+    <h2>The Omniply Loop: four systems, each feeding the next.</h2>
+    <p>What fixes this is not a tool. It's a loop... it multiplies your omni-channel exposure where your clients pay attention all day.</p>
+    <div class="card loop"><div class="row"><div class="dot">1</div><div><b>Response.</b><span>An AI front desk that answers in two rings... at 2pm while you're mid-session or at 2am while you're asleep. Website chat and a phone voice that sound like your center, book the exact service the client names... each calendar its own schedule... or take a callback, with 200 voice minutes included. It answers in the client's own language, five of them. The inquiry answered instantly is the client your competitor never meets.</span></div></div><div class="row"><div class="dot">2</div><div><b>Proof.</b><span>A review engine that turns every happy client into public evidence, automatically. Reviews compound like interest: invisible week to week, undeniable year to year... and they feed the map pack and the AI answers alike.</span></div></div><div class="row"><div class="dot">3</div><div><b>Presence.</b><span>Real content... posts, articles, a newsletter your clients actually read... produced in your voice every week, without you writing a word. It keeps clients warm between visits, and it is what Google and the AI assistants read when they decide who to recommend.</span></div></div><div class="row"><div class="dot">4</div><div><b>Recall.</b><span>Reactivation that never forgets a client. The package ends, contact continues... and the ones who faded get a reason to come back before they slide into old habits, not after.</span></div></div></div>
+    <div class="card flywheel"><p style="margin:0">Instant response converts the inquiry → happy clients leave reviews → reviews and presence bring the next inquiry → recall keeps them all coming back. <strong>It's not four tools. It's one flywheel.</strong> And it is not another AI content tool... the content is the compounding layer behind a front desk that never misses an inquiry. Break any link and the leak reopens somewhere else... which is exactly why buying point-solutions has never fixed it, and why coaching alone just hands the discipline problem back to you. The loop removes it.</p></div>
+  </div>
+
+  <div class="sec">
+    <p class="eyebrow">What It'll Do For You</p>
+    <h2>What your center looks like ninety days in.</h2>
+    <ul class="prog"><li><b>The 2am "can I still get in tomorrow?" message answered, and booked, while you're asleep...</b> so Monday's schedule fills itself before your competitor's front desk even gets in.</li><li><b>A newsletter your clients actually open...</b> written, designed and sent every week, without you typing a word of it.</li><li><b>Fresh Google reviews arriving quietly every week...</b> the compounding kind your competitors can't fake and can't catch up to.</li><li><b>Clients who felt great and faded getting a reason to come back...</b> before they slide into old habits, not after they've already googled someone else.</li><li><b>Your name showing up between visits,</b> so when they need a reset, there's no search... just "book my usual spot."</li><li><b>And the one nobody puts on a features list:</b> your evenings back. No more 11pm posting, no more "we should really ask for reviews"... no more marketing guilt.</li></ul>
+    <p>Take your average session fee. A typical client's first year is worth roughly twelve sessions of it. <strong>One recovered client covers the entire system for the month. The second one is profit.</strong> That's the whole business case... your own numbers, doing arithmetic you can check. The walkthrough shows the exact number.</p>
+    <p class="muted" style="margin-top:16px">Real accounts, real outputs. No staged screenshots.</p>
+    <div class="card case"><p><b>A wellness & longevity center</b></p><p>Live pilot: the assistant answers on website chat and WhatsApp in five languages and books twelve services, Saturdays included. In its first two weeks it held 38 conversations, while the content engine produced 9 newsletters and 6 branded lead-magnet guides ... each one ready to approve from a phone.</p></div>
+  </div>
+
+  <div class="sec">
+    <p class="eyebrow">Here's What To Do Next</p>
+    <h2>Decide the way you run your center: on the evidence.</h2>
+    <p>The walkthrough shows the actual system on screen... how it answers, what it posts, what the recall messages look like. No call. No salesperson.</p>
+    <p>One flat monthly subscription. Everything in the loop. Cancel anytime. We're not asking you to become a marketer... we're asking you to stop having to be one.</p>
+    <div class="ctas">
+      <a class="btn primary" href="/walkthrough?v=wellness">Watch the walkthrough</a>
+      <button class="btn ghost" type="button" data-consult-open>Book a 15-minute intro call</button>
+    </div>
+    <div class="card steps" style="margin-top:18px">
+      <div><b>One 15-minute call, or the walkthrough.</b> Your questions, straight answers.</div>
+      <div><b>We build everything within a week.</b> Assistant, content engine, reviews: trained on your center, your prices, your voice.</div>
       <div><b>It runs itself.</b> You approve content from your phone; your front desk stays in charge and can take over any conversation.</div>
     </div>
-    <div class="ctas">
-      <button class="btn primary" type="button" data-consult-open>Book a 15-minute intro call</button>
-      <a class="btn ghost" href="/walkthrough?v=wellness">Watch the walkthrough video</a>
-    </div>
-    <p class="note">The walkthrough shows the whole system on screen — and everything you need to get started.</p>
   </div>
 
-  <p class="foot">omniply.io — the operating system for wellness &amp; longevity centers.</p>
+  <p class="foot">omniply.io · the operating system for wellness & longevity centers</p>
 </div>
-
-<!-- consultation popover (lazy iframe — loads only on open) -->
+<!-- consultation popover (lazy iframe ... loads only on open) -->
 <div class="consult-overlay" id="consult-overlay" role="dialog" aria-modal="true" aria-label="Book a 15-minute intro call">
   <div class="consult-box">
     <button class="consult-close" id="consult-close" aria-label="Close">&times;</button>
