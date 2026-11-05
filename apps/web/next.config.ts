@@ -22,6 +22,8 @@ const nextConfig: NextConfig = {
     return [
       { source: '/x-ray', destination: '/x-ray/index.html' },
       { source: '/walkthrough', destination: '/walkthrough/index.html' },
+      { source: '/intro/wellness', destination: '/intro/wellness/index.html' },
+      { source: '/intro/chiropractors', destination: '/intro/chiropractors/index.html' },
     ]
   },
   async headers() {

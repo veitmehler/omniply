@@ -57,6 +57,8 @@ const isPublicRoute = createRouteMatcher([
   // Practice X-Ray funnel (static pages in public/, clean URLs via rewrites).
   '/x-ray(.*)',
   '/walkthrough(.*)',
+  // Warm-traffic one-pagers (static pages in public/, clean URLs via rewrites).
+  '/intro(.*)',
   // Chat-agent widget test page (unlisted, noindex; loads the STAGING agent).
   '/agent-test(.*)',
 ])

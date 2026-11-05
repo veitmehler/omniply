@@ -249,6 +249,41 @@ export function ReactivationLoop({ visitsLabel = 'Patient visits', businessWord 
   )
 }
 
+/* ── Pilot cards ────────────────────────────────────────────────────────── */
+/** Factual pilot-program results. Card claims are real system outputs from
+ * the pilot accounts — never invented quotes or customer-satisfaction claims. */
+const PILOT_CARDS = [
+  {
+    name: 'First Pilot Chiro Practice',
+    body: 'The practice in our walkthrough video. Everything you’ll see there — the receptionist answering, quoting real fees, booking real calendar slots by chat and phone — is this practice running live, not a mock-up. Its assistant has handled 120+ conversations, and it can even take bookings directly from other AI assistants.',
+  },
+  {
+    name: 'A Miami chiropractic clinic',
+    body: 'Onboarded through our standard checkout: the account provisioned itself with no human setup, and the assistant and content engine were live the same day. The first content run delivered 5 articles, 90 social posts, 6 branded lead-magnet guides and a 30-day nurture sequence — before the week was out.',
+  },
+  {
+    name: 'A wellness & longevity center',
+    body: 'Live pilot: the assistant answers on website chat and WhatsApp in five languages and books twelve services, Saturdays included. In its first two weeks it held 38 conversations, while the content engine produced 9 newsletters and 6 branded lead-magnet guides — each one ready to approve from a phone.',
+  },
+]
+
+export function PilotCards() {
+  return (
+    <div className="my-8 grid gap-4 md:grid-cols-3">
+      {PILOT_CARDS.map((c) => (
+        <div
+          key={c.name}
+          className="rounded-xl border bg-white p-5"
+          style={{ borderColor: TOKENS.line, borderLeft: `4px solid ${TOKENS.accent}` }}
+        >
+          <p className="mb-2 font-bold" style={{ color: TOKENS.ink }}>{c.name}</p>
+          <p className="text-[15px] leading-relaxed" style={{ color: TOKENS.muted }}>{c.body}</p>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 /* ── Pricing block ──────────────────────────────────────────────────────── */
 export function PricingBlock({ vertical, peopleWord = 'patient', walkthroughHref = '/walkthrough' }: { vertical?: boolean; peopleWord?: string; walkthroughHref?: string }) {
   return (

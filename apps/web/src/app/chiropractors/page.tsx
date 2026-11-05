@@ -25,6 +25,7 @@ import {
   FaqJsonLd,
   type FaqEntry,
   MarketingFooter,
+  PilotCards,
   PricingBlock,
 } from '@/components/marketing/Marketing'
 
@@ -268,6 +269,13 @@ export default function ChiropractorsPage() {
             no more marketing guilt.
           </Bullet>
         </ul>
+      </Section>
+
+      {/* ── Pilot program ── */}
+      <Section>
+        <Eyebrow>From the pilot program</Eyebrow>
+        <H2>Real accounts, real outputs. No staged screenshots.</H2>
+        <PilotCards />
       </Section>
 
       {/* ── Economics ── */}

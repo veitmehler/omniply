@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Omniply for Chiropractors</title>
+<style>
+:root {
+  --bg: #f7f8f6; --card: #ffffff; --ink: #16222e; --muted: #5b6672;
+  --navy: #122535; --navy-2: #2b3e52; --lime: #c3f43b; --lime-ink: #2a3a07;
+  --line: #e3e7e2;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1620; --card: #15212e; --ink: #e8edf2; --muted: #9aa7b4;
+    --navy: #0b1824; --navy-2: #2b3e52; --line: #24323f;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1620; --card: #15212e; --ink: #e8edf2; --muted: #9aa7b4;
+  --navy: #0b1824; --navy-2: #2b3e52; --line: #24323f;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.55 -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; }
+.wrap { max-width: 720px; margin: 0 auto; padding: 0 16px 56px; }
+.hero { background: var(--navy); color: #f2f6f9; margin: 0 -16px; padding: 44px 24px 36px; }
+.hero-inner { max-width: 688px; margin: 0 auto; }
+.brand { font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--lime); font-weight: 700; margin-bottom: 18px; }
+h1 { font-size: clamp(28px, 5vw, 38px); line-height: 1.12; margin: 0 0 12px; text-wrap: balance; }
+.hero p { font-size: 17.5px; color: #c7d3dd; margin: 0; max-width: 56ch; }
+.who { font-size: 14px; color: #9fb0bd; margin-top: 16px; }
+.sec { margin-top: 30px; }
+h2 { font-size: 14px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin: 0 0 12px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; }
+.get { display: grid; gap: 12px; }
+.get .row { display: flex; gap: 12px; align-items: flex-start; }
+.get .dot { flex: 0 0 auto; width: 22px; height: 22px; border-radius: 50%; background: var(--lime); color: var(--lime-ink); font-weight: 800; font-size: 13px; display: flex; align-items: center; justify-content: center; margin-top: 2px; }
+.get b { display: block; }
+.get span { color: var(--muted); font-size: 14.5px; }
+.case { border-left: 4px solid var(--lime); }
+.case p { margin: 6px 0; }
+.steps { counter-reset: s; display: grid; gap: 8px; }
+.steps div { padding-left: 34px; position: relative; }
+.steps div::before { counter-increment: s; content: counter(s); position: absolute; left: 0; top: 1px; width: 24px; height: 24px; border-radius: 50%; background: var(--navy-2); color: #fff; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.ctas { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 18px; }
+.btn { display: inline-block; padding: 13px 22px; border-radius: 10px; font-weight: 700; text-decoration: none; font-size: 15.5px; }
+.btn.primary { background: var(--lime); color: var(--lime-ink); }
+.btn.ghost { border: 2px solid var(--navy-2); color: var(--ink); }
+.foot { margin-top: 34px; color: var(--muted); font-size: 13.5px; text-align: center; }
+.note { font-size: 13px; color: var(--muted); margin-top: 8px; }
+
+/* consultation popover (same pattern as /walkthrough) */
+.consult-overlay { position:fixed; inset:0; z-index:90; background:rgba(10,20,28,0.72); display:none; align-items:center; justify-content:center; padding:18px; }
+.consult-overlay.open { display:flex; }
+.consult-box { position:relative; width:100%; max-width:520px; max-height:92svh; overflow-y:auto; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:22px 20px; }
+.consult-box h3 { font-size:20px; font-weight:700; margin:0 0 6px; }
+.consult-box .sub { font-size:13.5px; color:var(--muted); margin:0 0 14px; line-height:1.5; }
+.consult-close { position:absolute; top:10px; right:12px; background:none; border:none; color:var(--muted); font-size:22px; cursor:pointer; line-height:1; }
+.consult-box iframe { width:100%; border:none; min-height:560px; border-radius:8px; background:#fff; }
+.consult-alt { font-size:12.5px; color:var(--muted); margin-top:10px; text-align:center; }
+.consult-alt a { color:inherit; }
+button.btn { font: inherit; cursor: pointer; border: none; }
+</style>
+</head>
+<body>
+<div class="hero"><div class="hero-inner">
+  <div class="brand">Omniply</div>
+  <h1>Your front desk never sleeps.</h1>
+  <p>An AI receptionist that answers every call and message and books real appointments on your calendars, around the clock — plus done-for-you patient education, newsletters and social content that keep your schedule full.</p>
+  <p class="who">Built for chiropractic practices — solo doctors and multi-practitioner clinics alike.</p>
+</div></div>
+<div class="wrap">
+
+  <div class="sec">
+    <h2>What you get</h2>
+    <div class="card get">
+      <div class="row"><div class="dot">1</div><div><b>A receptionist that books, 24/7</b><span>Website chat and phone. It answers questions, quotes your real fees, and books patients straight into your calendars — including the inquiries that arrive after closing.</span></div></div>
+      <div class="row"><div class="dot">2</div><div><b>No more missed calls</b><span>Busy line, adjustment in progress, or a 9 PM searcher with low back pain: every missed conversation is caught, answered and turned into a booking or a callback for your front desk.</span></div></div>
+      <div class="row"><div class="dot">3</div><div><b>Reviews that make AI recommend you</b><span>When people ask ChatGPT or their phone's assistant where to go, review strength decides who gets named. Omniply asks, collects and grows your reviews on autopilot.</span></div></div>
+      <div class="row"><div class="dot">4</div><div><b>Done-for-you content</b><span>Patient-education articles, newsletters and social posts written in your voice, every week, ready to approve from your phone.</span></div></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <h2>What It'll Do For You</h2>
+    <div class="card case" style="margin-bottom:12px">
+      <p><b>First Pilot Chiro Practice</b></p>
+      <p>The practice in our walkthrough video. Everything you'll see there — the receptionist answering, quoting real fees, booking real calendar slots by chat and phone — is this practice running live, not a mock-up. Its assistant has handled <b>120+ conversations</b>, and it can even take bookings directly from other AI assistants.</p>
+    </div>
+    <div class="card case">
+      <p><b>A Miami chiropractic clinic</b></p>
+      <p>Onboarded through our standard checkout: the account provisioned itself with <b>no human setup</b>, and the assistant and content engine were live the same day. The first content run delivered <b>5 articles, 90 social posts, 6 branded lead-magnet guides</b> and a 30-day nurture sequence — before the week was out.</p>
+    </div>
+  </div>
+
+  <div class="sec">
+    <h2>Here's What To Do Next</h2>
+    <div class="card steps">
+      <div><b>One 15-minute call.</b> We look at your practice and calendars together.</div>
+      <div><b>We build everything within a week.</b> Assistant, content engine, reviews — trained on your practice, your fees, your voice.</div>
+      <div><b>It runs itself.</b> You approve content from your phone; your front desk stays in charge and can take over any conversation.</div>
+    </div>
+    <div class="ctas">
+      <button class="btn primary" type="button" data-consult-open>Book a 15-minute intro call</button>
+      <a class="btn ghost" href="/walkthrough?v=chiro">Watch the walkthrough video</a>
+    </div>
+    <p class="note">The walkthrough shows the whole system on screen — and everything you need to get started.</p>
+  </div>
+
+  <p class="foot">omniply.io — the operating system for chiropractic practices.</p>
+</div>
+
+<!-- consultation popover (lazy iframe — loads only on open) -->
+<div class="consult-overlay" id="consult-overlay" role="dialog" aria-modal="true" aria-label="Book a 15-minute intro call">
+  <div class="consult-box">
+    <button class="consult-close" id="consult-close" aria-label="Close">&times;</button>
+    <h3>15-minute intro call</h3>
+    <p class="sub">With the founder. No pitch &mdash; just straight answers about your practice.</p>
+    <div id="consult-frame"></div>
+    <p class="consult-alt">Calendar not loading? <a href="https://links.omniply.io/widget/booking/71yY77QNTMNPtHYvqAXl" target="_blank" rel="noopener">Open it in a new tab</a>.</p>
+  </div>
+</div>
+<script>
+(function () {
+  'use strict'
+  var overlay = document.getElementById('consult-overlay')
+  var frameHost = document.getElementById('consult-frame')
+  var loaded = false
+  function openConsult () {
+    if (!loaded) {
+      loaded = true
+      var f = document.createElement('iframe')
+      f.src = 'https://links.omniply.io/widget/booking/71yY77QNTMNPtHYvqAXl'
+      f.id = 'omniply-consult-cal'
+      f.setAttribute('allow', 'payment')
+      f.setAttribute('scrolling', 'no')
+      frameHost.appendChild(f)
+      var s = document.createElement('script')
+      s.src = 'https://links.omniply.io/js/form_embed.js'
+      document.body.appendChild(s)
+    }
+    overlay.classList.add('open')
+    document.body.style.overflow = 'hidden'
+  }
+  function closeConsult () {
+    overlay.classList.remove('open')
+    document.body.style.overflow = ''
+  }
+  document.querySelectorAll('[data-consult-open]').forEach(function (el) {
+    el.addEventListener('click', function (e) { e.preventDefault(); openConsult() })
+  })
+  document.getElementById('consult-close').addEventListener('click', closeConsult)
+  overlay.addEventListener('click', function (e) { if (e.target === overlay) closeConsult() })
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeConsult() })
+})()
+</script>
+</body>
+</html>
