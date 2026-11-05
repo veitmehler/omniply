@@ -86,6 +86,12 @@ export interface TurnResult {
   /** Voice: this conversation is a rescue call (message-taking posture) —
    *  the transport must never offer a transfer. */
   messageMode: boolean
+  /** Web handoff (2026-11-05): wa.me deep link, prefilled in the visitor's
+   *  own first-person words, shown as a "Continue on WhatsApp" card when the
+   *  business has a WhatsApp number on its booking config. The visitor is
+   *  the sender — no API, no templates, and their first message opens the
+   *  24h service window for the clinic to reply freely. */
+  whatsappUrl: string | null
 }
 
 interface ModelTurn {
@@ -231,13 +237,13 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
         'Thanks for trying the demo again! To keep this line free for other visitors, it allows a few calls per caller each day. Everything else about Omniply is at omniply dot io, or call again tomorrow. Goodbye!'
       await persistTurn({ conversationId: conversation.id, visitorText: message, reply, action: null, filtered: false, endedReason: 'demo-cap' })
       logger.info({ accountId: input.accountId, callsToday }, '[agent] demo call cap reached')
-      return { conversationId: conversation.id, reply, action: null, bookingUrl: ctx.bookingUrl, guideTitle: null, guideLink: null, messageMode: false, ended: 'demo-cap' }
+      return { conversationId: conversation.id, reply, action: null, bookingUrl: ctx.bookingUrl, guideTitle: null, guideLink: null, whatsappUrl: null, messageMode: false, ended: 'demo-cap' }
     }
   }
   if (conversation.endedReason === 'demo-cap') {
     const reply = 'This demo line allows a few calls per caller each day. See omniply dot io, or call again tomorrow. Goodbye!'
     await persistTurn({ conversationId: conversation.id, visitorText: message, reply, action: null, filtered: false })
-    return { conversationId: conversation.id, reply, action: null, bookingUrl: ctx.bookingUrl, guideTitle: null, guideLink: null, messageMode: false, ended: 'demo-cap' }
+    return { conversationId: conversation.id, reply, action: null, bookingUrl: ctx.bookingUrl, guideTitle: null, guideLink: null, whatsappUrl: null, messageMode: false, ended: 'demo-cap' }
   }
 
   // Message mode: set by the initiation webhook pre-creating the rescue
@@ -249,6 +255,7 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
     bookingUrl: ctx.bookingUrl,
     guideTitle: null as string | null,
     guideLink: null as string | null,
+    whatsappUrl: null as string | null,
     messageMode,
   }
 
@@ -638,5 +645,40 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
   }
 
   const guide = guideFor(ctx, action)
-  return { ...base, reply, action, guideTitle: guide.title, guideLink: guide.link, ended: null }
+  const whatsappUrl =
+    channel === 'web' && action?.type === 'request_human'
+      ? await whatsappHandoffUrl(input.accountId, ctx.practiceName, action.name, message).catch(() => null)
+      : null
+  return { ...base, reply, action, guideTitle: guide.title, guideLink: guide.link, whatsappUrl, ended: null }
+}
+
+/** wa.me link for the handoff card. The prefill is written as the VISITOR's
+ *  own words (they see it in their compose box and can edit before sending),
+ *  in their conversation language, deliberately shallow on detail — name +
+ *  "came from your website chat", nothing clinical. Null when the business
+ *  has no WhatsApp number configured. Note the ai-off tag is already on the
+ *  contact by the time the visitor can tap this (executeAgentAction is
+ *  awaited before the turn returns), so even a CRM-connected WhatsApp inbox
+ *  would not have the bot answer the handoff thread. */
+async function whatsappHandoffUrl(
+  accountId: string,
+  practiceName: string,
+  visitorName: string | null,
+  lastMessage: string,
+): Promise<string | null> {
+  const account = await prisma.account.findUnique({ where: { id: accountId }, select: { agentBookingConfig: true } })
+  const cfg = account?.agentBookingConfig as { whatsapp?: unknown } | null
+  const digits = typeof cfg?.whatsapp === 'string' ? cfg.whatsapp.replace(/\D/g, '') : ''
+  if (digits.length < 8 || digits.length > 15) return null
+  const lang = detectVisitorLanguage(lastMessage)
+  const first = (visitorName ?? '').trim().split(/\s+/)[0] || null
+  const texts: Record<string, string> = {
+    en: `Hi${first ? `, I'm ${first}` : ''}! I was just chatting with the ${practiceName} website assistant and I'd like to continue with someone from the team.`,
+    es: `¡Hola${first ? `, soy ${first}` : ''}! Estaba chateando con el asistente del sitio web de ${practiceName} y me gustaría continuar con alguien del equipo.`,
+    de: `Hallo${first ? `, ich bin ${first}` : ''}! Ich habe gerade mit dem Website-Assistenten von ${practiceName} geschrieben und würde gern mit jemandem aus dem Team weitersprechen.`,
+    fr: `Bonjour${first ? `, je suis ${first}` : ''} ! Je viens d'échanger avec l'assistant du site de ${practiceName} et j'aimerais poursuivre avec quelqu'un de l'équipe.`,
+    ru: `Здравствуйте${first ? `, это ${first}` : ''}! Я только что общался(ась) с ассистентом на сайте ${practiceName} и хотел(а) бы продолжить с кем-то из команды.`,
+  }
+  const text = texts[lang] ?? texts.en
+  return `https://wa.me/${digits}?text=${encodeURIComponent(text)}`
 }

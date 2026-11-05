@@ -99,6 +99,15 @@ export function buildAgentPanelHtml(token: string): string {
     a.textContent = 'Open ' + (title || 'your guide') + ' →';
     d.appendChild(a); log.appendChild(d); log.scrollTop = log.scrollHeight;
   }
+  function whatsappCard(url) {
+    var d = document.createElement('div');
+    d.className = 'm card';
+    var a = document.createElement('a');
+    a.href = url; a.target = '_blank'; a.rel = 'noopener';
+    a.style.background = '#25D366'; a.style.color = '#fff';
+    a.textContent = 'Prefer WhatsApp? Message the team directly \ud83d\udcac';
+    d.appendChild(a); log.appendChild(d); log.scrollTop = log.scrollHeight;
+  }
   // Typewriter reveal for assistant replies (cosmetic; text arrives complete).
   function typeOut(el, text, done) {
     var i = 0;
@@ -149,6 +158,7 @@ export function buildAgentPanelHtml(token: string): string {
         typeOut(b, t.reply, function () {
           if (t.action && t.action.type === 'send_booking_link' && t.bookingUrl) bookingCard(t.bookingUrl);
           if (t.action && (t.action.type === 'capture_contact' || t.action.type === 'send_guide_link') && t.guideLink) guideCard(t.guideLink, t.guideTitle);
+          if (t.action && t.action.type === 'request_human' && t.whatsappUrl) whatsappCard(t.whatsappUrl);
         });
         if (t.ended === 'turn-cap' || t.ended === 'abuse-ceiling') { dead = true; }
         setBusy(false);
