@@ -20,184 +20,168 @@
 <title>Omniply for Wellness Centers</title>
 <style>
 :root {
-  --bg: #f7f8f6; --card: #ffffff; --ink: #16222e; --muted: #5b6672;
-  --navy: #122535; --navy-2: #2b3e52; --lime: #c3f43b; --lime-ink: #2a3a07;
-  --line: #e3e7e2;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #0e1620; --card: #15212e; --ink: #e8edf2; --muted: #9aa7b4;
-    --navy: #0b1824; --navy-2: #2b3e52; --line: #24323f;
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #0e1620; --card: #15212e; --ink: #e8edf2; --muted: #9aa7b4;
-  --navy: #0b1824; --navy-2: #2b3e52; --line: #24323f;
+  --bg: #ffffff; --bg-alt: #f5f5f7; --ink: #1d1d1f; --ink-2: #4b4b50; --muted: #6e6e73;
+  --line: #e2e2e7; --card: #ffffff; --navy: #0b2545; --navy-2: #163a66; --lime: #c3f43b; --lime-ink: #1f2d05;
+  --hero-ink: #f5f7fa; --hero-sub: #c9d3df; --btn: #0b2545; --btn-ink: #ffffff;
 }
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.55 -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; }
-.wrap { max-width: 720px; margin: 0 auto; padding: 0 16px 56px; }
-.hero { background: var(--navy); color: #f2f6f9; margin: 0 -16px; padding: 44px 24px 36px; }
-.hero-inner { max-width: 688px; margin: 0 auto; }
-.brand { font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--lime); font-weight: 700; margin-bottom: 18px; }
-h1 { font-size: clamp(28px, 5vw, 38px); line-height: 1.12; margin: 0 0 12px; text-wrap: balance; }
-.hero p { font-size: 17.5px; color: #c7d3dd; margin: 0; max-width: 56ch; }
-.who { font-size: 14px; color: #9fb0bd; margin-top: 16px; }
-.sec { margin-top: 30px; }
-h2 { font-size: 14px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin: 0 0 12px; }
-.card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; }
-.get { display: grid; gap: 12px; }
-.get .row { display: flex; gap: 12px; align-items: flex-start; }
-.get .dot { flex: 0 0 auto; width: 22px; height: 22px; border-radius: 50%; background: var(--lime); color: var(--lime-ink); font-weight: 800; font-size: 13px; display: flex; align-items: center; justify-content: center; margin-top: 2px; }
-.get b { display: block; }
-.get span { color: var(--muted); font-size: 14.5px; }
-.case { border-left: 4px solid var(--lime); }
-.case p { margin: 6px 0; }
-.steps { counter-reset: s; display: grid; gap: 8px; }
-.steps div { padding-left: 34px; position: relative; }
-.steps div::before { counter-increment: s; content: counter(s); position: absolute; left: 0; top: 1px; width: 24px; height: 24px; border-radius: 50%; background: var(--navy-2); color: #fff; font-size: 13px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
-.ctas { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 18px; }
-.btn { display: inline-block; padding: 13px 22px; border-radius: 10px; font-weight: 700; text-decoration: none; font-size: 15.5px; }
-.btn.primary { background: var(--lime); color: var(--lime-ink); }
-.btn.ghost { border: 2px solid var(--navy-2); color: var(--ink); }
-.foot { margin-top: 34px; color: var(--muted); font-size: 13.5px; text-align: center; }
-.note { font-size: 13px; color: var(--muted); margin-top: 8px; }
-
-/* consultation popover (same pattern as /walkthrough) */
-.consult-overlay { position:fixed; inset:0; z-index:90; background:rgba(10,20,28,0.72); display:none; align-items:center; justify-content:center; padding:18px; }
-.consult-overlay.open { display:flex; }
-.consult-box { position:relative; width:100%; max-width:520px; max-height:92svh; overflow-y:auto; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:22px 20px; }
-.consult-box h3 { font-size:20px; font-weight:700; margin:0 0 6px; }
-.consult-box .sub { font-size:13.5px; color:var(--muted); margin:0 0 14px; line-height:1.5; }
-.consult-close { position:absolute; top:10px; right:12px; background:none; border:none; color:var(--muted); font-size:22px; cursor:pointer; line-height:1; }
-.consult-box iframe { width:100%; border:none; min-height:560px; border-radius:8px; background:#fff; }
-.consult-alt { font-size:12.5px; color:var(--muted); margin-top:10px; text-align:center; }
-.consult-alt a { color:inherit; }
-button.btn { font: inherit; cursor: pointer; border: none; }
-
-
-.eyebrow { font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); font-weight: 700; margin: 0 0 8px; }
-.sec h2 { font-size: clamp(21px, 3.6vw, 26px); line-height: 1.2; margin: 0 0 14px; text-wrap: balance; letter-spacing: 0; text-transform: none; color: var(--ink); }
-.sec p { margin: 0 0 12px; font-size: 16.5px; }
-.sec p.muted { color: var(--muted); font-size: 14px; }
-.forces { display: grid; gap: 12px; }
-.forces .card { font-size: 15.5px; }
-.loop { display: grid; gap: 12px; }
-.loop .row { display: flex; gap: 12px; align-items: flex-start; }
-.loop .dot { flex: 0 0 auto; width: 24px; height: 24px; border-radius: 50%; background: var(--lime); color: var(--lime-ink); font-weight: 800; font-size: 13px; display: flex; align-items: center; justify-content: center; margin-top: 2px; }
-.loop b { display: block; }
-.loop span { color: var(--muted); font-size: 15px; }
-.flywheel { border-left: 4px solid var(--lime); margin-top: 14px; }
-.prog { padding-left: 0; list-style: none; margin: 0 0 14px; display: grid; gap: 9px; }
-.prog li { padding-left: 26px; position: relative; font-size: 16px; }
-.prog li::before { content: "✓"; position: absolute; left: 0; top: 3px; color: var(--lime-ink); background: var(--lime); width: 18px; height: 18px; border-radius: 50%; font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
-.hero h1 { font-size: clamp(28px, 5.4vw, 40px); }
-button.btn.ghost { border: 2px solid var(--navy-2); background: transparent; }
-
-.stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin: 14px 0 4px; }
-@media (min-width: 560px) { .stats { grid-template-columns: repeat(4, 1fr); } }
-.stat { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 12px 12px; }
-.stat b { display: block; font-size: 22px; line-height: 1.1; color: var(--ink); margin-bottom: 4px; }
-.stat span { font-size: 12.5px; color: var(--muted); line-height: 1.35; display: block; }
-
-body { font-size: 20px; line-height: 1.6; }
-.wrap { max-width: 960px; padding: 0 24px 72px; }
-.hero { margin: 0 -24px; padding: 64px 24px 52px; }
-.hero-inner { max-width: 960px; }
-.hero h1 { font-size: clamp(32px, 4.6vw, 48px); margin-bottom: 20px; }
-.hero p { font-size: 21px; max-width: none; }
-.hero p.who { font-size: 17px; margin-top: 18px; }
-.brand { font-size: 14px; }
-.sec { margin-top: 44px; }
-.sec h2 { font-size: clamp(26px, 3.4vw, 32px); margin-bottom: 18px; }
-.sec p { font-size: 20px; margin-bottom: 16px; }
-.sec p.muted { font-size: 16px; }
-.eyebrow { font-size: 14px; }
-.forces { gap: 14px; }
-.forces .card { font-size: 20px; padding: 22px 24px; }
-.card { padding: 22px 24px; }
-.loop { gap: 16px; }
-.loop span { font-size: 19px; }
-.loop b { font-size: 20px; }
-.loop .dot { width: 28px; height: 28px; font-size: 14px; }
-.flywheel p { font-size: 20px; } .flywheel p:last-child { margin-bottom: 0; }
-.force-head { margin-bottom: 6px !important; }
-.forces .card p:last-child { margin-bottom: 0; }
-.prog { gap: 12px; margin-bottom: 18px; }
-.prog li { font-size: 20px; padding-left: 30px; }
-.prog li::before { width: 20px; height: 20px; font-size: 13px; top: 5px; }
-.case p { font-size: 19px; }
-.stats { gap: 12px; margin: 18px 0 8px; }
-.stat b { font-size: 26px; }
-.stat span { font-size: 14px; }
-.steps div { font-size: 19px; }
-.steps { gap: 10px; }
-.btn { font-size: 18px; padding: 16px 28px; }
-.ctas { gap: 14px; margin-top: 24px; }
-.foot { font-size: 15px; margin-top: 48px; }
-.consult-box .sub { font-size: 15px; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 20px/1.6 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+section { padding: 72px 24px; }
+@media (min-width: 740px) { section { padding: 104px 24px; } }
+section.alt { background: var(--bg-alt); }
+section.dark { background: var(--navy); color: var(--hero-ink); }
+.canvas { max-width: 980px; margin: 0 auto; }
+.measure { max-width: 720px; margin: 0 auto; }
+.eyebrow { font-size: 13px; letter-spacing: .14em; text-transform: uppercase; font-weight: 700; color: var(--muted); margin: 0 0 14px; text-align: center; }
+section.dark .eyebrow { color: var(--lime); }
+h1, h2, h3 { margin: 0; letter-spacing: -0.015em; text-wrap: balance; }
+h1 { font-size: clamp(36px, 5.6vw, 60px); line-height: 1.06; font-weight: 700; text-align: center; margin-bottom: 28px; }
+h2 { font-size: clamp(30px, 4vw, 44px); line-height: 1.12; font-weight: 700; text-align: center; margin-bottom: 36px; }
+h3 { font-size: 22px; line-height: 1.25; font-weight: 700; margin-bottom: 10px; }
+p { margin: 0 0 20px; }
+p:last-child { margin-bottom: 0; }
+.lead { font-size: 23px; line-height: 1.5; }
+.small { font-size: 16px; color: var(--muted); }
+strong { font-weight: 700; }
+/* hero */
+.hero { padding: 96px 24px 88px; }
+@media (min-width: 740px) { .hero { padding: 128px 24px 112px; } }
+.hero .brand { font-size: 13px; letter-spacing: .18em; text-transform: uppercase; font-weight: 700; color: var(--lime); text-align: center; margin: 0 0 28px; }
+.hero h1 { color: #ffffff; }
+.hero p { color: var(--hero-sub); font-size: 22px; line-height: 1.55; }
+.hero p.first { color: #ffffff; font-size: 24px; font-weight: 600; }
+.hero p.who { font-size: 17px; color: #9fb0bd; margin-top: 28px; text-align: center; }
+/* feature rows (uneven copy reads as intended) */
+.rows { border-top: 1px solid var(--line); }
+.row { display: grid; gap: 12px 48px; padding: 36px 0; border-bottom: 1px solid var(--line); }
+@media (min-width: 740px) { .row { grid-template-columns: 300px 1fr; padding: 44px 0; } }
+.row h3 { font-size: 26px; line-height: 1.2; letter-spacing: -0.01em; }
+.row p { font-size: 19px; line-height: 1.55; color: var(--ink-2); }
+/* grids */
+.grid { display: grid; gap: 20px; }
+@media (min-width: 740px) { .grid.cols-3 { grid-template-columns: repeat(3, 1fr); } .grid.cols-2 { grid-template-columns: repeat(2, 1fr); } .grid.cols-4 { grid-template-columns: repeat(4, 1fr); } }
+/* cards */
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 30px 30px; }
+section.dark .card { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.14); color: var(--hero-ink); }
+.card p { font-size: 18px; line-height: 1.55; color: var(--ink-2); }
+section.dark .card p { color: var(--hero-sub); }
+.card h3 { color: var(--ink); }
+section.dark .card h3 { color: #ffffff; }
+.stat { text-align: center; padding: 26px 18px; }
+.stat b { display: block; font-size: 38px; line-height: 1; letter-spacing: -0.02em; color: var(--ink); margin-bottom: 10px; }
+.stat span { display: block; font-size: 15px; line-height: 1.4; color: var(--muted); }
+.n { display: inline-flex; width: 34px; height: 34px; border-radius: 50%; background: var(--lime); color: var(--lime-ink); font-weight: 800; font-size: 15px; align-items: center; justify-content: center; margin-bottom: 16px; }
+.callout { border-left: 4px solid var(--lime); padding: 6px 0 6px 24px; margin-top: 40px; }
+.callout p { font-size: 20px; }
+/* prognosis checklist */
+.check { list-style: none; padding: 0; margin: 0; display: grid; gap: 18px; }
+.check li { position: relative; padding-left: 40px; font-size: 20px; line-height: 1.5; }
+.check li::before { content: "✓"; position: absolute; left: 0; top: 2px; width: 26px; height: 26px; border-radius: 50%; background: var(--lime); color: var(--lime-ink); font-size: 14px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+.check li b { display: block; color: var(--ink); }
+.check li span { color: var(--ink-2); }
+.proof-label { text-align: center; margin: 56px 0 20px; }
+/* CTA */
+.ctas { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; margin: 40px 0 0; }
+.btn { display: inline-flex; align-items: center; justify-content: center; min-height: 56px; padding: 0 30px; border-radius: 999px; font-family: inherit; font-size: 18px; font-weight: 600; line-height: 1; text-decoration: none; cursor: pointer; border: 2px solid transparent; }
+.btn.primary { background: var(--btn); color: var(--btn-ink); border-color: var(--btn); }
+.btn.ghost { background: transparent; color: var(--ink); border-color: var(--ink); }
+section.dark .btn.primary { background: var(--lime); color: var(--lime-ink); border-color: var(--lime); }
+section.dark .btn.ghost { color: #ffffff; border-color: rgba(255,255,255,0.7); }
+.steps { margin-top: 56px; }
+.steps .card { text-align: left; }
+.steps h3 { font-size: 19px; }
+.steps p { font-size: 17px; }
+footer { padding: 40px 24px 56px; text-align: center; color: var(--muted); font-size: 15px; }
+footer a { color: inherit; text-decoration: none; }
+.sources { font-size: 14px; color: var(--muted); text-align: center; margin-top: 28px; }
+/* consultation popover */
+.consult-overlay { position: fixed; inset: 0; z-index: 90; background: rgba(10,20,28,0.72); display: none; align-items: center; justify-content: center; padding: 18px; }
+.consult-overlay.open { display: flex; }
+.consult-box { position: relative; width: 100%; max-width: 520px; max-height: 92svh; overflow-y: auto; background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 26px 24px; color: var(--ink); }
+.consult-box h3 { font-size: 22px; margin: 0 0 6px; }
+.consult-box .sub { font-size: 15px; color: var(--muted); margin: 0 0 16px; line-height: 1.5; }
+.consult-close { position: absolute; top: 12px; right: 14px; background: none; border: none; color: var(--muted); font-size: 24px; cursor: pointer; line-height: 1; }
+.consult-box iframe { width: 100%; border: none; min-height: 560px; border-radius: 10px; background: #fff; }
+.consult-alt { font-size: 13px; color: var(--muted); margin-top: 12px; text-align: center; }
+.consult-alt a { color: inherit; }
 </style>
 </head>
 <body>
-<div class="hero"><div class="hero-inner">
-  <div class="brand">Omniply</div>
-  <h1>When someone asks an AI assistant where to recover in your town... can it even find you?</h1>
-  <p>If you don't know the answer... probably not.</p><p>You see, 132 million Americans now use AI assistants to research and compare before they book. And if an AI assistant can't understand your website, or talk to it, it will simply book the next center down the road.</p><p>And the inquiries you miss... they just keep booking with whoever answered first... and then clients fade between visits, invisibly, until your treatment rooms turn eerily quiet.</p>
-  <p class="who">HBOT or IV lounge, cold-plunge and sauna studio, massage and bodywork practice, longevity clinic... if clients book sessions with you, this is built for you.</p>
-</div></div>
-<div class="wrap">
 
-  <div class="sec">
+<section class="dark hero">
+  <div class="measure">
+    <p class="brand">Omniply</p>
+    <h1>When someone asks an AI assistant where to recover in your town... can it even find you?</h1>
+    <p class="first">If you don't know the answer... probably not.</p><p class="">You see, 132 million Americans now use AI assistants to research and compare before they book. And if an AI assistant can't understand your website, or talk to it, it will simply book the next center down the road.</p><p class="">And the inquiries you miss... they just keep booking with whoever answered first... and then clients fade between visits, invisibly, until your treatment rooms turn eerily quiet.</p>
+    <p class="who">HBOT or IV lounge, cold-plunge and sauna studio, massage and bodywork practice, longevity clinic... if clients book sessions with you, this is built for you.</p>
+  </div>
+</section>
+
+<section class="alt">
+  <div class="canvas">
     <p class="eyebrow">Why this is happening</p>
     <h2>Three forces created the leak. None of them asked your permission.</h2>
-    <div class="forces"><div class="card"><p class="force-head"><strong>The technology force.</strong></p><p>Clients stopped browsing. They ask. "Who should I see about this?" goes to an AI assistant now, not a search box.</p><p>For that assistant to send them your way, it has to find your center. Understand your website. Talk to it. Book. If it can't read you, you don't lose the comparison. You never come up.</p><p>And the old layer still runs underneath: every potential client in your town carries every competitor's front desk in their pocket. At 9pm the tension, the jet lag or the bad sleep finally has to go. They don't wait for your opening hours. They search, they message, they book with whoever answers.</p><p>Google decides who exists. The map pack decides who gets the call.</p></div><div class="card"><p class="force-head"><strong>The social force.</strong></p><p>Clients stopped calling back. Not because they're rude. Because Amazon, Uber and a decade of instant everything trained them.</p><p>Princeton researchers showed people form a trust judgment in a tenth of a second, before a single rational thought. Your future client doesn't compare certifications. They call the name they already know. And they book with whoever answers first.</p></div><div class="card"><p class="force-head"><strong>The economic force.</strong></p><p>The compounding asset in wellness used to be location and reputation. Now it's attention and reviews.</p><p>The centers growing right now don't deliver better sessions than you. They run better systems. And every month, the gap gets more expensive to close.</p></div></div>
-    <div class="stats"><div class="stat"><b>132M</b><span>Americans research with AI assistants before they buy</span></div><div class="stat"><b>78%</b><span>of customers buy from whoever answers first</span></div><div class="stat"><b>100×</b><span>more likely to connect in 5 min vs. 30 min</span></div><div class="stat"><b>2 days</b><span>the average business response time</span></div></div>
-    <p style="margin-top:14px"><strong>Ten years ago, "great care plus word of mouth" was a growth strategy. Today it's a lottery ticket.</strong></p>
-    <p class="muted">Sources: Adyen Retail Report 2026; Oldroyd, Lead Response Management Study (InsideSales, 2007); Oldroyd, McElheran & Elkington, Harvard Business Review, March 2011; Lead Connect survey.</p>
+    <div class="rows"><div class="row"><h3>The technology force</h3><div><p>Clients stopped browsing. They ask. "Who should I see about this?" goes to an AI assistant now, not a search box.</p><p>For that assistant to send them your way, it has to find your center. Understand your website. Talk to it. Book. If it can't read you, you don't lose the comparison. You never come up.</p><p>And the old layer still runs underneath: every potential client in your town carries every competitor's front desk in their pocket. At 9pm the tension, the jet lag or the bad sleep finally has to go. They don't wait for your opening hours. They search, they message, they book with whoever answers.</p><p>Google decides who exists. The map pack decides who gets the call.</p></div></div><div class="row"><h3>The social force</h3><div><p>Clients stopped calling back. Not because they're rude. Because Amazon, Uber and a decade of instant everything trained them.</p><p>Princeton researchers showed people form a trust judgment in a tenth of a second, before a single rational thought. Your future client doesn't compare certifications. They call the name they already know. And they book with whoever answers first.</p></div></div><div class="row"><h3>The economic force</h3><div><p>The compounding asset in wellness used to be location and reputation. Now it's attention and reviews.</p><p>The centers growing right now don't deliver better sessions than you. They run better systems. And every month, the gap gets more expensive to close.</p></div></div></div>
+    <div class="grid cols-4" style="margin-top:48px"><div class="card stat"><b>132M</b><span>Americans research with AI assistants before they buy</span></div><div class="card stat"><b>78%</b><span>of customers buy from whoever answers first</span></div><div class="card stat"><b>100×</b><span>more likely to connect in 5 min vs. 30 min</span></div><div class="card stat"><b>2 days</b><span>the average business response time</span></div></div>
+    <div class="measure" style="margin-top:40px"><p class="lead" style="text-align:center"><strong>Ten years ago, "great care plus word of mouth" was a growth strategy. Today it's a lottery ticket.</strong></p></div>
+    <p class="sources">Sources: Adyen Retail Report 2026; Oldroyd, Lead Response Management Study (InsideSales, 2007); Oldroyd, McElheran & Elkington, Harvard Business Review, March 2011; Lead Connect survey.</p>
   </div>
+</section>
 
-  <div class="sec">
+<section>
+  <div class="measure">
     <p class="eyebrow">Why effort can't fix it</p>
-    <h2>You've already tried the obvious fix. It's called trying harder.</h2>
+    <h2>You already tried the obvious fix. It's called trying harder.</h2>
     <p>Post more. Follow up faster. Remember to ask for reviews.</p><p>Posting at 11pm moves nothing. Everyone is asleep. Telling the front desk to follow up "when it's quiet" loses to clients who expect an answer now. Asking for a review when you remember, and only from the clients you're sure will say yes, hands the map pack to the studio next door.</p><p>So you need consistency. Systematically. That is exactly what the expensive wellness-business coaches sell you. And then you hit the real problem.</p><p><strong>It's not a discipline problem. It's a physics problem.</strong></p><p>Attention runs 24 hours a day. Humans don't. You need sleep. Your family needs you.</p><p>You cannot out-hustle a force that never sleeps. You can only out-system it. The centers that grow are simply the ones where the system runs anyway.</p>
-    <h2 style="margin-top:26px">A client finishes their package. They feel great. Then nothing happens.</h2>
+  </div>
+  <div class="measure" style="margin-top:72px">
+    <h2>A client finishes their package. They feel great. Then nothing happens.</h2>
     <p>No contact. No content. No reason to think of you. Eight months later the tension is back and the sleep is gone... in a town full of studios that answer faster than you.</p><p><strong>Every client who stopped coming has a body that did not stop needing recovery.</strong> They did not leave you. Life got loud, and nobody tapped them on the shoulder.</p>
   </div>
+</section>
 
-  <div class="sec">
+<section class="dark">
+  <div class="canvas">
     <p class="eyebrow">Here's what I got</p>
     <h2>The Omniply Loop: four systems, each feeding the next.</h2>
-    <p>What fixes this is not a tool. It's a loop. It multiplies your presence everywhere your clients pay attention, all day.</p>
-    <div class="card loop"><div class="row"><div class="dot">1</div><div><b>Response.</b><span>An AI front desk that answers in two rings. 2pm while you're mid-session. 2am while you're asleep. Website chat and a phone voice that sound like your center, book the exact service the client names, each calendar its own schedule, or take a callback. 200 voice minutes included. It answers in the client's own language, five of them. The inquiry answered instantly is the client your competitor never meets.</span></div></div><div class="row"><div class="dot">2</div><div><b>Proof.</b><span>A review engine that turns every happy client into public evidence. Automatically. Reviews compound like interest: invisible week to week, undeniable year to year. They feed the map pack and the AI answers alike.</span></div></div><div class="row"><div class="dot">3</div><div><b>Presence.</b><span>Real content. Posts, articles, a newsletter your clients actually read. Produced in your voice every week, without you writing a word. It keeps clients warm between visits. It is what Google and the AI assistants read when they decide who to recommend.</span></div></div><div class="row"><div class="dot">4</div><div><b>Recall.</b><span>Reactivation that never forgets a client. The package ends, contact continues. The ones who faded get a reason to come back before they slide into old habits. Not after.</span></div></div></div>
-    <div class="card flywheel"><p>Instant response converts the inquiry. Happy clients leave reviews. Reviews and presence bring the next inquiry. Recall keeps them all coming back.</p><p><strong>It's not four tools. It's one flywheel.</strong> Break any link and the leak reopens somewhere else. That is why point solutions never fixed it, and why coaching just hands the discipline problem back to you. The loop removes it.</p></div>
+    <div class="measure"><p class="lead" style="text-align:center">What fixes this is not a tool. It's a loop. It multiplies your presence everywhere your clients pay attention, all day.</p></div>
+    <div class="grid cols-2" style="margin-top:40px"><div class="card"><span class="n">1</span><h3>Response</h3><p>An AI front desk that answers in two rings. 2pm while you're mid-session. 2am while you're asleep. Website chat and a phone voice that sound like your center, book the exact service the client names, each calendar its own schedule, or take a callback. 200 voice minutes included. It answers in the client's own language, five of them. The inquiry answered instantly is the client your competitor never meets.</p></div><div class="card"><span class="n">2</span><h3>Proof</h3><p>A review engine that turns every happy client into public evidence. Automatically. Reviews compound like interest: invisible week to week, undeniable year to year. They feed the map pack and the AI answers alike.</p></div><div class="card"><span class="n">3</span><h3>Presence</h3><p>Real content. Posts, articles, a newsletter your clients actually read. Produced in your voice every week, without you writing a word. It keeps clients warm between visits. It is what Google and the AI assistants read when they decide who to recommend.</p></div><div class="card"><span class="n">4</span><h3>Recall</h3><p>Reactivation that never forgets a client. The package ends, contact continues. The ones who faded get a reason to come back before they slide into old habits. Not after.</p></div></div>
+    <div class="measure callout"><p>Instant response converts the inquiry. Happy clients leave reviews. Reviews and presence bring the next inquiry. Recall keeps them all coming back.</p><p><strong>It's not four tools. It's one flywheel.</strong> Break any link and the leak reopens somewhere else. That is why point solutions never fixed it, and why coaching just hands the discipline problem back to you. The loop removes it.</p></div>
   </div>
+</section>
 
-  <div class="sec">
+<section class="alt">
+  <div class="canvas">
     <p class="eyebrow">What It'll Do For You</p>
     <h2>What your center looks like ninety days in.</h2>
-    <ul class="prog"><li><b>The 2am "can I still get in tomorrow?" message answered, and booked, while you're asleep.</b> Monday's schedule fills itself before your competitor's front desk even gets in.</li><li><b>A newsletter your clients actually open.</b> Written, designed and sent every week, without you typing a word of it.</li><li><b>Fresh Google reviews arriving quietly every week.</b> The compounding kind your competitors can't fake and can't catch up to.</li><li><b>Clients who felt great and faded getting a reason to come back.</b> Before they slide into old habits. Not after they've already googled someone else.</li><li><b>Your name showing up between visits.</b> So when they need a reset, there's no search. Just "book my usual spot."</li><li><b>And the one nobody puts on a features list: your evenings back.</b> No more 11pm posting. No more "we should really ask for reviews." No more marketing guilt.</li></ul>
-    <p>Take your average session fee. A typical client's first year is worth roughly twelve sessions of it.</p><p><strong>One recovered client covers the entire system for the month. The second one is profit.</strong></p><p>That's the whole business case. Your own numbers, doing arithmetic you can check. The walkthrough shows the exact number.</p>
-    <p class="muted" style="margin-top:16px">Real accounts, real outputs. No staged screenshots.</p>
-    <div class="card case"><p><b>A wellness & longevity center</b></p><p>Live pilot: the assistant answers on website chat and WhatsApp in five languages and books twelve services, Saturdays included. In its first two weeks it held 38 conversations, while the content engine produced 9 newsletters and 6 branded lead-magnet guides ... each one ready to approve from a phone.</p></div>
+    <div class="measure">
+      <ul class="check"><li><b>The 2am "can I still get in tomorrow?" message answered, and booked, while you're asleep.</b><span>Monday's schedule fills itself before your competitor's front desk even gets in.</span></li><li><b>A newsletter your clients actually open.</b><span>Written, designed and sent every week, without you typing a word of it.</span></li><li><b>Fresh Google reviews arriving quietly every week.</b><span>The compounding kind your competitors can't fake and can't catch up to.</span></li><li><b>Clients who felt great and faded getting a reason to come back.</b><span>Before they slide into old habits. Not after they've already googled someone else.</span></li><li><b>Your name showing up between visits.</b><span>So when they need a reset, there's no search. Just "book my usual spot."</span></li><li><b>And the one nobody puts on a features list: your evenings back.</b><span>No more 11pm posting. No more "we should really ask for reviews." No more marketing guilt.</span></li></ul>
+      <div class="callout"><p>Take your average session fee. A typical client's first year is worth roughly twelve sessions of it.</p><p><strong>One recovered client covers the entire system for the month. The second one is profit.</strong></p><p>That's the whole business case. Your own numbers, doing arithmetic you can check. The walkthrough shows the exact number.</p></div>
+    </div>
+    <p class="eyebrow proof-label">Real accounts, real outputs. No staged screenshots.</p>
+    <div class="grid measure"><div class="card"><h3>A wellness & longevity center</h3><p>Live pilot: the assistant answers on website chat and WhatsApp in five languages and books twelve services, Saturdays included. In its first two weeks it held 38 conversations, while the content engine produced 9 newsletters and 6 branded lead-magnet guides ... each one ready to approve from a phone.</p></div></div>
   </div>
+</section>
 
-  <div class="sec">
+<section>
+  <div class="canvas">
     <p class="eyebrow">Here's What To Do Next</p>
     <h2>Decide the way you run your center: on the evidence.</h2>
-    <p>The walkthrough shows the actual system on screen. How it answers. What it posts. What the recall messages look like. No call. No salesperson.</p><p>One flat monthly subscription. Everything in the loop. Cancel anytime. We're not asking you to become a marketer. We're asking you to stop having to be one.</p>
+    <div class="measure"><p>The walkthrough shows the actual system on screen. How it answers. What it posts. What the recall messages look like. No call. No salesperson.</p><p>One flat monthly subscription. Everything in the loop. Cancel anytime. We're not asking you to become a marketer. We're asking you to stop having to be one.</p></div>
     <div class="ctas">
       <a class="btn primary" href="/walkthrough?v=wellness">Watch the walkthrough</a>
       <button class="btn ghost" type="button" data-consult-open>Book a 15-minute intro call</button>
     </div>
-    <div class="card steps" style="margin-top:18px">
-      <div><b>One 15-minute call, or the walkthrough.</b> Your questions, straight answers.</div>
-      <div><b>We build everything within a week.</b> Assistant, content engine, reviews: trained on your center, your prices, your voice.</div>
-      <div><b>It runs itself.</b> You approve content from your phone; your front desk stays in charge and can take over any conversation.</div>
+    <div class="grid cols-3 steps">
+      <div class="card"><span class="n">1</span><h3>One call, or the walkthrough</h3><p>Your questions, straight answers.</p></div>
+      <div class="card"><span class="n">2</span><h3>We build everything within a week</h3><p>Assistant, content engine, reviews: trained on your center, your prices, your voice.</p></div>
+      <div class="card"><span class="n">3</span><h3>It runs itself</h3><p>You approve content from your phone; your front desk stays in charge and can take over any conversation.</p></div>
     </div>
   </div>
+</section>
 
-  <p class="foot">omniply.io · the operating system for wellness & longevity centers</p>
-</div>
+<footer><a href="https://omniply.io">omniply.io</a> · the operating system for wellness & longevity centers</footer>
 <!-- consultation popover (lazy iframe ... loads only on open) -->
 <div class="consult-overlay" id="consult-overlay" role="dialog" aria-modal="true" aria-label="Book a 15-minute intro call">
   <div class="consult-box">
