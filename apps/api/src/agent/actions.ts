@@ -138,9 +138,10 @@ async function executeRequestHuman(
   ctx: AgentContext,
   conversationId: string,
   action?: Extract<AgentAction, { type: 'request_human' }>,
-): Promise<void> {
+): Promise<{ visitorLine: string | null }> {
+  const whatsappBranch = action?.channel === 'whatsapp'
   const creds = await getGhlCredentials(ctx.ownerUserId)
-  if (!creds) return
+  if (!creds) return { visitorLine: null }
   const meta = await conversationMeta(conversationId)
   let contactId = meta.ghlContactId
   if (!contactId) {
@@ -171,6 +172,13 @@ async function executeRequestHuman(
       }
     }
   }
+  if (!contactId && whatsappBranch) {
+    // WhatsApp branch needs no contact at all — the visitor is about to
+    // message the business themselves; the summary still feeds the prefill.
+    const s = await handoffSummary(ctx, conversationId)
+    logger.info({ accountId: ctx.accountId, conversationId }, '[agent] whatsapp handoff without contact — no tags, no notification')
+    return { visitorLine: s.visitorLine }
+  }
   if (!contactId) {
     // No contact AND no known details: surface it for review instead of
     // letting the handover vanish.
@@ -179,32 +187,47 @@ async function executeRequestHuman(
       data: { flagged: true, flagReason: 'human-requested-no-contact' },
     })
     logger.warn({ accountId: ctx.accountId, conversationId }, '[agent] human requested but no contact details — flagged')
-    return
+    return { visitorLine: null }
   }
   // Summary into the "Chat Summary" custom field BEFORE the tag: the tag
   // fires the Human Takeover Notify workflow instantly, and its SMS/email
   // merges {{contact.chat_summary}} — the field must already hold the fresh
   // text (2026-11-05; same pattern the callback flow has used all along).
-  const summary = await callbackSummary(ctx, conversationId)
+  const { summary, visitorLine } = await handoffSummary(ctx, conversationId)
   if (summary) {
     const fieldId = await getChatSummaryFieldId(creds.apiKey, creds.locationId).catch(() => null)
     if (fieldId) {
       await updateGhlContact(creds.apiKey, contactId, { customFields: [{ id: fieldId, value: summary.slice(0, 2000) }] }).catch(() => {})
     }
   }
-  // Re-arm parity with callbacks: a repeat human request must notify again
-  // with the updated summary — a tag already present won't re-fire the
-  // workflow, so remove + re-add.
-  await removeGhlContactTags(creds.apiKey, contactId, ['human-requested']).catch(() => {})
-  await addGhlContactTags(creds.apiKey, contactId, ['ai-off', 'human-requested'])
+  if (whatsappBranch) {
+    // Veit's branch design (2026-11-05): the visitor chose WhatsApp — their
+    // own message IS the notification, on the channel the business lives
+    // on. ai-off pauses the bot, the note keeps the CRM record, and the
+    // human-requested tag (= the SMS/email workflow trigger) is NOT applied,
+    // so there is exactly ONE follow-up thread.
+    await addGhlContactTags(creds.apiKey, contactId, ['ai-off'])
+  } else {
+    // Callback branch: full notification flow. Re-arm parity with callbacks:
+    // a repeat request must notify again with the updated summary — a tag
+    // already present won't re-fire the workflow, so remove + re-add.
+    await removeGhlContactTags(creds.apiKey, contactId, ['human-requested']).catch(() => {})
+    await addGhlContactTags(creds.apiKey, contactId, ['ai-off', 'human-requested'])
+  }
   await createGhlContactNote(
     creds.apiKey,
     contactId,
-    ['🙋 Visitor asked for a HUMAN — AI is paused on this conversation.', summary ? `Chat summary: ${summary}` : null]
+    [
+      whatsappBranch
+        ? '🙋 Visitor asked for a HUMAN and chose WHATSAPP — AI is paused; expect their message on the business WhatsApp.'
+        : '🙋 Visitor asked for a HUMAN — AI is paused on this conversation.',
+      summary ? `Chat summary: ${summary}` : null,
+    ]
       .filter(Boolean)
       .join('\n'),
   ).catch(() => {})
-  logger.info({ accountId: ctx.accountId, conversationId, summaryFieldSet: Boolean(summary) }, '[agent] human takeover requested — ai-off applied')
+  logger.info({ accountId: ctx.accountId, conversationId, summaryFieldSet: Boolean(summary), whatsappBranch }, '[agent] human takeover requested — ai-off applied')
+  return { visitorLine }
 }
 
 /** Compact transcript for the front-desk summary prompt. */
@@ -218,17 +241,32 @@ async function transcriptFor(conversationId: string): Promise<string> {
   return rows.map((m) => `${m.role === 'visitor' ? 'Visitor' : 'Assistant'}: ${m.content}`).join('\n')
 }
 
-/** 2–3 sentence handover summary (decision C). Empty string on any failure. */
-async function callbackSummary(ctx: AgentContext, conversationId: string): Promise<string> {
+/** Handover summary, dual output (2026-11-05): the agent_summary template now
+ * emits BOTH the third-person front-desk summary AND a first-person
+ * VISITOR_LINE for the WhatsApp prefill, in one call. Templates without the
+ * markers degrade gracefully (whole text = summary, no visitor line). */
+export function parseHandoffSummary(raw: string): { summary: string; visitorLine: string | null } {
+  const m = raw.match(/SUMMARY:\s*([\s\S]*?)\s*VISITOR_LINE:\s*([\s\S]*)/i)
+  if (!m) return { summary: raw.trim().slice(0, 1000), visitorLine: null }
+  const line = m[2].trim().replace(/^["']|["']$/g, '').slice(0, 280)
+  return { summary: m[1].trim().slice(0, 1000), visitorLine: line || null }
+}
+
+async function handoffSummary(ctx: AgentContext, conversationId: string): Promise<{ summary: string; visitorLine: string | null }> {
   try {
     const transcript = await transcriptFor(conversationId)
     const { content, response } = await runNewsletterPrompt('agent_summary', { transcript }, { vertical: ctx.vertical })
     await recordLLMUsage(ctx.ownerUserId, 'agent', response)
-    return content.trim().slice(0, 1000)
+    return parseHandoffSummary(content)
   } catch (err) {
     logger.warn({ err, conversationId }, '[agent] callback summary generation failed')
-    return ''
+    return { summary: '', visitorLine: null }
   }
+}
+
+/** 2–3 sentence handover summary (decision C). Empty string on any failure. */
+async function callbackSummary(ctx: AgentContext, conversationId: string): Promise<string> {
+  return (await handoffSummary(ctx, conversationId)).summary
 }
 
 export async function executeCallback(
@@ -843,7 +881,7 @@ export async function executeAgentAction(
   conversationId: string,
   action: AgentAction,
   assistantMessageId?: string,
-): Promise<void> {
+): Promise<{ visitorLine: string | null } | undefined> {
   try {
     switch (action.type) {
       case 'request_callback':
@@ -867,8 +905,7 @@ export async function executeAgentAction(
         await executeVoiceSms(ctx, conversationId, action)
         break
       case 'request_human':
-        await executeRequestHuman(ctx, conversationId, action)
-        break
+        return await executeRequestHuman(ctx, conversationId, action)
       case 'update_contact_details':
         await executeUpdateContactDetails(ctx, conversationId, action)
         break

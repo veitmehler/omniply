@@ -362,6 +362,9 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
     (channel === 'voice' && !messageMode) || channel === 'web'
       ? await bookingInfoFor(input.accountId, ctx.ownerUserId, message)
       : { mode: 'off', bookable: false, slots: [], services: null }
+  // WhatsApp handoff availability (Veit branch design 2026-11-05): known
+  // before the prompt so the handoff instruction can offer the choice.
+  const waDigits = channel === 'web' ? await whatsappDigitsFor(input.accountId) : null
   const groupedSlotLines = (slots = booking.slots): string[] => {
     const lines: string[] = []
     let day = ''
@@ -544,7 +547,9 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
               'Replies MUST be 1 to 3 short sentences. No markdown, no headers, no bullet lists.',
               phoneFormatRule,
               'Callbacks: before attaching request_callback, gather their name, the best number, AND the best time for the call back. Ask for a concrete time ("What time works best for the call back?") and accept whatever precision they give — a clock time, "tomorrow morning", a weekday — putting their words verbatim in the preferredTime field. When they DID state a time, preferredTime must NEVER be empty: copy their words into it ("around 5 PM today"). Never offer a coarse either-or like morning-or-afternoon yourself; only when they truly have no preference, proceed without one.',
-              'Human handoff: when the visitor asks for a real person, FIRST make sure you have their name and best phone number (reuse KNOWN VISITOR DETAILS instead of re-asking), THEN attach request_human WITH their name and phone as fields on the action ({"type":"request_human","name":"…","phone":"…"}) and tell them the team will reach OUT to them at that number shortly. NEVER say someone will take over this chat — nobody joins this chat window. If they will not share a number, give them the practice phone number to call instead.',
+              waDigits
+                ? 'Human handoff: when the visitor asks for a real person, offer BOTH ways in ONE short reply: continue on WhatsApp right now, or leave a number for a callback. If they choose WhatsApp (or say they prefer WhatsApp/texting), attach request_human with channel "whatsapp" ({"type":"request_human","channel":"whatsapp","name":"…" if known}) and tell them a WhatsApp button will appear below this message with their message ready to send — and that if WhatsApp is not handy they can leave their number here instead. If they choose a callback or give a phone number, FIRST make sure you have their name and best number (reuse KNOWN VISITOR DETAILS instead of re-asking), THEN attach request_human with channel "callback" plus their name and phone as fields, and tell them the team will reach OUT shortly. NEVER say someone will take over this chat — nobody joins this chat window.'
+                : 'Human handoff: when the visitor asks for a real person, FIRST make sure you have their name and best phone number (reuse KNOWN VISITOR DETAILS instead of re-asking), THEN attach request_human WITH their name and phone as fields on the action ({"type":"request_human","name":"…","phone":"…","channel":"callback"}) and tell them the team will reach OUT to them at that number shortly. NEVER say someone will take over this chat — nobody joins this chat window. If they will not share a number, give them the practice phone number to call instead.',
               ...(input.smsAvailable
                 ? [
                     'TEXTING IS AVAILABLE on this account: guides can ALSO be texted. When offering guide delivery, ask "Shall I text it or email it?" — for text, confirm their mobile number (plain digits with hyphens) and attach send_guide_link with that number in the phone field; the link arrives by SMS. Email via the normal guide flow stays the default when they have no preference.',
@@ -632,7 +637,7 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
 
   // Execute server-side effects (GHL contact/tags/note, Drive grants) AFTER
   // the turn is persisted — never throws, failures alert + flag.
-  if (action) await executeAgentAction(ctx, conversation.id, action, assistantMessageId)
+  const execResult = action ? await executeAgentAction(ctx, conversation.id, action, assistantMessageId) : undefined
 
   if (spentToday + costUsd >= INCLUDED_DAILY_BUDGET_USD && spentToday < INCLUDED_DAILY_BUDGET_USD) {
     logger.warn({ accountId: input.accountId, spentToday: spentToday + costUsd }, '[agent] included daily budget crossed — overage accruing')
@@ -646,8 +651,8 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
 
   const guide = guideFor(ctx, action)
   const whatsappUrl =
-    channel === 'web' && action?.type === 'request_human'
-      ? await whatsappHandoffUrl(input.accountId, ctx.practiceName, action.name, conversation.id, message).catch(() => null)
+    channel === 'web' && action?.type === 'request_human' && action.channel === 'whatsapp' && waDigits
+      ? await whatsappHandoffUrl(waDigits, ctx.practiceName, action.name, conversation.id, message, execResult?.visitorLine ?? null).catch(() => null)
       : null
   return { ...base, reply, action, guideTitle: guide.title, guideLink: guide.link, whatsappUrl, ended: null }
 }
@@ -660,17 +665,22 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
  *  contact by the time the visitor can tap this (executeAgentAction is
  *  awaited before the turn returns), so even a CRM-connected WhatsApp inbox
  *  would not have the bot answer the handoff thread. */
+/** The business WhatsApp number (digits) from the booking config, or null. */
+async function whatsappDigitsFor(accountId: string): Promise<string | null> {
+  const account = await prisma.account.findUnique({ where: { id: accountId }, select: { agentBookingConfig: true } })
+  const cfg = account?.agentBookingConfig as { whatsapp?: unknown } | null
+  const digits = typeof cfg?.whatsapp === 'string' ? cfg.whatsapp.replace(/\D/g, '') : ''
+  return digits.length >= 8 && digits.length <= 15 ? digits : null
+}
+
 async function whatsappHandoffUrl(
-  accountId: string,
+  digits: string,
   practiceName: string,
   visitorName: string | null,
   conversationId: string,
   lastMessage: string,
+  visitorLine: string | null,
 ): Promise<string | null> {
-  const account = await prisma.account.findUnique({ where: { id: accountId }, select: { agentBookingConfig: true } })
-  const cfg = account?.agentBookingConfig as { whatsapp?: unknown } | null
-  const digits = typeof cfg?.whatsapp === 'string' ? cfg.whatsapp.replace(/\D/g, '') : ''
-  if (digits.length < 8 || digits.length > 15) return null
   // Detect over the recent visitor messages JOINED — a short final message
   // ("quiero hablar con una persona real") lacks the diacritics/signal the
   // conservative detector needs and fell back to English (live test
@@ -691,6 +701,10 @@ async function whatsappHandoffUrl(
     fr: `Bonjour${first ? `, je suis ${first}` : ''} ! Je viens d'échanger avec l'assistant du site de ${practiceName} et j'aimerais poursuivre avec quelqu'un de l'équipe.`,
     ru: `Здравствуйте${first ? `, это ${first}` : ''}! Я только что общался(ась) с ассистентом на сайте ${practiceName} и хотел(а) бы продолжить с кем-то из команды.`,
   }
-  const text = texts[lang] ?? texts.en
+  // Context (Veit requirement 2026-11-05): the first-person interest line
+  // from the handover summary rides along so the clinic can pick the
+  // conversation up on first read. The visitor's compose box remains the
+  // final edit gate.
+  const text = visitorLine ? `${texts[lang] ?? texts.en} ${visitorLine}`.slice(0, 500) : (texts[lang] ?? texts.en)
   return `https://wa.me/${digits}?text=${encodeURIComponent(text)}`
 }

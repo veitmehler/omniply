@@ -279,14 +279,25 @@ describe('action validation', () => {
     expect(validateAction({ type: 'capture_contact', name: 'Sam', email: 'not-an-email' }, CTX)).toBeNull()
   })
 
-  it('request_human carries same-turn name/phone; junk phone drops to null', () => {
-    expect(validateAction({ type: 'request_human', name: 'Veit Mehler', phone: '508-598-8633' }, CTX)).toEqual({
+  it('request_human carries same-turn name/phone/channel; junk drops to null', () => {
+    expect(validateAction({ type: 'request_human', name: 'Veit Mehler', phone: '508-598-8633', channel: 'callback' }, CTX)).toEqual({
       type: 'request_human',
       name: 'Veit Mehler',
       phone: '508-598-8633',
+      channel: 'callback',
     })
-    expect(validateAction({ type: 'request_human' }, CTX)).toEqual({ type: 'request_human', name: null, phone: null })
-    expect(validateAction({ type: 'request_human', phone: '123' }, CTX)).toEqual({ type: 'request_human', name: null, phone: null })
+    expect(validateAction({ type: 'request_human', channel: 'whatsapp' }, CTX)).toEqual({ type: 'request_human', name: null, phone: null, channel: 'whatsapp' })
+    expect(validateAction({ type: 'request_human' }, CTX)).toEqual({ type: 'request_human', name: null, phone: null, channel: null })
+    expect(validateAction({ type: 'request_human', phone: '123', channel: 'carrier-pigeon' }, CTX)).toEqual({ type: 'request_human', name: null, phone: null, channel: null })
+  })
+
+  it('parseHandoffSummary splits dual output and degrades without markers', async () => {
+    const { parseHandoffSummary } = await import('../actions')
+    const dual = parseHandoffSummary('SUMMARY: Mara asked about HBOT pricing and membership.\nVISITOR_LINE: Me interesa la cámara hiperbárica y los precios para miembros.')
+    expect(dual.summary).toBe('Mara asked about HBOT pricing and membership.')
+    expect(dual.visitorLine).toBe('Me interesa la cámara hiperbárica y los precios para miembros.')
+    const legacy = parseHandoffSummary('Mara asked about HBOT pricing.')
+    expect(legacy).toEqual({ summary: 'Mara asked about HBOT pricing.', visitorLine: null })
   })
 
   it('callback requires name + plausible phone', () => {
