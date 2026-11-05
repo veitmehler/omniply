@@ -102,9 +102,12 @@ export function buildAgentPanelHtml(token: string): string {
   function choiceCard(waUrl) {
     var d = document.createElement('div');
     d.className = 'm card';
+    // Stacked with breathing room; WhatsApp wears the theme button color
+    // (brand-consistent, not WhatsApp green), callback fades back as an
+    // outline (Veit design pass 2026-11-05).
+    d.style.display = 'flex'; d.style.flexDirection = 'column'; d.style.gap = '8px'; d.style.alignItems = 'flex-start';
     var a = document.createElement('a');
     a.href = waUrl; a.target = '_blank'; a.rel = 'noopener';
-    a.style.background = '#25D366'; a.style.color = '#fff'; a.style.marginRight = '8px';
     a.textContent = 'Message us on WhatsApp \ud83d\udcac';
     a.addEventListener('click', function () {
       try {
@@ -113,6 +116,7 @@ export function buildAgentPanelHtml(token: string): string {
     });
     var b = document.createElement('a');
     b.href = '#';
+    b.style.background = '#fff'; b.style.color = 'var(--btn)'; b.style.border = '1.5px solid var(--btn)';
     b.textContent = 'Arrange a callback \ud83d\udcde';
     b.addEventListener('click', function (ev) { ev.preventDefault(); submit("I'd like a callback, please"); });
     d.appendChild(a); d.appendChild(b); log.appendChild(d); log.scrollTop = log.scrollHeight;
