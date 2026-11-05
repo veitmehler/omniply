@@ -372,6 +372,9 @@ export const AGENT_LOADER_JS = `(function () {
     else { frame.style.display = 'none'; bub.style.display = 'flex'; lockScroll(false); }
   }
   bub.addEventListener('click', function () { hidePill(); toggle(); });
+  // Public hook (2026-11-05): lets host-site buttons ("Ask a question")
+  // open this widget instead of a legacy assistant of their own.
+  window.OmniplyAgent = { open: function () { hidePill(); toggle(true); } };
   window.addEventListener('resize', layout);
   window.addEventListener('message', function (e) {
     if (!e.data || e.source !== frame.contentWindow) return;
