@@ -279,6 +279,10 @@ describe('action validation', () => {
     expect(validateAction({ type: 'capture_contact', name: 'Sam', email: 'not-an-email' }, CTX)).toBeNull()
   })
 
+  it('offer_human_choice validates bare', () => {
+    expect(validateAction({ type: 'offer_human_choice' }, CTX)).toEqual({ type: 'offer_human_choice' })
+  })
+
   it('request_human carries same-turn name/phone/channel; junk drops to null', () => {
     expect(validateAction({ type: 'request_human', name: 'Veit Mehler', phone: '508-598-8633', channel: 'callback' }, CTX)).toEqual({
       type: 'request_human',

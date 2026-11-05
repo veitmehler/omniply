@@ -24,6 +24,11 @@ export type AgentAction =
   // from earlier actions) — the handover flagged no-contact and the front
   // desk was never notified while the visitor was promised a human.
   | { type: 'request_human'; name: string | null; phone: string | null; channel: 'whatsapp' | 'callback' | null }
+  // Handoff choice buttons (2026-11-05): offered when the business has
+  // WhatsApp — the widget renders [WhatsApp] [Arrange a callback]; the
+  // wa.me link must be ready AT OFFER TIME, so this action's executor
+  // generates the handover summary/visitor line immediately.
+  | { type: 'offer_human_choice' }
   // Voice intake (start-of-call): name + disconnect callback number. INSERT
   // into GHL only (converge/create by phone) — never used to read data back.
   | { type: 'intake_details'; name: string | null; phone: string | null }
@@ -164,6 +169,9 @@ export function validateAction(raw: unknown, ctx: ActionContext): AgentAction | 
       if (!name || !validPhone(phone)) return null
       return { type: 'book_appointment', name, phone, slotStart, service: service || null }
     }
+
+    case 'offer_human_choice':
+      return { type: 'offer_human_choice' }
 
     case 'request_human': {
       const name = str(a.name, 60)

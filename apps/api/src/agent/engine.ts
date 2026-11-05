@@ -92,6 +92,9 @@ export interface TurnResult {
    *  the sender — no API, no templates, and their first message opens the
    *  24h service window for the clinic to reply freely. */
   whatsappUrl: string | null
+  /** Handoff choice card (2026-11-05): [WhatsApp] [Arrange a callback]
+   *  buttons; the wa.me link is pre-built with the context prefill. */
+  humanChoice: { whatsappUrl: string } | null
 }
 
 interface ModelTurn {
@@ -237,13 +240,13 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
         'Thanks for trying the demo again! To keep this line free for other visitors, it allows a few calls per caller each day. Everything else about Omniply is at omniply dot io, or call again tomorrow. Goodbye!'
       await persistTurn({ conversationId: conversation.id, visitorText: message, reply, action: null, filtered: false, endedReason: 'demo-cap' })
       logger.info({ accountId: input.accountId, callsToday }, '[agent] demo call cap reached')
-      return { conversationId: conversation.id, reply, action: null, bookingUrl: ctx.bookingUrl, guideTitle: null, guideLink: null, whatsappUrl: null, messageMode: false, ended: 'demo-cap' }
+      return { conversationId: conversation.id, reply, action: null, bookingUrl: ctx.bookingUrl, guideTitle: null, guideLink: null, whatsappUrl: null, humanChoice: null, messageMode: false, ended: 'demo-cap' }
     }
   }
   if (conversation.endedReason === 'demo-cap') {
     const reply = 'This demo line allows a few calls per caller each day. See omniply dot io, or call again tomorrow. Goodbye!'
     await persistTurn({ conversationId: conversation.id, visitorText: message, reply, action: null, filtered: false })
-    return { conversationId: conversation.id, reply, action: null, bookingUrl: ctx.bookingUrl, guideTitle: null, guideLink: null, whatsappUrl: null, messageMode: false, ended: 'demo-cap' }
+    return { conversationId: conversation.id, reply, action: null, bookingUrl: ctx.bookingUrl, guideTitle: null, guideLink: null, whatsappUrl: null, humanChoice: null, messageMode: false, ended: 'demo-cap' }
   }
 
   // Message mode: set by the initiation webhook pre-creating the rescue
@@ -256,6 +259,7 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
     guideTitle: null as string | null,
     guideLink: null as string | null,
     whatsappUrl: null as string | null,
+    humanChoice: null as { whatsappUrl: string } | null,
     messageMode,
   }
 
@@ -548,7 +552,7 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
               phoneFormatRule,
               'Callbacks: before attaching request_callback, gather their name, the best number, AND the best time for the call back. Ask for a concrete time ("What time works best for the call back?") and accept whatever precision they give — a clock time, "tomorrow morning", a weekday — putting their words verbatim in the preferredTime field. When they DID state a time, preferredTime must NEVER be empty: copy their words into it ("around 5 PM today"). Never offer a coarse either-or like morning-or-afternoon yourself; only when they truly have no preference, proceed without one.',
               waDigits
-                ? 'Human handoff: when the visitor asks for a real person, offer BOTH ways in ONE short reply: continue on WhatsApp right now, or leave a number for a callback. If they choose WhatsApp (or say they prefer WhatsApp/texting), attach request_human with channel "whatsapp" ({"type":"request_human","channel":"whatsapp","name":"…" if known}) and tell them a WhatsApp button will appear below this message with their message ready to send — and that if WhatsApp is not handy they can leave their number here instead. If they choose a callback or give a phone number, FIRST make sure you have their name and best number (reuse KNOWN VISITOR DETAILS instead of re-asking), THEN attach request_human with channel "callback" plus their name and phone as fields, and tell them the team will reach OUT shortly. NEVER say someone will take over this chat — nobody joins this chat window.'
+                ? 'Human handoff: when the visitor asks for a real person, attach offer_human_choice and reply with ONE short lead-in sentence only (for example "Of course — pick whichever is easier:"). Do NOT list the options in words, do NOT mention WhatsApp or callbacks in the text, and NEVER write out the WhatsApp phone number — two buttons appear below your reply. EXCEPTION: skip the buttons when the visitor has ALREADY stated a preference in their message: if they asked for WhatsApp, attach request_human with channel "whatsapp" and say their message is ready behind the WhatsApp button below; if they asked for a callback or gave a phone number, make sure you have their name and best number (reuse KNOWN VISITOR DETAILS), then attach request_human with channel "callback" plus name and phone, and say the team will reach OUT shortly. NEVER say someone will take over this chat — nobody joins this chat window.'
                 : 'Human handoff: when the visitor asks for a real person, FIRST make sure you have their name and best phone number (reuse KNOWN VISITOR DETAILS instead of re-asking), THEN attach request_human WITH their name and phone as fields on the action ({"type":"request_human","name":"…","phone":"…","channel":"callback"}) and tell them the team will reach OUT to them at that number shortly. NEVER say someone will take over this chat — nobody joins this chat window. If they will not share a number, give them the practice phone number to call instead.',
               ...(input.smsAvailable
                 ? [
@@ -654,7 +658,11 @@ export async function runAgentTurn(input: TurnInput): Promise<TurnResult> {
     channel === 'web' && action?.type === 'request_human' && action.channel === 'whatsapp' && waDigits
       ? await whatsappHandoffUrl(waDigits, ctx.practiceName, action.name, conversation.id, message, execResult?.visitorLine ?? null).catch(() => null)
       : null
-  return { ...base, reply, action, guideTitle: guide.title, guideLink: guide.link, whatsappUrl, ended: null }
+  const choiceUrl =
+    channel === 'web' && action?.type === 'offer_human_choice' && waDigits
+      ? await whatsappHandoffUrl(waDigits, ctx.practiceName, null, conversation.id, message, execResult?.visitorLine ?? null).catch(() => null)
+      : null
+  return { ...base, reply, action, guideTitle: guide.title, guideLink: guide.link, whatsappUrl, humanChoice: choiceUrl ? { whatsappUrl: choiceUrl } : null, ended: null }
 }
 
 /** wa.me link for the handoff card. The prefill is written as the VISITOR's

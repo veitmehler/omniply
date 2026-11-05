@@ -904,6 +904,12 @@ export async function executeAgentAction(
         // Web renders the booking card client-side; voice texts the link.
         await executeVoiceSms(ctx, conversationId, action)
         break
+      case 'offer_human_choice': {
+        // Buttons render client-side; the only server work at offer time is
+        // the summary, so the WhatsApp button's prefill is ready on first tap.
+        const s = await handoffSummary(ctx, conversationId)
+        return { visitorLine: s.visitorLine }
+      }
       case 'request_human':
         return await executeRequestHuman(ctx, conversationId, action)
       case 'update_contact_details':
@@ -937,4 +943,30 @@ export async function executeAgentAction(
       context: { accountId: ctx.accountId, conversationId },
     }).catch(() => {})
   }
+}
+
+
+/** Click-beacon effects for the handoff choice card (2026-11-05): the
+ * visitor tapped the WhatsApp button, so apply what the whatsapp branch of
+ * executeRequestHuman would have applied — ai-off + the chose-WhatsApp note —
+ * without ever touching the human-requested tag (no SMS/email; the visitor's
+ * own WhatsApp message is the notification). Fire-and-forget safe. */
+export async function applyWhatsappHandoffChosen(ctx: AgentContext, conversationId: string): Promise<void> {
+  const creds = await getGhlCredentials(ctx.ownerUserId)
+  if (!creds) return
+  const meta = await conversationMeta(conversationId)
+  if (!meta.ghlContactId) {
+    logger.info({ accountId: ctx.accountId, conversationId }, '[agent] whatsapp choice tapped (no contact) — nothing to tag')
+    return
+  }
+  const { summary } = await handoffSummary(ctx, conversationId)
+  await addGhlContactTags(creds.apiKey, meta.ghlContactId, ['ai-off']).catch(() => {})
+  await createGhlContactNote(
+    creds.apiKey,
+    meta.ghlContactId,
+    ['🙋 Visitor tapped the WhatsApp handoff button — AI is paused; expect their message on the business WhatsApp.', summary ? `Chat summary: ${summary}` : null]
+      .filter(Boolean)
+      .join('\n'),
+  ).catch(() => {})
+  logger.info({ accountId: ctx.accountId, conversationId }, '[agent] whatsapp choice tapped — ai-off applied')
 }

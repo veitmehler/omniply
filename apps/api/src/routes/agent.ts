@@ -144,6 +144,35 @@ export async function agentRoutes(app: FastifyInstance) {
     },
   )
 
+  // ── Handoff choice click-beacon (2026-11-05): the visitor tapped the
+  // WhatsApp button on the choice card; apply the whatsapp-branch effects
+  // (ai-off + chose-WhatsApp note, NEVER the notification tag). ──
+  app.post(
+    '/agent/handoff-choice',
+    { config: { rateLimit: { max: 10, timeWindow: '1 minute' } } },
+    async (request, reply) => {
+      const body = (typeof request.body === 'object' && request.body !== null ? request.body : {}) as Record<string, unknown>
+      const account = await accountForToken(body.token)
+      if (!account) return reply.status(404).send({ error: 'Unknown widget' })
+      const visitorKey = typeof body.visitorKey === 'string' && VISITOR_KEY_RE.test(body.visitorKey) ? body.visitorKey : null
+      const conversationId = typeof body.conversationId === 'string' && CONVERSATION_ID_RE.test(body.conversationId) ? body.conversationId : null
+      if (!visitorKey || !conversationId) return reply.status(400).send({ error: 'Bad request' })
+      const conv = await prisma.agentConversation.findFirst({
+        where: { id: conversationId, accountId: account.id, visitorKey },
+        select: { id: true },
+      })
+      if (!conv) return reply.status(404).send({ error: 'Unknown conversation' })
+      const ctx = await agentContextForAccount(account.id)
+      if (ctx) {
+        const { applyWhatsappHandoffChosen } = await import('../agent/actions')
+        applyWhatsappHandoffChosen(ctx, conversationId).catch((err) =>
+          request.log.warn({ err, conversationId }, '[agent] whatsapp-choice effects failed'),
+        )
+      }
+      return reply.send({ ok: true })
+    },
+  )
+
   // ── Chat knowledge base (chat-kb plan F2): read + edit + instant rebuild ──
   app.get('/agent/kb', async (request, reply) => {
     const clerkId = await requireAuth(request, reply)

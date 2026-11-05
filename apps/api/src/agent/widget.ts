@@ -99,6 +99,24 @@ export function buildAgentPanelHtml(token: string): string {
     a.textContent = 'Open ' + (title || 'your guide') + ' →';
     d.appendChild(a); log.appendChild(d); log.scrollTop = log.scrollHeight;
   }
+  function choiceCard(waUrl) {
+    var d = document.createElement('div');
+    d.className = 'm card';
+    var a = document.createElement('a');
+    a.href = waUrl; a.target = '_blank'; a.rel = 'noopener';
+    a.style.background = '#25D366'; a.style.color = '#fff'; a.style.marginRight = '8px';
+    a.textContent = 'Message us on WhatsApp \ud83d\udcac';
+    a.addEventListener('click', function () {
+      try {
+        fetch(API + '/handoff-choice', { method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: TOKEN, visitorKey: vk, conversationId: conv }) });
+      } catch (e) {}
+    });
+    var b = document.createElement('a');
+    b.href = '#';
+    b.textContent = 'Arrange a callback \ud83d\udcde';
+    b.addEventListener('click', function (ev) { ev.preventDefault(); submit("I'd like a callback, please"); });
+    d.appendChild(a); d.appendChild(b); log.appendChild(d); log.scrollTop = log.scrollHeight;
+  }
   function whatsappCard(url) {
     var d = document.createElement('div');
     d.className = 'm card';
@@ -159,6 +177,7 @@ export function buildAgentPanelHtml(token: string): string {
           if (t.action && t.action.type === 'send_booking_link' && t.bookingUrl) bookingCard(t.bookingUrl);
           if (t.action && (t.action.type === 'capture_contact' || t.action.type === 'send_guide_link') && t.guideLink) guideCard(t.guideLink, t.guideTitle);
           if (t.action && t.action.type === 'request_human' && t.whatsappUrl) whatsappCard(t.whatsappUrl);
+          if (t.action && t.action.type === 'offer_human_choice' && t.humanChoice && t.humanChoice.whatsappUrl) choiceCard(t.humanChoice.whatsappUrl);
         });
         if (t.ended === 'turn-cap' || t.ended === 'abuse-ceiling') { dead = true; }
         setBusy(false);
