@@ -317,15 +317,28 @@ async function applyExclusiveWithFilter(
   }
 }
 
-/** Full-detail expansion of one clinic-local day from a raw slot list. */
-function expandDay(all: string[], dayIso: string, now: Date, timezone: string | null): OfferedSlot[] {
+/** Full-detail expansion of one clinic-local day from a raw slot list.
+ * 2026-11-05 second pass: the first version broke at 16 slots, which chopped
+ * a 22-slot HBOT day at 2:15 PM and resurrected the exact "truncation read
+ * as the latest availability" bug this path exists to kill. A focused day is
+ * now taken whole up to 36 slots; a denser day is thinned EVENLY with the
+ * first and last slots always kept, so the day's true end is always visible. */
+const MAX_FOCUS_DAY_SLOTS = 36
+export function expandDay(all: string[], dayIso: string, now: Date, timezone: string | null): OfferedSlot[] {
   const todayLabel = fmtParts(now.toISOString(), timezone)?.day ?? null
   const tomorrowLabel = fmtParts(new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString(), timezone)?.day ?? null
-  const out: OfferedSlot[] = []
-  for (const iso of all) {
+  let isos = all.filter((iso) => {
     const t = Date.parse(iso)
-    if (Number.isNaN(t) || t - now.getTime() < MIN_LEAD_MS) continue
-    if (localDayIso(iso, timezone) !== dayIso) continue
+    return !Number.isNaN(t) && t - now.getTime() >= MIN_LEAD_MS && localDayIso(iso, timezone) === dayIso
+  })
+  if (isos.length > MAX_FOCUS_DAY_SLOTS) {
+    const keep = new Set<string>([isos[0], isos[isos.length - 1]])
+    const stride = (isos.length - 1) / (MAX_FOCUS_DAY_SLOTS - 1)
+    for (let i = 1; i < MAX_FOCUS_DAY_SLOTS - 1; i++) keep.add(isos[Math.round(i * stride)])
+    isos = isos.filter((iso) => keep.has(iso))
+  }
+  const out: OfferedSlot[] = []
+  for (const iso of isos) {
     const p = fmtParts(iso, timezone)
     if (!p) continue
     out.push({
@@ -336,7 +349,6 @@ function expandDay(all: string[], dayIso: string, now: Date, timezone: string | 
       relative: p.day === todayLabel ? 'TODAY' : p.day === tomorrowLabel ? 'TOMORROW' : null,
       sampled: false,
     })
-    if (out.length >= 16) break
   }
   return out
 }

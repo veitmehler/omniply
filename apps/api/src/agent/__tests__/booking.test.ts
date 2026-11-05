@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { pickSlots, labelForSlot, parseBookingFocus, windowLineFor, localDayIso } from '../booking'
+import { pickSlots, labelForSlot, parseBookingFocus, windowLineFor, localDayIso, expandDay } from '../booking'
 
 describe('parseBookingFocus', () => {
   const services = [
@@ -52,6 +52,30 @@ describe('windowLineFor', () => {
 
   it('null on a closed day', () => {
     expect(windowLineFor('Acupuncture', cfg, 60, '2026-11-08', 'Sunday, November 8')).toBeNull()
+  })
+})
+
+describe('expandDay', () => {
+  const tz = 'America/Santo_Domingo'
+  const now = new Date('2026-11-05T15:00:00Z')
+  const day = (n: number) => Array.from({ length: n }, (_, i) => {
+    const h = 10 + Math.floor(i / 4), m = (i % 4) * 15
+    return `2026-11-06T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00-04:00`
+  })
+
+  it('takes a 22-slot day whole — the true last start stays visible', () => {
+    const slots = expandDay(day(22), '2026-11-06', now, tz)
+    expect(slots.length).toBe(22)
+    expect(slots[slots.length - 1].timeLabel).toBe('3:15 PM')
+    expect(slots.every((s: { sampled: boolean }) => s.sampled === false)).toBe(true)
+  })
+
+  it('thins a denser day evenly but always keeps first and last', () => {
+    const all = day(48)
+    const slots = expandDay(all, '2026-11-06', now, tz)
+    expect(slots.length).toBeLessThanOrEqual(36)
+    expect(slots[0].startIso).toBe(all[0])
+    expect(slots[slots.length - 1].startIso).toBe(all[all.length - 1])
   })
 })
 
