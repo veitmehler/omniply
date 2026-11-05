@@ -5,10 +5,18 @@
  * Accepts 'completed' (pre-approval) and 'enriched' (ready-for-review) jobs —
  * the rerun flows back through the gate and enrichment, overwriting the
  * existing SitePage body on completion.
+ *
+ * B9 fix (2026-11-05): this used to set status 'in_progress' and call
+ * runPipelinePhaseA in-process, fire-and-forget. The executor's atomic claim
+ * (updateMany: status NOT IN ['in_progress'] → 'in_progress') then ALWAYS saw
+ * 'in_progress' and aborted as a duplicate — the rewrite was a guaranteed
+ * no-op that stranded the job at currentStep 6 with steps 7–12 deleted.
+ * The trigger now leaves the claim to the executor (status 'pending') and
+ * enqueues through pg-boss, which also buys crash-safety, retries, and the
+ * pipeline handler's failure-alert path.
  */
 import { prisma } from '@omniply/shared'
-import { logger } from '../lib/logger'
-import { runPipelinePhaseA } from './executor'
+import { getBoss, QUEUES } from '../queues'
 
 export const REWRITABLE_STATUSES = ['completed', 'enriched'] as const
 
@@ -22,10 +30,13 @@ export async function triggerArticleRewrite(jobId: string): Promise<{ ok: boolea
   await prisma.pipelineStep.deleteMany({ where: { jobId, stepNumber: { gte: 7, lte: 12 } } })
   await prisma.articleJob.update({
     where: { id: jobId },
-    data: { status: 'in_progress', currentStep: 6 },
+    data: { status: 'pending', currentStep: 6 },
   })
-  runPipelinePhaseA(jobId).catch((err) => {
-    logger.error({ jobId, err }, '[rewrite-trigger] phase A rerun failed')
-  })
+  const boss = await getBoss()
+  await boss.send(
+    QUEUES.ARTICLE_PIPELINE,
+    { jobId },
+    { singletonKey: jobId, expireInSeconds: 3600, retryLimit: 2, retryDelay: 120 },
+  )
   return { ok: true }
 }

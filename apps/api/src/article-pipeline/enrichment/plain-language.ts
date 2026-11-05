@@ -45,7 +45,6 @@ const MAX_BOXES_PER_ARTICLE = 1
 const MAX_GLOSSES_PER_ARTICLE = 4
 const CONCEPT_INLINE_P = 0.3 // inline paragraph, no box chrome
 const CONCEPT_BOXED_P = 0.2 // labeled box (remainder is skipped entirely)
-const BOX_CLOSER_QUESTION_P = 0.25
 
 const MAX_TERMS_PER_SECTION = 2
 const MAX_GLOSS_CHARS = 480
@@ -112,35 +111,45 @@ function pickLabel(rng: () => number, used: Set<string>): string {
   return label
 }
 
-const CLOSER_QUESTION =
-  'End with one short, fresh question that turns the image toward the reader. Never a stock phrase; never reuse a question pattern from elsewhere in the article.'
 const CLOSER_PLAIN =
   'End on the image itself or the practical point. Do NOT end with a question.'
 
-// B6 (2026-11-04): the device CONTENT read fine in detector testing, but
-// near-every injection opened with the same "Think of… / Picture…" scaffold,
-// which stacked to 10+ identical openers per article once inline forms landed.
-// The opener is now a per-device seeded draw, and the classic scaffold is
-// rationed to one use per article.
-const OPENER_THINK_OF_P = 0.15
-export const OPENER_SCENE =
-  'OPENER STYLE (hard rule): open with a one-sentence everyday moment happening to a person, told in your own voice. Never open with "Think of", "Picture" or "Imagine".'
-export const OPENER_WEAVE =
-  'OPENER STYLE (hard rule): weave the comparison into the middle of a sentence ("…works like…", "…much the way a… does"). Never open with "Think of", "Picture" or "Imagine".'
-export const OPENER_PLAIN =
-  'OPENER STYLE (hard rule): no metaphor scaffold at all. Explain it plainly in everyday words and concrete nouns, as if answering someone across the table. Never open with "Think of", "Picture" or "Imagine".'
-export const OPENER_THINK_OF =
-  'OPENER STYLE: you may open with "Think of…" or "Picture…" this one time.'
+// B9 (2026-11-05): the B6 opener lottery fixed the "Think of…" scaffold but
+// its scene draw produced INVENTED eyewitness memories ("Last winter I
+// watched a neighbour…") — fabricated experience in a real practitioner's
+// byline, and the parable shape (scene → mapping sentence → button) remained
+// the core detector tell. Devices are now plain across-the-table explanations
+// with at most one in-sentence image clause, drawn half the time to none.
+export const IMAGE_NONE =
+  'IMAGERY (hard rule): use NO imagery at all. Explain the mechanism plainly in short concrete sentences, the way a senior clinician talks across the table. Never open with "Think of", "Picture" or "Imagine". Never invent a witnessed scene or a specific person.'
+export const IMAGE_CLAUSE =
+  'IMAGERY (hard rule): you may use at most ONE brief image, as a modifier inside a single sentence (a few words, e.g. "like a sponge soaking up water"). Never develop the image beyond that clause, never open the explanation with it, and never write a sentence mapping it back ("your spine works the same way"). Never open with "Think of", "Picture" or "Imagine". Never invent a witnessed scene or a specific person.'
 
-/** Story opener draw: the classic scaffold at most once per article, the rest
- *  split evenly across scene/weave/plain. */
-export function pickStoryOpener(rng: () => number, state: { thinkOfUsed: boolean }): string {
-  if (!state.thinkOfUsed && rng() < OPENER_THINK_OF_P) {
-    state.thinkOfUsed = true
-    return OPENER_THINK_OF
+/** Image-mode draw for concept devices: half get no imagery at all — the
+ *  human distribution is asymmetric, most explanations carry none. */
+export function pickImageMode(rng: () => number): string {
+  return rng() < 0.5 ? IMAGE_NONE : IMAGE_CLAUSE
+}
+
+// Parable-anatomy gates (B9): the explicit mapping sentence and the neat
+// closing question are the engineered-analogy signature; the invented-witness
+// frame is fabricated first-person experience. All three reject for free.
+export const MAPPING_SENTENCE_RE =
+  /\b(?:works?|behaves?|happens?)\s+(?:in\s+)?(?:much\s+)?the\s+same\s+way\b|\bsame\s+(?:thing|principle)\s+(?:happens|applies)\b|\bthat(?:'s| is)\s+exactly\s+what(?:'s| is)\s+happening\b/i
+export const FABRICATED_WITNESS_RE =
+  /\b(?:last\s+(?:week|weekend|winter|summer|month|year)|the\s+other\s+(?:day|morning|week)|yesterday)\b[^.!?]{0,50}\bI\s+(?:watched|saw|noticed|met)\b|\ba\s+(?:neighbour|neighbor|mate|bloke|friend)\s+of\s+mine\b/i
+
+export function deviceShapeReason(text: string): string | null {
+  if (MAPPING_SENTENCE_RE.test(text)) {
+    return 'it ends the image with an explicit mapping sentence ("…the same way"), which your IMAGERY rule forbids'
   }
-  const pool = [OPENER_SCENE, OPENER_WEAVE, OPENER_PLAIN]
-  return pool[Math.floor(rng() * pool.length)]
+  if (FABRICATED_WITNESS_RE.test(text)) {
+    return 'it invents a witnessed scene or specific person ("last weekend I watched…"), which is fabricated experience and forbidden'
+  }
+  if (/\?\s*$/.test(text.trim())) {
+    return 'it ends on a rhetorical question, which is forbidden for these explanations'
+  }
+  return null
 }
 
 // B8: gloss construction lottery. Gemini's B7 round flagged the gloss
@@ -208,7 +217,7 @@ export function lexicalGateReason(text: string, allowScaffoldOpener: boolean): s
     return 'it refers to "the article"/"the author" instead of speaking as the author in first person'
   }
   if (!allowScaffoldOpener && SCAFFOLD_OPENER_RE.test(text)) {
-    return 'it opens with "Think of"/"Picture"/"Imagine", which your OPENER STYLE forbids'
+    return 'it opens with "Think of"/"Picture"/"Imagine", which your instructions forbid'
   }
   return null
 }
@@ -459,7 +468,6 @@ async function generateVerified(args: GenerateArgs): Promise<{ text: string; usa
   const responses: LLMResponse[] = []
   let restrictions = args.config.restrictions
 
-  const allowScaffoldOpener = args.vars.openerStyle === OPENER_THINK_OF
   const allowJustMeans = args.vars.openerStyle === GLOSS_APPOSITION
   for (let attempt = 1; attempt <= 2; attempt++) {
     const written = await runNewsletterPrompt(key, { openerStyle: '', ...args.vars, restrictions })
@@ -473,12 +481,13 @@ async function generateVerified(args: GenerateArgs): Promise<{ text: string; usa
 
     // Free deterministic gates before the paid verify call.
     const gateReason =
-      lexicalGateReason(text, allowScaffoldOpener) ??
+      lexicalGateReason(text, false) ??
       (args.bannedVehicles ? vehicleReuseReason(text, args.bannedVehicles) : null) ??
       (!allowJustMeans && JUST_MEANS_RE.test(text)
         ? 'it uses the "just means" construction, which your GLOSS CONSTRUCTION forbids'
         : null) ??
-      overlapReason(text, args.vars.sectionExcerpt ?? '')
+      overlapReason(text, args.vars.sectionExcerpt ?? '') ??
+      deviceShapeReason(text)
     if (gateReason) {
       logger.warn({ ...args.logCtx, attempt, gateReason }, '[plain-language] lexical gate failed')
       if (attempt === 1) {
@@ -579,7 +588,6 @@ export async function runPlainLanguagePass(args: ArticlePassArgs): Promise<Plain
 
   const rng = seededRng(jobId)
   const usedLabels = new Set<string>()
-  const openerState = { thinkOfUsed: false }
   const glossState = { justMeansUsed: false }
   let plannedGlossTotal = 0
   let plannedBoxTotal = 0
@@ -662,10 +670,9 @@ export async function runPlainLanguagePass(args: ArticlePassArgs): Promise<Plain
           form = 'inline'
         }
         if (form !== 'skip') {
-          const closerStyle = form === 'boxed' && rng() < BOX_CLOSER_QUESTION_P ? CLOSER_QUESTION : CLOSER_PLAIN
           const generated = await generateVerified({
             kind: 'concept',
-            vars: { ...baseVars, alreadyUsedMetaphors: usedImagery.join(', ') || 'none yet', conceptSummary: concept.summary.trim(), closerStyle, openerStyle: pickStoryOpener(rng, openerState) },
+            vars: { ...baseVars, alreadyUsedMetaphors: usedImagery.join(', ') || 'none yet', conceptSummary: concept.summary.trim(), closerStyle: CLOSER_PLAIN, openerStyle: pickImageMode(rng) },
             config,
             maxChars: MAX_STORY_CHARS,
             logCtx: { jobId, position: section.position, concept: concept.summary, form },
@@ -792,7 +799,6 @@ export async function runNewsletterPlainLanguage(args: NewsletterPassArgs): Prom
     const exemplars = formatExemplars(config)
     const usedImagery: string[] = []
     const nlRng = seededRng(args.labelSeed)
-    const nlOpenerState = { thinkOfUsed: false }
     const nlGlossState = { justMeansUsed: false }
     const baseVars = {
       sectionExcerpt: bodyText,
@@ -832,7 +838,7 @@ export async function runNewsletterPlainLanguage(args: NewsletterPassArgs): Prom
     if (concept?.summary?.trim()) {
       const generated = await generateVerified({
         kind: 'concept',
-        vars: { ...baseVars, alreadyUsedMetaphors: usedImagery.join(', ') || 'none yet', conceptSummary: concept.summary.trim(), closerStyle: CLOSER_PLAIN, openerStyle: pickStoryOpener(nlRng, nlOpenerState) },
+        vars: { ...baseVars, alreadyUsedMetaphors: usedImagery.join(', ') || 'none yet', conceptSummary: concept.summary.trim(), closerStyle: CLOSER_PLAIN, openerStyle: pickImageMode(nlRng) },
         config,
         maxChars: MAX_STORY_CHARS,
         logCtx: { newsletter: true, concept: concept.summary },

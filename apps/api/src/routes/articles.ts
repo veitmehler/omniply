@@ -3,7 +3,6 @@ import type { FastifyInstance } from 'fastify'
 import type { Prisma } from '@prisma/client'
 import { prisma, ghlSettingsForUser } from '@omniply/shared'
 import { requireAuth } from '../middleware/auth'
-import { runPipelinePhaseA } from '../article-pipeline/executor'
 import { triggerArticleRewrite } from '../article-pipeline/rewrite-trigger'
 import { approveArticleJob } from '../article-pipeline/approval-service'
 import { getBoss, QUEUES } from '../queues/index'
@@ -354,12 +353,17 @@ export async function articleRoutes(app: FastifyInstance) {
       return reply.status(400).send({ error: `Cannot resume a job with status: ${job.status}` })
     }
 
-    // Fire-and-forget — resume runs in the background
-    runPipelinePhaseA(jobId).catch((err) => {
-      request.log.error({ jobId, err }, '[articles] resume failed')
-    })
+    // B9: enqueue instead of in-process fire-and-forget — an API container
+    // recreate (every deploy) silently killed a resume mid-pipeline. The
+    // worker-side handler brings crash-safety, retries and failure alerts.
+    const boss = await getBoss()
+    await boss.send(
+      QUEUES.ARTICLE_PIPELINE,
+      { jobId },
+      { singletonKey: jobId, expireInSeconds: 3600, retryLimit: 2, retryDelay: 120 },
+    )
 
-    return reply.send({ ok: true, message: 'Pipeline resume started' })
+    return reply.send({ ok: true, message: 'Pipeline resume queued' })
   })
 
   // ── POST /api/articles/:jobId/approve — trigger Phase B approval chain ───
@@ -725,11 +729,15 @@ export async function articleRoutes(app: FastifyInstance) {
       data: { status: 'pending', currentStep: 0, totalCost: 0, totalTokens: 0 },
     })
 
-    runPipelinePhaseA(jobId).catch((err) => {
-      request.log.error({ jobId, err }, '[articles] rerun failed')
-    })
+    // B9: enqueue instead of in-process fire-and-forget (same hazard as /resume).
+    const rerunBoss = await getBoss()
+    await rerunBoss.send(
+      QUEUES.ARTICLE_PIPELINE,
+      { jobId },
+      { singletonKey: jobId, expireInSeconds: 3600, retryLimit: 2, retryDelay: 120 },
+    )
 
-    return reply.send({ ok: true, message: 'Pipeline rerun started' })
+    return reply.send({ ok: true, message: 'Pipeline rerun queued' })
   })
 
   // ── GET /api/articles/:jobId/citations-debug — inspect raw citation data ─

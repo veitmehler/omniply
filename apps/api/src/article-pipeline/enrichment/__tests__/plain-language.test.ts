@@ -8,7 +8,10 @@ import {
   buildBoxMarker,
   insertBoxAfterAnchor,
   seededRng,
-  pickStoryOpener,
+  pickImageMode,
+  deviceShapeReason,
+  IMAGE_NONE,
+  IMAGE_CLAUSE,
   pickGlossOpener,
   lexicalGateReason,
   vehicleReuseReason,
@@ -17,30 +20,36 @@ import {
   GLOSS_CONSEQUENCE,
   GLOSS_EXAMPLE,
   GLOSS_PLAIN,
-  OPENER_THINK_OF,
-  OPENER_WEAVE,
-  OPENER_PLAIN,
-  OPENER_SCENE,
 } from '../plain-language'
 
-describe('pickStoryOpener', () => {
-  it('rations the think-of scaffold to at most one per article', () => {
-    for (let seed = 0; seed < 25; seed++) {
-      const rng = seededRng(`job-${seed}`)
-      const state = { thinkOfUsed: false }
-      const draws = Array.from({ length: 12 }, () => pickStoryOpener(rng, state))
-      expect(draws.filter((d) => d === OPENER_THINK_OF).length).toBeLessThanOrEqual(1)
-    }
+describe('pickImageMode / deviceShapeReason', () => {
+  it('draws both image modes, deterministically per seed', () => {
+    const a = seededRng('stable'), b = seededRng('stable')
+    for (let i = 0; i < 8; i++) expect(pickImageMode(a)).toBe(pickImageMode(b))
+    const rng = seededRng('variety')
+    const modes = new Set(Array.from({ length: 30 }, () => pickImageMode(rng)))
+    expect(modes).toContain(IMAGE_NONE)
+    expect(modes).toContain(IMAGE_CLAUSE)
   })
 
-  it('is deterministic per seed and varies styles across many draws', () => {
-    const a = seededRng('stable'), b = seededRng('stable')
-    const sa = { thinkOfUsed: false }, sb = { thinkOfUsed: false }
-    for (let i = 0; i < 8; i++) expect(pickStoryOpener(a, sa)).toBe(pickStoryOpener(b, sb))
-    const rng = seededRng('variety')
-    const state = { thinkOfUsed: false }
-    const styles = new Set(Array.from({ length: 30 }, () => pickStoryOpener(rng, state)))
-    expect(styles.size).toBeGreaterThanOrEqual(3)
+  it('rejects the explicit mapping sentence', () => {
+    expect(deviceShapeReason('A sponge soaks up water overnight. Your discs work in much the same way.')).toMatch(/mapping/)
+    expect(deviceShapeReason('The same thing happens in your lower back.')).toBeTruthy()
+  })
+
+  it('rejects invented witnessed scenes and specific persons', () => {
+    expect(deviceShapeReason('Last weekend I watched two kids on a seesaw find their balance point.')).toMatch(/fabricated/)
+    expect(deviceShapeReason('Last winter I saw my neighbour stand at his open fridge.')).toBeTruthy()
+    expect(deviceShapeReason('A mate of mine kinked his garden hose once.')).toBeTruthy()
+  })
+
+  it('rejects a closing rhetorical question', () => {
+    expect(deviceShapeReason('The nerve calms once the pressure eases. What would your back say to that?')).toMatch(/question/)
+  })
+
+  it('passes a plain across-the-table explanation with one image clause', () => {
+    expect(deviceShapeReason('Overnight your discs draw fluid back in, a little like a sponge in water, so the first bend of the morning feels tight until they settle.')).toBeNull()
+    expect(deviceShapeReason('In practice I see this weekly: the joint is stiff because it has not moved for hours, not because it is damaged.')).toBeNull()
   })
 
   it('gloss constructions ration "just means" to one per article', () => {
@@ -98,7 +107,7 @@ describe('lexicalGateReason', () => {
   })
 
   it('rejects banned scaffold openers unless allowed', () => {
-    expect(lexicalGateReason('Think of a dry sponge left on the sink.', false)).toMatch(/OPENER STYLE/)
+    expect(lexicalGateReason('Think of a dry sponge left on the sink.', false)).toMatch(/instructions forbid/)
     expect(lexicalGateReason('  Picture a garden hose with a kink.', false)).toBeTruthy()
     expect(lexicalGateReason('Think of a dry sponge left on the sink.', true)).toBeNull()
   })
@@ -106,7 +115,7 @@ describe('lexicalGateReason', () => {
   it('passes normal first-person prose, including mid-sentence imagery', () => {
     expect(lexicalGateReason('Your discs work like sponges: squeeze them all day and they stiffen.', false)).toBeNull()
     expect(lexicalGateReason('I tell my clients to think of it as a hinge that needs oil.', false)).toBeNull()
-    expect(lexicalGateReason(OPENER_SCENE.length > 0 ? 'A kettle left on the bench cools slowly; muscle warms the same way.' : '', false)).toBeNull()
+    expect(lexicalGateReason('A kettle left on the bench cools slowly.', false)).toBeNull()
   })
 })
 
