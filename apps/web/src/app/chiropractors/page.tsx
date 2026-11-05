@@ -6,6 +6,7 @@
  * Dash-free house style; ellipses voice.
  */
 import type { Metadata } from 'next'
+import Script from 'next/script'
 import {
   TOKENS,
   XRAY_URL,
@@ -90,6 +91,21 @@ const FAQ_ITEMS: FaqEntry[] = [
 export default function ChiropractorsPage() {
   return (
     <main>
+      {/* Omniply CRM affiliate tracking (marketing location) — same snippet as
+          /walkthrough and /intro/chiropractors. */}
+      <Script id="omniply-affiliate" strategy="afterInteractive">{`
+    (function() {
+      var t = document.createElement("script");
+      t.type = "text/javascript", t.async = !0, t.src = 'https://links.omniply.io/js/am.js', t.onload = t.onreadystatechange = function() {
+          var t = this.readyState;
+          if (!t || "complete" == t || "loaded" == t) try {
+            affiliateManager.init('HsevyaesOdFid7b8KC9q', 'https://backend.leadconnectorhq.com', '.omniply.io')
+          } catch (t) {}
+      };
+      var e = document.getElementsByTagName("script")[0];
+      e.parentNode.insertBefore(t, e)
+  })();
+`}</Script>
       <SiteHeader vertical="For Chiropractors" walkthroughHref="/walkthrough?v=chiro" xrayHref={`${XRAY_URL}?v=chiro`} />
       {/* ── Hook: AI booking (angle sweep 2026-10-09; missed calls is the second beat) ── */}
       <Section dark>
