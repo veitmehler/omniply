@@ -248,7 +248,15 @@ async function transcriptFor(conversationId: string): Promise<string> {
 export function parseHandoffSummary(raw: string): { summary: string; visitorLine: string | null } {
   const m = raw.match(/SUMMARY:\s*([\s\S]*?)\s*VISITOR_LINE:\s*([\s\S]*)/i)
   if (!m) return { summary: raw.trim().slice(0, 1000), visitorLine: null }
-  const line = m[2].trim().replace(/^["']|["']$/g, '').slice(0, 280)
+  // The composed prefill already opens with a localized greeting — strip any
+  // greeting the model prepends, and drop trailing contact-method asks (the
+  // message IS the contact; "call me back" inside a WhatsApp text reads
+  // broken — caught in the live choice-card test 2026-11-05).
+  let line = m[2].trim().replace(/^["']|["']$/g, '')
+  line = line.replace(/^(hi|hello|hey|hola|hallo|bonjour|salut|привет|здравствуйте)[,.!]?\s*/i, '')
+  line = line.replace(/\s*(can|could)\s+(someone|you|anyone)\s+(call|phone|ring)\s+me(\s+back)?[^.!?]*[.!?]?\s*$/i, '').trim()
+  line = line ? line.charAt(0).toUpperCase() + line.slice(1) : line
+  line = line.slice(0, 280)
   return { summary: m[1].trim().slice(0, 1000), visitorLine: line || null }
 }
 
