@@ -181,8 +181,22 @@ async function executeRequestHuman(
     logger.warn({ accountId: ctx.accountId, conversationId }, '[agent] human requested but no contact details — flagged')
     return
   }
-  await addGhlContactTags(creds.apiKey, contactId, ['ai-off', 'human-requested'])
+  // Summary into the "Chat Summary" custom field BEFORE the tag: the tag
+  // fires the Human Takeover Notify workflow instantly, and its SMS/email
+  // merges {{contact.chat_summary}} — the field must already hold the fresh
+  // text (2026-11-05; same pattern the callback flow has used all along).
   const summary = await callbackSummary(ctx, conversationId)
+  if (summary) {
+    const fieldId = await getChatSummaryFieldId(creds.apiKey, creds.locationId).catch(() => null)
+    if (fieldId) {
+      await updateGhlContact(creds.apiKey, contactId, { customFields: [{ id: fieldId, value: summary.slice(0, 2000) }] }).catch(() => {})
+    }
+  }
+  // Re-arm parity with callbacks: a repeat human request must notify again
+  // with the updated summary — a tag already present won't re-fire the
+  // workflow, so remove + re-add.
+  await removeGhlContactTags(creds.apiKey, contactId, ['human-requested']).catch(() => {})
+  await addGhlContactTags(creds.apiKey, contactId, ['ai-off', 'human-requested'])
   await createGhlContactNote(
     creds.apiKey,
     contactId,
@@ -190,7 +204,7 @@ async function executeRequestHuman(
       .filter(Boolean)
       .join('\n'),
   ).catch(() => {})
-  logger.info({ accountId: ctx.accountId, conversationId }, '[agent] human takeover requested — ai-off applied')
+  logger.info({ accountId: ctx.accountId, conversationId, summaryFieldSet: Boolean(summary) }, '[agent] human takeover requested — ai-off applied')
 }
 
 /** Compact transcript for the front-desk summary prompt. */
