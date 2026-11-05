@@ -19,7 +19,11 @@ export type AgentAction =
   // must never fire a "Call Request" notification.
   | { type: 'update_contact_details'; name: string | null; phone: string | null }
   | { type: 'send_guide_link'; slug: string; phone: string | null }
-  | { type: 'request_human' }
+  // name/phone added 2026-11-05: details given in the SAME turn as the human
+  // request were invisible to the executor (it only read details persisted
+  // from earlier actions) — the handover flagged no-contact and the front
+  // desk was never notified while the visitor was promised a human.
+  | { type: 'request_human'; name: string | null; phone: string | null }
   // Voice intake (start-of-call): name + disconnect callback number. INSERT
   // into GHL only (converge/create by phone) — never used to read data back.
   | { type: 'intake_details'; name: string | null; phone: string | null }
@@ -161,8 +165,11 @@ export function validateAction(raw: unknown, ctx: ActionContext): AgentAction | 
       return { type: 'book_appointment', name, phone, slotStart, service: service || null }
     }
 
-    case 'request_human':
-      return { type: 'request_human' }
+    case 'request_human': {
+      const name = str(a.name, 60)
+      const phone = str(a.phone, 30)
+      return { type: 'request_human', name: name || null, phone: validPhone(phone) ? phone : null }
+    }
 
     case 'send_guide_link': {
       const slug = str(a.slug, 80)

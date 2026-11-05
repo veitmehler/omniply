@@ -111,9 +111,34 @@ async function executeUpdateContactDetails(
   ).catch(() => {})
 }
 
+/** Last-ditch phone recovery (2026-11-05, Whealth live incident): details
+ * typed in the SAME visitor turn as the human request exist nowhere but the
+ * raw transcript yet — scan recent visitor messages for a phone pattern
+ * before letting the handover fall to the no-contact flag. */
+async function phoneFromRecentVisitorMessages(conversationId: string): Promise<string | null> {
+  const rows = await prisma.agentMessage.findMany({
+    where: { conversationId, role: 'visitor' },
+    orderBy: { createdAt: 'desc' },
+    take: 6,
+    select: { content: true },
+  })
+  for (const r of rows) {
+    const m = String(r.content ?? '').match(/\+?\d[\d\s().-]{7,18}\d/)
+    if (m) {
+      const digits = m[0].replace(/\D/g, '')
+      if (digits.length >= 8 && digits.length <= 15) return m[0].trim()
+    }
+  }
+  return null
+}
+
 /** Visitor asked for a human: pause the AI (ai-off) + leave a handover note.
  * The snapshot's tag-triggered workflow notifies the front desk. */
-async function executeRequestHuman(ctx: AgentContext, conversationId: string): Promise<void> {
+async function executeRequestHuman(
+  ctx: AgentContext,
+  conversationId: string,
+  action?: Extract<AgentAction, { type: 'request_human' }>,
+): Promise<void> {
   const creds = await getGhlCredentials(ctx.ownerUserId)
   if (!creds) return
   const meta = await conversationMeta(conversationId)
@@ -124,7 +149,13 @@ async function executeRequestHuman(ctx: AgentContext, conversationId: string): P
     // and NOTHING happened. The prompt now gathers name+number before
     // attaching request_human; create/converge the contact here so the
     // handover actually reaches the front desk.
+    // 2026-11-05: same-turn details ride on the action itself now (the model
+    // parses them but they are not yet persisted anywhere the lookup sees),
+    // with a raw-transcript phone scan as the final fallback.
     const known = await knownDetailsFor(conversationId)
+    if (action?.phone && !known.phone) known.phone = action.phone
+    if (action?.name && !known.name) known.name = action.name
+    if (!known.phone) known.phone = await phoneFromRecentVisitorMessages(conversationId)
     const knownEmail = primaryEmailOf(known)
     if (known.phone || knownEmail) {
       const result = await upsertGhlContact(creds.apiKey, creds.locationId, {
@@ -822,7 +853,7 @@ export async function executeAgentAction(
         await executeVoiceSms(ctx, conversationId, action)
         break
       case 'request_human':
-        await executeRequestHuman(ctx, conversationId)
+        await executeRequestHuman(ctx, conversationId, action)
         break
       case 'update_contact_details':
         await executeUpdateContactDetails(ctx, conversationId, action)
