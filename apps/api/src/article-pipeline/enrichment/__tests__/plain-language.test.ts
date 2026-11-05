@@ -12,6 +12,11 @@ import {
   pickGlossOpener,
   lexicalGateReason,
   vehicleReuseReason,
+  overlapReason,
+  GLOSS_APPOSITION,
+  GLOSS_CONSEQUENCE,
+  GLOSS_EXAMPLE,
+  GLOSS_PLAIN,
   OPENER_THINK_OF,
   OPENER_WEAVE,
   OPENER_PLAIN,
@@ -38,11 +43,31 @@ describe('pickStoryOpener', () => {
     expect(styles.size).toBeGreaterThanOrEqual(3)
   })
 
-  it('gloss openers only use weave/plain', () => {
-    const rng = seededRng('gloss')
-    for (let i = 0; i < 20; i++) {
-      expect([OPENER_WEAVE, OPENER_PLAIN]).toContain(pickGlossOpener(rng))
+  it('gloss constructions ration "just means" to one per article', () => {
+    for (let seed = 0; seed < 15; seed++) {
+      const rng = seededRng(`gloss-${seed}`)
+      const state = { justMeansUsed: false }
+      const draws = Array.from({ length: 10 }, () => pickGlossOpener(rng, state))
+      expect(draws.filter((d) => d === GLOSS_APPOSITION).length).toBeLessThanOrEqual(1)
+      for (const d of draws) expect([GLOSS_APPOSITION, GLOSS_CONSEQUENCE, GLOSS_EXAMPLE, GLOSS_PLAIN]).toContain(d)
     }
+  })
+})
+
+describe('overlapReason', () => {
+  const passage = 'Psychological stress doesn\'t cause a disc to herniate. But it can raise muscle tension and nervous system reactivity, which changes how pain is experienced.'
+
+  it('rejects a 6-word verbatim run shared with the passage', () => {
+    expect(overlapReason('Stress can turn that knob up, and psychological stress doesn\'t cause a disc to herniate, but it can raise muscle tension too.', passage)).toMatch(/restate/)
+  })
+
+  it('passes a genuine illustration with no shared run', () => {
+    expect(overlapReason('Picture the volume knob on a radio: the signal stays the same, but a tense day turns the playback up.', passage)).toBeNull()
+  })
+
+  it('ignores short passages and punctuation differences', () => {
+    expect(overlapReason('anything', 'too short', 6)).toBeNull()
+    expect(overlapReason('it can raise muscle tension and nervous-system reactivity, which...', passage)).toBeTruthy()
   })
 })
 

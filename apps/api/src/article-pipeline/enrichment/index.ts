@@ -417,14 +417,13 @@ export async function runArticleEnrichment(jobId: string): Promise<void> {
 
   let keyTakeawaysHtml: string | null = null
   let tocHtml: string | null = null
-  // B7 structure lottery: seeded per job so re-runs reproduce. Without the
-  // flag every article gets the full skeleton (bullets + TOC), as before.
+  // B8 (Veit ruling): Key Takeaways and the ToC are user-first essentials and
+  // appear on EVERY article; the lottery varies only the takeaways style.
   const structRng = seededRng(`structure:${jobId}`)
-  const tkDraw = structRng()
-  const takeawaysMode: 'bullets' | 'prose' | 'none' = !STRUCTURE_VARIETY
+  const takeawaysMode: 'bullets' | 'prose' = !STRUCTURE_VARIETY
     ? 'bullets'
-    : tkDraw < 0.5 ? 'bullets' : tkDraw < 0.8 ? 'prose' : 'none'
-  const wantToc = !STRUCTURE_VARIETY || structRng() < 0.6
+    : structRng() < 0.6 ? 'bullets' : 'prose'
+  const wantToc = true
   if (STRUCTURE_VARIETY) {
     logger.info({ jobId, takeawaysMode, wantToc }, '[enrichment] structure lottery')
   }
@@ -432,7 +431,7 @@ export async function runArticleEnrichment(jobId: string): Promise<void> {
   // Overridden inside the try block with a shared-pass result to keep ToC anchors aligned.
   let bodyWithIds = injectHeadingIds(bodyOnly)
   try {
-    if (takeawaysMode !== 'none') {
+    {
       const kt = await generateKeyTakeaways({
         bodyHtml: geoHtml,
         primaryKeyword,

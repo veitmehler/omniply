@@ -36,10 +36,15 @@ const SECTION_EXCLUDE = /^(faq|frequently asked questions|conclusion|key takeawa
 // device repeating wall-to-wall, so density is capped and the packaging of
 // each concept explanation is drawn by a per-article seeded lottery — the
 // same explanation renders as flowing prose more often than as a labeled box.
-const MAX_BOXES_PER_ARTICLE = 2
-const MAX_GLOSSES_PER_ARTICLE = 8
-const CONCEPT_INLINE_P = 0.5 // inline paragraph, no box chrome
-const CONCEPT_BOXED_P = 0.3 // labeled box (remainder is skipped entirely)
+// B8 (2026-11-05): density halved. The vehicle registry killed repetition, at
+// which point Gemini's complaint shifted to the SUCCESSION of distinct
+// engineered metaphors — and answer-first sections made the base prose plain
+// enough that many devices were re-explaining already-plain text. Fewer,
+// better-placed devices is both the length cut and the formula cut.
+const MAX_BOXES_PER_ARTICLE = 1
+const MAX_GLOSSES_PER_ARTICLE = 4
+const CONCEPT_INLINE_P = 0.3 // inline paragraph, no box chrome
+const CONCEPT_BOXED_P = 0.2 // labeled box (remainder is skipped entirely)
 const BOX_CLOSER_QUESTION_P = 0.25
 
 const MAX_TERMS_PER_SECTION = 2
@@ -138,9 +143,52 @@ export function pickStoryOpener(rng: () => number, state: { thinkOfUsed: boolean
   return pool[Math.floor(rng() * pool.length)]
 }
 
-/** Gloss opener draw: glosses are 1-2 sentences, so only weave/plain fit. */
-export function pickGlossOpener(rng: () => number): string {
-  return rng() < 0.5 ? OPENER_WEAVE : OPENER_PLAIN
+// B8: gloss construction lottery. Gemini's B7 round flagged the gloss
+// template's favorite move — "X just means Y" — repeated three times per
+// article. Construction is now drawn per gloss, with "just means" allowed
+// only by the apposition draw and at most once per article.
+export const GLOSS_CONSEQUENCE =
+  'GLOSS CONSTRUCTION (hard rule): define the term by what it does or causes in the body, woven mid-sentence. Never write "just means" or "simply means". Never open with "Think of", "Picture" or "Imagine".'
+export const GLOSS_EXAMPLE =
+  'GLOSS CONSTRUCTION (hard rule): define the term through one quick, concrete everyday example. Never write "just means" or "simply means". Never open with "Think of", "Picture" or "Imagine".'
+export const GLOSS_PLAIN =
+  'GLOSS CONSTRUCTION (hard rule): explain the term in one plain sentence, as if across the table. No metaphor scaffold, and never "just means" or "simply means". Never open with "Think of", "Picture" or "Imagine".'
+export const GLOSS_APPOSITION =
+  'GLOSS CONSTRUCTION: restate the term as a short plain apposition right after it. You may use "just means" this one time. Never open with "Think of", "Picture" or "Imagine".'
+
+/** Gloss construction draw: apposition ("just means") at most once per article. */
+export function pickGlossOpener(rng: () => number, state?: { justMeansUsed: boolean }): string {
+  if (state && !state.justMeansUsed && rng() < 0.25) {
+    state.justMeansUsed = true
+    return GLOSS_APPOSITION
+  }
+  const pool = [GLOSS_CONSEQUENCE, GLOSS_EXAMPLE, GLOSS_PLAIN]
+  return pool[Math.floor(rng() * pool.length)]
+}
+
+export const JUST_MEANS_RE = /\b(?:just|simply)\s+means\b/i
+
+// B8: anchor-overlap gate. B7 devices sometimes RESTATED the passage they
+// were spliced under, nearly verbatim ("Psychological stress doesn't cause a
+// disc to herniate, but…" twice in adjacent paragraphs). Any 6-word verbatim
+// run shared with the source passage is a restatement, not an illustration.
+function normalizeWords(s: string): string[] {
+  return s.toLowerCase().replace(/[^a-z0-9\s']/g, ' ').split(/\s+/).filter(Boolean)
+}
+
+export function overlapReason(text: string, passage: string, n = 6): string | null {
+  const pw = normalizeWords(passage)
+  if (pw.length < n) return null
+  const grams = new Set<string>()
+  for (let i = 0; i <= pw.length - n; i++) grams.add(pw.slice(i, i + n).join(' '))
+  const tw = normalizeWords(text)
+  for (let i = 0; i <= tw.length - n; i++) {
+    const g = tw.slice(i, i + n).join(' ')
+    if (grams.has(g)) {
+      return `it repeats wording from the passage it sits under ("…${g}…") — illustrate, never restate`
+    }
+  }
+  return null
 }
 
 // Deterministic output gates (B6). The generators are handed the article and
@@ -412,6 +460,7 @@ async function generateVerified(args: GenerateArgs): Promise<{ text: string; usa
   let restrictions = args.config.restrictions
 
   const allowScaffoldOpener = args.vars.openerStyle === OPENER_THINK_OF
+  const allowJustMeans = args.vars.openerStyle === GLOSS_APPOSITION
   for (let attempt = 1; attempt <= 2; attempt++) {
     const written = await runNewsletterPrompt(key, { openerStyle: '', ...args.vars, restrictions })
     responses.push(written.response)
@@ -422,10 +471,14 @@ async function generateVerified(args: GenerateArgs): Promise<{ text: string; usa
       return null
     }
 
-    // Free deterministic gate before the paid verify call.
+    // Free deterministic gates before the paid verify call.
     const gateReason =
       lexicalGateReason(text, allowScaffoldOpener) ??
-      (args.bannedVehicles ? vehicleReuseReason(text, args.bannedVehicles) : null)
+      (args.bannedVehicles ? vehicleReuseReason(text, args.bannedVehicles) : null) ??
+      (!allowJustMeans && JUST_MEANS_RE.test(text)
+        ? 'it uses the "just means" construction, which your GLOSS CONSTRUCTION forbids'
+        : null) ??
+      overlapReason(text, args.vars.sectionExcerpt ?? '')
     if (gateReason) {
       logger.warn({ ...args.logCtx, attempt, gateReason }, '[plain-language] lexical gate failed')
       if (attempt === 1) {
@@ -527,6 +580,7 @@ export async function runPlainLanguagePass(args: ArticlePassArgs): Promise<Plain
   const rng = seededRng(jobId)
   const usedLabels = new Set<string>()
   const openerState = { thinkOfUsed: false }
+  const glossState = { justMeansUsed: false }
   let plannedGlossTotal = 0
   let plannedBoxTotal = 0
   let lastBoxedSectionIdx = -2
@@ -579,7 +633,7 @@ export async function runPlainLanguagePass(args: ArticlePassArgs): Promise<Plain
         if (explainedTerms.has(norm)) continue
         const generated = await generateVerified({
           kind: 'term',
-          vars: { ...baseVars, alreadyUsedMetaphors: usedImagery.join(', ') || 'none yet', term: t.term.trim(), sentence: t.sentence ?? '', openerStyle: pickGlossOpener(rng) },
+          vars: { ...baseVars, alreadyUsedMetaphors: usedImagery.join(', ') || 'none yet', term: t.term.trim(), sentence: t.sentence ?? '', openerStyle: pickGlossOpener(rng, glossState) },
           config,
           maxChars: MAX_GLOSS_CHARS,
           logCtx: { jobId, position: section.position, term: t.term },
@@ -739,6 +793,7 @@ export async function runNewsletterPlainLanguage(args: NewsletterPassArgs): Prom
     const usedImagery: string[] = []
     const nlRng = seededRng(args.labelSeed)
     const nlOpenerState = { thinkOfUsed: false }
+    const nlGlossState = { justMeansUsed: false }
     const baseVars = {
       sectionExcerpt: bodyText,
       writingStyle: voice.writingStyle,
@@ -758,7 +813,7 @@ export async function runNewsletterPlainLanguage(args: NewsletterPassArgs): Prom
       if (explained.has(norm)) continue
       const generated = await generateVerified({
         kind: 'term',
-        vars: { ...baseVars, alreadyUsedMetaphors: usedImagery.join(', ') || 'none yet', term: t.term.trim(), sentence: t.sentence ?? '', openerStyle: pickGlossOpener(nlRng) },
+        vars: { ...baseVars, alreadyUsedMetaphors: usedImagery.join(', ') || 'none yet', term: t.term.trim(), sentence: t.sentence ?? '', openerStyle: pickGlossOpener(nlRng, nlGlossState) },
         config,
         maxChars: MAX_GLOSS_CHARS,
         logCtx: { newsletter: true, term: t.term },

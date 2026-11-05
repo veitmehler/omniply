@@ -63,19 +63,33 @@ export async function generateKeyTakeaways(opts: {
     + (prose ? PROSE_OVERRIDE : '')
 
   const adapter = getLLMAdapter(provider)
+  // 1536, not 512: B7 shipped a Key Takeaways bullet hard-truncated
+  // mid-sentence ("…interrupts creep before") because dense, citation-rich
+  // bullets alone can exceed 512 tokens.
   const run = await withGeoRetry(`geo_key_takeaways_${opts.jobId}`, () =>
     adapter.call({
       systemPrompt: t?.systemPrompt ?? DEF_SYS,
       userPrompt,
       model,
       temperature: 0.35,
-      maxTokens: 512,
+      maxTokens: 1536,
     }),
   )
-  const listInner = await sanitizeDashesText(
+  let listInner = await sanitizeDashesText(
     cleanTextOutput(run.content).trim().replace(/^```(?:html)?\s*/i, '').replace(/```\s*$/i, ''),
     { jobId: opts.jobId, surface: 'key_takeaways' },
   )
+  // Completeness guard: a truncated output is worse than a shorter complete
+  // one. Drop any unterminated trailing <li>, and ensure the list closes.
+  if (!prose && listInner.includes('<ul')) {
+    if (!/<\/ul>\s*$/i.test(listInner)) {
+      const lastClose = listInner.lastIndexOf('</li>')
+      listInner = lastClose >= 0 ? listInner.slice(0, lastClose + 5) + '\n</ul>' : listInner + '</ul>'
+    }
+  } else if (prose && !/[.!?]\s*(?:<\/p>)?\s*$/.test(listInner)) {
+    const lastEnd = Math.max(listInner.lastIndexOf('. '), listInner.lastIndexOf('.</'))
+    if (lastEnd > 40) listInner = listInner.slice(0, lastEnd + 1) + (listInner.includes('<p') ? '</p>' : '')
+  }
   const sectionHtml = prose
     ? `<section class="key-takeaways" aria-label="The short version">\n<h2 id="key-takeaways-heading">The short version</h2>\n${listInner}\n</section>`
     : `<section class="key-takeaways" aria-label="Key Takeaways">\n<h2 id="key-takeaways-heading">Key Takeaways</h2>\n${listInner}\n</section>`

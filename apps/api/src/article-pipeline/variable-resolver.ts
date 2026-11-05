@@ -6,12 +6,27 @@ import { seededRng } from './enrichment/plain-language'
 // B6 (2026-11-04): per-article closing move, drawn deterministically from the
 // jobId. A fixed "allowed closer" rule made the model end EVERY article the
 // same sanctioned way; a per-job draw is the only reliable variety mechanism.
-const CLOSER_DIRECTIVES = [
-  'End the article with one short, fresh question that turns the final point toward the reader. Never the exact words "How about you?".',
-  'End the article by returning to the person or scene from your opening story: one or two sentences showing where they landed. No closing question.',
-  'End the article with one concrete, doable next step for the reader. No closing question.',
-  'End the article on a short, confident plain statement. No closing question, no callback.',
-] as const
+// B8: the neat opening-story bookend reads as an LLM-classic to detectors, so
+// the callback draw is down-weighted (10%) and loosened to an oblique glance.
+function drawCloserDirective(jobId: string): string {
+  const r = seededRng(`closer:${jobId}`)()
+  if (r < 0.3) return 'End the article with one short, fresh question that turns the final point toward the reader. Never the exact words "How about you?".'
+  if (r < 0.4) return 'End the article with one sentence that glances back at the opening once, obliquely — never close the loop neatly or resolve the opening scene word for word. No closing question.'
+  if (r < 0.7) return 'End the article with one concrete, doable next step for the reader. No closing question.'
+  return 'End the article on a short, confident plain statement. No closing question, no callback.'
+}
+
+// B8: per-article opening move. The mandated micro-story opener came out as
+// persona theatrics ("I'm the bloke people ring… Humbling.") — no clinician
+// writes like that. The opening is now drawn, with the understated micro-story
+// as one modest-weight option; the register ceiling lives in the voice spec.
+function drawOpeningDirective(jobId: string): string {
+  const r = seededRng(`opening:${jobId}`)()
+  if (r < 0.3) return 'OPENING MOVE: open the article with a short patient-case observation — something you saw or were asked in practice — told in one or two understated sentences. No self-deprecation, no performance.'
+  if (r < 0.55) return 'OPENING MOVE: open the article with the question a reader like this actually brings in, stated plainly in their words, then start answering it.'
+  if (r < 0.8) return 'OPENING MOVE: open the article with a direct, confident statement of its core point. No anecdote, no scene-setting.'
+  return 'OPENING MOVE: open the article with a brief personal micro-story told in one or two understated, professional sentences — a clinical observation, not a performance. No self-deprecating theatrics, no slang self-labels.'
+}
 
 // Maps generic {{<step_name>_output}} variable suffixes to step numbers
 const STEP_NAME_MAP: Record<string, number> = {
@@ -242,7 +257,10 @@ async function resolveVariable(name: string, ctx: PipelineContext): Promise<stri
       return getWritingStyle(ctx)
 
     case 'closer_directive':
-      return CLOSER_DIRECTIVES[Math.floor(seededRng(`closer:${ctx.jobId}`)() * CLOSER_DIRECTIVES.length)]
+      return drawCloserDirective(ctx.jobId)
+
+    case 'opening_directive':
+      return drawOpeningDirective(ctx.jobId)
 
     case 'google_guidelines': {
       const ps = await getPlatformSettings(ctx)
