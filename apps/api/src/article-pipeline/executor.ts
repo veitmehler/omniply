@@ -12,6 +12,7 @@ import { getBoss, QUEUES } from '../queues/index'
 import { resolveGroundingUrls } from './grounding-resolver'
 import { injectClientStory } from './client-stories/select'
 import { sanitizeDashes } from '../lib/text/dash-sanitizer'
+import { gateHedges } from '../lib/text/hedge-gate'
 
 const PHASE_A_STEPS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 const MAX_KEYWORD_RETRIES = 3
@@ -21,6 +22,10 @@ const MAX_KEYWORD_RETRIES = 3
  * since tier 2 skips sentences containing markup). See
  * .plans/de-ai-writing.implementation-plan.md. */
 const DASH_SANITIZE_STEPS = new Set([0, 11])
+
+/** The fact-adjusted body gets the narrated-constraint gate (hedge-gate.ts)
+ * before dash sanitation, so any rewrite is dash-cleaned too. */
+const HEDGE_GATE_STEPS = new Set([11])
 
 /** Steps whose Gemini grounding sources should be captured as research sources (Tier 1 citations). */
 const GROUNDING_CAPTURE_STEPS = new Set([6, 7, 8, 10])
@@ -124,6 +129,25 @@ export async function runPipelinePhaseA(jobId: string): Promise<void> {
         let stepOutput = result.output
         if (stepNumber === 3 || stepNumber === 6) {
           stepOutput = sanitizeKeywordText(stepOutput, stepNumber, jobId)
+        }
+
+        if (HEDGE_GATE_STEPS.has(stepNumber) && process.env.HEDGE_GATE !== '0') {
+          try {
+            const g = await gateHedges(stepOutput, { jobId, stepNumber })
+            if (g.changed) {
+              stepOutput = g.text
+              await prisma.pipelineStep.updateMany({
+                where: { jobId, stepNumber, status: 'completed' },
+                data: { output: stepOutput },
+              })
+            }
+            logger.info(
+              { jobId, stepNumber, flagged: g.flagged, rewritten: g.rewritten, deleted: g.deleted, kept: g.kept, boundaryKept: g.boundaryKept, noiseRemoved: g.noiseRemoved, llmCalls: g.llmCalls, cost: g.cost },
+              '[executor] hedge gate ran',
+            )
+          } catch (err) {
+            logger.warn({ jobId, stepNumber, err }, '[executor] hedge gate failed — output kept as-is')
+          }
         }
 
         if (DASH_SANITIZE_STEPS.has(stepNumber)) {

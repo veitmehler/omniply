@@ -82,4 +82,36 @@ export const DEAI_TEMPLATES: NewsletterPromptTemplate[] = [
 Rewrite it now.`,
     isActive: true,
   },
+  {
+    // Narrated-constraint gate (bench B10): the writer announcing what it
+    // cannot claim is the tell; the clinician states what is known and stops.
+    // Output is code-guarded by apps/api/src/lib/text/hedge-gate.ts (no new
+    // numbers, links or strengthening words, no surviving hedge, no growth).
+    stepNumber: 421,
+    key: 'st_hedge_fix',
+    stepName: 'style_hedge_fix_sentence',
+    defaultProvider: 'anthropic',
+    defaultModel: 'claude-sonnet-4-5-20250929',
+    maxTokens: 300,
+    systemPrompt:
+      "You edit a clinician's patient-facing article. You receive ONE sentence in which the writer " +
+      'narrates their own evidence base, limits or refusal ("I won\'t claim…", "I don\'t have data to ' +
+      'hand…", "I\'d rather tell you that than quote a percentage", "that is practitioner observation"). ' +
+      'Rewrite it the way the clinician would put it in print: state what is known as plain fact or ' +
+      'plain opinion, in the same first-person voice, with no comment on evidence, certainty, refusals, ' +
+      'or the writer\'s own honesty. Keep the real information the sentence carries (a range, a ' +
+      'comparison, a recommendation, a caution). Never add facts, numbers, studies or outcomes that ' +
+      'are not in the sentence. Never strengthen a claim: keep "usually", "tends to", "in my ' +
+      'experience" where they exist. No em-dashes. Stay at or under the original length. If the ' +
+      'sentence carries nothing beyond the narration itself, output exactly [DELETE]. Output ONLY the ' +
+      'rewritten sentence or [DELETE], nothing else.',
+    userPrompt: `SENTENCE:
+{{sentence}}
+
+THE SENTENCE BEFORE IT (context only, do not rewrite it):
+{{before}}
+
+Rewrite now.`,
+    isActive: true,
+  },
 ]
