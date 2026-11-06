@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { SiteHeader, Section, H2, P, MarketingFooter } from '@/components/marketing/Marketing'
+import { SiteHeader, Section, SectionHead, Measure, P, MarketingFooter } from '@/components/marketing/Marketing'
 import { ContactForm } from './ContactForm'
 
 export const metadata: Metadata = {
@@ -9,22 +9,22 @@ export const metadata: Metadata = {
 
 export default function ContactPage() {
   return (
-    <main>
+    <main className="om">
       <SiteHeader />
-      <Section dark>
-        <H2>Talk to us.</H2>
-        <P lead>
-          Questions about the platform, your practice, or whether Omniply fits: send them over. A human
-          reads every message and replies within one business day.
-        </P>
-        <div className="mt-10">
+      <Section tone="white">
+        <SectionHead
+          eyebrow="Contact"
+          title="Talk to us."
+          lead="Questions about the platform, your practice, or whether Omniply fits: send them over. A human reads every message and replies within one business day."
+        />
+        <Measure style={{ marginTop: 40 }}>
           <ContactForm />
-        </div>
-        <P>
-          <span className="mt-10 block text-[16px]">
-            Prefer email? <a href="mailto:support@omniply.io" className="underline">support@omniply.io</a>
-          </span>
-        </P>
+          <P>
+            <span className="om-small" style={{ display: 'block', marginTop: 32 }}>
+              Prefer email? <a href="mailto:support@omniply.io" className="om-link">support@omniply.io</a>
+            </span>
+          </P>
+        </Measure>
       </Section>
       <MarketingFooter />
     </main>

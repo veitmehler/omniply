@@ -1,20 +1,28 @@
 /**
- * Omniply platform overview (site refresh 2026-08-05).
- * Served at `/` on the marketing hosts (middleware rewrite) and at /home.
- * Graphical brand page, not a sales letter: the Loop is the centerpiece, the
- * chiropractic pathway sits above the fold, and the vertical sales letter
- * lives at /chiropractors. Voice = master pitch; dash-free house style.
+ * Omniply platform overview (site refresh 2026-08-05; recomposed on the brand
+ * design system 2026-11-05). Served at `/` on the marketing hosts
+ * (middleware rewrite) and at /home. Graphical brand page, not a sales
+ * letter: the Loop is the centerpiece, the vertical pathways sit above the
+ * fold, and the vertical sales letters live at /chiropractors and /wellness.
+ * Voice = master pitch; dash-free house style.
  */
 import type { Metadata } from 'next'
 import {
-  TOKENS,
   XRAY_URL,
-  Cta,
+  Btn,
+  CtaRow,
   SiteHeader,
   Eyebrow,
   Section,
-  H2,
+  SectionHead,
+  Measure,
+  Grid,
+  Card,
+  H1,
+  H3,
   P,
+  NumberedCards,
+  Callout,
   LoopDiagram,
   StatBand,
   PipelineDiagram,
@@ -57,186 +65,164 @@ const FAQ_ITEMS: FaqEntry[] = [
   },
 ]
 
+const LOOP = [
+  { title: 'Response', body: 'An AI front desk: chat and voice that answer in two rings, day and night, and book on the spot or take a timed callback.' },
+  { title: 'Proof', body: 'Every happy client becomes public evidence. Reviews compound like interest.' },
+  { title: 'Presence', body: 'Real content, produced in your voice every week... what keeps clients warm, and what Google and the AI assistants read when they recommend.' },
+  { title: 'Recall', body: 'Nobody drifts unnoticed. The ones who faded get a reason to come back.' },
+]
+
 export default function HomePage() {
   return (
-    <main>
+    <main className="om">
       <SiteHeader />
-      {/* ── Hero: AI-booking lead (angle sweep 2026-10-09) + vertical pathway ── */}
-      <Section dark>
-        <Eyebrow>Omniply</Eyebrow>
-        <h1 className="mb-6 text-4xl font-extrabold leading-tight md:text-5xl" style={{ textWrap: 'balance' } as React.CSSProperties}>
-          Your next client will ask an AI assistant who to book. Can it even find you?
-        </h1>
-        <P lead>
-          132 million Americans already research with AI assistants before they buy. If one can&rsquo;t find
-          your practice, understand your website, or talk to it, it simply books the next practice down the
-          road. Omniply is marketing on autopilot for local practices: it makes you the practice AI
-          assistants and people find, answers every call and message in seconds, writes in your voice, asks
-          for the review, and remembers every client who drifted. You approve. It ships.
-        </P>
-        <div className="mt-8 grid gap-4 sm:grid-cols-2">
-          <a
-            href="/chiropractors"
-            className="rounded-xl border p-6 transition-transform hover:scale-[1.01]"
-            style={{ borderColor: TOKENS.lime, background: 'rgba(195,244,59,0.06)' }}
-          >
-            <div className="text-xs font-bold uppercase tracking-widest" style={{ color: TOKENS.lime }}>
-              Live now
-            </div>
-            <div className="mt-2 text-xl font-bold text-white">For chiropractic practices &rarr;</div>
-            <div className="mt-1 text-sm text-white/60">The full story, built for your world.</div>
-          </a>
-          <a
-            href="/wellness"
-            className="rounded-xl border p-6 transition-transform hover:scale-[1.01]"
-            style={{ borderColor: TOKENS.lime, background: 'rgba(195,244,59,0.06)' }}
-          >
-            <div className="text-xs font-bold uppercase tracking-widest" style={{ color: TOKENS.lime }}>
-              Live now
-            </div>
-            <div className="mt-2 text-xl font-bold text-white">For wellness &amp; longevity centers &rarr;</div>
-            <div className="mt-1 text-sm text-white/60">HBOT, IV, cold plunge, massage, longevity... your version.</div>
-          </a>
-        </div>
-        <div className="mt-4">
-          <a
-            href={XRAY_URL}
-            className="block rounded-xl border border-white/15 p-6 transition-transform hover:scale-[1.005]"
-          >
-            <div className="text-xs font-bold uppercase tracking-widest text-white/50">2 minutes</div>
-            <div className="mt-2 text-xl font-bold text-white">X-Ray your business &rarr;</div>
-            <div className="mt-1 text-sm text-white/60">
-              Four system scores, a dollar figure on what is quietly leaking, and whether AI assistants can
-              find you.
-            </div>
-          </a>
-        </div>
+
+      {/* ── Hero: AI-booking lead (angle sweep 2026-10-09) + vertical pathways ── */}
+      <Section tone="dark" hero>
+        <Measure>
+          <Eyebrow>Omniply</Eyebrow>
+          <H1>Your next client will ask an AI assistant who to book. Can it even find you?</H1>
+          <P first>
+            132 million Americans already research with AI assistants before they buy. If one can&rsquo;t
+            find your practice, understand your website, or talk to it, it simply books the next practice
+            down the road.
+          </P>
+          <P lead>
+            Omniply is marketing on autopilot for local practices: it makes you the practice AI assistants
+            and people find, answers every call and message in seconds, writes in your voice, asks for the
+            review, and remembers every client who drifted. You approve. It ships.
+          </P>
+        </Measure>
+        <Grid cols={3} style={{ marginTop: 48 }}>
+          <Card href="/chiropractors">
+            <Eyebrow>Live now</Eyebrow>
+            <H3>For chiropractic practices &rarr;</H3>
+            <P>The full story, built for your world.</P>
+          </Card>
+          <Card href="/wellness">
+            <Eyebrow>Live now</Eyebrow>
+            <H3>For wellness &amp; longevity centers &rarr;</H3>
+            <P>HBOT, IV, cold plunge, massage, longevity... your version.</P>
+          </Card>
+          <Card href={XRAY_URL}>
+            <Eyebrow>2 minutes</Eyebrow>
+            <H3>X-Ray your business &rarr;</H3>
+            <P>Four system scores, a dollar figure on what is quietly leaking, and whether AI assistants can find you.</P>
+          </Card>
+        </Grid>
       </Section>
 
-
-
-
-
-
-
       {/* ── Why speed and presence decide (missed calls: the second angle) ── */}
-      <Section>
-        <Eyebrow>Why it matters now</Eyebrow>
-        <H2>Your clients decide faster than your front desk can answer.</H2>
+      <Section tone="grey">
+        <SectionHead eyebrow="Why it matters now" title="Your clients decide faster than your front desk can answer." />
         <StatBand />
-        <P>
-          Whoever answers first and stays familiar wins the booking. That is not a slogan, it is the measured
-          behavior of people choosing a local practice today. And the newest wave skips the phone entirely:
-          they ask an AI assistant, and the assistant recommends whoever it can actually read.
-        </P>
+        <Measure style={{ marginTop: 40 }}>
+          <P lead center>
+            Whoever answers first and stays familiar wins the booking. That is not a slogan, it is the
+            measured behavior of people choosing a local practice today. And the newest wave skips the phone
+            entirely: they ask an AI assistant, and the assistant recommends whoever it can actually read.
+          </P>
+        </Measure>
       </Section>
 
       {/* ── The Loop ── */}
-      <Section dark>
-        <Eyebrow>The mechanism</Eyebrow>
-        <H2>One loop. Four systems. Each one feeds the next.</H2>
+      <Section tone="dark">
+        <SectionHead eyebrow="The mechanism" title="One loop. Four systems. Each one feeds the next." />
         <LoopDiagram />
-        <div className="grid gap-5 sm:grid-cols-2">
-          {[
-            ['Response', 'An AI front desk: chat and voice that answer in two rings, day and night, and book on the spot or take a timed callback.'],
-            ['Proof', 'Every happy client becomes public evidence. Reviews compound like interest.'],
-            ['Presence', 'Real content, produced in your voice every week... what keeps clients warm, and what Google and the AI assistants read when they recommend.'],
-            ['Recall', 'Nobody drifts unnoticed. The ones who faded get a reason to come back.'],
-          ].map(([head, body]) => (
-            <div key={head}>
-              <div className="text-lg font-bold" style={{ color: TOKENS.lime }}>{head}</div>
-              <p className="mt-1 text-white/75">{body}</p>
-            </div>
-          ))}
+        <div style={{ marginTop: 40 }}>
+          <NumberedCards items={LOOP} />
         </div>
-        <P>
-          <br />
-          It is not four tools, and it is not another AI content engine. It is one flywheel: instant response
-          converts the inquiry, happy clients leave reviews, reviews and presence bring the next inquiry,
-          recall keeps them all coming back. Break any link and the leak reopens somewhere else.
-        </P>
+        <Measure>
+          <Callout>
+            <P>
+              It is not four tools, and it is not another AI content engine. It is one flywheel: instant
+              response converts the inquiry, happy clients leave reviews, reviews and presence bring the next
+              inquiry, recall keeps them all coming back. Break any link and the leak reopens somewhere else.
+            </P>
+          </Callout>
+        </Measure>
       </Section>
 
       {/* ── Verticals ── */}
-      <Section>
-        <Eyebrow>Built per profession</Eyebrow>
-        <H2>Tailored deep, not templated wide.</H2>
-        <P>
-          Omniply is built one profession at a time, so the content calendar, the compliance guardrails and
-          the voice all fit your actual world.
-        </P>
-        <div className="mt-8 grid gap-4 sm:grid-cols-2">
-          <a href="/chiropractors" className="rounded-xl border-2 p-6 transition-transform hover:scale-[1.01]" style={{ borderColor: TOKENS.accent }}>
-            <div className="text-xs font-bold uppercase tracking-widest" style={{ color: TOKENS.accentDeep }}>Live</div>
-            <div className="mt-2 text-xl font-bold">Chiropractic &rarr;</div>
-            <div className="mt-1 text-sm" style={{ color: TOKENS.muted }}>
-              Seasonal spine calendar, healthcare-safe claims, recall built for care plans.
-            </div>
-          </a>
-          <a href="/wellness" className="rounded-xl border-2 p-6 transition-transform hover:scale-[1.01]" style={{ borderColor: TOKENS.accent }}>
-            <div className="text-xs font-bold uppercase tracking-widest" style={{ color: TOKENS.accentDeep }}>Live</div>
-            <div className="mt-2 text-xl font-bold">Wellness &amp; Longevity Centers &rarr;</div>
-            <div className="mt-1 text-sm" style={{ color: TOKENS.muted }}>
-              Recovery and longevity calendar, claims-safe content, per-service booking, a front desk that
-              answers in five languages.
-            </div>
-          </a>
-          <div className="rounded-xl border p-6 sm:col-span-2" style={{ borderColor: TOKENS.line }}>
-            <div className="text-xs font-bold uppercase tracking-widest" style={{ color: TOKENS.muted }}>In the pipeline</div>
-            <div className="mt-2 text-xl font-bold" style={{ color: TOKENS.muted }}>More practice types</div>
-            <div className="mt-1 text-sm" style={{ color: TOKENS.muted }}>
+      <Section tone="white">
+        <SectionHead
+          eyebrow="Built per profession"
+          title="Tailored deep, not templated wide."
+          lead="Omniply is built one profession at a time, so the content calendar, the compliance guardrails and the voice all fit your actual world."
+        />
+        <Grid cols={2} style={{ marginTop: 40 }}>
+          <Card href="/chiropractors">
+            <Eyebrow>Live</Eyebrow>
+            <H3>Chiropractic &rarr;</H3>
+            <P>Seasonal spine calendar, healthcare-safe claims, recall built for care plans.</P>
+          </Card>
+          <Card href="/wellness">
+            <Eyebrow>Live</Eyebrow>
+            <H3>Wellness &amp; Longevity Centers &rarr;</H3>
+            <P>Recovery and longevity calendar, claims-safe content, per-service booking, a front desk that answers in five languages.</P>
+          </Card>
+        </Grid>
+        <Measure style={{ marginTop: 20 }}>
+          <Card muted>
+            <Eyebrow>In the pipeline</Eyebrow>
+            <H3>More practice types</H3>
+            <P>
               The loop is universal. The tailoring takes time, and we do one profession properly at a time.
               Run something else? Take the X-Ray anyway and tell us what you do... that list decides what we
               build next.
-            </div>
-          </div>
-        </div>
+            </P>
+          </Card>
+        </Measure>
       </Section>
 
       {/* ── How it runs (dark: PipelineDiagram uses white linework) ── */}
-      <Section dark>
-        <Eyebrow>How it runs</Eyebrow>
-        <H2>A pipeline with one gate: you.</H2>
-        <P>
-          Omniply is not an assistant you prompt. It is a pipeline that runs on a fixed weekly rhythm, holds
-          everything at a review gate where you approve with one click, and publishes across every channel on
-          schedule. The same input produces the same quality, week after week... and the one thing the machine
-          never does is skip a week.
-        </P>
+      <Section tone="dark">
+        <SectionHead eyebrow="How it runs" title="A pipeline with one gate: you." />
+        <Measure>
+          <P>
+            Omniply is not an assistant you prompt. It is a pipeline that runs on a fixed weekly rhythm, holds
+            everything at a review gate where you approve with one click, and publishes across every channel
+            on schedule. The same input produces the same quality, week after week... and the one thing the
+            machine never does is skip a week.
+          </P>
+        </Measure>
         <PipelineDiagram />
       </Section>
 
       {/* ── FAQ ── */}
-      <Section>
-        <Eyebrow>Questions, answered straight</Eyebrow>
-        <H2>The short version of everything owners ask.</H2>
+      <Section tone="grey">
+        <SectionHead eyebrow="Questions, answered straight" title="The short version of everything owners ask." />
         <Faq items={FAQ_ITEMS} />
       </Section>
 
-      {/* ── Founder + Close ── */}
-      <Section dark>
-        <Eyebrow>Who built this</Eyebrow>
-        <H2>Sixteen years of doing this manually taught me exactly what to automate.</H2>
-        <P>
-          I have spent 16 years running marketing for health professionals and local practices. The system
-          inside Omniply is the playbook elite practice coaches teach their clients to execute by hand... the
-          one that works every time it is actually executed, and fails every time life gets in the way of
-          executing it. So I learned to code and built the version that cannot get tired, cannot get busy, and
-          cannot skip a week.
-        </P>
-        <div className="my-12 h-px w-full" style={{ background: '#343434' }} />
-        <H2>Start where the evidence starts: with the X-Ray.</H2>
-        <P lead>
-          Two minutes, twelve questions... four system scores, a dollar figure on what your business is
-          quietly leaking every month, and a read on whether AI assistants can even find you. No call, no
-          pitch. A report and a number.
-        </P>
-        <Cta href={XRAY_URL} sub="2 minutes · free · your report is yours to keep">
-          X-Ray My Business
-        </Cta>
-        <p className="mt-6 text-center text-sm text-white/50">
-          Prefer to see the system first? <a href="/walkthrough" className="underline">Watch the walkthrough</a>
-        </p>
+      {/* ── Founder ── */}
+      <Section tone="white">
+        <SectionHead eyebrow="Who built this" title="Sixteen years of doing this manually taught me exactly what to automate." />
+        <Measure>
+          <P>
+            I have spent 16 years running marketing for health professionals and local practices. The system
+            inside Omniply is the playbook elite practice coaches teach their clients to execute by hand...
+            the one that works every time it is actually executed, and fails every time life gets in the way
+            of executing it. So I learned to code and built the version that cannot get tired, cannot get
+            busy, and cannot skip a week.
+          </P>
+        </Measure>
+      </Section>
+
+      {/* ── Close ── */}
+      <Section tone="dark">
+        <SectionHead eyebrow="Here's what to do next" title="Start where the evidence starts: with the X-Ray." />
+        <Measure>
+          <P lead center>
+            Two minutes, twelve questions... four system scores, a dollar figure on what your business is
+            quietly leaking every month, and a read on whether AI assistants can even find you. No call, no
+            pitch. A report and a number.
+          </P>
+          <CtaRow sub="2 minutes · free · your report is yours to keep">
+            <Btn href={XRAY_URL}>X-Ray My Business</Btn>
+            <Btn href="/walkthrough" ghost>Watch the walkthrough</Btn>
+          </CtaRow>
+        </Measure>
       </Section>
 
       <FaqJsonLd items={FAQ_ITEMS} />

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { SiteHeader, Section, H2, P, MarketingFooter, TOKENS } from '@/components/marketing/Marketing'
+import { SiteHeader, Section, SectionHead, Measure, P, MarketingFooter } from '@/components/marketing/Marketing'
 
 export const revalidate = 300
 
@@ -33,44 +33,38 @@ async function fetchArticles(): Promise<ArticleCard[]> {
 export default async function ArticlesIndexPage() {
   const articles = await fetchArticles()
   return (
-    <main>
+    <main className="om">
       <SiteHeader />
-      <Section dark>
-        <H2>Articles from the engine room.</H2>
-        <P lead>
-          Every article here was researched, written, illustrated, and published by the same engine our
-          customers get. We do not just sell the autopilot... we fly it. Judge us by the output.
-        </P>
-        <div className="mt-10 space-y-8">
-          {articles.length === 0 && <P>First articles landing shortly.</P>}
+      <Section tone="grey">
+        <SectionHead
+          eyebrow="Articles"
+          title="Articles from the engine room."
+          lead="Every article here was researched, written, illustrated, and published by the same engine our customers get. We do not just sell the autopilot... we fly it. Judge us by the output."
+        />
+        <Measure style={{ marginTop: 40, display: 'grid', gap: 16 }}>
+          {articles.length === 0 && <P center>First articles landing shortly.</P>}
           {articles.map((a) => (
-            <a
-              key={a.slug}
-              href={`/articles/${a.slug}`}
-              className="block rounded-2xl p-6 transition-colors"
-              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
-            >
-              <div className="flex items-start gap-5">
-                {a.featuredImage && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={a.featuredImage}
-                    alt=""
-                    className="hidden h-24 w-36 flex-shrink-0 rounded-lg object-cover md:block"
-                  />
-                )}
-                <div>
-                  <div className="text-xl font-bold" style={{ color: '#fff' }}>{a.title}</div>
-                  {a.excerpt && <p className="mt-2 text-[16px] opacity-75">{a.excerpt}</p>}
-                  <div className="mt-3 text-sm" style={{ color: TOKENS.lime }}>
-                    {new Date(a.publishedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-                    {a.readingTime ? ` · ${a.readingTime} min read` : ''}
-                  </div>
-                </div>
+            <a key={a.slug} href={`/articles/${a.slug}`} className="om-card" style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
+              {a.featuredImage && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={a.featuredImage}
+                  alt=""
+                  className="hidden md:block"
+                  style={{ width: 144, height: 96, flex: 'none', borderRadius: 12, objectFit: 'cover' }}
+                />
+              )}
+              <div>
+                <h3 className="om-h3">{a.title}</h3>
+                {a.excerpt && <p className="om-p">{a.excerpt}</p>}
+                <p className="om-small" style={{ marginTop: 12 }}>
+                  {new Date(a.publishedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                  {a.readingTime ? ` · ${a.readingTime} min read` : ''}
+                </p>
               </div>
             </a>
           ))}
-        </div>
+        </Measure>
       </Section>
       <MarketingFooter />
     </main>

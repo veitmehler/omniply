@@ -18,170 +18,93 @@
 <meta name="robots" content="noindex">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Omniply for Chiropractors</title>
+<link rel="stylesheet" href="/brand.css">
 <style>
-:root {
-  --bg: #ffffff; --bg-alt: #f5f5f7; --ink: #1d1d1f; --ink-2: #4b4b50; --muted: #6e6e73;
-  --line: #e2e2e7; --card: #ffffff; --navy: #0b2545; --navy-2: #163a66; --lime: #c3f43b; --lime-ink: #1f2d05;
-  --hero-ink: #f5f7fa; --hero-sub: #c9d3df; --btn: #0b2545; --btn-ink: #ffffff;
-}
-* { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; }
-body { margin: 0; background: var(--bg); color: var(--ink); font: 20px/1.6 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
-section { padding: 72px 24px; }
-@media (min-width: 740px) { section { padding: 104px 24px; } }
-section.alt { background: var(--bg-alt); }
-section.dark { background: var(--navy); color: var(--hero-ink); }
-.canvas { max-width: 980px; margin: 0 auto; }
-.measure { max-width: 800px; margin: 0 auto; }
-.eyebrow { font-size: 13px; letter-spacing: .14em; text-transform: uppercase; font-weight: 700; color: var(--muted); margin: 0 0 14px; text-align: center; }
-section.dark .eyebrow { color: var(--lime); }
-h1, h2, h3 { margin: 0; letter-spacing: -0.015em; text-wrap: balance; }
-h1 { font-size: clamp(36px, 5.6vw, 60px); line-height: 1.06; font-weight: 700; text-align: center; margin-bottom: 28px; }
-h2 { font-size: clamp(30px, 4vw, 44px); line-height: 1.12; font-weight: 700; text-align: center; margin-bottom: 36px; }
-h3 { font-size: 22px; line-height: 1.25; font-weight: 700; margin-bottom: 10px; }
-p { margin: 0 0 20px; }
-p:last-child { margin-bottom: 0; }
-.lead { font-size: 23px; line-height: 1.5; }
-.small { font-size: 16px; color: var(--muted); }
-strong { font-weight: 700; }
-/* hero */
-.hero { padding: 96px 24px 88px; }
-@media (min-width: 740px) { .hero { padding: 128px 24px 112px; } }
-.hero .brand { font-size: 13px; letter-spacing: .18em; text-transform: uppercase; font-weight: 700; color: var(--lime); text-align: center; margin: 0 0 28px; }
-.hero h1 { color: #ffffff; }
-.hero p { color: var(--hero-sub); font-size: 22px; line-height: 1.55; }
-.hero p.first { color: #ffffff; font-size: 24px; font-weight: 600; }
-.hero p.who { font-size: 17px; color: #9fb0bd; margin-top: 28px; text-align: center; }
-/* feature rows (uneven copy reads as intended) */
-.rows { border-top: 1px solid var(--line); }
-.row { display: grid; gap: 12px 48px; padding: 36px 0; border-bottom: 1px solid var(--line); }
-@media (min-width: 740px) { .row { grid-template-columns: 300px 1fr; padding: 44px 0; } }
-.row h3 { font-size: 26px; line-height: 1.2; letter-spacing: -0.01em; }
-.row p { font-size: 19px; line-height: 1.55; color: var(--ink-2); }
-/* grids */
-.grid { display: grid; gap: 20px; }
-@media (min-width: 740px) { .grid.cols-3 { grid-template-columns: repeat(3, 1fr); } .grid.cols-2 { grid-template-columns: repeat(2, 1fr); } .grid.cols-4 { grid-template-columns: repeat(4, 1fr); } }
-/* cards */
-.card { background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 30px 30px; }
-section.dark .card { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.14); color: var(--hero-ink); }
-.card p { font-size: 18px; line-height: 1.55; color: var(--ink-2); }
-section.dark .card p { color: var(--hero-sub); }
-.card h3 { color: var(--ink); }
-section.dark .card h3 { color: #ffffff; }
-.stat { text-align: center; padding: 26px 18px; }
-.stat b { display: block; font-size: 38px; line-height: 1; letter-spacing: -0.02em; color: var(--ink); margin-bottom: 10px; }
-.stat span { display: block; font-size: 15px; line-height: 1.4; color: var(--muted); }
-.n { display: inline-flex; width: 34px; height: 34px; border-radius: 50%; background: var(--lime); color: var(--lime-ink); font-weight: 800; font-size: 15px; align-items: center; justify-content: center; margin-bottom: 16px; }
-.callout { border-left: 4px solid var(--lime); padding: 6px 0 6px 24px; margin-top: 40px; }
-.callout p { font-size: 20px; }
-/* prognosis checklist */
-.check { list-style: none; padding: 0; margin: 0; display: grid; gap: 18px; }
-.check li { position: relative; padding-left: 40px; font-size: 20px; line-height: 1.5; }
-.check li::before { content: "✓"; position: absolute; left: 0; top: 2px; width: 26px; height: 26px; border-radius: 50%; background: var(--lime); color: var(--lime-ink); font-size: 14px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
-.check li b { display: block; color: var(--ink); }
-.check li span { color: var(--ink-2); }
-.proof-label { text-align: center; margin: 56px 0 20px; }
-/* CTA */
-.ctas { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; margin: 40px 0 0; }
-.btn { display: inline-flex; align-items: center; justify-content: center; min-height: 56px; padding: 0 30px; border-radius: 999px; font-family: inherit; font-size: 18px; font-weight: 600; line-height: 1; text-decoration: none; cursor: pointer; border: 2px solid transparent; }
-.btn.primary { background: var(--btn); color: var(--btn-ink); border-color: var(--btn); }
-.btn.ghost { background: transparent; color: var(--ink); border-color: var(--ink); }
-section.dark .btn.primary { background: var(--lime); color: var(--lime-ink); border-color: var(--lime); }
-section.dark .btn.ghost { color: #ffffff; border-color: rgba(255,255,255,0.7); }
+body { margin: 0; }
+.proof-label { margin: 56px 0 20px; }
 .steps { margin-top: 56px; }
-.steps .card { text-align: left; }
-.steps h3 { font-size: 19px; }
-.steps p { font-size: 17px; }
-footer { padding: 40px 24px 56px; text-align: center; color: var(--muted); font-size: 15px; }
-footer a { color: inherit; text-decoration: none; }
-.sources { font-size: 14px; color: var(--muted); text-align: center; margin-top: 28px; }
-/* consultation popover */
-.consult-overlay { position: fixed; inset: 0; z-index: 90; background: rgba(10,20,28,0.72); display: none; align-items: center; justify-content: center; padding: 18px; }
-.consult-overlay.open { display: flex; }
-.consult-box { position: relative; width: 100%; max-width: 520px; max-height: 92svh; overflow-y: auto; background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 26px 24px; color: var(--ink); }
-.consult-box h3 { font-size: 22px; margin: 0 0 6px; }
-.consult-box .sub { font-size: 15px; color: var(--muted); margin: 0 0 16px; line-height: 1.5; }
-.consult-close { position: absolute; top: 12px; right: 14px; background: none; border: none; color: var(--muted); font-size: 24px; cursor: pointer; line-height: 1; }
-.consult-box iframe { width: 100%; border: none; min-height: 560px; border-radius: 10px; background: #fff; }
-.consult-alt { font-size: 13px; color: var(--muted); margin-top: 12px; text-align: center; }
-.consult-alt a { color: inherit; }
+.steps .om-h3 { font-size: 19px; }
+.steps .om-p { font-size: 17px; }
+.om-foot { padding: 40px 24px 56px; text-align: center; color: #6e6e73; font-size: 15px; }
+.om-foot a { color: inherit; text-decoration: none; }
 </style>
 </head>
-<body>
+<body class="om">
 
-<section class="dark hero">
-  <div class="measure">
-    <p class="brand">Omniply</p>
-    <h1>When a patient asks an AI assistant about a chiro in your town... can it even find you?</h1>
-    <p class="first">If you don't know the answer... probably not.</p><p class="">You see, 132 million Americans now use AI assistants to research and compare before they book. And if an AI assistant can't understand your website, or talk to it, it will simply book the next practice down the road.</p><p class="">And the calls you miss... they just keep booking with whoever answered first... and then patients fade between visits, invisibly, until your waiting room turns eerily quiet.</p>
+<section class="om-section is-dark om-hero">
+  <div class="om-measure">
+    <p class="om-brand">Omniply</p>
+    <h1 class="om-h1">When a patient asks an AI assistant about a chiro in your town... can it even find you?</h1>
+    <p class="om-p is-first">If you don't know the answer... probably not.</p><p class="om-p om-lead">You see, 132 million Americans now use AI assistants to research and compare before they book. And if an AI assistant can't understand your website, or talk to it, it will simply book the next practice down the road.</p><p class="om-p om-lead">And the calls you miss... they just keep booking with whoever answered first... and then patients fade between visits, invisibly, until your waiting room turns eerily quiet.</p>
     
   </div>
 </section>
 
-<section class="alt">
-  <div class="canvas">
-    <p class="eyebrow">Why this is happening</p>
-    <h2>Three forces created the leak. None of them asked your permission.</h2>
-    <div class="rows"><div class="row"><h3>The technology force</h3><div><p>Patients stopped browsing. They ask. "Who should I see about this?" goes to an AI assistant now, not a search box.</p><p>For that assistant to send them your way, it has to find your practice. Understand your website. Talk to it. Book. If it can't read you, you don't lose the comparison. You never come up.</p><p>And the old layer still runs underneath: every patient in your town carries every competitor's front desk in their pocket. A back seizes at 9pm. They don't wait for your opening hours. They search, they message, they book with whoever answers.</p><p>Google decides who exists. The map pack decides who gets the call.</p></div></div><div class="row"><h3>The social force</h3><div><p>Patients stopped calling back. Not because they're rude. Because Amazon, Uber and a decade of instant everything trained them.</p><p>Princeton researchers showed people form a trust judgment in a tenth of a second, before a single rational thought. Your future patient doesn't compare credentials. They call the name they already know. And they book with whoever answers first.</p></div></div><div class="row"><h3>The economic force</h3><div><p>The compounding asset in healthcare used to be location and reputation. Now it's attention and reviews.</p><p>The practices growing right now are not better clinicians than you. They run better systems. And every month, the gap gets more expensive to close.</p></div></div></div>
-    <div class="grid cols-4" style="margin-top:48px"><div class="card stat"><b>132M</b><span>Americans research with AI assistants before they buy</span></div><div class="card stat"><b>78%</b><span>of customers buy from whoever answers first</span></div><div class="card stat"><b>100×</b><span>more likely to connect in 5 min vs. 30 min</span></div><div class="card stat"><b>2 days</b><span>the average business response time</span></div></div>
-    <div class="measure" style="margin-top:40px"><p class="lead" style="text-align:center"><strong>Ten years ago, "great care plus word of mouth" was a growth strategy. Today it's a lottery ticket.</strong></p></div>
-    <p class="sources">Sources: Adyen Retail Report 2026; Oldroyd, Lead Response Management Study (InsideSales, 2007); Oldroyd, McElheran & Elkington, Harvard Business Review, March 2011; Lead Connect survey.</p>
+<section class="om-section is-grey">
+  <div class="om-canvas">
+    <p class="om-eyebrow">Why this is happening</p>
+    <h2 class="om-h2">Three forces created the leak. None of them asked your permission.</h2>
+    <div class="om-rows"><div class="om-row"><h3 class="om-h3">The technology force</h3><div><p class="om-p">Patients stopped browsing. They ask. "Who should I see about this?" goes to an AI assistant now, not a search box.</p><p class="om-p">For that assistant to send them your way, it has to find your practice. Understand your website. Talk to it. Book. If it can't read you, you don't lose the comparison. You never come up.</p><p class="om-p">And the old layer still runs underneath: every patient in your town carries every competitor's front desk in their pocket. A back seizes at 9pm. They don't wait for your opening hours. They search, they message, they book with whoever answers.</p><p class="om-p">Google decides who exists. The map pack decides who gets the call.</p></div></div><div class="om-row"><h3 class="om-h3">The social force</h3><div><p class="om-p">Patients stopped calling back. Not because they're rude. Because Amazon, Uber and a decade of instant everything trained them.</p><p class="om-p">Princeton researchers showed people form a trust judgment in a tenth of a second, before a single rational thought. Your future patient doesn't compare credentials. They call the name they already know. And they book with whoever answers first.</p></div></div><div class="om-row"><h3 class="om-h3">The economic force</h3><div><p class="om-p">The compounding asset in healthcare used to be location and reputation. Now it's attention and reviews.</p><p class="om-p">The practices growing right now are not better clinicians than you. They run better systems. And every month, the gap gets more expensive to close.</p></div></div></div>
+    <div class="om-grid cols-4" style="margin-top:48px"><div class="om-card om-stat"><b>132M</b><span>Americans research with AI assistants before they buy</span></div><div class="om-card om-stat"><b>78%</b><span>of customers buy from whoever answers first</span></div><div class="om-card om-stat"><b>100×</b><span>more likely to connect in 5 min vs. 30 min</span></div><div class="om-card om-stat"><b>2 days</b><span>the average business response time</span></div></div>
+    <div class="om-measure" style="margin-top:40px"><p class="om-p om-lead is-center"><strong>Ten years ago, "great care plus word of mouth" was a growth strategy. Today it's a lottery ticket.</strong></p></div>
+    <p class="om-sources">Sources: Adyen Retail Report 2026; Oldroyd, Lead Response Management Study (InsideSales, 2007); Oldroyd, McElheran & Elkington, Harvard Business Review, March 2011; Lead Connect survey.</p>
   </div>
 </section>
 
-<section>
-  <div class="measure">
-    <p class="eyebrow">Why effort can't fix it</p>
-    <h2>You already tried the obvious fix. It's called trying harder.</h2>
-    <p>Post more. Follow up faster. Remember to ask for reviews.</p><p>Posting at 11pm moves nothing. Everyone is asleep. Telling the front desk to follow up "when it's quiet" loses to patients who expect an answer now. Asking for a review when you remember, and only from the patients you're sure will say yes, hands the map pack to the clinic next door.</p><p>So you need consistency. Systematically. That is exactly what the expensive chiropractic coaches sell you. And then you hit the real problem.</p><p><strong>It's not a discipline problem. It's a physics problem.</strong></p><p>Attention runs 24 hours a day. Humans don't. You need sleep. Your family needs you.</p><p>You cannot out-hustle a force that never sleeps. You can only out-system it. The practices that grow are simply the ones where the system runs anyway.</p>
+<section class="om-section">
+  <div class="om-measure">
+    <p class="om-eyebrow">Why effort can't fix it</p>
+    <h2 class="om-h2">You already tried the obvious fix. It's called trying harder.</h2>
+    <p class="om-p">Post more. Follow up faster. Remember to ask for reviews.</p><p class="om-p">Posting at 11pm moves nothing. Everyone is asleep. Telling the front desk to follow up "when it's quiet" loses to patients who expect an answer now. Asking for a review when you remember, and only from the patients you're sure will say yes, hands the map pack to the clinic next door.</p><p class="om-p">So you need consistency. Systematically. That is exactly what the expensive chiropractic coaches sell you. And then you hit the real problem.</p><p class="om-p"><strong>It's not a discipline problem. It's a physics problem.</strong></p><p class="om-p">Attention runs 24 hours a day. Humans don't. You need sleep. Your family needs you.</p><p class="om-p">You cannot out-hustle a force that never sleeps. You can only out-system it. The practices that grow are simply the ones where the system runs anyway.</p>
   </div>
-  <div class="measure" style="margin-top:72px">
-    <h2>A patient finishes their care plan. They feel good. Then nothing happens.</h2>
-    <p>No contact. No content. No reason to think of you. Eight months later their back flares up... in a city full of clinics that answer faster than you.</p><p><strong>Every patient who stopped coming has a spine that did not stop needing care.</strong> They did not leave you. Life got loud, and nobody tapped them on the shoulder.</p>
-  </div>
-</section>
-
-<section class="dark">
-  <div class="canvas">
-    <p class="eyebrow">Here's what I got</p>
-    <h2>The Omniply Loop: four systems, each feeding the next.</h2>
-    <div class="measure"><p class="lead" style="text-align:center">What fixes this is not a tool. It's a loop. It multiplies your presence everywhere your patients pay attention, all day.</p></div>
-    <div class="grid cols-2" style="margin-top:40px"><div class="card"><span class="n">1</span><h3>Response</h3><p>An AI front desk that answers in two rings. 2pm while you're adjusting. 2am while you're asleep. Website chat and a phone voice that sound like your practice, send the booking link or take a callback for the exact time the patient names. 200 voice minutes included. The inquiry answered instantly is the patient your competitor never meets.</p></div><div class="card"><span class="n">2</span><h3>Proof</h3><p>A review engine that turns every happy patient into public evidence. Automatically. Reviews compound like interest: invisible week to week, undeniable year to year. They feed the map pack and the AI answers alike.</p></div><div class="card"><span class="n">3</span><h3>Presence</h3><p>Real content. Posts, articles, a newsletter your patients actually read. Produced in your voice every week, without you writing a word. It keeps patients warm between visits. It is what Google and the AI assistants read when they decide who to recommend.</p></div><div class="card"><span class="n">4</span><h3>Recall</h3><p>Reactivation that never forgets a patient. Care plan ends, contact continues. The ones who faded get a reason to come back before the flare-up. Not after.</p></div></div>
-    <div class="measure callout"><p>Instant response converts the inquiry. Happy patients leave reviews. Reviews and presence bring the next inquiry. Recall keeps them all coming back.</p><p><strong>It's not four tools. It's one flywheel.</strong> Break any link and the leak reopens somewhere else. That is why point solutions never fixed it, and why coaching just hands the discipline problem back to you. The loop removes it.</p></div>
+  <div class="om-measure" style="margin-top:72px">
+    <h2 class="om-h2">A patient finishes their care plan. They feel good. Then nothing happens.</h2>
+    <p class="om-p">No contact. No content. No reason to think of you. Eight months later their back flares up... in a city full of clinics that answer faster than you.</p><p class="om-p"><strong>Every patient who stopped coming has a spine that did not stop needing care.</strong> They did not leave you. Life got loud, and nobody tapped them on the shoulder.</p>
   </div>
 </section>
 
-<section class="alt">
-  <div class="canvas">
-    <p class="eyebrow">What It'll Do For You</p>
-    <h2>What your practice looks like ninety days in.</h2>
-    <div class="measure">
-      <ul class="check"><li><b>The 2am back-spasm call answered, and booked, while you're asleep.</b><span>Monday's schedule fills itself before your competitor's front desk even gets in.</span></li><li><b>A newsletter your patients actually open.</b><span>Written, designed and sent every week, without you typing a word of it.</span></li><li><b>Fresh Google reviews arriving quietly every week.</b><span>The compounding kind your competitors can't fake and can't catch up to.</span></li><li><b>Patients who felt fine and faded getting a reason to come back.</b><span>Before the flare-up. Not after they've already googled someone else.</span></li><li><b>Your name showing up between visits.</b><span>So when the pain hits, there's no search. Just "call my chiro."</span></li><li><b>And the one nobody puts on a features list: your evenings back.</b><span>No more 11pm posting. No more "we should really ask for reviews." No more marketing guilt.</span></li></ul>
-      <div class="callout"><p>Take your average visit fee. A typical patient's first year is worth roughly twelve visits of it.</p><p><strong>One recovered patient covers the entire system for the month. The second one is profit.</strong></p><p>That's the whole business case. Your own numbers, doing arithmetic you can check. The walkthrough shows the exact number.</p></div>
+<section class="om-section is-dark">
+  <div class="om-canvas">
+    <p class="om-eyebrow">Here's what I got</p>
+    <h2 class="om-h2">The Omniply Loop: four systems, each feeding the next.</h2>
+    <div class="om-measure"><p class="om-p om-lead is-center">What fixes this is not a tool. It's a loop. It multiplies your presence everywhere your patients pay attention, all day.</p></div>
+    <div class="om-grid cols-2" style="margin-top:40px"><div class="om-card"><span class="om-n">1</span><h3 class="om-h3">Response</h3><p class="om-p">An AI front desk that answers in two rings. 2pm while you're adjusting. 2am while you're asleep. Website chat and a phone voice that sound like your practice, send the booking link or take a callback for the exact time the patient names. 200 voice minutes included. The inquiry answered instantly is the patient your competitor never meets.</p></div><div class="om-card"><span class="om-n">2</span><h3 class="om-h3">Proof</h3><p class="om-p">A review engine that turns every happy patient into public evidence. Automatically. Reviews compound like interest: invisible week to week, undeniable year to year. They feed the map pack and the AI answers alike.</p></div><div class="om-card"><span class="om-n">3</span><h3 class="om-h3">Presence</h3><p class="om-p">Real content. Posts, articles, a newsletter your patients actually read. Produced in your voice every week, without you writing a word. It keeps patients warm between visits. It is what Google and the AI assistants read when they decide who to recommend.</p></div><div class="om-card"><span class="om-n">4</span><h3 class="om-h3">Recall</h3><p class="om-p">Reactivation that never forgets a patient. Care plan ends, contact continues. The ones who faded get a reason to come back before the flare-up. Not after.</p></div></div>
+    <div class="om-measure om-callout"><p class="om-p">Instant response converts the inquiry. Happy patients leave reviews. Reviews and presence bring the next inquiry. Recall keeps them all coming back.</p><p class="om-p"><strong>It's not four tools. It's one flywheel.</strong> Break any link and the leak reopens somewhere else. That is why point solutions never fixed it, and why coaching just hands the discipline problem back to you. The loop removes it.</p></div>
+  </div>
+</section>
+
+<section class="om-section is-grey">
+  <div class="om-canvas">
+    <p class="om-eyebrow">What It'll Do For You</p>
+    <h2 class="om-h2">What your practice looks like ninety days in.</h2>
+    <div class="om-measure">
+      <ul class="om-check"><li><b>The 2am back-spasm call answered, and booked, while you're asleep.</b><span>Monday's schedule fills itself before your competitor's front desk even gets in.</span></li><li><b>A newsletter your patients actually open.</b><span>Written, designed and sent every week, without you typing a word of it.</span></li><li><b>Fresh Google reviews arriving quietly every week.</b><span>The compounding kind your competitors can't fake and can't catch up to.</span></li><li><b>Patients who felt fine and faded getting a reason to come back.</b><span>Before the flare-up. Not after they've already googled someone else.</span></li><li><b>Your name showing up between visits.</b><span>So when the pain hits, there's no search. Just "call my chiro."</span></li><li><b>And the one nobody puts on a features list: your evenings back.</b><span>No more 11pm posting. No more "we should really ask for reviews." No more marketing guilt.</span></li></ul>
+      <div class="om-callout"><p class="om-p">Take your average visit fee. A typical patient's first year is worth roughly twelve visits of it.</p><p class="om-p"><strong>One recovered patient covers the entire system for the month. The second one is profit.</strong></p><p class="om-p">That's the whole business case. Your own numbers, doing arithmetic you can check. The walkthrough shows the exact number.</p></div>
     </div>
-    <p class="eyebrow proof-label">Real accounts, real outputs. No staged screenshots.</p>
-    <div class="grid cols-2"><div class="card"><h3>First Pilot Chiro Practice</h3><p>The practice in our walkthrough video. Everything you’ll see there ... the receptionist answering, quoting real fees, booking real calendar slots by chat and phone ... is this practice running live, not a mock-up. Its assistant has handled 120+ conversations, and it can even take bookings directly from other AI assistants.</p></div><div class="card"><h3>A Miami chiropractic clinic</h3><p>Onboarded through our standard checkout: the account provisioned itself with no human setup, and the assistant and content engine were live the same day. The first content run delivered 5 articles, 90 social posts, 6 branded lead-magnet guides and a 30-day nurture sequence ... before the week was out.</p></div></div>
+    <p class="om-eyebrow proof-label">Real accounts, real outputs. No staged screenshots.</p>
+    <div class="om-grid cols-2"><div class="om-card"><h3 class="om-h3">First Pilot Chiro Practice</h3><p class="om-p">The practice in our walkthrough video. Everything you’ll see there... the receptionist answering, quoting real fees, booking real calendar slots by chat and phone... is this practice running live, not a mock-up. Its assistant has handled 120+ conversations, and it can even take bookings directly from other AI assistants.</p></div><div class="om-card"><h3 class="om-h3">A Miami chiropractic clinic</h3><p class="om-p">Onboarded through our standard checkout: the account provisioned itself with no human setup, and the assistant and content engine were live the same day. The first content run delivered 5 articles, 90 social posts, 6 branded lead-magnet guides and a 30-day nurture sequence... before the week was out.</p></div></div>
   </div>
 </section>
 
-<section>
-  <div class="canvas">
-    <p class="eyebrow">Here's What To Do Next</p>
-    <h2>Decide like a doctor decides: on the evidence.</h2>
-    <div class="measure"><p>The walkthrough shows the actual system on screen. How it answers. What it posts. What the recall messages look like. No call. No salesperson.</p><p>One flat monthly subscription. Everything in the loop. Cancel anytime. We're not asking you to become a marketer. We're asking you to stop having to be one.</p></div>
-    <div class="ctas">
-      <a class="btn primary" href="/walkthrough?v=chiro">Watch the walkthrough</a>
-      <button class="btn ghost" type="button" data-consult-open>Book a 15-minute intro call</button>
+<section class="om-section">
+  <div class="om-canvas">
+    <p class="om-eyebrow">Here's What To Do Next</p>
+    <h2 class="om-h2">Decide like a doctor decides: on the evidence.</h2>
+    <div class="om-measure"><p class="om-p">The walkthrough shows the actual system on screen. How it answers. What it posts. What the recall messages look like. No call. No salesperson.</p><p class="om-p">One flat monthly subscription. Everything in the loop. Cancel anytime. We're not asking you to become a marketer. We're asking you to stop having to be one.</p></div>
+    <div class="om-ctas">
+      <a class="om-btn primary" href="/walkthrough?v=chiro">Watch the walkthrough</a>
+      <a class="om-btn ghost" href="/x-ray?v=chiro">X-ray your practice</a>
+      <button class="om-btn ghost" type="button" data-consult-open>Book a 15-minute intro call</button>
     </div>
-    <div class="grid cols-3 steps">
-      <div class="card"><span class="n">1</span><h3>One call, or the walkthrough</h3><p>Your questions, straight answers.</p></div>
-      <div class="card"><span class="n">2</span><h3>We build everything within a week</h3><p>Assistant, content engine, reviews: trained on your practice, your prices, your voice.</p></div>
-      <div class="card"><span class="n">3</span><h3>It runs itself</h3><p>You approve content from your phone; your front desk stays in charge and can take over any conversation.</p></div>
+    <div class="om-grid cols-3 steps">
+      <div class="om-card"><span class="om-n">1</span><h3 class="om-h3">One call, or the walkthrough</h3><p class="om-p">Your questions, straight answers.</p></div>
+      <div class="om-card"><span class="om-n">2</span><h3 class="om-h3">We build everything within a week</h3><p class="om-p">Assistant, content engine, reviews: trained on your practice, your prices, your voice.</p></div>
+      <div class="om-card"><span class="om-n">3</span><h3 class="om-h3">It runs itself</h3><p class="om-p">You approve content from your phone; your front desk stays in charge and can take over any conversation.</p></div>
     </div>
   </div>
 </section>
 
-<footer><a href="https://omniply.io">omniply.io</a> · the operating system for chiropractic practices</footer>
+<footer class="om-foot"><a href="https://omniply.io">omniply.io</a> · the operating system for chiropractic practices</footer>
 <!-- consultation popover (lazy iframe ... loads only on open) -->
 <div class="consult-overlay" id="consult-overlay" role="dialog" aria-modal="true" aria-label="Book a 15-minute intro call">
   <div class="consult-box">

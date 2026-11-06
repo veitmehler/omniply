@@ -36,11 +36,7 @@ export default function AgentsPage() {
         Standard MCP over Streamable HTTP (JSON-RPC). Initialize, list tools, call tools. Keep the{' '}
         <code>Mcp-Session-Id</code> response header on subsequent calls.
       </P>
-      <pre
-        style={{ overflowX: 'auto', padding: '16px', borderRadius: '10px', background: 'rgba(0,0,0,0.06)', fontSize: 13, lineHeight: 1.6 }}
-      >
-        {EXAMPLE}
-      </pre>
+      <pre>{EXAMPLE}</pre>
       <H3>Tools</H3>
       <P>
         <code>get_clinic_info</code> — name, phone, address, opening hours, booking policy.

@@ -120,7 +120,7 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
 
   return (
     <main
-      className="marketing-article"
+      className="om marketing-article"
       style={
         {
           background: '#fff',

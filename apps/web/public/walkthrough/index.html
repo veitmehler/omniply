@@ -16,155 +16,129 @@
 </script>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>The Practice Autopilot Walkthrough — Omniply</title>
-<meta name="description" content="The system that makes you the practice AI assistants and people find — and plugs your practice's revenue leaks. On screen, no sales call, no pressure." />
+<title>The Practice Autopilot Walkthrough · Omniply</title>
+<meta name="description" content="The system that makes you the practice AI assistants and people find, and plugs your practice's revenue leaks. On screen, no sales call, no pressure." />
+<link rel="stylesheet" href="/brand.css">
 <style>
-  :root {
-    --bg0: #052234; --bg1: #0A2A3F; --bg2: #0E3550; --line: #164863;
-    --ink: #FFFFFF; --dim: #A0A0A5; --lime: #C3F43B; --signal: #E4604E;
-    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
-  }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: var(--bg0); color: var(--ink); font-family: var(--sans); min-height: 100svh; display: flex; flex-direction: column; align-items: center; line-height: 1.5; }
-  .stage { width: 100%; max-width: 1028px; padding: 24px 20px 64px; }
-  .wordmark { font-family: var(--mono); font-size: 12px; letter-spacing: 0.22em; color: var(--dim); text-transform: uppercase; padding: 4px 0 28px; }
-  .wordmark b { color: var(--ink); font-weight: 600; }
-  .meta { font-family: var(--mono); font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--dim); margin-bottom: 14px; }
-  h1 { font-size: clamp(26px, 5.5vw, 38px); line-height: 1.15; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 10px; }
-  .sub { color: var(--dim); font-size: 20px; margin-bottom: 28px; max-width: 52ch; }
+  /* Page-specific on top of /brand.css: the video frame + custom controls. */
+  body { margin: 0; background: #0b2545; }
+  .wt { min-height: 100svh; padding-top: 72px; }
+  @media (min-width: 740px) { .wt { padding-top: 88px; } }
+  .wt .om-h1 { font-size: clamp(34px, 4.6vw, 52px); margin-bottom: 20px; }
+  .wt .om-lead { text-align: center; }
   .frame {
-    position: relative; aspect-ratio: 16 / 9; background: var(--bg1);
-    border: 1px solid var(--line); border-radius: 14px; overflow: hidden;
+    position: relative; aspect-ratio: 16 / 9; background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.14); border-radius: 20px; overflow: hidden;
     display: flex; align-items: center; justify-content: center; text-align: center;
-    margin-bottom: 24px;
+    margin: 48px 0 20px;
   }
   .frame .placeholder { padding: 30px; }
-  .frame .placeholder .meta { margin-bottom: 10px; }
-  .frame .placeholder p { color: var(--dim); font-size: 20px; max-width: 42ch; }
-  .frame .placeholder p a { color: var(--lime); }
+  .frame .placeholder p { color: #c9d3df; font-size: 20px; max-width: 42ch; margin: 0; }
+  .frame .placeholder p a { color: #c3f43b; }
   .frame iframe, .frame video { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
-  .chapters { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-bottom: 34px; }
-  .chapter {
-    background: var(--bg1); border: 1px solid var(--line); border-radius: 10px;
-    padding: 14px 16px; font-size: 14px; color: var(--dim);
-  }
-  .chapter .n { font-family: var(--mono); font-size: 11px; letter-spacing: 0.16em; color: var(--dim); display: block; margin-bottom: 4px; text-transform: uppercase; }
-  .chapter.reco { border-color: var(--lime); color: var(--ink); }
-  .chapter.reco .n { color: var(--lime); }
+  .chapters { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+  .chapter { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.14); border-radius: 16px; padding: 18px 20px; font-size: 16px; line-height: 1.4; color: #c9d3df; }
+  .chapter .n { display: block; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 700; color: #9fb0bd; margin-bottom: 8px; }
+  .chapter.reco { border-color: #c3f43b; color: #fff; }
+  .chapter.reco .n { color: #c3f43b; }
   .chapter.reco .n::after { content: " · recommended for you"; }
-  .pilots { margin-bottom: 34px; }
-  .pilots .meta { margin-bottom: 14px; }
-  .pilot-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
-  .pilot { background: var(--bg1); border: 1px solid var(--line); border-left: 3px solid var(--lime); border-radius: 10px; padding: 18px 20px; }
-  .pilot b { display: block; font-size: 15px; margin-bottom: 6px; }
-  .pilot p { color: var(--dim); font-size: 14.5px; line-height: 1.55; }
-  .buy { background: var(--bg1); border: 1px solid var(--line); border-radius: 14px; padding: 30px 26px; text-align: center; }
-  .buy .price { font-size: clamp(34px, 7vw, 46px); font-weight: 750; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
-  .buy .price small { font-size: 0.4em; font-weight: 500; color: var(--dim); }
-  .buy p { color: var(--dim); font-size: 20px; margin: 8px auto 20px; max-width: 46ch; }
-  /* Custom video controls: no timeline on purpose — the walkthrough is
+  .pilots { margin-top: 72px; }
+  .buy { margin-top: 72px; text-align: center; padding: 44px 32px; }
+  .buy .price { font-size: clamp(40px, 6vw, 56px); font-weight: 800; letter-spacing: -0.02em; color: #c3f43b; line-height: 1; font-variant-numeric: tabular-nums; }
+  .buy .price small { font-size: 18px; font-weight: 600; color: #fff; opacity: 0.8; letter-spacing: 0; }
+  .buy p { color: #c9d3df; font-size: 19px; line-height: 1.55; margin: 18px auto 28px; max-width: 560px; }
+  .buy .under { font-size: 14px; color: #9fb0bd; margin-top: 14px; }
+  .buy .om-ctas { margin-top: 0; }
+  .buy .om-btn.ghost { margin-top: 0; }
+  /* Custom video controls: no timeline on purpose; the walkthrough is
      watched in order (JS guard backs this up); time + speed stay. */
-  .vc { position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: linear-gradient(transparent, rgba(5, 34, 52, 0.88)); font-family: var(--mono); font-size: 13px; letter-spacing: 0.04em; color: var(--ink); opacity: 0; transition: opacity 0.2s ease; }
+  .vc { position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: linear-gradient(transparent, rgba(11, 37, 69, 0.88)); font-size: 14px; letter-spacing: 0.02em; color: #fff; opacity: 0; transition: opacity 0.2s ease; font-variant-numeric: tabular-nums; }
   .frame:hover .vc, .frame:not(.playing) .vc { opacity: 1; }
-  .vc button { background: none; border: 0; color: var(--ink); font: inherit; font-size: 15px; cursor: pointer; padding: 4px 8px; border-radius: 6px; }
-  .vc button:hover { color: var(--lime); }
-  .vc button:focus-visible { outline: 1px solid var(--lime); }
+  .vc button { background: none; border: 0; color: #fff; font: inherit; font-size: 15px; cursor: pointer; padding: 4px 8px; border-radius: 6px; }
+  .vc button:hover { color: #c3f43b; }
+  .vc button:focus-visible { outline: 1px solid #c3f43b; }
   .vc .vc-spacer { flex: 1; }
   .vc-speedwrap { position: relative; display: inline-flex; }
-  .vc-menu { position: absolute; right: 0; bottom: calc(100% + 8px); display: none; flex-direction: column; min-width: 110px; background: rgba(5, 34, 52, 0.96); border: 1px solid var(--line); border-radius: 8px; padding: 6px; }
+  .vc-menu { position: absolute; right: 0; bottom: calc(100% + 8px); display: none; flex-direction: column; min-width: 110px; background: rgba(11, 37, 69, 0.96); border: 1px solid rgba(255,255,255,0.14); border-radius: 10px; padding: 6px; }
   .vc-menu.open { display: flex; }
   .vc-menu button { text-align: left; font-size: 13px; padding: 7px 10px; }
-  .vc-menu button.active { color: var(--lime); }
-  .vc-big { position: absolute; inset: 0; margin: auto; width: 88px; height: 88px; border-radius: 50%; background: rgba(5, 34, 52, 0.78); border: 1px solid var(--line); color: var(--lime); font-size: 30px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding-left: 7px; transition: background 0.15s ease; }
-  .vc-big:hover { background: rgba(5, 34, 52, 0.95); }
+  .vc-menu button.active { color: #c3f43b; }
+  .vc-big { position: absolute; inset: 0; margin: auto; width: 88px; height: 88px; border-radius: 50%; background: rgba(11, 37, 69, 0.78); border: 1px solid rgba(255,255,255,0.2); color: #c3f43b; font-size: 30px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding-left: 7px; transition: background 0.15s ease; }
+  .vc-big:hover { background: rgba(11, 37, 69, 0.95); }
   .frame.playing .vc-big { display: none; }
   .frame:fullscreen { aspect-ratio: auto; border-radius: 0; }
   .frame:fullscreen video { object-fit: contain; }
-  .btn {
-    display: inline-block; background: var(--lime); color: #0B0B0C; border: none; border-radius: 10px;
-    cursor: pointer; font-size: 17px; font-weight: 650; padding: 16px 34px; text-decoration: none;
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
-  }
-  .btn:hover { transform: translateY(-1px); box-shadow: 0 6px 30px rgba(195, 244, 59, 0.18); }
-  .btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
-  .buy .under { font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.1em; color: var(--dim); margin-top: 12px; text-transform: uppercase; }
-
-  /* ── consultation modal ── */
-  .consult-link { display:block; margin:18px auto 0; background:none; border:none; color:var(--dim); font-family:var(--mono); font-size:12.5px; letter-spacing:0.08em; text-transform:uppercase; cursor:pointer; text-decoration:underline; text-underline-offset:3px; }
-  .consult-link:hover { color: var(--lime); }
-  .consult-overlay { position:fixed; inset:0; z-index:90; background:rgba(2,16,26,0.82); display:none; align-items:center; justify-content:center; padding:18px; }
-  .consult-overlay.open { display:flex; }
-  .consult-box { position:relative; width:100%; max-width:520px; max-height:92svh; overflow-y:auto; background:var(--bg1); border:1px solid var(--line); border-radius:14px; padding:22px 20px; }
-  .consult-box h3 { font-size:20px; font-weight:700; margin:0 0 6px; color:var(--ink); }
-  .consult-box .sub { font-size:13.5px; color:var(--dim); margin:0 0 14px; line-height:1.5; }
-  .consult-close { position:absolute; top:10px; right:12px; background:none; border:none; color:var(--dim); font-size:22px; cursor:pointer; line-height:1; }
-  .consult-close:hover { color:var(--ink); }
-  .consult-box iframe { width:100%; border:none; min-height:560px; border-radius:8px; background:#fff; }
-  footer { font-size: 12px; color: #6E6E74; text-align: center; padding: 18px 20px 30px; }
-  footer a { color: var(--dim); }
+  .wt-foot { background: #0b2545; color: #9fb0bd; font-size: 14px; text-align: center; padding: 24px 24px 48px; }
+  .wt-foot a { color: inherit; }
 </style>
 </head>
-<body>
-<div class="stage">
-  <div class="wordmark"><b>Omniply</b> · Walkthrough</div>
-  <div class="meta">The Practice Autopilot Walkthrough</div>
-  <h1>The exact system, on screen.</h1>
-  <p class="sub" id="wt-sub">No sales call, no pressure — watch the system that makes you the practice AI assistants can find, understand, talk to, and book... and plugs each leak your X-Ray found. Then decide.</p>
+<body class="om">
+<section class="om-section is-dark wt">
+<div class="om-canvas">
+  <div class="om-measure">
+    <p class="om-brand">Omniply · Walkthrough</p>
+    <p class="om-eyebrow">The Practice Autopilot Walkthrough</p>
+    <h1 class="om-h1">The exact system, on screen.</h1>
+    <p class="om-p om-lead" id="wt-sub">No sales call, no pressure... watch the system that makes you the practice AI assistants can find, understand, talk to, and book... and plugs each leak your X-Ray found. Then decide.</p>
+  </div>
 
   <div class="frame" id="frame">
-    <!-- When the video is ready, replace this placeholder with the embed:
-         <iframe src="VIDEO_EMBED_URL" allow="autoplay; fullscreen" allowfullscreen></iframe> -->
     <div class="placeholder">
-      <div class="meta">Video in production</div>
-      <p>The full walkthrough is being filmed right now. Your X-Ray report includes everything it covers — and we'll email you the moment it's live. Haven't scanned yet? <a href="/x-ray" id="wt-xraylink">Get your Practice X-Ray</a>.</p>
+      <p class="om-eyebrow">Video in production</p>
+      <p>The full walkthrough is being filmed right now. Your X-Ray report includes everything it covers, and we'll email you the moment it's live. Haven't scanned yet? <a href="/x-ray" id="wt-xraylink">Get your Practice X-Ray</a>.</p>
     </div>
   </div>
 
   <div class="chapters">
-    <div class="chapter" data-axis="retention"><span class="n">Chapter 1</span>Patient Retention &amp; Recall — the drift leak</div>
-    <div class="chapter" data-axis="speed"><span class="n">Chapter 2</span>Speed-to-Lead — AI chat &amp; voice, 24/7</div>
+    <div class="chapter" data-axis="retention"><span class="n">Chapter 1</span>Patient Retention &amp; Recall: the drift leak</div>
+    <div class="chapter" data-axis="speed"><span class="n">Chapter 2</span>Speed-to-Lead: AI chat &amp; voice, 24/7</div>
     <div class="chapter" data-axis="reviews"><span class="n">Chapter 3</span>The Google Review Engine</div>
     <div class="chapter" data-axis="content"><span class="n">Chapter 4</span>Content &amp; Visibility on autopilot</div>
   </div>
 
   <div class="pilots">
-    <div class="meta">From the pilot program</div>
-    <div class="pilot-grid" id="pilot-grid">
-      <div class="pilot">
-        <b>First Pilot Chiro Practice</b>
-        <p>The practice in this video. Everything you'll watch — the receptionist answering, quoting real prices, booking real calendar slots by chat and phone — is this practice running live, not a mock-up. Its assistant has handled 120+ conversations, and it can even take bookings directly from other AI assistants.</p>
+    <p class="om-eyebrow">From the pilot program</p>
+    <h2 class="om-h2">Real accounts, real outputs. No staged screenshots.</h2>
+    <div class="om-grid cols-3" id="pilot-grid">
+      <div class="om-card pilot">
+        <h3 class="om-h3">First Pilot Chiro Practice</h3>
+        <p class="om-p">The practice in this video. Everything you'll watch... the receptionist answering, quoting real prices, booking real calendar slots by chat and phone... is this practice running live, not a mock-up. Its assistant has handled 120+ conversations, and it can even take bookings directly from other AI assistants.</p>
       </div>
-      <div class="pilot">
-        <b>A Miami chiropractic clinic</b>
-        <p>Onboarded through the same checkout you'll use: the account provisioned itself with no human setup, and the assistant and content engine were live the same day. The first content run delivered 5 articles, 90 social posts, 6 branded lead-magnet guides and a 30-day nurture sequence — before the week was out.</p>
+      <div class="om-card pilot">
+        <h3 class="om-h3">A Miami chiropractic clinic</h3>
+        <p class="om-p">Onboarded through the same checkout you'll use: the account provisioned itself with no human setup, and the assistant and content engine were live the same day. The first content run delivered 5 articles, 90 social posts, 6 branded lead-magnet guides and a 30-day nurture sequence... before the week was out.</p>
       </div>
-      <div class="pilot">
-        <b>A wellness &amp; longevity center</b>
-        <p>Live pilot: the assistant answers on website chat and WhatsApp in five languages and books twelve services, Saturdays included. In its first two weeks it held 38 conversations, while the content engine produced 9 newsletters and 6 branded lead-magnet guides — each one ready to approve from a phone.</p>
+      <div class="om-card pilot">
+        <h3 class="om-h3">A wellness &amp; longevity center</h3>
+        <p class="om-p">Live pilot: the assistant answers on website chat and WhatsApp in five languages and books twelve services, Saturdays included. In its first two weeks it held 38 conversations, while the content engine produced 9 newsletters and 6 branded lead-magnet guides... each one ready to approve from a phone.</p>
       </div>
     </div>
   </div>
 
-  <div class="buy">
-    <div class="price" style="text-align:center;font-size:40px;font-weight:800;color:var(--lime)">$397<small style="font-size:16px;font-weight:600;color:#fff;opacity:.8"> / month</small></div>
-    <p id="wt-buycopy" style="padding:18px 0 22px;margin:0 auto;font-size:17px;line-height:1.6;text-align:center;color:#fff;max-width:560px">Everything in the walkthrough — content engine, AI chat &amp; voice, review engine, recall &amp; reactivation — set up for your practice. Cancel anytime.</p>
-    <a class="btn" id="checkout" href="#" style="display:block;margin:0 auto;text-align:center;max-width:360px">Put my practice on autopilot</a>
-    <div class="under" id="buyunder" style="text-align:center;font-size:12px;opacity:.8;margin-top:10px">Setup in days, not months · no lock-in</div>
-    <button class="consult-link" type="button" data-consult-open>Prefer to talk it through first? Book a 15-minute consultation &rarr;</button>
+  <div class="om-measure">
+    <div class="om-card buy">
+      <div class="price">$397<small> / month</small></div>
+      <p id="wt-buycopy">Everything in the walkthrough... content engine, AI chat &amp; voice, review engine, recall &amp; reactivation... set up for your practice. Cancel anytime.</p>
+      <div class="om-ctas">
+        <a class="om-btn primary" id="checkout" href="#">Put my practice on autopilot</a>
+        <button class="om-btn ghost" type="button" data-consult-open>Book a 15-minute consultation</button>
+      </div>
+      <div class="under" id="buyunder">Setup in days, not months · no lock-in</div>
+    </div>
   </div>
 </div>
+</section>
 
-<!-- consultation modal (lazy iframe — loads only on open) -->
+<!-- consultation modal (lazy iframe, loads only on open) -->
 <div class="consult-overlay" id="consult-overlay" role="dialog" aria-modal="true" aria-label="Book a 15-minute practice consultation">
   <div class="consult-box">
     <button class="consult-close" id="consult-close" aria-label="Close">&times;</button>
     <h3 id="consult-title">15-minute practice consultation</h3>
-    <p class="sub" id="consult-sub">With the founder. Bring your X-Ray results if you have them. No pitch &mdash; just straight answers about your practice.</p>
+    <p class="sub" id="consult-sub">With the founder. Bring your X-Ray results if you have them. No pitch, just straight answers about your practice.</p>
     <div id="consult-frame"></div>
   </div>
 </div>
-<footer>© Omniply · <a href="https://www.omniply.io">omniply.io</a></footer>
+<footer class="wt-foot">© Omniply · <a href="https://www.omniply.io">omniply.io</a></footer>
 
 <script>
 (function () {
@@ -189,19 +163,19 @@
   var IS_WELLNESS = WT_VERTICAL === 'wellness'
 
   if (IS_WELLNESS) {
-    document.title = 'The Practice Autopilot Walkthrough — Omniply for Wellness Centers'
+    document.title = 'The Practice Autopilot Walkthrough · Omniply for Wellness Centers'
     var sub = document.getElementById('wt-sub')
-    if (sub) sub.textContent = 'No sales call, no pressure — watch the system that makes you the center AI assistants can find, understand, talk to, and book... and plugs each leak your X-Ray found. Then decide.'
+    if (sub) sub.textContent = 'No sales call, no pressure... watch the system that makes you the center AI assistants can find, understand, talk to, and book... and plugs each leak your X-Ray found. Then decide.'
     var ch1 = document.querySelector('.chapter[data-axis="retention"]')
-    if (ch1) ch1.innerHTML = '<span class="n">Chapter 1</span>Client Retention &amp; Recall — the drift leak'
+    if (ch1) ch1.innerHTML = '<span class="n">Chapter 1</span>Client Retention &amp; Recall: the drift leak'
     var bc = document.getElementById('wt-buycopy')
-    if (bc) bc.textContent = 'Everything in the walkthrough — content engine, AI chat & voice, review engine, recall & reactivation — set up for your center. Cancel anytime.'
+    if (bc) bc.textContent = 'Everything in the walkthrough... content engine, AI chat & voice, review engine, recall & reactivation... set up for your center. Cancel anytime.'
     var xl = document.getElementById('wt-xraylink')
     if (xl) { xl.href = '/x-ray?v=wellness'; xl.textContent = 'Get your X-Ray' }
     var mh = document.getElementById('consult-title')
     if (mh) mh.textContent = '15-minute consultation'
     var ms = document.getElementById('consult-sub')
-    if (ms) ms.innerHTML = 'With the founder. Bring your X-Ray results if you have them. No pitch &mdash; just straight answers about your center.'
+    if (ms) ms.innerHTML = 'With the founder. Bring your X-Ray results if you have them. No pitch, just straight answers about your center.'
   }
 
   var CONFIG = {
