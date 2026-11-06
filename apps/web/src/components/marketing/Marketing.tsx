@@ -249,7 +249,7 @@ export function ConsistencyGraph({ onDark, audienceLabel = 'Patient attention' }
         {/* compounding */}
         <path d="M40 218 C 200 210, 330 170, 420 100 C 470 62, 510 42, 540 30" fill="none" stroke={curve} strokeWidth="4" />
         <circle cx="540" cy="30" r="6" fill={curve} />
-        <text x="440" y="60" fontSize="14" fill={label} fontWeight="700">Weekly, every week</text>
+        <text x="530" y="60" textAnchor="end" fontSize="14" fill={label} fontWeight="700">Weekly, every week</text>
       </svg>
       <figcaption>Attention compounds only when content ships every week. Bursts reset to zero.</figcaption>
     </figure>
