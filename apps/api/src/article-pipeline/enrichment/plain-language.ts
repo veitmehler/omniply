@@ -17,16 +17,12 @@ import type { LLMResponse } from '../llm/adapter'
 import { extractH2Sections, stripTags } from './html-parser'
 
 /** Rotating labels for concept story boxes — varied across content, stable per anchor. */
-export const PL_BOX_LABELS = [
-  'In Plain English',
-  'Simply Put',
-  'Think of It This Way',
-  'What This Means for You',
-  'The Simple Version',
-  'Picture It Like This',
-  'Here Is the Idea',
-  'In Everyday Terms',
-] as const
+// B11: boxes carry a title the device writes about the concept itself ("Why
+// discs soak up water overnight"); the generic device labels ("The Simple
+// Version", "In Everyday Terms") were quoted verbatim as AI artefacts. The one
+// reader-facing label survives as the fallback for callers that need a fixed
+// string (newsletter marker rotation).
+export const PL_BOX_LABELS = ['What this means for you'] as const
 
 // Mirrors enrichment/index.ts GEO_EXCLUDE (kept local — index.ts imports from
 // this module, so importing back from it would be circular).
@@ -103,12 +99,26 @@ export function seededRng(seed: string): () => number {
   }
 }
 
-function pickLabel(rng: () => number, used: Set<string>): string {
-  const pool = PL_BOX_LABELS.filter((l) => !used.has(l))
-  const from = pool.length > 0 ? pool : PL_BOX_LABELS
-  const label = from[Math.floor(rng() * from.length)]
-  used.add(label)
-  return label
+/** B11: the box title is written by the device on its first line ("TITLE: …"). */
+export const TITLE_RULE =
+  'TITLE LINE (hard rule): put a title on the very first line as "TITLE: <3 to 7 words>" that states what the reader learns ("Why discs soak up water overnight"), then a blank line, then the explanation. The title names the thing itself: never "simple", "plain", "version", "idea", "think", "picture", "terms", "put", "gist", "short", "explained", "in other words", "here is". Never end the title with a colon or a question mark.'
+
+const TITLE_META_RE = /\b(simple|simply|plain|plainly|version|idea|think|picture|imagine|terms|put|gist|short|explained|explainer|other words|here is|here's|everyday)\b/i
+
+export function splitTitle(text: string): { title: string | null; body: string } {
+  const m = text.match(/^\s*TITLE:\s*(.+?)\s*\n+([\s\S]*)$/)
+  if (!m) return { title: null, body: text.trim() }
+  return { title: m[1].trim().replace(/^["“]|["”]$/g, '').replace(/[.:]$/, ''), body: m[2].trim() }
+}
+
+/** Null = usable title; otherwise why it is dropped (the box then renders untitled). */
+export function titleGateReason(title: string): string | null {
+  const words = title.split(/\s+/).filter(Boolean)
+  if (words.length < 3 || words.length > 7) return `title has ${words.length} words (3 to 7 allowed)`
+  if (/[?:]$/.test(title)) return 'title ends with a question mark or colon'
+  if (TITLE_META_RE.test(title)) return 'title uses a meta word (simple/plain/version/idea/…)'
+  if (LIKE_FRAME_RE.test(title)) return 'title is a simile'
+  return null
 }
 
 const CLOSER_PLAIN =
@@ -122,14 +132,44 @@ const CLOSER_PLAIN =
 // with at most one in-sentence image clause, drawn half the time to none.
 export const IMAGE_NONE =
   'IMAGERY (hard rule): use NO imagery at all. Explain the mechanism plainly in short concrete sentences, the way a senior clinician talks across the table. Never open with "Think of", "Picture" or "Imagine". Never invent a witnessed scene or a specific person.'
-export const IMAGE_CLAUSE =
+export const IMAGE_LIKE =
   'IMAGERY (hard rule): you may use at most ONE brief image, as a modifier inside a single sentence (a few words, e.g. "like a sponge soaking up water"). Never develop the image beyond that clause, never open the explanation with it, and never write a sentence mapping it back ("your spine works the same way"). Never open with "Think of", "Picture" or "Imagine". Never invent a witnessed scene or a specific person.'
+/** Back-compat name for the "like a …" frame. */
+export const IMAGE_CLAUSE = IMAGE_LIKE
+// B11: the frame was the tell, not the image. Four "much like / a bit like /
+// rather like" clauses per article read as a formula even with fresh images,
+// so the frame is drawn per device and the "like" frame is capped at one per
+// article.
+export const IMAGE_APPOSITION =
+  'IMAGERY (hard rule): you may use at most ONE brief image, carried by a plain apposition or noun phrase inside a single sentence (e.g. "the disc\'s soft centre, the jammy filling"). Never introduce it with "like", "as if", "much like", "a bit like" or "the way a…". Never develop the image beyond that phrase, never open the explanation with it, and never write a sentence mapping it back. Never open with "Think of", "Picture" or "Imagine". Never invent a witnessed scene or a specific person.'
+export const IMAGE_VERB =
+  'IMAGERY (hard rule): you may use at most ONE brief image, carried by a verb or an adjective only (e.g. "the nerve sulks for days", "a gummed-up hinge of a joint"). Never write "like", "as if", "much like", "a bit like" or "the way a…". Never develop the image, never open the explanation with it, and never write a sentence mapping it back. Never open with "Think of", "Picture" or "Imagine". Never invent a witnessed scene or a specific person.'
 
-/** Image-mode draw for concept devices: half get no imagery at all — the
- *  human distribution is asymmetric, most explanations carry none. */
-export function pickImageMode(rng: () => number): string {
-  return rng() < 0.5 ? IMAGE_NONE : IMAGE_CLAUSE
+export interface ImageState {
+  likeUsed: boolean
 }
+
+/** Image-mode draw for devices: half get no imagery at all (the human
+ *  distribution is asymmetric). Of the rest, the "like a …" frame is allowed
+ *  once per article when a state is tracked; the others carry the image as an
+ *  apposition or a verb. Legacy callers without a state keep the old pair. */
+export function pickImageMode(rng: () => number, state?: ImageState): string {
+  if (rng() < 0.5) return IMAGE_NONE
+  if (!state) return IMAGE_LIKE
+  if (!state.likeUsed && rng() < 0.4) {
+    state.likeUsed = true
+    return IMAGE_LIKE
+  }
+  return rng() < 0.5 ? IMAGE_APPOSITION : IMAGE_VERB
+}
+
+/** Comparison frames ("works much like a…", "as if", "the way a…"). Only a
+ *  device drawn with IMAGE_LIKE may carry one; "would like a coffee" and
+ *  "things like this" do not match. */
+export const LIKE_FRAME_RE =
+  /\b(?:much|a\s+bit|rather|a\s+little|somewhat|sort\s+of|kind\s+of)\s+like\b|\b(?:is|was|are|were|feels?|felt|works?|acts?|behaves?|moves?|sits?|runs?|looks?|sounds?|goes|went|become|becomes)\s+(?:a\s+bit\s+|rather\s+|much\s+|somewhat\s+)?like\s+(?:a|an|the|your|those|when|how)\b|\bas\s+if\b|\bthe\s+way\s+(?:a|an)\s+\w+/i
+/** "Break the word in two: 'lumbar' is…" — dictionary pedantry, quoted as a tell. */
+export const DICTIONARY_SPLIT_RE = /\bbreak\s+(?:the\s+(?:word|term)|it)\s+(?:in\s+two|down|apart|into)\b/i
 
 // Parable-anatomy gates (B9): the explicit mapping sentence and the neat
 // closing question are the engineered-analogy signature; the invented-witness
@@ -139,9 +179,15 @@ export const MAPPING_SENTENCE_RE =
 export const FABRICATED_WITNESS_RE =
   /\b(?:last\s+(?:week|weekend|winter|summer|month|year)|the\s+other\s+(?:day|morning|week)|yesterday)\b[^.!?]{0,50}\bI\s+(?:watched|saw|noticed|met)\b|\ba\s+(?:neighbour|neighbor|mate|bloke|friend)\s+of\s+mine\b/i
 
-export function deviceShapeReason(text: string): string | null {
+export function deviceShapeReason(text: string, opts: { allowLike?: boolean } = {}): string | null {
   if (MAPPING_SENTENCE_RE.test(text)) {
     return 'it ends the image with an explicit mapping sentence ("…the same way"), which your IMAGERY rule forbids'
+  }
+  if (!opts.allowLike && LIKE_FRAME_RE.test(text)) {
+    return 'it uses a "like a …" / "as if" comparison frame, which your IMAGERY rule for this explanation forbids (carry the image as an apposition or a verb, or use none)'
+  }
+  if (DICTIONARY_SPLIT_RE.test(text)) {
+    return 'it splits the word up like a dictionary entry ("break the word in two"), which reads as pedantry; explain what the thing is instead'
   }
   if (FABRICATED_WITNESS_RE.test(text)) {
     return 'it invents a witnessed scene or specific person ("last weekend I watched…"), which is fabricated experience and forbidden'
@@ -361,10 +407,11 @@ export function spliceGloss(sectionHtml: string, term: string, gloss: string): s
 /** Inline-styled story box (WordPress-theme-proof; class kept for site CSS overrides). */
 export function buildBoxHtml(label: string, storyText: string, accentHex: string): string {
   const accent = /^#[0-9a-fA-F]{6}$/.test(accentHex) ? accentHex : '#4a5568'
+  const title = label.trim() ? `<p style="margin:0 0 6px;font-weight:600;font-size:0.95em;">${escapeHtml(label.trim())}</p>` : ''
   return (
     `\n<div class="plain-language-box" style="border-left:4px solid ${accent};background:${accent}14;` +
     `padding:16px 20px;margin:20px 0;border-radius:6px;">` +
-    `<p style="margin:0 0 6px;font-weight:600;font-size:0.95em;">${escapeHtml(label)}</p>` +
+    title +
     `<p style="margin:0;">${escapeHtml(storyText.trim())}</p></div>\n`
   )
 }
@@ -457,23 +504,35 @@ interface GenerateArgs {
   /** Metaphor vehicles already used anywhere in the article (base prose or
    * earlier devices) — reuse is rejected deterministically. */
   bannedVehicles?: Iterable<string>
+  /** The device was drawn with the "like a …" image frame (B11 cap: one per article). */
+  allowLike?: boolean
+  /** Boxed concept: the device writes a "TITLE:" first line (B11). */
+  wantTitle?: boolean
 }
 
 /**
  * write → verify → (regenerate once with the failure reason) → verify → text or null.
  * A null result means "skip this injection" — the content simply stays as-is.
  */
-async function generateVerified(args: GenerateArgs): Promise<{ text: string; usage: GenerationUsage; verified: boolean } | null> {
+async function generateVerified(args: GenerateArgs): Promise<{ text: string; title: string | null; usage: GenerationUsage; verified: boolean } | null> {
   const key = args.kind === 'term' ? 'pl_write_gloss' : 'pl_write_story'
   const responses: LLMResponse[] = []
   let restrictions = args.config.restrictions
 
   const allowJustMeans = args.vars.openerStyle === GLOSS_APPOSITION
   for (let attempt = 1; attempt <= 2; attempt++) {
-    const written = await runNewsletterPrompt(key, { openerStyle: '', ...args.vars, restrictions })
+    const written = await runNewsletterPrompt(key, { openerStyle: '', titleRule: args.wantTitle ? TITLE_RULE : '', ...args.vars, restrictions })
     responses.push(written.response)
     if (args.onResponse) await args.onResponse(written.response)
-    const text = (await sanitizeDashesText(written.content, args.logCtx)).trim()
+    const raw = (await sanitizeDashesText(written.content, args.logCtx)).trim()
+    const split = args.wantTitle ? splitTitle(raw) : { title: null, body: raw }
+    const text = split.body
+    let title: string | null = null
+    if (args.wantTitle) {
+      const why = split.title ? titleGateReason(split.title) : 'no TITLE line'
+      if (why) logger.info({ ...args.logCtx, attempt, why, title: split.title }, '[plain-language] box title dropped, rendering untitled')
+      else title = split.title
+    }
     if (!text || text.length > args.maxChars) {
       logger.warn({ ...args.logCtx, attempt, len: text.length }, '[plain-language] generated text empty/oversized — skipping')
       return null
@@ -487,7 +546,7 @@ async function generateVerified(args: GenerateArgs): Promise<{ text: string; usa
         ? 'it uses the "just means" construction, which your GLOSS CONSTRUCTION forbids'
         : null) ??
       overlapReason(text, args.vars.sectionExcerpt ?? '') ??
-      deviceShapeReason(text)
+      deviceShapeReason(text, { allowLike: args.allowLike })
     if (gateReason) {
       logger.warn({ ...args.logCtx, attempt, gateReason }, '[plain-language] lexical gate failed')
       if (attempt === 1) {
@@ -506,7 +565,7 @@ async function generateVerified(args: GenerateArgs): Promise<{ text: string; usa
       responses.push(verify.response)
       if (args.onResponse) await args.onResponse(verify.response)
       if (verify.data.ok === true) {
-        return { text, usage: usageOf(responses), verified: true }
+        return { text, title, usage: usageOf(responses), verified: true }
       }
       const reason = verify.data.reason ?? 'unspecified'
       logger.warn({ ...args.logCtx, attempt, reason }, '[plain-language] verify failed')
@@ -587,8 +646,8 @@ export async function runPlainLanguagePass(args: ArticlePassArgs): Promise<Plain
   if (sections.length === 0) return result
 
   const rng = seededRng(jobId)
-  const usedLabels = new Set<string>()
   const glossState = { justMeansUsed: false }
+  const imageState: ImageState = { likeUsed: false }
   let plannedGlossTotal = 0
   let plannedBoxTotal = 0
   let lastBoxedSectionIdx = -2
@@ -639,13 +698,15 @@ export async function runPlainLanguagePass(args: ArticlePassArgs): Promise<Plain
         if (plannedGlossTotal >= MAX_GLOSSES_PER_ARTICLE) break
         const norm = t.term.trim().toLowerCase()
         if (explainedTerms.has(norm)) continue
+        const glossImage = pickImageMode(rng, imageState)
         const generated = await generateVerified({
           kind: 'term',
-          vars: { ...baseVars, alreadyUsedMetaphors: usedImagery.join(', ') || 'none yet', term: t.term.trim(), sentence: t.sentence ?? '', openerStyle: pickGlossOpener(rng, glossState) },
+          vars: { ...baseVars, alreadyUsedMetaphors: usedImagery.join(', ') || 'none yet', term: t.term.trim(), sentence: t.sentence ?? '', openerStyle: `${pickGlossOpener(rng, glossState)}\n\n${glossImage}` },
           config,
           maxChars: MAX_GLOSS_CHARS,
           logCtx: { jobId, position: section.position, term: t.term },
           bannedVehicles: usedImagery,
+          allowLike: glossImage === IMAGE_LIKE,
         })
         result.cost += generated?.usage.cost ?? 0
         result.inputTokens += generated?.usage.inputTokens ?? 0
@@ -670,13 +731,16 @@ export async function runPlainLanguagePass(args: ArticlePassArgs): Promise<Plain
           form = 'inline'
         }
         if (form !== 'skip') {
+          const conceptImage = pickImageMode(rng, imageState)
           const generated = await generateVerified({
             kind: 'concept',
-            vars: { ...baseVars, alreadyUsedMetaphors: usedImagery.join(', ') || 'none yet', conceptSummary: concept.summary.trim(), closerStyle: CLOSER_PLAIN, openerStyle: pickImageMode(rng) },
+            vars: { ...baseVars, alreadyUsedMetaphors: usedImagery.join(', ') || 'none yet', conceptSummary: concept.summary.trim(), closerStyle: CLOSER_PLAIN, openerStyle: conceptImage },
             config,
             maxChars: MAX_STORY_CHARS,
             logCtx: { jobId, position: section.position, concept: concept.summary, form },
             bannedVehicles: usedImagery,
+            allowLike: conceptImage === IMAGE_LIKE,
+            wantTitle: form === 'boxed',
           })
           result.cost += generated?.usage.cost ?? 0
           result.inputTokens += generated?.usage.inputTokens ?? 0
@@ -689,7 +753,7 @@ export async function runPlainLanguagePass(args: ArticlePassArgs): Promise<Plain
             }
             plan.box = {
               form,
-              label: form === 'boxed' ? pickLabel(rng, usedLabels) : null,
+              label: form === 'boxed' ? (generated.title ?? '') : null,
               subject: concept.summary.trim(),
               anchorQuote: concept.anchorQuote?.trim() || null,
               text: generated.text,
@@ -723,7 +787,7 @@ export async function runPlainLanguagePass(args: ArticlePassArgs): Promise<Plain
     if (plan.box) {
       const blockHtml =
         plan.box.form === 'boxed'
-          ? buildBoxHtml(plan.box.label ?? PL_BOX_LABELS[0], plan.box.text, args.accentHex)
+          ? buildBoxHtml(plan.box.label ?? '', plan.box.text, args.accentHex)
           : buildInlineHtml(plan.box.text)
       const inserted = insertBoxAfterAnchor(section, plan.box.anchorQuote, blockHtml)
       if (inserted) {
@@ -800,6 +864,7 @@ export async function runNewsletterPlainLanguage(args: NewsletterPassArgs): Prom
     const usedImagery: string[] = []
     const nlRng = seededRng(args.labelSeed)
     const nlGlossState = { justMeansUsed: false }
+    const nlImageState: ImageState = { likeUsed: false }
     const baseVars = {
       sectionExcerpt: bodyText,
       writingStyle: voice.writingStyle,
@@ -817,9 +882,11 @@ export async function runNewsletterPlainLanguage(args: NewsletterPassArgs): Prom
     for (const t of terms) {
       const norm = t.term.trim().toLowerCase()
       if (explained.has(norm)) continue
+      const nlGlossImage = pickImageMode(nlRng, nlImageState)
       const generated = await generateVerified({
         kind: 'term',
-        vars: { ...baseVars, alreadyUsedMetaphors: usedImagery.join(', ') || 'none yet', term: t.term.trim(), sentence: t.sentence ?? '', openerStyle: pickGlossOpener(nlRng, nlGlossState) },
+        vars: { ...baseVars, alreadyUsedMetaphors: usedImagery.join(', ') || 'none yet', term: t.term.trim(), sentence: t.sentence ?? '', openerStyle: `${pickGlossOpener(nlRng, nlGlossState)}\n\n${nlGlossImage}` },
+        allowLike: nlGlossImage === IMAGE_LIKE,
         config,
         maxChars: MAX_GLOSS_CHARS,
         logCtx: { newsletter: true, term: t.term },
@@ -836,16 +903,19 @@ export async function runNewsletterPlainLanguage(args: NewsletterPassArgs): Prom
 
     const concept = detect.data.concept
     if (concept?.summary?.trim()) {
+      const nlConceptImage = pickImageMode(nlRng, nlImageState)
       const generated = await generateVerified({
         kind: 'concept',
-        vars: { ...baseVars, alreadyUsedMetaphors: usedImagery.join(', ') || 'none yet', conceptSummary: concept.summary.trim(), closerStyle: CLOSER_PLAIN, openerStyle: pickImageMode(nlRng) },
+        vars: { ...baseVars, alreadyUsedMetaphors: usedImagery.join(', ') || 'none yet', conceptSummary: concept.summary.trim(), closerStyle: CLOSER_PLAIN, openerStyle: nlConceptImage },
         config,
         maxChars: MAX_STORY_CHARS,
         logCtx: { newsletter: true, concept: concept.summary },
         onResponse: args.onResponse,
+        allowLike: nlConceptImage === IMAGE_LIKE,
+        wantTitle: true,
       })
       if (generated) {
-        const marker = buildBoxMarker(rotatedLabel(args.labelSeed), generated.text)
+        const marker = buildBoxMarker(generated.title ?? '', generated.text)
         const inserted = insertBoxAfterAnchor(html, concept.anchorQuote?.trim() || null, marker)
         if (inserted) html = inserted
       }

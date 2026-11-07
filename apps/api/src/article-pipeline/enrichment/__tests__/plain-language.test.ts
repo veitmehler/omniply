@@ -12,6 +12,12 @@ import {
   deviceShapeReason,
   IMAGE_NONE,
   IMAGE_CLAUSE,
+  IMAGE_LIKE,
+  IMAGE_APPOSITION,
+  IMAGE_VERB,
+  LIKE_FRAME_RE,
+  splitTitle,
+  titleGateReason,
   pickGlossOpener,
   lexicalGateReason,
   vehicleReuseReason,
@@ -48,8 +54,48 @@ describe('pickImageMode / deviceShapeReason', () => {
   })
 
   it('passes a plain across-the-table explanation with one image clause', () => {
-    expect(deviceShapeReason('Overnight your discs draw fluid back in, a little like a sponge in water, so the first bend of the morning feels tight until they settle.')).toBeNull()
+    expect(deviceShapeReason('Overnight your discs draw fluid back in, a little like a sponge in water, so the first bend of the morning feels tight until they settle.', { allowLike: true })).toBeNull()
     expect(deviceShapeReason('In practice I see this weekly: the joint is stiff because it has not moved for hours, not because it is damaged.')).toBeNull()
+  })
+
+  it('B11: caps the "like a …" frame at one per article and draws the other frames', () => {
+    for (let seed = 0; seed < 20; seed++) {
+      const rng = seededRng(`img-${seed}`)
+      const state = { likeUsed: false }
+      const draws = Array.from({ length: 12 }, () => pickImageMode(rng, state))
+      expect(draws.filter((d) => d === IMAGE_LIKE).length).toBeLessThanOrEqual(1)
+      for (const d of draws) expect([IMAGE_NONE, IMAGE_LIKE, IMAGE_APPOSITION, IMAGE_VERB]).toContain(d)
+    }
+    const all = new Set<string>()
+    for (let seed = 0; seed < 40; seed++) { const rng = seededRng(`imgv-${seed}`); const state = { likeUsed: false }; for (let i = 0; i < 6; i++) all.add(pickImageMode(rng, state)) }
+    expect(all).toEqual(new Set([IMAGE_NONE, IMAGE_LIKE, IMAGE_APPOSITION, IMAGE_VERB]))
+  })
+
+  it('B11: rejects comparison frames unless the device was drawn with the like frame', () => {
+    const like = 'The gel inside the disc carries inflammatory compounds, much like spilled cleaning fluid that irritates whatever it touches.'
+    expect(deviceShapeReason(like)).toMatch(/comparison frame/)
+    expect(deviceShapeReason(like, { allowLike: true })).toBeNull()
+    expect(deviceShapeReason('Done gently and often, it works a bit like easing a drawer along its runners.')).toMatch(/comparison frame/)
+    expect(deviceShapeReason('The nerve behaves as if it were bruised for a few days.')).toMatch(/comparison frame/)
+    expect(LIKE_FRAME_RE.test("Most people would like a straight answer here.")).toBe(false)
+    expect(LIKE_FRAME_RE.test('Things like this settle within a fortnight.')).toBe(false)
+    expect(deviceShapeReason("The disc's soft centre, the jammy filling, pushes on the nerve root for a few days and then settles.")).toBeNull()
+    expect(deviceShapeReason('The nerve sulks for days after the pressure eases, then quietens down.')).toBeNull()
+  })
+
+  it('B11: rejects the dictionary-split frame', () => {
+    expect(deviceShapeReason('Break the word in two: "lumbar" is the lower back, and "radiculopathy" is trouble in a root.')).toMatch(/dictionary/)
+  })
+
+  it('B11: parses and gates the device-written box title', () => {
+    expect(splitTitle('TITLE: Why discs soak up water overnight\n\nOvernight the discs draw fluid in.')).toEqual({ title: 'Why discs soak up water overnight', body: 'Overnight the discs draw fluid in.' })
+    expect(splitTitle('Overnight the discs draw fluid in.')).toEqual({ title: null, body: 'Overnight the discs draw fluid in.' })
+    expect(titleGateReason('Why discs soak up water overnight')).toBeNull()
+    expect(titleGateReason('The Simple Version')).toMatch(/meta/)
+    expect(titleGateReason('In Everyday Terms')).toMatch(/meta/)
+    expect(titleGateReason('Discs')).toMatch(/words/)
+    expect(titleGateReason('What is a disc really doing here?')).toMatch(/question/)
+    expect(titleGateReason('A disc works much like jam doughnuts')).toMatch(/simile/)
   })
 
   it('gloss constructions ration "just means" to one per article', () => {
@@ -128,9 +174,8 @@ describe('rotatedLabel', () => {
     expect(PL_BOX_LABELS).toContain(rotatedLabel('anything'))
   })
 
-  it('varies across seeds (at least two distinct labels over a spread)', () => {
-    const labels = new Set(Array.from({ length: 20 }, (_, i) => rotatedLabel(`seed-${i}`)))
-    expect(labels.size).toBeGreaterThan(1)
+  it('B11: the generic device labels are gone; only the reader-facing fallback remains', () => {
+    expect(PL_BOX_LABELS).toEqual(['What this means for you'])
   })
 })
 
@@ -240,6 +285,12 @@ describe('buildBoxHtml', () => {
 
   it('falls back to a neutral accent on invalid hex', () => {
     expect(buildBoxHtml('L', 'text', 'not-a-color')).toContain('border-left:4px solid #4a5568')
+  })
+
+  it('B11: renders no title paragraph when the label is empty', () => {
+    const html = buildBoxHtml('', 'Just the explanation.', '#1a2b3c')
+    expect(html).not.toContain('font-weight:600')
+    expect(html).toContain('<p style="margin:0;">Just the explanation.</p>')
   })
 })
 

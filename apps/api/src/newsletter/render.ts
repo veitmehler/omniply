@@ -457,7 +457,9 @@ export function stylePlainLanguageBoxes(html: string, theme: Theme): string {
     /<div data-pl-box data-pl-label="([^"]*)">\s*<p>([\s\S]*?)<\/p>\s*<\/div>/gi,
     (_m, label: string, text: string) =>
       `<div style="border-left:4px solid ${theme.linkColor};background-color:#f4f7f9;padding:14px 18px;margin:16px 0;border-radius:6px;">` +
-      `<p style="margin:0 0 6px;font-family:${theme.fontStack};font-size:${theme.bodyFontSize - 4}px;font-weight:700;color:${theme.fontColor};">${label}</p>` +
+      (label.trim()
+        ? `<p style="margin:0 0 6px;font-family:${theme.fontStack};font-size:${theme.bodyFontSize - 4}px;font-weight:700;color:${theme.fontColor};">${label}</p>`
+        : '') +
       `<p style="margin:0;font-family:${theme.fontStack};font-size:${theme.bodyFontSize}px;font-weight:${theme.bodyWeight};color:${theme.fontColor};line-height:1.6;">${text}</p></div>`,
   )
 }
