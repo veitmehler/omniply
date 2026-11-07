@@ -72,6 +72,17 @@ describe('rankCitationPool', () => {
     expect(rejected.map((r) => r.url)).toEqual(expect.arrayContaining(['https://someclinic.com/post', 'https://pubmed.ncbi.nlm.nih.gov/1/', 'https://articles.mercola.com/x']))
     expect(MIN_CURATED_AUTHORITY).toBe(7)
   })
+
+  it('accepts curated sources that carry no rating at all (the live step-12 shape)', () => {
+    const curated = [
+      { title: 'Sciatica - StatPearls', url: 'https://www.ncbi.nlm.nih.gov/books/NBK507908/' },
+      { title: 'RACGP cauda equina', url: 'https://www1.racgp.org.au/ajgp/x' },
+      { title: 'Some clinic', url: 'https://someclinic.com.au/x' },
+    ]
+    const { pool, rejected } = rankCitationPool(curated, [])
+    expect(pool.map((p) => p.url)).toEqual(['https://www.ncbi.nlm.nih.gov/books/NBK507908/', 'https://www1.racgp.org.au/ajgp/x'])
+    expect(rejected.map((r) => r.url)).toEqual(['https://someclinic.com.au/x'])
+  })
 })
 
 describe('stripUnpooledLinks', () => {

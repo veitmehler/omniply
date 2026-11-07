@@ -180,13 +180,16 @@ export function rankCitationPool(
   const rejected: RankedCandidate[] = []
   const norm = (u: string) => u.trim().replace(/\/$/, '')
 
-  const curatedSorted = [...curated].sort((a, b) => (b.authority ?? 0) - (a.authority ?? 0))
+  // The live step-12 prompt returns resource_links without any rating, so a
+  // missing authority is neutral (the domain policy is the gate); a rating
+  // that IS present and low still rejects.
+  const curatedSorted = [...curated].sort((a, b) => (b.authority ?? MIN_CURATED_AUTHORITY) - (a.authority ?? MIN_CURATED_AUTHORITY))
   for (const c of curatedSorted) {
     const tier = sourceTier(c.url)
     const key = norm(c.url)
     if (seen.has(key)) continue
     seen.add(key)
-    if (tier === 'rejected' || (c.authority ?? 0) < MIN_CURATED_AUTHORITY) {
+    if (tier === 'rejected' || (c.authority !== undefined && c.authority < MIN_CURATED_AUTHORITY)) {
       rejected.push({ ...c, tier, origin: 'curated' })
       continue
     }
