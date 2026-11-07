@@ -22,10 +22,10 @@ function drawCloserDirective(jobId: string): string {
 // as one modest-weight option; the register ceiling lives in the voice spec.
 function drawOpeningDirective(jobId: string): string {
   const r = seededRng(`opening:${jobId}`)()
-  if (r < 0.3) return 'OPENING MOVE: open the article with a short patient-case observation — something you saw or were asked in practice — told in one or two understated sentences. No self-deprecation, no performance.'
+  if (r < 0.3) return 'OPENING MOVE: open the article with a short clinical observation told as a composite, the way a practitioner summarises a pattern ("Most people who come in with this…", "The question I hear most about this…"), in one or two understated sentences. Never a specific individual, never a dated moment ("a patient came in the other morning"), no self-deprecation, no performance.'
   if (r < 0.55) return 'OPENING MOVE: open the article with the question a reader like this actually brings in, stated plainly in their words, then start answering it.'
   if (r < 0.8) return 'OPENING MOVE: open the article with a direct, confident statement of its core point. No anecdote, no scene-setting.'
-  return 'OPENING MOVE: open the article with a brief personal micro-story told in one or two understated, professional sentences — a clinical observation, not a performance. No self-deprecating theatrics, no slang self-labels.'
+  return 'OPENING MOVE: open the article with a brief clinical observation in one or two understated, professional sentences: a pattern you see, never an invented specific person or a dated scene. No self-deprecating theatrics, no slang self-labels.'
 }
 
 // Maps generic {{<step_name>_output}} variable suffixes to step numbers

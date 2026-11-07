@@ -7,6 +7,7 @@ import { sanitizeKeywordJson, sanitizeKeywordText } from './keyword-sanitizer'
 import type { PipelineContext } from './variable-resolver'
 import { extractCitationsForValidation, validateCitationUrls } from './citation-validator'
 import { insertInlineCitations } from './citation-inserter'
+import { rankCitationPool, enrichTitles } from './citation-policy'
 import { cleanStepOutput } from './approval-service'
 import { getBoss, QUEUES } from '../queues/index'
 import { resolveGroundingUrls } from './grounding-resolver'
@@ -414,13 +415,28 @@ async function ensurePhaseAInlineCitations(jobId: string, ctx: PipelineContext):
 
   const normalized = cleanStepOutput(step11Raw)
 
-  // Build the inline citation pool — prefer Tier 1 research sources, fall back to Step 12
+  // B12 citation pool: the curated step-12 list (authority ≥ 7) first, then
+  // grounding sources that pass the domain policy; everything else is logged
+  // and dropped. Grounding titles are host names, so matching titles are
+  // fetched for the survivors (the inserter needs something to match claims
+  // against — "nih.gov" × 21 is why it invented links in B11).
   const researchPairs = (ctx.researchSources ?? []).map((s) => ({ title: s.title, url: s.url }))
   const step12Raw = ctx.completedSteps.get(12)
   const step12Pairs = step12Raw?.trim() ? extractCitationsForValidation(step12Raw) : []
-
-  const candidatePairs = researchPairs.length > 0 ? researchPairs : step12Pairs
-  if (candidatePairs.length === 0) return
+  const ranked = rankCitationPool(step12Pairs, researchPairs)
+  logger.info(
+    {
+      jobId,
+      curated: step12Pairs.length,
+      grounding: researchPairs.length,
+      pool: ranked.pool.length,
+      rejected: ranked.rejected.length,
+      rejectedHosts: ranked.rejected.map((r) => { try { return new URL(r.url).hostname } catch { return r.url.slice(0, 30) } }),
+    },
+    '[executor] step 12.5 — citation pool after domain policy',
+  )
+  if (ranked.pool.length === 0) return
+  const candidatePairs = await enrichTitles(ranked.pool.map((c) => ({ title: c.title, url: c.url })))
 
   let validated: Awaited<ReturnType<typeof validateCitationUrls>>
   try {
@@ -443,8 +459,7 @@ async function ensurePhaseAInlineCitations(jobId: string, ctx: PipelineContext):
     return
   }
 
-  const sourceLabel = researchPairs.length > 0 ? 'research sources (Tier 1)' : 'step 12 (fallback)'
-  logger.info({ jobId, pool: sourceLabel, count: live.length }, '[executor] step 12.5 — using citation pool')
+  logger.info({ jobId, count: live.length, curatedInPool: ranked.pool.filter((c) => c.origin === 'curated').length }, '[executor] step 12.5 — using citation pool')
 
   try {
     const { linkedHtml, insertedCount } = await insertInlineCitations(normalized, live, jobId, ctx)

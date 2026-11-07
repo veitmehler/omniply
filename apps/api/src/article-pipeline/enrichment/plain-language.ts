@@ -101,7 +101,7 @@ export function seededRng(seed: string): () => number {
 
 /** B11: the box title is written by the device on its first line ("TITLE: …"). */
 export const TITLE_RULE =
-  'TITLE LINE (hard rule): put a title on the very first line as "TITLE: <3 to 7 words>" that states what the reader learns ("Why discs soak up water overnight"), then a blank line, then the explanation. The title names the thing itself: never "simple", "plain", "version", "idea", "think", "picture", "terms", "put", "gist", "short", "explained", "in other words", "here is". Never end the title with a colon or a question mark.'
+  'TITLE LINE (hard rule): put a title on the very first line as "TITLE: <3 to 7 words>" that states what the reader learns about THIS mechanism, written fresh from the passage (a why / what / how phrase naming the body part and what it does), then a blank line, then the explanation. Never a stock phrase, never a phrase you have seen used as a title before: the title names the thing itself, never "simple", "plain", "version", "idea", "think", "picture", "terms", "put", "gist", "short", "explained", "in other words", "here is". Never end the title with a colon or a question mark.'
 
 const TITLE_META_RE = /\b(simple|simply|plain|plainly|version|idea|think|picture|imagine|terms|put|gist|short|explained|explainer|other words|here is|here's|everyday)\b/i
 

@@ -12,6 +12,7 @@
  */
 
 import { logger } from '../lib/logger'
+import { stripUnpooledLinks } from './citation-policy'
 import { StepRunner } from './step-runner'
 import type { PipelineContext } from './variable-resolver'
 import type { ValidatedCitation } from './citation-validator'
@@ -141,6 +142,15 @@ export async function insertInlineCitations(
       '[citation-inserter] LLM dropped H2 headings — discarding output, using original HTML',
     )
     return { linkedHtml: articleHtml, insertedCount: 0 }
+  }
+
+  // B12 hard allowlist: the model may only link to the validated pool. In
+  // B11 stiffness 11 of 15 links were URLs from its own memory (clinic blogs
+  // on three continents). Anything else is unwrapped, text kept.
+  const allow = stripUnpooledLinks(linkedHtml, liveCitations.map((c) => c.url))
+  if (allow.stripped > 0) {
+    linkedHtml = allow.html
+    logger.warn({ jobId, stripped: allow.stripped, hosts: allow.strippedHosts }, '[citation-inserter] stripped links outside the validated pool')
   }
 
   // Post-processing: enforce the "each URL at most once" rule

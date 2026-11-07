@@ -27,6 +27,7 @@ const REQUEST_TIMEOUT_MS = 8_000
 const CONCURRENCY = 5
 
 type CitationEntry = {
+  authority?: number | string
   sourceTitle?: string
   link_title?: string
   title?: string
@@ -39,7 +40,7 @@ type CitationEntry = {
  * Extract flat {title, url} pairs from step 12 JSON output for URL validation.
  * Handles multiple JSON shapes the LLM might produce.
  */
-export function extractCitationsForValidation(raw: string): Array<{ title: string; url: string }> {
+export function extractCitationsForValidation(raw: string): Array<{ title: string; url: string; authority?: number }> {
   if (!raw) return []
   try {
     const parsed = JSON.parse(raw)
@@ -52,10 +53,14 @@ export function extractCitationsForValidation(raw: string): Array<{ title: strin
           : []
 
     return entries
-      .map((e) => ({
-        title: String(e.sourceTitle ?? e.link_title ?? e.title ?? ''),
-        url: String(e.sourceUrl ?? e.link_url ?? e.url ?? ''),
-      }))
+      .map((e) => {
+        const a = e.authority == null ? NaN : Number(e.authority)
+        return {
+          title: String(e.sourceTitle ?? e.link_title ?? e.title ?? ''),
+          url: String(e.sourceUrl ?? e.link_url ?? e.url ?? ''),
+          ...(Number.isFinite(a) ? { authority: a } : {}),
+        }
+      })
       .filter((c) => c.url.startsWith('http'))
   } catch {
     return []
