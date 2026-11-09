@@ -108,6 +108,8 @@ export async function insertInlineCitations(
   liveCitations: ValidatedCitation[],
   jobId: string,
   ctx: PipelineContext,
+  /** B15: URLs already placed deterministically (fact anchors) that the allowlist must keep. */
+  opts: { alsoAllowed?: string[] } = {},
 ): Promise<{ linkedHtml: string; insertedCount: number }> {
   if (liveCitations.length === 0) {
     return { linkedHtml: articleHtml, insertedCount: 0 }
@@ -118,7 +120,7 @@ export async function insertInlineCitations(
 
   const runner = new StepRunner(jobId, 110, ctx)
   const originalH2Count = countH2s(articleHtml)
-  const allowedUrls = liveCitations.map((c) => c.url)
+  const allowedUrls = [...liveCitations.map((c) => c.url), ...(opts.alsoAllowed ?? [])]
 
   // One pass = LLM call + the deterministic post-processing. The pass is
   // retried once when it yields almost nothing from a usable pool (B13: a

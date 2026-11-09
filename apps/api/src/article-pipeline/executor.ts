@@ -15,6 +15,7 @@ import { injectClientStory } from './client-stories/select'
 import { sanitizeDashes } from '../lib/text/dash-sanitizer'
 import { gateHedges } from '../lib/text/hedge-gate'
 import { runEditorPass } from '../lib/text/editor-pass'
+import { verifyFactSources, verifyCuratedIdentity, anchorFactSources, parseFactTags, type FactSource } from './source-verify'
 
 const PHASE_A_STEPS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 const MAX_KEYWORD_RETRIES = 3
@@ -33,6 +34,10 @@ const HEDGE_GATE_STEPS = new Set([11])
  * section openers, sections with no first-person presence, text glyphs. Runs
  * after the hedge gate and before dash sanitation at step 11. EDITOR_PASS=0 disables. */
 const EDITOR_PASS_STEPS = new Set([11])
+
+/** Research outputs whose [Source: …] tags are identity-verified and repaired
+ * before the writer sees them (source-verify.ts). SOURCE_VERIFY=0 disables. */
+const SOURCE_VERIFY_STEPS = new Set([7, 8])
 
 /** Steps whose Gemini grounding sources should be captured as research sources (Tier 1 citations). */
 const GROUNDING_CAPTURE_STEPS = new Set([6, 7, 8, 10])
@@ -136,6 +141,22 @@ export async function runPipelinePhaseA(jobId: string): Promise<void> {
         let stepOutput = result.output
         if (stepNumber === 3 || stepNumber === 6) {
           stepOutput = sanitizeKeywordText(stepOutput, stepNumber, jobId)
+        }
+
+        if (SOURCE_VERIFY_STEPS.has(stepNumber) && process.env.SOURCE_VERIFY !== '0') {
+          try {
+            const v = await verifyFactSources(stepOutput, { jobId, stepNumber })
+            if (v.text !== stepOutput) {
+              stepOutput = v.text
+              await prisma.pipelineStep.updateMany({
+                where: { jobId, stepNumber, status: 'completed' },
+                data: { output: stepOutput },
+              })
+            }
+            logger.info({ jobId, stepNumber, ...v.stats }, '[executor] fact sources verified')
+          } catch (err) {
+            logger.warn({ jobId, stepNumber, err }, '[executor] source verification failed — output kept as-is')
+          }
         }
 
         if (HEDGE_GATE_STEPS.has(stepNumber) && process.env.HEDGE_GATE !== '0') {
@@ -463,11 +484,35 @@ async function ensurePhaseAInlineCitations(jobId: string, ctx: PipelineContext):
   const researchPairs = (ctx.researchSources ?? []).map((s) => ({ title: s.title, url: s.url }))
   const step12Raw = ctx.completedSteps.get(12)
   const step12Pairs = step12Raw?.trim() ? extractCitationsForValidation(step12Raw) : []
-  const ranked = rankCitationPool(step12Pairs, researchPairs)
+
+  // B15: the fact is the unit of citation. The research feeds (steps 7/8)
+  // carry a verified [Source: …, URL] tag per fact (source-verify.ts ran at
+  // step time); those pairs lead the pool and are linked deterministically to
+  // the sentence that states the fact. Step-12 curated entries are identity-
+  // checked (the model's title vs the real page) before they may join.
+  const factSources: FactSource[] = []
+  for (const n of [8, 7]) {
+    const raw = ctx.completedSteps.get(n) ?? ''
+    for (const t of parseFactTags(raw)) {
+      if (t.url && !factSources.some((f) => f.url === t.url)) {
+        factSources.push({ fact: t.fact, url: t.url, title: `${t.institution}${t.publisher ? `, ${t.publisher}` : ''}`, status: 'unchecked' })
+      }
+    }
+  }
+  let curatedPairs = step12Pairs
+  try {
+    const idv = await verifyCuratedIdentity(step12Pairs, { jobId })
+    curatedPairs = idv.kept
+    if (idv.rejected.length) logger.warn({ jobId, rejected: idv.rejected.map((r) => ({ url: r.url, reason: r.reason })) }, '[executor] step 12.5 — curated sources failed identity check')
+  } catch (err) {
+    logger.warn({ jobId, err }, '[executor] step 12.5 — curated identity check failed, keeping list')
+  }
+  const ranked = rankCitationPool([...factSources.map((f) => ({ title: f.title, url: f.url })), ...curatedPairs], researchPairs)
   logger.info(
     {
       jobId,
-      curated: step12Pairs.length,
+      factSources: factSources.length,
+      curated: curatedPairs.length,
       grounding: researchPairs.length,
       pool: ranked.pool.length,
       rejected: ranked.rejected.length,
@@ -502,7 +547,19 @@ async function ensurePhaseAInlineCitations(jobId: string, ctx: PipelineContext):
   logger.info({ jobId, count: live.length, curatedInPool: ranked.pool.filter((c) => c.origin === 'curated').length }, '[executor] step 12.5 — using citation pool')
 
   try {
-    const { linkedHtml, insertedCount } = await insertInlineCitations(normalized, live, jobId, ctx)
+    // Deterministic pass first: each live fact source goes on the sentence that states its fact.
+    const liveUrls = new Set(live.map((c) => c.url.trim().replace(/\/$/, '')))
+    const anchorable = factSources.filter((f) => liveUrls.has(f.url.trim().replace(/\/$/, '')))
+    const anchored = anchorFactSources(normalized, anchorable)
+    logger.info({ jobId, factSources: anchorable.length, placed: anchored.placed.length, unplaced: anchored.unplaced.length }, '[executor] step 12.5 — fact sources anchored')
+    const remaining = live.filter((c) => !anchored.placed.includes(c.url))
+    let linkedHtml = anchored.html
+    let insertedCount = anchored.placed.length
+    if (remaining.length > 0) {
+      const r = await insertInlineCitations(anchored.html, remaining, jobId, ctx, { alsoAllowed: anchored.placed })
+      linkedHtml = r.linkedHtml
+      insertedCount = live.filter((c) => linkedHtml.includes(c.url)).length
+    }
     if (linkedHtml === normalized) {
       logger.warn({ jobId, insertedCount }, '[executor] step 12.5 — no HTML change from citation inserter')
       return

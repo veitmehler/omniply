@@ -39,8 +39,12 @@ const SECTION_EXCLUDE = /^(faq|frequently asked questions|conclusion|key takeawa
 // better-placed devices is both the length cut and the formula cut.
 const MAX_BOXES_PER_ARTICLE = 1
 const MAX_GLOSSES_PER_ARTICLE = 4
-const CONCEPT_INLINE_P = 0.3 // inline paragraph, no box chrome
-const CONCEPT_BOXED_P = 0.2 // labeled box (remainder is skipped entirely)
+// B15 (2026-11-09): the INLINE concept form is retired. An unmarked plain
+// explanation glued under the paragraph it explains is, to a reader, the same
+// paragraph twice (Gemini's "double paragraph" on B14 back pain and stiffness).
+// Boxes carry the explanation, framed as an explainer, and always with an image.
+const CONCEPT_INLINE_P = 0 // retired
+const CONCEPT_BOXED_P = 0.5 // labeled box (remainder is skipped entirely)
 
 const MAX_TERMS_PER_SECTION = 2
 const MAX_GLOSS_CHARS = 480
@@ -153,8 +157,8 @@ export interface ImageState {
  *  distribution is asymmetric). Of the rest, the "like a …" frame is allowed
  *  once per article when a state is tracked; the others carry the image as an
  *  apposition or a verb. Legacy callers without a state keep the old pair. */
-export function pickImageMode(rng: () => number, state?: ImageState): string {
-  if (rng() < 0.5) return IMAGE_NONE
+export function pickImageMode(rng: () => number, state?: ImageState, opts: { requireImage?: boolean } = {}): string {
+  if (!opts.requireImage && rng() < 0.5) return IMAGE_NONE
   if (!state) return IMAGE_LIKE
   if (!state.likeUsed && rng() < 0.4) {
     state.likeUsed = true
@@ -253,7 +257,7 @@ export function overlapReason(text: string, passage: string, n = 6): string | nu
 // the pipeline scans for this (pl_verify checks factual fidelity only), so it
 // is caught here, before the paid verify call.
 export const STANCE_LEAK_RE =
-  /\b(?:the|this)\s+(?:article|passage|excerpt|piece)\b|\bthe author\b|\bas\s+(?:mentioned|noted|described)\s+(?:above|earlier)\b/i
+  /\b(?:the|this)\s+(?:article|passage|excerpt|piece)\b|\bthe author\b|\bas\s+(?:mentioned|noted|described)\s+(?:above|earlier)\b|\b(?:the|that)\s+(?:study|trial|review|paper|research)\s+I\s+(?:mentioned|cited|referred\s+to|quoted)\b|\bas\s+I\s+(?:said|mentioned|noted)\b|\bmentioned\s+(?:above|earlier)\b/i
 export const SCAFFOLD_OPENER_RE = /^\s*(?:think of|picture|imagine)\b/i
 
 /** Returns a rejection reason if the generated text breaks stance or opens
@@ -728,10 +732,11 @@ export async function runPlainLanguagePass(args: ArticlePassArgs): Promise<Plain
         let form: 'inline' | 'boxed' | 'skip' =
           draw < CONCEPT_INLINE_P ? 'inline' : draw < CONCEPT_INLINE_P + CONCEPT_BOXED_P ? 'boxed' : 'skip'
         if (form === 'boxed' && (plannedBoxTotal >= MAX_BOXES_PER_ARTICLE || sectionIdx - lastBoxedSectionIdx <= 1)) {
-          form = 'inline'
+          form = 'skip'
         }
         if (form !== 'skip') {
-          const conceptImage = pickImageMode(rng, imageState)
+          // Boxed explanations always carry an image (B15): without one the box is a paraphrase.
+          const conceptImage = pickImageMode(rng, imageState, { requireImage: true })
           const generated = await generateVerified({
             kind: 'concept',
             vars: { ...baseVars, alreadyUsedMetaphors: usedImagery.join(', ') || 'none yet', conceptSummary: concept.summary.trim(), closerStyle: CLOSER_PLAIN, openerStyle: conceptImage },

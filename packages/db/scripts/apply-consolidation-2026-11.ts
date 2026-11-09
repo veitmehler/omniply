@@ -47,6 +47,9 @@ const STEP_TEXT: Record<number, { systemPrompt: string; userPrompt: string }> = 
 const STEP110_ANCHOR = '- Each citation URL must appear AT MOST ONCE in the entire article.\n'
 const STEP110_RULE =
   '- Use ONLY the URLs in the Validated Citations JSON, copied EXACTLY, character for character. Never alter, shorten, "correct" or invent a URL. A URL that has no matching passage is skipped, never replaced with another.\n'
+// B15: fact anchors are placed in code before the model runs; it must leave them alone and stop guessing relevance from hosts.
+const STEP110_RULE_B15 =
+  '- Never add a link inside a sentence that already contains one, and never move or remove an existing link.\n- A citation may only wrap a sentence that states what its title is about. If no sentence does, skip the citation.\n'
 
 async function main() {
   console.log(APPLY ? '⚠️  APPLY mode: prompt text and framework bodies will be overwritten.' : 'ℹ️  Dry run: showing what would change. Pass --apply to write.')
@@ -73,11 +76,12 @@ async function main() {
 
   const rows110 = await prisma.promptTemplate.findMany({ where: { stepNumber: 110 }, select: { id: true, vertical: true, userPrompt: true } })
   for (const r of rows110) {
-    const has = r.userPrompt.includes('copied EXACTLY')
-    console.log(`  ${has ? '=' : '⤳'} step 110 [${r.vertical}]: exact-URL rule ${has ? 'present' : 'missing'}`)
-    if (APPLY && !has && r.userPrompt.includes(STEP110_ANCHOR)) {
-      await prisma.promptTemplate.update({ where: { id: r.id }, data: { userPrompt: r.userPrompt.replace(STEP110_ANCHOR, STEP110_ANCHOR + STEP110_RULE) } })
-    }
+    let u = r.userPrompt
+    if (!u.includes('copied EXACTLY') && u.includes(STEP110_ANCHOR)) u = u.replace(STEP110_ANCHOR, STEP110_ANCHOR + STEP110_RULE)
+    if (!u.includes('already contains one') && u.includes(STEP110_RULE)) u = u.replace(STEP110_RULE, STEP110_RULE + STEP110_RULE_B15)
+    const same = u === r.userPrompt
+    console.log(`  ${same ? '=' : '⤳'} step 110 [${r.vertical}]: exact-URL rule ${u.includes('copied EXACTLY') ? 'present' : 'missing'}, anchor rule ${u.includes('already contains one') ? 'present' : 'missing'}`)
+    if (APPLY && !same) await prisma.promptTemplate.update({ where: { id: r.id }, data: { userPrompt: u } })
   }
 
   for (const fw of OUTLINE_FRAMEWORKS) {

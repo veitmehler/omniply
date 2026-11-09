@@ -748,6 +748,8 @@ Validated Citations (JSON):
 Rules:
 - Each citation URL must appear AT MOST ONCE in the entire article.
 - Use ONLY the URLs in the Validated Citations JSON, copied EXACTLY, character for character. Never alter, shorten, "correct" or invent a URL. A URL that has no matching passage is skipped, never replaced with another.
+- Never add a link inside a sentence that already contains one, and never move or remove an existing link.
+- A citation may only wrap a sentence that states what its title is about. If no sentence does, skip the citation.
 - Wrap the most relevant existing text in an <a href="URL" target="_blank" rel="noopener noreferrer"> tag. Do NOT add new text — only wrap existing text.
 - Place each citation near the specific claim or data point it supports.
 - Do NOT modify any other HTML structure, headings, paragraphs, lists, or content.

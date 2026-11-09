@@ -144,6 +144,21 @@ describe('vehicleReuseReason', () => {
   })
 })
 
+describe('B15: image-mandatory boxes and back-reference stance leaks', () => {
+  it('never draws IMAGE_NONE when an image is required', () => {
+    for (let seed = 0; seed < 40; seed++) {
+      const rng = seededRng(`req-${seed}`)
+      const state = { likeUsed: false }
+      for (let i = 0; i < 6; i++) expect(pickImageMode(rng, state, { requireImage: true })).not.toBe(IMAGE_NONE)
+    }
+  })
+  it('rejects a device that refers back to a study or passage it mentioned', () => {
+    expect(lexicalGateReason('In the study I mentioned, adults who had 12 weeks of adjustments showed shifts in cortisol.', true)).toBeTruthy()
+    expect(lexicalGateReason('As I said, the disc swells overnight.', true)).toBeTruthy()
+    expect(lexicalGateReason('The hip flexors shorten when you sit, and the glutes switch off.', true)).toBeNull()
+  })
+})
+
 describe('lexicalGateReason', () => {
   it('rejects outside-the-byline stance leaks', () => {
     expect(lexicalGateReason('Your discs behave like sponges, and the article notes that load shifts.', true)).toMatch(/the article/)
