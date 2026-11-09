@@ -243,6 +243,11 @@ async function resolveVariable(name: string, ctx: PipelineContext): Promise<stri
     case 'current_date':
       return new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
 
+    // Nine live prompts (steps 0, 7, 8, 9, 11, 12, 311, 313, 315) reference
+    // {{current_year}}; until 2026-11-09 it had no case here and resolved to ''.
+    case 'current_year':
+      return String(new Date().getFullYear())
+
     case 'min_citation_year':
       return String(new Date().getFullYear() - 10)
 

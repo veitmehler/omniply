@@ -270,23 +270,43 @@ export async function enrichTitles<T extends { title: string; url: string }>(ite
 }
 
 /**
- * Remove every <a> whose href is not in the allowed pool, keeping the text.
- * Internal anchors (#…) are left alone. Returns the stripped count so the
- * caller can log how often the inserter invented links.
+ * Enforce the pool on the inserter's output. An <a> whose href is in the pool
+ * stays. An off-pool href whose host matches exactly ONE pool URL is
+ * re-pointed at that pool URL (B13: the model "corrected" PubMed and Safe Work
+ * Australia URLs to variants of its own, which cost an article every link).
+ * Anything else is unwrapped, text kept. Internal anchors (#…) are left alone.
  */
-export function stripUnpooledLinks(html: string, allowedUrls: Iterable<string>): { html: string; stripped: number; strippedHosts: string[] } {
+export function stripUnpooledLinks(
+  html: string,
+  allowedUrls: Iterable<string>,
+): { html: string; stripped: number; recovered: number; strippedHosts: string[] } {
   const norm = (u: string) => u.trim().replace(/\/$/, '')
-  const allowed = new Set([...allowedUrls].map(norm))
+  const pool = [...allowedUrls]
+  const allowed = new Set(pool.map(norm))
+  const byHost = new Map<string, string[]>()
+  for (const u of pool) {
+    const host = hostOf(u)
+    if (!host) continue
+    byHost.set(host, [...(byHost.get(host) ?? []), u])
+  }
   let stripped = 0
+  let recovered = 0
   const strippedHosts: string[] = []
   const out = html.replace(/<a\b([^>]*)>([\s\S]*?)<\/a>/gi, (match, attrs: string, inner: string) => {
     const hrefMatch = /href\s*=\s*["']?([^"'\s>]*)["']?/i.exec(attrs)
     const href = hrefMatch?.[1] ?? ''
     if (!href || href.startsWith('#')) return match
     if (allowed.has(norm(href))) return match
+    const host = hostOf(href)
+    const candidates = host ? byHost.get(host) ?? [] : []
+    if (candidates.length === 1) {
+      recovered++
+      const fixedAttrs = attrs.replace(hrefMatch![0], hrefMatch![0].replace(href, candidates[0]))
+      return `<a${fixedAttrs}>${inner}</a>`
+    }
     stripped++
-    strippedHosts.push(hostOf(href) ?? href.slice(0, 40))
+    strippedHosts.push(host ?? href.slice(0, 40))
     return inner
   })
-  return { html: out, stripped, strippedHosts }
+  return { html: out, stripped, recovered, strippedHosts }
 }

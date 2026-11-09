@@ -114,4 +114,65 @@ THE SENTENCE BEFORE IT (context only, do not rewrite it):
 Rewrite now.`,
     isActive: true,
   },
+  {
+    // Editor pass (consolidation round 2026-11-09): the banned-phrase list,
+    // tour-guide transitions and citation-metadata rules left the step-9
+    // prompt and became detection + this guarded rewrite
+    // (apps/api/src/lib/text/editor-pass.ts).
+    stepNumber: 422,
+    key: 'st_phrase_fix',
+    stepName: 'style_phrase_fix_sentence',
+    defaultProvider: 'anthropic',
+    defaultModel: 'claude-sonnet-4-5-20250929',
+    maxTokens: 300,
+    systemPrompt:
+      "You edit a clinician's patient-facing article. You receive ONE sentence and the reason it was " +
+      'flagged. Rewrite it the way the clinician would say it across the desk: plain, concrete, in the ' +
+      'same first-person voice, carrying exactly the same information. Keep every figure, range, ' +
+      'comparison, recommendation and caution the sentence holds. Never add facts, numbers, names, ' +
+      'studies or outcomes that are not in the sentence. Never strengthen a claim: keep "usually", ' +
+      '"tends to", "in my experience" where they exist. No em-dashes. Stay at or under the original ' +
+      'length. If the sentence carries nothing beyond the flagged phrase itself, output exactly [DELETE]. ' +
+      'Output ONLY the rewritten sentence or [DELETE], nothing else.',
+    userPrompt: `SENTENCE:
+{{sentence}}
+
+WHY IT WAS FLAGGED:
+{{reason}}
+
+THE SENTENCE BEFORE IT (context only, do not rewrite it):
+{{before}}
+
+Rewrite now.`,
+    isActive: true,
+  },
+  {
+    // Editor pass: a section with no trace of the practitioner gets one
+    // paragraph rewritten to carry their presence. Code-guarded (same numbers,
+    // no links, bounded growth, must now contain a first-person marker).
+    stepNumber: 423,
+    key: 'st_presence_fix',
+    stepName: 'style_presence_fix_paragraph',
+    defaultProvider: 'anthropic',
+    defaultModel: 'claude-sonnet-4-5-20250929',
+    maxTokens: 600,
+    systemPrompt:
+      "You edit a clinician's patient-facing article written in their own first-person voice. You receive " +
+      'ONE paragraph from a section in which the clinician has gone silent: nothing in the section shows ' +
+      'that a practitioner who does this work is speaking. Rewrite the paragraph so the clinician is ' +
+      'present in it, in whatever way fits this material: a judgment they hold, something they check or ' +
+      'watch for, a preference, a point where they part ways with common advice. Change as little as ' +
+      'possible: keep every fact, figure and recommendation exactly as given, keep the order of ideas, ' +
+      'and add no new facts, numbers, studies, patients or scenes. Never narrate caution, evidence or ' +
+      'limits. No similes or metaphors. No em-dashes. At most one short sentence longer than the ' +
+      'original. Output ONLY the rewritten paragraph as plain text, no HTML, nothing else.',
+    userPrompt: `SECTION HEADING (context only):
+{{heading}}
+
+PARAGRAPH:
+{{paragraph}}
+
+Rewrite now.`,
+    isActive: true,
+  },
 ]

@@ -69,6 +69,13 @@ const CDN_BASE = process.env.CDN_BASE ?? ''
 // carries the answer, and sectionEnrichment.summary becomes a verbatim
 // extract of it so downstream schema stays faithful to visible text.
 const GEO_ANSWER_FIRST = process.env.GEO_ANSWER_FIRST === '1'
+// Consolidation round (2026-11-09): GEO no longer rewrites headings at all.
+// B7's question-for-heading swap produced headings that did not match the
+// section beneath them (Gemini, B13). The writer now phrases question
+// headings itself where a reader would type one (step-9 §5); the GEO
+// question and the verbatim opening-paragraph extract are still stored per
+// section for schema. GEO_REPLACE_HEADINGS=1 restores the old swap.
+const GEO_REPLACE_HEADINGS = process.env.GEO_REPLACE_HEADINGS === '1'
 // B7: per-article seeded structure lottery (TOC present or not, takeaways as
 // bullets / short prose / absent) so the page skeleton varies across the
 // calendar instead of showing the full template every time.
@@ -292,7 +299,7 @@ export async function runArticleEnrichment(jobId: string): Promise<void> {
       let summary: string | undefined
       const sectionHtml =
         baseSections.find((s) => s.position === e.position)?.sectionHtml ?? ''
-      if (GEO_ANSWER_FIRST) {
+      if (GEO_ANSWER_FIRST || !GEO_REPLACE_HEADINGS) {
         // Answer-first: the schema answer is a verbatim extract of the
         // section's visible opening paragraph — no generated summary, no
         // LLM spend, and nothing on record that the page doesn't show.
@@ -362,8 +369,10 @@ export async function runArticleEnrichment(jobId: string): Promise<void> {
       }
     }
 
-    if (geoByPosition.size > 0) {
+    if (geoByPosition.size > 0 && GEO_REPLACE_HEADINGS) {
       geoHtml = restructureHtmlWithGeo(bodyHtml, baseSections, geoByPosition, { answerFirst: GEO_ANSWER_FIRST })
+    } else if (geoByPosition.size > 0) {
+      logger.info({ jobId, sections: geoByPosition.size }, '[enrichment] geo questions stored for schema; headings left as written')
     }
     // Normalise question-style H2s (append `?`) before the TOC is built so
     // TOC display text matches the headings that appear in the article body.

@@ -14,6 +14,7 @@ import { resolveGroundingUrls } from './grounding-resolver'
 import { injectClientStory } from './client-stories/select'
 import { sanitizeDashes } from '../lib/text/dash-sanitizer'
 import { gateHedges } from '../lib/text/hedge-gate'
+import { runEditorPass } from '../lib/text/editor-pass'
 
 const PHASE_A_STEPS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 const MAX_KEYWORD_RETRIES = 3
@@ -27,6 +28,11 @@ const DASH_SANITIZE_STEPS = new Set([0, 11])
 /** The fact-adjusted body gets the narrated-constraint gate (hedge-gate.ts)
  * before dash sanitation, so any rewrite is dash-cleaned too. */
 const HEDGE_GATE_STEPS = new Set([11])
+
+/** Editor pass (editor-pass.ts): stock phrases, citation metadata, repeated
+ * section openers, sections with no first-person presence, text glyphs. Runs
+ * after the hedge gate and before dash sanitation at step 11. EDITOR_PASS=0 disables. */
+const EDITOR_PASS_STEPS = new Set([11])
 
 /** Steps whose Gemini grounding sources should be captured as research sources (Tier 1 citations). */
 const GROUNDING_CAPTURE_STEPS = new Set([6, 7, 8, 10])
@@ -148,6 +154,40 @@ export async function runPipelinePhaseA(jobId: string): Promise<void> {
             )
           } catch (err) {
             logger.warn({ jobId, stepNumber, err }, '[executor] hedge gate failed — output kept as-is')
+          }
+        }
+
+        if (EDITOR_PASS_STEPS.has(stepNumber) && process.env.EDITOR_PASS !== '0') {
+          try {
+            const e = await runEditorPass(stepOutput, { jobId, stepNumber })
+            if (e.changed) {
+              stepOutput = e.text
+              await prisma.pipelineStep.updateMany({
+                where: { jobId, stepNumber, status: 'completed' },
+                data: { output: stepOutput },
+              })
+            }
+            logger.info(
+              {
+                jobId,
+                stepNumber,
+                glyphsRemoved: e.glyphsRemoved,
+                phraseFlagged: e.phraseFlagged,
+                sourceFlagged: e.sourceFlagged,
+                rewritten: e.rewritten,
+                deleted: e.deleted,
+                kept: e.kept,
+                repeatedOpeners: e.repeatedOpeners,
+                openersRewritten: e.openersRewritten,
+                sectionsWithoutPresence: e.sectionsWithoutPresence,
+                presenceAdded: e.presenceAdded,
+                llmCalls: e.llmCalls,
+                cost: e.cost,
+              },
+              '[executor] editor pass ran',
+            )
+          } catch (err) {
+            logger.warn({ jobId, stepNumber, err }, '[executor] editor pass failed — output kept as-is')
           }
         }
 

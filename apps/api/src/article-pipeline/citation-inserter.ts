@@ -117,52 +117,49 @@ export async function insertInlineCitations(
   ctx.completedSteps.set(110, JSON.stringify(liveCitations))
 
   const runner = new StepRunner(jobId, 110, ctx)
-  let result: Awaited<ReturnType<typeof runner.execute>>
-  try {
-    result = await runner.execute()
-  } catch (err) {
-    logger.error({ jobId, err }, '[citation-inserter] LLM call failed — returning original HTML')
-    throw err
-  }
-
-  let linkedHtml = result.output.trim()
-
-  // Strip any markdown code fences the LLM may have wrapped the HTML in
-  linkedHtml = linkedHtml
-    .replace(/^```(?:html)?\s*/i, '')
-    .replace(/```\s*$/i, '')
-    .trim()
-
-  // Safety check: if the LLM dropped H2 headings, its output is corrupt — discard it
   const originalH2Count = countH2s(articleHtml)
-  const linkedH2Count = countH2s(linkedHtml)
-  if (originalH2Count > 0 && linkedH2Count < originalH2Count) {
-    logger.warn(
-      { jobId, originalH2Count, linkedH2Count },
-      '[citation-inserter] LLM dropped H2 headings — discarding output, using original HTML',
-    )
-    return { linkedHtml: articleHtml, insertedCount: 0 }
-  }
+  const allowedUrls = liveCitations.map((c) => c.url)
 
-  // B12 hard allowlist: the model may only link to the validated pool. In
-  // B11 stiffness 11 of 15 links were URLs from its own memory (clinic blogs
-  // on three continents). Anything else is unwrapped, text kept.
-  const allow = stripUnpooledLinks(linkedHtml, liveCitations.map((c) => c.url))
-  if (allow.stripped > 0) {
-    linkedHtml = allow.html
-    logger.warn({ jobId, stripped: allow.stripped, hosts: allow.strippedHosts }, '[citation-inserter] stripped links outside the validated pool')
-  }
-
-  // Post-processing: enforce the "each URL at most once" rule
-  for (const citation of liveCitations) {
-    if (countOccurrences(linkedHtml, citation.url) > 1) {
-      linkedHtml = deduplicateCitationLinks(linkedHtml, citation.url)
+  // One pass = LLM call + the deterministic post-processing. The pass is
+  // retried once when it yields almost nothing from a usable pool (B13: a
+  // 13-source pool produced zero links after the allowlist).
+  const runPass = async (attempt: number): Promise<{ html: string; inserted: number } | null> => {
+    let result: Awaited<ReturnType<typeof runner.execute>>
+    try {
+      result = await runner.execute()
+    } catch (err) {
+      logger.error({ jobId, attempt, err }, '[citation-inserter] LLM call failed')
+      if (attempt === 1) throw err
+      return null
     }
+    let linkedHtml = result.output.trim().replace(/^```(?:html)?\s*/i, '').replace(/```\s*$/i, '').trim()
+    if (originalH2Count > 0 && countH2s(linkedHtml) < originalH2Count) {
+      logger.warn({ jobId, attempt, originalH2Count, linkedH2Count: countH2s(linkedHtml) }, '[citation-inserter] LLM dropped H2 headings — discarding this pass')
+      return null
+    }
+    // B12 hard allowlist: the model may only link to the validated pool
+    // (B11 stiffness: 11 of 15 links were URLs from its own memory).
+    const allow = stripUnpooledLinks(linkedHtml, allowedUrls)
+    if (allow.stripped > 0 || allow.recovered > 0) {
+      linkedHtml = allow.html
+      logger.warn({ jobId, attempt, stripped: allow.stripped, recovered: allow.recovered, hosts: allow.strippedHosts }, '[citation-inserter] links outside the validated pool: recovered by host or stripped')
+    }
+    for (const citation of liveCitations) {
+      if (countOccurrences(linkedHtml, citation.url) > 1) linkedHtml = deduplicateCitationLinks(linkedHtml, citation.url)
+    }
+    linkedHtml = normalizeExternalLinkAttrs(linkedHtml)
+    const inserted = liveCitations.filter((c) => linkedHtml.includes(c.url)).length
+    return { html: linkedHtml, inserted }
   }
 
-  // Post-processing: guarantee target="_blank" and rel="noopener noreferrer"
-  // on every external link, regardless of what the LLM produced.
-  linkedHtml = normalizeExternalLinkAttrs(linkedHtml)
+  let best = await runPass(1)
+  if (!best) return { linkedHtml: articleHtml, insertedCount: 0 }
+  if (best.inserted < Math.min(3, liveCitations.length) && liveCitations.length >= 5) {
+    logger.info({ jobId, inserted: best.inserted, pool: liveCitations.length }, '[citation-inserter] low yield, retrying once')
+    const second = await runPass(2)
+    if (second && second.inserted > best.inserted) best = second
+  }
+  const linkedHtml = best.html
 
   // Count how many citation URLs actually appear in the final HTML
   const insertedCount = liveCitations.filter((c) =>

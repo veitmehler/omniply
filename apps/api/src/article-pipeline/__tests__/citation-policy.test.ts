@@ -97,6 +97,18 @@ describe('stripUnpooledLinks', () => {
     expect(r.html).toContain(', and people are taller in the morning.')
     expect(r.html).toContain('<a href="#faq">the FAQ</a>')
   })
+
+  it('re-points an off-pool link at the single pool URL on the same host, strips ambiguous hosts', () => {
+    const pool = ['https://www.safeworkaustralia.gov.au/sitting-guide', 'https://pubmed.ncbi.nlm.nih.gov/111/', 'https://pubmed.ncbi.nlm.nih.gov/222/']
+    const html =
+      '<p><a href="https://www.safeworkaustralia.gov.au/some-other-page">Safe Work guidance</a> and ' +
+      '<a href="https://pubmed.ncbi.nlm.nih.gov/999/">a trial</a>.</p>'
+    const r = stripUnpooledLinks(html, pool)
+    expect(r.recovered).toBe(1)
+    expect(r.stripped).toBe(1)
+    expect(r.html).toContain('<a href="https://www.safeworkaustralia.gov.au/sitting-guide">Safe Work guidance</a>')
+    expect(r.html).toContain(' and a trial.')
+  })
 })
 
 describe('titles and authority parsing', () => {
