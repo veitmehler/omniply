@@ -18,6 +18,7 @@
  */
 
 import type { Prisma } from '@prisma/client'
+import { loadFactSources } from './source-verify'
 import { verticalForUser } from '../lib/prompt-resolver'
 import { prisma, brandSettingsForUser } from '@omniply/shared'
 import { logger } from '../lib/logger'
@@ -99,49 +100,53 @@ function extractPrimaryKeyword(parsed: Record<string, unknown> | undefined): str
  *
  * Backward-compatible: consumers can check for `inline_sources` to detect the new format.
  */
-function buildTwoTierCitations(
-  step12Raw: string,
-  researchSourcesRaw: string,
-): Record<string, unknown> | null {
-  // Parse Step 12 (Tier 2 — bottom-of-page references)
-  let resourceLinks: Array<Record<string, unknown>> = []
-  if (step12Raw) {
-    try {
-      const parsed = JSON.parse(step12Raw)
-      if (Array.isArray(parsed)) {
-        resourceLinks = parsed
-      } else if (parsed && typeof parsed === 'object') {
-        resourceLinks = (parsed as Record<string, unknown>).resource_links as Array<Record<string, unknown>> ?? []
-      }
-    } catch { /* ignore */ }
-  }
+export interface UsedSourceCitations {
+  inline_sources: Array<{ link_title: string; link_url: string; step: number }>
+  resource_links: Array<{ link_title: string; link_url: string; link_date?: string }>
+}
 
-  // Parse research sources (Tier 1 — inline)
-  let inlineSources: Array<{ link_title: string; link_url: string; step: number }> = []
+/**
+ * B16: the rendered "Article Citations" list (Tier 2) is built from the links
+ * that are actually IN the article, in order of appearance, followed by any
+ * verified fact source that was used but could not be anchored. Nothing here
+ * comes from a model-typed list (step 12 is retired). Tier 1 (grounding pages)
+ * is kept for the admin UI and is not rendered.
+ */
+export function buildCitationsFromUsedSources(
+  linkedHtml: string,
+  factSources: Array<{ url: string; title: string; status?: string }>,
+  researchSourcesRaw: string,
+): UsedSourceCitations | null {
+  let inlineSources: UsedSourceCitations['inline_sources'] = []
   if (researchSourcesRaw) {
     try {
       const parsed = JSON.parse(researchSourcesRaw) as Array<{ title: string; url: string; step: number }>
-      inlineSources = parsed.map((s) => ({
-        link_title: s.title,
-        link_url: s.url,
-        step: s.step,
-      }))
+      inlineSources = parsed.map((s) => ({ link_title: s.title, link_url: s.url, step: s.step }))
     } catch { /* ignore */ }
   }
-
-  if (resourceLinks.length === 0 && inlineSources.length === 0) return null
-
-  // Deduplicate: remove Tier 2 entries that already appear in Tier 1 (research sources take priority)
-  const tier1Urls = new Set(inlineSources.map((s) => s.link_url))
-  const dedupedResourceLinks = resourceLinks.filter((r) => {
-    const url = (r.link_url ?? r.url ?? '') as string
-    return !tier1Urls.has(url)
-  })
-
-  return {
-    inline_sources: inlineSources,
-    resource_links: dedupedResourceLinks,
+  const titleFor = (url: string): string => {
+    const norm = (u: string) => u.trim().replace(/\/$/, '')
+    const f = factSources.find((x) => norm(x.url) === norm(url))
+    if (f?.title) return f.title
+    const g = inlineSources.find((x) => norm(x.link_url) === norm(url))
+    if (g?.link_title && !/^[a-z0-9.-]+\.[a-z]{2,}$/i.test(g.link_title)) return g.link_title
+    try { return new URL(url).hostname.replace(/^www\./, '') } catch { return url }
   }
+  const seen = new Set<string>()
+  const resourceLinks: UsedSourceCitations['resource_links'] = []
+  for (const m of linkedHtml.matchAll(/<a\b[^>]*href="(https?:\/\/[^"]+)"/gi)) {
+    const url = m[1]
+    if (seen.has(url)) continue
+    seen.add(url)
+    resourceLinks.push({ link_title: titleFor(url), link_url: url })
+  }
+  for (const f of factSources) {
+    if (seen.has(f.url) || f.status === 'dropped') continue
+    seen.add(f.url)
+    resourceLinks.push({ link_title: f.title || titleFor(f.url), link_url: f.url })
+  }
+  if (resourceLinks.length === 0 && inlineSources.length === 0) return null
+  return { inline_sources: inlineSources, resource_links: resourceLinks }
 }
 
 /** Truncate excerpt to ≤150 chars. */
@@ -270,8 +275,9 @@ export async function approveArticleJob(jobId: string): Promise<void> {
   const primaryKeyword = extractPrimaryKeyword(
     ctx.parsedSteps.get(2) as Record<string, unknown> | undefined,
   )
-  const citations = buildTwoTierCitations(
-    ctx.completedSteps.get(12) ?? '',
+  const citations = buildCitationsFromUsedSources(
+    articleBodyHtml,
+    loadFactSources(ctx.completedSteps),
     ctx.completedSteps.get(120) ?? '',
   )
   const baseSlug = slugify(seo.urlSlug || seo.metaTitle || topic.topic)

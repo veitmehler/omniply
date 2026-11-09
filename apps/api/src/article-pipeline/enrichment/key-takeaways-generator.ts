@@ -112,7 +112,7 @@ export async function generateKeyTakeaways(opts: {
   let outputTokens = 0
   let cost = 0
 
-  const callOnce = async (userPrompt: string, attempt: number) => {
+  const callOnce = async (userPrompt: string, attempt: number, asProse: boolean = prose) => {
     // 1536, not 512: B7 shipped a Key Takeaways bullet hard-truncated
     // mid-sentence ("…interrupts creep before") because dense, citation-rich
     // bullets alone can exceed 512 tokens.
@@ -134,12 +134,12 @@ export async function generateKeyTakeaways(opts: {
     )
     // Completeness guard: a truncated output is worse than a shorter complete
     // one. Drop any unterminated trailing <li>, and ensure the list closes.
-    if (!prose && listInner.includes('<ul')) {
+    if (!asProse && listInner.includes('<ul')) {
       if (!/<\/ul>\s*$/i.test(listInner)) {
         const lastClose = listInner.lastIndexOf('</li>')
         listInner = lastClose >= 0 ? listInner.slice(0, lastClose + 5) + '\n</ul>' : listInner + '</ul>'
       }
-    } else if (prose && !/[.!?]\s*(?:<\/p>)?\s*$/.test(listInner)) {
+    } else if (asProse && !/[.!?]\s*(?:<\/p>)?\s*$/.test(listInner)) {
       const lastEnd = Math.max(listInner.lastIndexOf('. '), listInner.lastIndexOf('.</'))
       if (lastEnd > 40) listInner = listInner.slice(0, lastEnd + 1) + (listInner.includes('<p') ? '</p>' : '')
     }
@@ -148,6 +148,7 @@ export async function generateKeyTakeaways(opts: {
 
   let listInner = await callOnce(baseUserPrompt, 1)
   let gate = gateTakeaways(listInner, prose)
+  let usedProse = prose
   if (gate.issues.length > 0) {
     // One retry with the specific failures named; then the deterministic drop.
     const feedback =
@@ -164,11 +165,23 @@ export async function generateKeyTakeaways(opts: {
       '[key-takeaways] form gate applied',
     )
     listInner = gate.html
+    // B16: the prose variant cannot be trimmed below two sentences; when it fails
+    // twice, fall back to the bullets variant deterministically.
+    if (prose && gate.issues.length > 0) {
+      const bulletsPrompt = (t?.userPrompt ?? DEF_USER)
+        .replace(/\{\{bodyHtml\}\}/g, opts.bodyHtml.slice(0, MAX_HTML))
+        .replace(/\{\{primaryKeyword\}\}/g, opts.primaryKeyword || '')
+      const bullets = await callOnce(bulletsPrompt, 3, false)
+      const bGate = gateTakeaways(bullets, false)
+      listInner = bGate.html
+      usedProse = false
+      logger.info({ jobId: opts.jobId, issues: bGate.issues, dropped: bGate.dropped.length }, '[key-takeaways] prose failed twice, fell back to bullets')
+    }
   }
 
-  const sectionHtml = prose
-    ? `<section class="key-takeaways" aria-label="The short version">\n<h2 id="key-takeaways-heading">The short version</h2>\n${listInner}\n</section>`
-    : `<section class="key-takeaways" aria-label="Key Takeaways">\n<h2 id="key-takeaways-heading">Key Takeaways</h2>\n${listInner}\n</section>`
+  const sectionHtml = usedProse
+    ? `<section class="key-takeaways" aria-label="Summary">\n<h2 id="key-takeaways-heading">The short version</h2>\n${listInner}\n</section>`
+    : `<section class="key-takeaways" aria-label="Summary">\n<h2 id="key-takeaways-heading">Key Takeaways</h2>\n${listInner}\n</section>`
 
   return { sectionHtml, inputTokens, outputTokens, cost }
 }

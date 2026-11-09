@@ -5,7 +5,7 @@ import { DuplicateKeywordError, validatePrimaryKeywordUniqueness } from './keywo
 import { assignOutlineFramework } from './outline-assignment'
 import { sanitizeKeywordJson, sanitizeKeywordText } from './keyword-sanitizer'
 import type { PipelineContext } from './variable-resolver'
-import { extractCitationsForValidation, validateCitationUrls } from './citation-validator'
+import { validateCitationUrls } from './citation-validator'
 import { insertInlineCitations } from './citation-inserter'
 import { rankCitationPool, enrichTitles } from './citation-policy'
 import { cleanStepOutput } from './approval-service'
@@ -15,9 +15,14 @@ import { injectClientStory } from './client-stories/select'
 import { sanitizeDashes } from '../lib/text/dash-sanitizer'
 import { gateHedges } from '../lib/text/hedge-gate'
 import { runEditorPass } from '../lib/text/editor-pass'
-import { verifyFactSources, verifyCuratedIdentity, anchorFactSources, parseFactTags, type FactSource } from './source-verify'
+import { verifyFactSources, anchorFactSources, pubmedFill, loadFactSources, SOURCE_FLOOR, type FactSource, type GroundingSupportPages } from './source-verify'
+import { checkSupport } from './source-support'
+import { resolveChunkUrisIndexed } from './grounding-resolver'
+import { restoreBoundary } from '../lib/text/boundary-restore'
 
-const PHASE_A_STEPS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+// B16: step 12 (find_citations) retired — every URL it produced was typed by the
+// model; the references list is now built from the sources actually used.
+const PHASE_A_STEPS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
 const MAX_KEYWORD_RETRIES = 3
 
 /** Prose steps that get em-dash elimination right after completion (title + final
@@ -143,21 +148,6 @@ export async function runPipelinePhaseA(jobId: string): Promise<void> {
           stepOutput = sanitizeKeywordText(stepOutput, stepNumber, jobId)
         }
 
-        if (SOURCE_VERIFY_STEPS.has(stepNumber) && process.env.SOURCE_VERIFY !== '0') {
-          try {
-            const v = await verifyFactSources(stepOutput, { jobId, stepNumber })
-            if (v.text !== stepOutput) {
-              stepOutput = v.text
-              await prisma.pipelineStep.updateMany({
-                where: { jobId, stepNumber, status: 'completed' },
-                data: { output: stepOutput },
-              })
-            }
-            logger.info({ jobId, stepNumber, ...v.stats }, '[executor] fact sources verified')
-          } catch (err) {
-            logger.warn({ jobId, stepNumber, err }, '[executor] source verification failed — output kept as-is')
-          }
-        }
 
         if (HEDGE_GATE_STEPS.has(stepNumber) && process.env.HEDGE_GATE !== '0') {
           try {
@@ -212,6 +202,19 @@ export async function runPipelinePhaseA(jobId: string): Promise<void> {
           }
         }
 
+        if (stepNumber === 11 && process.env.BOUNDARY_RESTORE !== '0') {
+          try {
+            const b = restoreBoundary(ctx.completedSteps.get(9) ?? '', stepOutput)
+            if (b.changed) {
+              stepOutput = b.text
+              await prisma.pipelineStep.updateMany({ where: { jobId, stepNumber, status: 'completed' }, data: { output: stepOutput } })
+            }
+            logger.info({ jobId, stepNumber, draftHad: b.draftHad, editedHad: b.editedHad, restored: b.changed, lost: b.lost }, '[executor] boundary check')
+          } catch (err) {
+            logger.warn({ jobId, stepNumber, err }, '[executor] boundary restore failed — output kept as-is')
+          }
+        }
+
         if (DASH_SANITIZE_STEPS.has(stepNumber)) {
           try {
             const s = await sanitizeDashes(stepOutput, { jobId, stepNumber })
@@ -250,6 +253,43 @@ export async function runPipelinePhaseA(jobId: string): Promise<void> {
             }
           } catch (err) {
             logger.warn({ jobId, stepNumber, err }, '[executor] grounding URL resolution failed — continuing')
+          }
+        }
+
+        // B16: fact sources — grounding supports pair each span of the research
+        // text with the pages Google retrieved for it; the verifier checks identity,
+        // tier and support, applies the rulings, and the surviving fact→source pairs
+        // are persisted (step 121) for the inserter and the fact checker.
+        if (SOURCE_VERIFY_STEPS.has(stepNumber) && process.env.SOURCE_VERIFY !== '0') {
+          try {
+            let supports: GroundingSupportPages[] = []
+            if (result.groundingSupports?.length && result.groundingChunkUris?.length) {
+              const urls = await resolveChunkUrisIndexed(result.groundingChunkUris)
+              supports = result.groundingSupports.map((su) => ({ text: su.text, urls: su.chunkIndices.map((i) => urls[i]).filter((u): u is string => !!u) }))
+            }
+            const support = process.env.SOURCE_SUPPORT === '0' ? undefined : (fact: string, url: string) => checkSupport(fact, url, { jobId, stepNumber })
+            const v = await verifyFactSources(stepOutput, { jobId, stepNumber }, undefined, { supports, support })
+            if (v.text !== stepOutput) {
+              stepOutput = v.text
+              ctx.completedSteps.set(stepNumber, stepOutput)
+              await prisma.pipelineStep.updateMany({ where: { jobId, stepNumber, status: 'completed' }, data: { output: stepOutput } })
+            }
+            logger.info({ jobId, stepNumber, supports: supports.length, ...v.stats }, '[executor] fact sources verified')
+            const prior: FactSource[] = JSON.parse(ctx.completedSteps.get(121) ?? '[]')
+            const merged = [...prior]
+            for (const src of v.sources) if (!merged.some((m) => m.url === src.url)) merged.push(src)
+            await persistSyntheticStep(jobId, ctx, 121, JSON.stringify(merged))
+
+            // Floor: after the second research step, fill from PubMed when thin.
+            if (stepNumber === 8 && merged.length < SOURCE_FLOOR) {
+              const outline = ctx.completedSteps.get(4) ?? ctx.completedSteps.get(1) ?? ''
+              const headings = outline.split(/\n/).map((l) => l.replace(/^#+\s*|^\s*[-*\d.)]+\s*/g, '').trim()).filter((l) => l.length > 12 && l.length < 120).slice(0, 8)
+              const fill = await pubmedFill(headings, ctx.topicText, SOURCE_FLOOR - merged.length, undefined, { jobId })
+              if (fill.length) await persistSyntheticStep(jobId, ctx, 122, JSON.stringify(fill))
+              logger.info({ jobId, verified: merged.length, floor: SOURCE_FLOOR, filled: fill.length }, '[executor] source floor check')
+            }
+          } catch (err) {
+            logger.warn({ jobId, stepNumber, err }, '[executor] source verification failed — output kept as-is')
           }
         }
       }
@@ -470,6 +510,16 @@ function htmlHasCitationAnchorsForUrls(html: string, urls: string[]): boolean {
  * If research sources are available, they are used as the primary inline citation pool.
  * Step 12 citations are used as fallback when no research sources exist.
  */
+/** Store a code-produced artefact as a synthetic step (same pattern as step 120). */
+async function persistSyntheticStep(jobId: string, ctx: PipelineContext, stepNumber: number, output: string): Promise<void> {
+  ctx.completedSteps.set(stepNumber, output)
+  await prisma.pipelineStep.upsert({
+    where: { jobId_stepNumber: { jobId, stepNumber } },
+    create: { jobId, stepNumber, stepName: stepNumber === 121 ? 'verified_fact_sources' : 'pubmed_fill_sources', status: 'completed', output },
+    update: { output, status: 'completed' },
+  })
+}
+
 async function ensurePhaseAInlineCitations(jobId: string, ctx: PipelineContext): Promise<void> {
   const step11Raw = ctx.completedSteps.get(11) ?? ctx.completedSteps.get(9) ?? ''
   if (!step11Raw.trim()) return
@@ -482,31 +532,12 @@ async function ensurePhaseAInlineCitations(jobId: string, ctx: PipelineContext):
   // fetched for the survivors (the inserter needs something to match claims
   // against — "nih.gov" × 21 is why it invented links in B11).
   const researchPairs = (ctx.researchSources ?? []).map((s) => ({ title: s.title, url: s.url }))
-  const step12Raw = ctx.completedSteps.get(12)
-  const step12Pairs = step12Raw?.trim() ? extractCitationsForValidation(step12Raw) : []
 
-  // B15: the fact is the unit of citation. The research feeds (steps 7/8)
-  // carry a verified [Source: …, URL] tag per fact (source-verify.ts ran at
-  // step time); those pairs lead the pool and are linked deterministically to
-  // the sentence that states the fact. Step-12 curated entries are identity-
-  // checked (the model's title vs the real page) before they may join.
-  const factSources: FactSource[] = []
-  for (const n of [8, 7]) {
-    const raw = ctx.completedSteps.get(n) ?? ''
-    for (const t of parseFactTags(raw)) {
-      if (t.url && !factSources.some((f) => f.url === t.url)) {
-        factSources.push({ fact: t.fact, url: t.url, title: `${t.institution}${t.publisher ? `, ${t.publisher}` : ''}`, status: 'unchecked' })
-      }
-    }
-  }
-  let curatedPairs = step12Pairs
-  try {
-    const idv = await verifyCuratedIdentity(step12Pairs, { jobId })
-    curatedPairs = idv.kept
-    if (idv.rejected.length) logger.warn({ jobId, rejected: idv.rejected.map((r) => ({ url: r.url, reason: r.reason })) }, '[executor] step 12.5 — curated sources failed identity check')
-  } catch (err) {
-    logger.warn({ jobId, err }, '[executor] step 12.5 — curated identity check failed, keeping list')
-  }
+  // B16: the fact is the unit of citation. Verified fact sources (steps 7/8,
+  // identity + support checked) and the PubMed fill lead the pool; grounding
+  // pages follow. Step 12 is retired: nothing in the pool is typed by a model.
+  const factSources = loadFactSources(ctx.completedSteps)
+  const curatedPairs: Array<{ title: string; url: string }> = []
   const ranked = rankCitationPool([...factSources.map((f) => ({ title: f.title, url: f.url })), ...curatedPairs], researchPairs)
   logger.info(
     {
@@ -547,19 +578,25 @@ async function ensurePhaseAInlineCitations(jobId: string, ctx: PipelineContext):
   logger.info({ jobId, count: live.length, curatedInPool: ranked.pool.filter((c) => c.origin === 'curated').length }, '[executor] step 12.5 — using citation pool')
 
   try {
-    // Deterministic pass first: each live fact source goes on the sentence that states its fact.
-    const liveUrls = new Set(live.map((c) => c.url.trim().replace(/\/$/, '')))
-    const anchorable = factSources.filter((f) => liveUrls.has(f.url.trim().replace(/\/$/, '')))
-    const anchored = anchorFactSources(normalized, anchorable)
-    logger.info({ jobId, factSources: anchorable.length, placed: anchored.placed.length, unplaced: anchored.unplaced.length }, '[executor] step 12.5 — fact sources anchored')
-    const remaining = live.filter((c) => !anchored.placed.includes(c.url))
-    let linkedHtml = anchored.html
-    let insertedCount = anchored.placed.length
-    if (remaining.length > 0) {
-      const r = await insertInlineCitations(anchored.html, remaining, jobId, ctx, { alsoAllowed: anchored.placed })
-      linkedHtml = r.linkedHtml
-      insertedCount = live.filter((c) => linkedHtml.includes(c.url)).length
+    // B16 order: the model pass runs FIRST on the non-fact pool (it regenerates
+    // the article and cannot be trusted to keep links), then the fact sources
+    // are anchored deterministically on its output.
+    const norm = (u: string) => u.trim().replace(/\/$/, '')
+    const liveUrls = new Set(live.map((c) => norm(c.url)))
+    const factUrls = new Set(factSources.map((f) => norm(f.url)))
+    const anchorable = factSources.filter((f) => liveUrls.has(norm(f.url)))
+    const leftovers = live.filter((c) => !factUrls.has(norm(c.url)))
+    let working = normalized
+    if (leftovers.length > 0) {
+      const r = await insertInlineCitations(normalized, leftovers, jobId, ctx)
+      working = r.linkedHtml
     }
+    const anchored = anchorFactSources(working, anchorable)
+    logger.info({ jobId, factSources: anchorable.length, placed: anchored.placed.length, unplaced: anchored.unplaced.length, leftovers: leftovers.length }, '[executor] step 12.5 — fact sources anchored')
+    const linkedHtml = anchored.html
+    const insertedCount = (linkedHtml.match(/<a\b[^>]*href="https?:\/\//gi) ?? []).length
+    const anchoredUrls = anchored.placed
+    await persistSyntheticStep(jobId, ctx, 123, JSON.stringify(anchoredUrls))
     if (linkedHtml === normalized) {
       logger.warn({ jobId, insertedCount }, '[executor] step 12.5 — no HTML change from citation inserter')
       return

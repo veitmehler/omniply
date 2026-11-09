@@ -226,7 +226,7 @@ describe('spliceGloss', () => {
     const html = '<h2>Heading</h2><p>A subluxation changes joint motion. More detail follows.</p>'
     const out = spliceGloss(html, 'subluxation', 'Think of a kinked garden hose.')
     expect(out).toContain(
-      'motion.<span class="plain-gloss"> Think of a kinked garden hose.</span> More detail',
+      'motion.<span class="term"> Think of a kinked garden hose.</span> More detail',
     )
   })
 
@@ -246,7 +246,7 @@ describe('spliceGloss', () => {
     // term visible in stripped text but not contiguous in raw HTML
     const html = '<p>The sub<strong>luxation</strong> shifted, and there is no clean match</p>'
     const out = spliceGloss(html, 'subluxation', 'plain words')
-    expect(out).toContain('</p>\n<p class="plain-gloss">plain words</p>')
+    expect(out).toContain('</p>\n<p class="term">plain words</p>')
   })
 
   it('returns null when no paragraph contains the term', () => {
@@ -255,7 +255,7 @@ describe('spliceGloss', () => {
 })
 
 describe('insertBoxAfterAnchor', () => {
-  const box = '\n<div class="plain-language-box">BOX</div>\n'
+  const box = '\n<div class="note">BOX</div>\n'
 
   it('inserts after the paragraph containing the anchor quote', () => {
     const html = '<p>First para.</p><p>The vagus nerve carries signals to organs.</p><p>Third.</p>'
@@ -295,7 +295,7 @@ describe('buildBoxHtml', () => {
     expect(html).toContain('background:#1a2b3c14')
     expect(html).toContain('Simply Put')
     expect(html).toContain('A story with &lt;tags&gt; &amp; ampersands.')
-    expect(html).toContain('class="plain-language-box"')
+    expect(html).toContain('class="note"')
   })
 
   it('falls back to a neutral accent on invalid hex', () => {

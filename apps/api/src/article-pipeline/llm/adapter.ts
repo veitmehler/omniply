@@ -13,6 +13,10 @@ export interface LLMResponse {
   finishReason: 'stop' | 'length' | 'filter' | 'other'
   /** Raw grounding source URIs returned by Gemini search. Redirect URIs need resolution. */
   groundingSources?: Array<{ title: string; uri: string; domain?: string }>
+  /** B16: spans of the generated text and the indices (into groundingChunkUris) of the pages they rest on. */
+  groundingSupports?: Array<{ text: string; chunkIndices: number[] }>
+  /** Unfiltered chunk URIs, index-aligned with groundingSupports.chunkIndices. */
+  groundingChunkUris?: Array<string | null>
 }
 
 export interface LLMCallOptions {

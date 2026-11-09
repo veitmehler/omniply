@@ -175,4 +175,29 @@ PARAGRAPH:
 Rewrite now.`,
     isActive: true,
   },
+  {
+    // B16 source support check (apps/api/src/article-pipeline/source-support.ts):
+    // one closed question per fact; the quote is code-checked against the
+    // source text, the verdict decides link / fact per Veit's rulings.
+    stepNumber: 424,
+    key: 'st_source_support',
+    stepName: 'source_support_check',
+    defaultProvider: 'gemini',
+    defaultModel: GEMINI_FLASH_LITE,
+    maxTokens: 300,
+    systemPrompt:
+      'You check whether a source text supports a statement. You read only what is in the source text given to you. ' +
+      'Output ONLY a JSON object: {"verdict": "supported" | "partial" | "unsupported", "quote": "<the one sentence from the source that supports the statement, copied exactly, or an empty string>"}. ' +
+      '"supported" means the source states the claim, including any figure, rate, duration or percentage in it, at the same scope. ' +
+      '"partial" means the source covers the claim but not the exact figure, or a narrower or broader scope (for example a different patient group or condition). ' +
+      '"unsupported" means the source does not state the claim. Never infer from general knowledge; if it is not in the source text, it is unsupported.',
+    userPrompt: `STATEMENT:
+{{fact}}
+
+SOURCE TEXT:
+{{source}}
+
+Answer with the JSON object only.`,
+    isActive: true,
+  },
 ]

@@ -329,7 +329,7 @@ function indexOfCi(haystack: string, needle: string, from = 0): number {
  * them must never serve as splice/insert anchors. */
 function injectedBlockRanges(html: string): Array<{ start: number; end: number }> {
   const ranges: Array<{ start: number; end: number }> = []
-  const re = /<div (?:class="(?:geo-summary|plain-language-box)"|data-pl-box)[^>]*>[\s\S]*?<\/div>/gi
+  const re = /<div (?:class="(?:geo-summary|plain-language-box|note)"|data-pl-box)[^>]*>[\s\S]*?<\/div>/gi
   let m: RegExpExecArray | null
   while ((m = re.exec(html)) !== null) {
     ranges.push({ start: m.index, end: m.index + m[0].length })
@@ -389,7 +389,7 @@ export function sentenceEndAfterTerm(paragraphHtml: string, term: string): numbe
  */
 export function spliceGloss(sectionHtml: string, term: string, gloss: string): string | null {
   const spans = paragraphSpans(sectionHtml)
-  const glossSpan = `<span class="plain-gloss"> ${escapeHtml(gloss.trim())}</span>`
+  const glossSpan = `<span class="term"> ${escapeHtml(gloss.trim())}</span>`
   for (const span of spans) {
     if (span.inner.length === 0) continue
     if (indexOfCi(stripTags(span.inner), term) === -1) continue
@@ -402,7 +402,7 @@ export function spliceGloss(sectionHtml: string, term: string, gloss: string): s
     }
     // Fallback: standalone paragraph right after this one.
     return sectionHtml.slice(0, span.end) +
-      `\n<p class="plain-gloss">${escapeHtml(gloss.trim())}</p>` +
+      `\n<p class="term">${escapeHtml(gloss.trim())}</p>` +
       sectionHtml.slice(span.end)
   }
   return null
@@ -413,7 +413,7 @@ export function buildBoxHtml(label: string, storyText: string, accentHex: string
   const accent = /^#[0-9a-fA-F]{6}$/.test(accentHex) ? accentHex : '#4a5568'
   const title = label.trim() ? `<p style="margin:0 0 6px;font-weight:600;font-size:0.95em;">${escapeHtml(label.trim())}</p>` : ''
   return (
-    `\n<div class="plain-language-box" style="border-left:4px solid ${accent};background:${accent}14;` +
+    `\n<div class="note" style="border-left:4px solid ${accent};background:${accent}14;` +
     `padding:16px 20px;margin:20px 0;border-radius:6px;">` +
     title +
     `<p style="margin:0;">${escapeHtml(storyText.trim())}</p></div>\n`
@@ -449,6 +449,7 @@ export function insertBoxAfterAnchor(sectionHtml: string, anchorQuote: string | 
   while (
     idx < spans.length - 1 &&
     (follows(idx).startsWith('<div class="plain-language-box"') ||
+      follows(idx).startsWith('<div class="note"') ||
       follows(idx).startsWith('<div data-pl-box') ||
       follows(idx).startsWith('<div class="geo-summary"'))
   ) {

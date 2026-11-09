@@ -10,7 +10,8 @@ import type { PipelineContext } from './variable-resolver'
 const JSON_STEPS = new Set([2, 12, 13])
 
 // Steps that use Gemini generative search
-const SEARCH_STEPS = new Set([6, 7, 8, 10, 12])
+// B16: step 6 (questions people ask) now reads real People Also Ask data via Oxylabs ({{paa_candidates}}); no grounding.
+const SEARCH_STEPS = new Set([7, 8, 10, 12])
 
 // Steps that need BOTH search grounding AND structured JSON output.
 // Gemini can't do both in one call, so we use a two-phase approach:
@@ -52,6 +53,8 @@ export interface StepRunResult {
   provider: string
   model: string
   groundingSources?: Array<{ title: string; uri: string; domain?: string }>
+  groundingSupports?: Array<{ text: string; chunkIndices: number[] }>
+  groundingChunkUris?: Array<string | null>
 }
 
 export class StepRunner {
@@ -153,6 +156,8 @@ export class StepRunner {
           phase1Cost = searchResponse.cost
           // For two-phase steps, grounding sources come from the search phase
           var searchGroundingSources = searchResponse.groundingSources
+          var searchGroundingSupports = searchResponse.groundingSupports
+          var searchGroundingChunkUris = searchResponse.groundingChunkUris
           if (VERBOSE) {
             logger.info(
               { jobId: this.jobId, step: this.stepNumber, phase: 1, response: truncate(searchResearch, TRUNCATE) },
@@ -319,6 +324,8 @@ export class StepRunner {
         const sources = isTwoPhase
           ? searchGroundingSources
           : llmResponse.groundingSources
+        const supports = isTwoPhase ? searchGroundingSupports : llmResponse.groundingSupports
+        const chunkUris = isTwoPhase ? searchGroundingChunkUris : llmResponse.groundingChunkUris
 
         return {
           output: finalOutput,
@@ -330,6 +337,7 @@ export class StepRunner {
           provider,
           model,
           ...(sources?.length ? { groundingSources: sources } : {}),
+          ...(supports?.length ? { groundingSupports: supports, groundingChunkUris: chunkUris ?? [] } : {}),
         }
       } catch (err) {
         lastError = err instanceof Error ? err : new Error(String(err))
@@ -383,6 +391,8 @@ export class StepRunner {
           let phase1Tokens = { input: 0, output: 0, total: 0 }
           let phase1Cost = 0
           let fbSearchGroundingSources: Array<{ title: string; uri: string; domain?: string }> | undefined
+          let fbSearchGroundingSupports: Array<{ text: string; chunkIndices: number[] }> | undefined
+          let fbSearchGroundingChunkUris: Array<string | null> | undefined
           if (isTwoPhase) {
             const searchResponse = await adapter.call({
               systemPrompt,
@@ -395,6 +405,8 @@ export class StepRunner {
             phase1Tokens = searchResponse.tokens
             phase1Cost = searchResponse.cost
             fbSearchGroundingSources = searchResponse.groundingSources
+            fbSearchGroundingSupports = searchResponse.groundingSupports
+            fbSearchGroundingChunkUris = searchResponse.groundingChunkUris
             logger.info(
               { jobId: this.jobId, step: this.stepNumber, researchLength: searchResearch.length },
               '[step-runner] fallback phase-1 search complete; proceeding to phase-2',
@@ -476,6 +488,8 @@ export class StepRunner {
           const fbSources = isTwoPhase
             ? fbSearchGroundingSources
             : llmResponse.groundingSources
+          const fbSupports = isTwoPhase ? fbSearchGroundingSupports : llmResponse.groundingSupports
+          const fbChunkUris = isTwoPhase ? fbSearchGroundingChunkUris : llmResponse.groundingChunkUris
 
           return {
             output: finalOutput,
@@ -487,6 +501,7 @@ export class StepRunner {
             provider,
             model: GEMINI_SEARCH_FALLBACK_MODEL,
             ...(fbSources?.length ? { groundingSources: fbSources } : {}),
+            ...(fbSupports?.length ? { groundingSupports: fbSupports, groundingChunkUris: fbChunkUris ?? [] } : {}),
           }
         } catch (err) {
           lastError = err instanceof Error ? err : new Error(String(err))

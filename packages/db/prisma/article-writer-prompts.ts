@@ -187,7 +187,7 @@ The author of this article is a licensed professional (a "{{industry}}" in {{geo
 
 ## Sourcing rules for data and statistics:
 
-	1	Only cite statistics, studies, or data points that you can attribute to a specific, named, verifiable source. Write each fact as the finding itself, starting with what was found, never with the study, the authors, or the year. Put all provenance at the END of the fact as a tag in the form [Source: <institution or first author>, <journal or publisher>, <year>, <URL>]. The URL is the specific page that states the fact (the paper's PubMed or DOI page, the guideline page, the report page); a homepage or a section front page is not a source, and when you cannot give the specific page you give no URL. The tag is for linking; the writer never reproduces journal names, years, months, issues or "et al." in prose. If you cannot name the source with specificity, do not include the statistic.
+	1	Only cite statistics, studies, or data points that you can attribute to a specific, named, verifiable source of one of these kinds: a peer-reviewed paper or systematic review; a national health body or government health agency; a professional college or association; a major university or hospital system. Commercial clinic websites, product sites, health content aggregators and news summaries are not sources. Write each fact as the finding itself, starting with what was found, never with the study, the authors, or the year. Put all provenance at the END of the fact as a tag in the form [Source: <institution or first author>, <journal or publisher>, <year>, <URL>], with the URL of the specific page that states the fact where you have it (a homepage is not a page). The tag is for linking and is checked against the real page afterwards; the writer never reproduces journal names, years, months, issues or "et al." in prose. If you cannot name the source with specificity, do not include the statistic.
 
 	2	Never invent, estimate, or approximate statistics. If a plausible number would strengthen the article but you cannot source it, write the surrounding argument without the number.
 
@@ -272,3 +272,93 @@ Three to five points. Respond with ONLY the HTML list (<ul> with <li> items), no
 export const KEY_TAKEAWAYS_PROSE_OVERRIDE = `
 
 FORMAT (replaces the list format above): no list. Write ONE paragraph of two or three sentences giving the author's bottom line in the author's voice, each sentence following the same rules as a point above. Respond with ONLY the paragraph wrapped in <p>…</p>.`
+
+/**
+ * Step 6 (questions people ask), B16: real People Also Ask + related searches
+ * arrive from Google via Oxylabs in {{paa_candidates}}; the model selects and
+ * orders, it does not invent. Output format unchanged for step 7.
+ */
+export const FAQ_SYSTEM_PROMPT = `# ROLE:
+
+You choose the questions an article must answer, for a {{industry}} business. You are given the questions people actually type into Google for this topic, taken from live search results. Your job is selection and ordering, not invention.
+
+# OUTPUT STRUCTURE:
+
+1. ONLY return the questions, no explanation, no commentary.
+2. Structure your output like this:
+
+# Question 1: 
+"Insert Question 1 here"
+
+# Question 2 
+"Insert Question 2 here"
+
+(and so on, up to Question 8)`
+
+export const FAQ_USER_PROMPT = `# CONTEXT:
+
+## ARTICLE TITLE:
+{{title}}
+
+## ARTICLE OUTLINE:
+{{optimize_outline_seo_output}}
+
+## KEYWORDS:
+### Primary Keyword:
+{{primary_keyword}}
+### Salient Entities:
+{{salient_entities}}
+### Additional Keywords (already covered elsewhere; do not repeat these):
+{{find_supporting_keywords_output}}
+
+## QUESTIONS PEOPLE ACTUALLY ASK (live Google results):
+{{paa_candidates}}
+
+# TASK:
+
+1. From the questions above, select the 8 that the article should answer: the ones a reader with this title in front of them would want answered, covering the outline's sections where possible.
+2. Keep each question in its original wording, as a person typed it. Only fix capitalisation and a trailing question mark.
+3. Related searches that are not phrased as questions may be turned into the question the searcher meant, in the same plain words.
+4. Skip anything that duplicates another selected question or an Additional Keyword, and anything with a local or "near me" intent.
+5. Only if fewer than 6 usable questions exist in the list above, add the questions a reader would type to reach 6, phrased the same plain way. Never add beyond that.`
+
+/**
+ * Step 10 (fact check), B16: the checker first reconciles the article against
+ * the verified facts and their supporting quotes, then searches for the rest.
+ */
+export const FACT_CHECK_SYSTEM_PROMPT = `# ROLE: 
+
+You are a world-class fact-checker working on content for a {{industry}} business. You identify every fact, data point and claim in an article that must be checked, and you check it.
+
+You are given the VERIFIED FACTS the article was written from: each with the page that states it and, where available, the sentence from that page. Your first job is reconciliation: does the article say what the source says, at the same scope, with the same figure? A number that changed between the source and the article, or a claim that was widened (a different patient group, a different condition, radicular where the source says non-radicular) is "partly true" with the correct version in your explanation. Only for claims not covered by the verified facts do you rely on your own research.
+
+# HOW TO STRUCTURE YOUR RESPONSE:
+
+- Fact or Claim: 
+"Insert the fact or claim you identified."
+
+- Verdict:
+"Insert if the claim is valid, true, false, or partly true."
+
+- Explanation:
+"Insert why you are giving your verdict and if something is incorrect, what would be the correct answer."`
+
+export const FACT_CHECK_USER_PROMPT = `# CONTEXT: 
+
+## ARTICLE:
+{{write_article_output}}
+
+## VERIFIED FACTS AND THEIR SOURCES:
+{{verified_facts}}
+
+# TASK:
+
+1. Review and analyze the entire article in CONTEXT.
+        
+2. Identify the facts, data points and claims that must be fact-checked. For each one that is covered by a VERIFIED FACT, compare the article's wording with the source's: figure, scope, direction. For the rest, check them yourself.
+
+=> MAKE SURE all the facts, statistics, laws, and data points are valid for:
+
+{{geolocation}}
+
+=> MAKE SURE ALL of the facts are up to date. Today is: {{current_date}}`

@@ -1226,7 +1226,8 @@ async function saveDiagramAndInsert(opts: SaveDiagramOpts): Promise<void> {
     afterH2Offset: section.afterH2Offset,
     figureHtml: buildFigureHtml({
       imgUrl: figureImgUrl,
-      diagramId: `${jobId.slice(0, 8)}-${section.position}`,
+      // B16: no job-id fragment in published markup; the slug keeps ids unique per page.
+      diagramId: `${section.anchor || 'section'}-${section.position}`,
       alt: section.heading,
       altText,
       caption,

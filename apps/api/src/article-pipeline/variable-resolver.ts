@@ -1,4 +1,5 @@
 import type { BrandSettings, PlatformSettings, OutlineFramework } from '@prisma/client'
+import { fetchPaaCandidates, formatPaaCandidates, type PaaCandidates } from './faq-oxylabs'
 import { prisma, brandSettingsForUser } from '@omniply/shared'
 import { getGlobalExcludedKeywords } from './keyword-validator'
 import { seededRng } from './enrichment/plain-language'
@@ -66,6 +67,8 @@ export interface PipelineContext {
   platformSettingsCache?: PlatformSettings | null
   outlineFrameworkCache?: OutlineFramework | null
   writingStyleCache?: string | null
+  /** B16: People Also Ask candidates fetched once per job (null = fetch failed). */
+  paaCache?: PaaCandidates | null
 }
 
 // ── Lazy loaders ────────────────────────────────────────────────────────────
@@ -247,6 +250,37 @@ async function resolveVariable(name: string, ctx: PipelineContext): Promise<stri
     // {{current_year}}; until 2026-11-09 it had no case here and resolved to ''.
     case 'current_year':
       return String(new Date().getFullYear())
+
+    // B16: real "People Also Ask" + related searches for step 6 (Oxylabs), cached per job.
+    case 'paa_candidates': {
+      if (ctx.paaCache !== undefined) return ctx.paaCache ? formatPaaCandidates(ctx.paaCache) : ''
+      try {
+        const parsed2 = ctx.parsedSteps.get(2)
+        const primary = extractPrimaryKeyword(parsed2) ?? ctx.topicText
+        const entities = extractSalientEntities(parsed2).split(/[,;\n]/).map((e) => e.trim()).filter(Boolean).slice(0, 2)
+        const bs = await getBrandSettings(ctx)
+        const exclude = ctx.completedSteps.get(3)?.split(/\n/) ?? []
+        const c: PaaCandidates = await fetchPaaCandidates([primary, ...entities], bs?.geolocation ?? '', exclude, { jobId: ctx.jobId })
+        ctx.paaCache = c
+        return formatPaaCandidates(c)
+      } catch {
+        ctx.paaCache = null
+        return ''
+      }
+    }
+
+    // B16: verified facts with their supporting quotes, for the fact checker (step 10).
+    case 'verified_facts': {
+      const raw = ctx.completedSteps.get(121)
+      if (!raw) return '(no verified sources on record)'
+      try {
+        const list = JSON.parse(raw) as Array<{ fact: string; url: string; quote?: string; status: string }>
+        if (list.length === 0) return '(no verified sources on record)'
+        return list.map((f, i) => `${i + 1}. ${f.fact}\n   Source: ${f.url}${f.quote ? `\n   Source says: "${f.quote}"` : ''}`).join('\n\n')
+      } catch {
+        return raw
+      }
+    }
 
     case 'min_citation_year':
       return String(new Date().getFullYear() - 10)

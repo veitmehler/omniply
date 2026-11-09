@@ -197,6 +197,16 @@ export class GeminiAdapter implements LLMAdapter {
         uri: c.web!.uri!,
         domain: c.web!.domain ?? undefined,
       }))
+    // B16: which spans of the generated text rest on which chunks. Indices
+    // refer to the UNFILTERED chunks array; the resolver keeps that alignment.
+    const rawSupports = (data?.candidates?.[0]?.groundingMetadata?.groundingSupports ?? []) as Array<{
+      segment?: { text?: string }
+      groundingChunkIndices?: number[]
+    }>
+    const groundingSupports = rawSupports
+      .filter((su) => su.segment?.text && su.groundingChunkIndices?.length)
+      .map((su) => ({ text: su.segment!.text!, chunkIndices: su.groundingChunkIndices! }))
+    const groundingChunkUris = chunks.map((c) => c.web?.uri ?? null)
 
     return {
       content: text,
@@ -208,6 +218,7 @@ export class GeminiAdapter implements LLMAdapter {
       provider: 'gemini',
       finishReason,
       ...(groundingSources.length > 0 ? { groundingSources } : {}),
+      ...(groundingSupports.length > 0 ? { groundingSupports, groundingChunkUris } : {}),
     }
   }
 }

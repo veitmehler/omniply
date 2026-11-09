@@ -80,3 +80,24 @@ export async function resolveGroundingUrls(
 
   return results
 }
+
+/**
+ * B16: resolve chunk URIs keeping their index (grounding supports refer to
+ * chunks by index). Failed or missing entries stay null.
+ */
+export async function resolveChunkUrisIndexed(uris: Array<string | null>): Promise<Array<string | null>> {
+  const out: Array<string | null> = new Array(uris.length).fill(null)
+  for (let i = 0; i < uris.length; i += CONCURRENCY) {
+    const batch = uris.slice(i, i + CONCURRENCY)
+    const settled = await Promise.allSettled(
+      batch.map(async (uri) => {
+        if (!uri) return null
+        return uri.includes(REDIRECT_HOST) ? resolveRedirect({ title: '', uri }) : uri
+      }),
+    )
+    settled.forEach((r, j) => {
+      out[i + j] = r.status === 'fulfilled' ? r.value : null
+    })
+  }
+  return out
+}

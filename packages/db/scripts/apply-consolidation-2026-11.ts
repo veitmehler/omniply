@@ -29,6 +29,10 @@ import {
   ARTICLE_FACTS_USER_PROMPT,
   KEY_TAKEAWAYS_SYSTEM_PROMPT,
   KEY_TAKEAWAYS_USER_PROMPT,
+  FAQ_SYSTEM_PROMPT,
+  FAQ_USER_PROMPT,
+  FACT_CHECK_SYSTEM_PROMPT,
+  FACT_CHECK_USER_PROMPT,
 } from '../prisma/article-writer-prompts'
 import { OUTLINE_FRAMEWORKS } from '../prisma/outline-frameworks'
 import { DEAI_TEMPLATES } from '../prisma/deai-prompts'
@@ -37,6 +41,8 @@ const prisma = new PrismaClient()
 const APPLY = process.argv.includes('--apply')
 
 const STEP_TEXT: Record<number, { systemPrompt: string; userPrompt: string }> = {
+  6: { systemPrompt: FAQ_SYSTEM_PROMPT, userPrompt: FAQ_USER_PROMPT },
+  10: { systemPrompt: FACT_CHECK_SYSTEM_PROMPT, userPrompt: FACT_CHECK_USER_PROMPT },
   7: { systemPrompt: RESEARCH_SYSTEM_PROMPT, userPrompt: FAQ_FACTS_USER_PROMPT },
   8: { systemPrompt: RESEARCH_SYSTEM_PROMPT, userPrompt: ARTICLE_FACTS_USER_PROMPT },
   9: { systemPrompt: WRITER_SYSTEM_PROMPT, userPrompt: WRITER_USER_PROMPT },
@@ -96,7 +102,7 @@ async function main() {
     if (APPLY && !same) await prisma.outlineFramework.update({ where: { id: row.id }, data: { body: fw.body } })
   }
 
-  for (const key of ['st_phrase_fix', 'st_presence_fix']) {
+  for (const key of ['st_phrase_fix', 'st_presence_fix', 'st_source_support']) {
     const template = DEAI_TEMPLATES.find((t) => t.key === key)
     if (!template) throw new Error(`template ${key} not found in deai-prompts.ts`)
     const existing = await prisma.promptTemplate.findUnique({ where: { key_vertical: { key, vertical: 'default' } }, select: { id: true } })

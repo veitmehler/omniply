@@ -34,6 +34,10 @@ import {
   RESEARCH_SYSTEM_PROMPT,
   FAQ_FACTS_USER_PROMPT,
   ARTICLE_FACTS_USER_PROMPT,
+  FAQ_SYSTEM_PROMPT,
+  FAQ_USER_PROMPT,
+  FACT_CHECK_SYSTEM_PROMPT,
+  FACT_CHECK_USER_PROMPT,
 } from '../prisma/article-writer-prompts'
 
 // ── Steps 7/8/9/11 prompt text lives in prisma/article-writer-prompts.ts (canonical since 2026-11-09) ──
@@ -444,86 +448,8 @@ You will first receive your CONTEXT, then you will receive your TASK.
     stepName: 'research_faqs',
     defaultProvider: 'gemini',
     defaultModel: 'gemini-3.5-flash',
-    systemPrompt: `# ROLE:
-
-You are a world-class SEO expert that knows all the insider knowledge of Google. You have worked in the Google search department for the last 25 years and know everything about SEO and keyword research. 
-
-You are the best in the world at what you do.
-
-You will first receive your CONTEXT, then you will receive your TASK.
-
-
-# OUTPUT STRUCTURE:
-
-1. ONLY return the questions, no explanation needed. No commentary. No Explanation.
-
-2. Structure your output like this:
-
-# Question 1: 
-
-"Insert Question 1 here"
-
-# Question 2 
-
-"Insert Question 2 here"
-
-# Question 3: 
-
-"Insert Question 3 here"
-
-# Question 4: 
-
-"Insert Question 4 here"
-
-# Question 5: 
-
-"Insert Question 5 here"
-
-# Question 6: 
-
-"Insert Question 6 here"
-
-# Question 7: 
-
-"Insert Question 7 here"
-
-# Question 8: 
-
-"Insert Question 8 here"
-`,
-    userPrompt: `# CONTEXT:
-
-## ARTICLE OUTLINE:
-
-{{optimize_outline_seo_output}}
-
-## KEYWORDS:
-
-### Primary Keyword:
-{{primary_keyword}}
-
-### Secondary Keywords:
-{{secondary_keywords}}
-
-### Salient Entities:
-{{salient_entities}}
-
-### Additional Keywords:
-{{find_supporting_keywords_output}}
-
-
-# TASK:
-
-1. review the article in CONTEXT and KEYWORDS.
-
-2. Pleases research and find me 4 "People Also Ask For" questions for the Primary Keyword that relates to the content of the article. 
-
-3. Pleases research and find me 2 "People Also Ask For" questions for the main two Salient Entities that relates to the content of the article. 
-
-=> MAKE SURE these questions are UNIQUE from any questions appearing in Additional Keywords in your CONTEXT!
-
-=> MAKE SURE these questions are UNIQUE from any questions appearing in Additional Keywords in your CONTEXT!
-`,
+    systemPrompt: FAQ_SYSTEM_PROMPT,
+    userPrompt: FAQ_USER_PROMPT,
   },
 
   // ─── Step 7: find_faq_facts ───────────────────────────────────────────────
@@ -562,39 +488,8 @@ You will first receive your CONTEXT, then you will receive your TASK.
     stepName: 'fact_check_article',
     defaultProvider: 'gemini',
     defaultModel: 'gemini-3.5-flash',
-    systemPrompt: `# ROLE: 
-
-You are a world-class fact-checker. You are the world's best at what you do. You are world-class at identifying facts, data points, and claims that must be fact-checked in a factual  article.  
-
-
-# HOW TO STRUCTURE YOUR RESPONSE:
-
-- Fact or Claim: 
-"Insert the fact or claim you identified."
-
-- Verdict:
-"Insert if the claim is valid, true, false, or partly true."
-
-- Explanation:
-"Insert why you are giving your verdict and if something is incorrect, what would be the correct answer."
-`,
-    userPrompt: `# CONTEXT: 
-          
-{{write_article_output}}
-
-
-# TASK:
-
-1. Review and analyze the entire article in CONTEXT.
-        
-2. Your task now is to carefully analyze the following article, identify the facts, data points and claims that must be fact-checked in the article.
-
-=> MAKE SURE all the facts, statistics, laws, and data points are valid for:
-
-{{geolocation}}
-
-=> MAKE SURE ALL of the facts are up to date. Today is: {{current_date}}
-`,
+    systemPrompt: FACT_CHECK_SYSTEM_PROMPT,
+    userPrompt: FACT_CHECK_USER_PROMPT,
   },
 
   // ─── Step 11: adjust_incorrect_facts (PERSONA STRIPPED) ───────────────────

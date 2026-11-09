@@ -121,6 +121,7 @@ export async function insertInlineCitations(
   const runner = new StepRunner(jobId, 110, ctx)
   const originalH2Count = countH2s(articleHtml)
   const allowedUrls = [...liveCitations.map((c) => c.url), ...(opts.alsoAllowed ?? [])]
+  const inputHrefs = [...articleHtml.matchAll(/<a\b[^>]*href="(https?:\/\/[^"]+)"/gi)].map((m) => m[1])
 
   // One pass = LLM call + the deterministic post-processing. The pass is
   // retried once when it yields almost nothing from a usable pool (B13: a
@@ -137,6 +138,13 @@ export async function insertInlineCitations(
     let linkedHtml = result.output.trim().replace(/^```(?:html)?\s*/i, '').replace(/```\s*$/i, '').trim()
     if (originalH2Count > 0 && countH2s(linkedHtml) < originalH2Count) {
       logger.warn({ jobId, attempt, originalH2Count, linkedH2Count: countH2s(linkedHtml) }, '[citation-inserter] LLM dropped H2 headings — discarding this pass')
+      return null
+    }
+    // B16 link guard: a pass that loses any link it was handed is discarded
+    // (B15: the model regenerated the article without the 11 code-placed anchors).
+    const lost = inputHrefs.filter((h) => !linkedHtml.includes(h))
+    if (lost.length > 0) {
+      logger.warn({ jobId, attempt, lost: lost.length, sample: lost[0]?.slice(0, 80) }, '[citation-inserter] LLM dropped existing links — discarding this pass')
       return null
     }
     // B12 hard allowlist: the model may only link to the validated pool

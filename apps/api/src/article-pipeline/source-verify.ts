@@ -43,24 +43,57 @@ export interface FactTag {
   /** Offsets of the whole "[Source: …]" tag in the input text. */
   start: number
   end: number
+  /** Offset where this fact's block begins (after the previous blank line or tag). */
+  factStart: number
 }
 
-export type SourceStatus = 'verified' | 'repaired' | 'unchecked' | 'dropped'
+export type SourceStatus = 'verified' | 'repaired' | 'grounded' | 'unchecked' | 'dropped'
 
 export interface FactSource {
   fact: string
   url: string
   title: string
-  status: Exclude<SourceStatus, 'dropped'>
+  status: Exclude<SourceStatus, 'dropped'> | 'fill'
+  /** B16 support check: the sentence of the source that states the fact (empty when unknown). */
+  quote?: string
+  verdict?: 'supported' | 'partial' | 'unsupported' | 'unknown'
+}
+
+/** B16: a grounding support = a span of the research text and the real pages Google retrieved for it. */
+export interface GroundingSupportPages {
+  text: string
+  urls: string[]
+}
+
+export type SupportChecker = (fact: string, url: string) => Promise<{ verdict: 'supported' | 'partial' | 'unsupported' | 'unknown'; quote: string; cost: number }>
+
+export interface VerifyOptions {
+  supports?: GroundingSupportPages[]
+  /** When given, every surviving URL is checked for support and the rulings apply. */
+  support?: SupportChecker
 }
 
 export interface VerifyResult {
   text: string
   sources: FactSource[]
-  stats: { tags: number; verified: number; repaired: number; unchecked: number; dropped: number; root: number; obs: number }
+  stats: {
+    tags: number
+    verified: number
+    repaired: number
+    grounded: number
+    unchecked: number
+    dropped: number
+    root: number
+    obs: number
+    supportChecked: number
+    unlinkedQualitative: number
+    figureDropped: number
+    supportCost: number
+  }
 }
 
 const TAG_RE = /\[Source:\s*([^\]]*)\]/g
+const IDENTIFIER_HOST_RE = /^https?:\/\/(www\.)?(pubmed\.ncbi\.nlm\.nih\.gov|pmc\.ncbi\.nlm\.nih\.gov|ncbi\.nlm\.nih\.gov\/pmc|doi\.org|dx\.doi\.org)/i
 export const BOT_WALL_RE = /checking your browser|recaptcha|just a moment|access denied|attention required|are you a human|verify you are|403 forbidden|cloudflare/i
 
 const STOP = new Set(
@@ -118,8 +151,9 @@ export function parseFactTags(text: string): FactTag[] {
     const end = start + m[0].length
     // The fact is the text since the previous tag, trimmed to the last block (after a blank line or heading).
     let before = text.slice(prevEnd, start)
-    const blocks = before.split(/\n\s*\n/)
-    before = blocks[blocks.length - 1] ?? before
+    let factStart = prevEnd
+    for (const bm of before.matchAll(/\n\s*\n/g)) factStart = prevEnd + (bm.index ?? 0) + bm[0].length
+    before = text.slice(factStart, start)
     // Drop a leading bold heading line ("**1. Title**") when a body line follows it.
     const lines = before.split('\n').map((l) => l.trim()).filter(Boolean)
     if (lines.length > 1 && /^\*\*.*\*\*$/.test(lines[0])) lines.shift()
@@ -141,6 +175,7 @@ export function parseFactTags(text: string): FactTag[] {
       url,
       start,
       end,
+      factStart,
     })
     prevEnd = end
   }
@@ -149,7 +184,7 @@ export function parseFactTags(text: string): FactTag[] {
 
 // ── Identifier resolvers ──────────────────────────────────────────────────────
 
-const NCBI_BASE = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils'
+export const NCBI_BASE = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils'
 const CROSSREF_BASE = 'https://api.crossref.org'
 const TIMEOUT_MS = 8_000
 const UA = 'OmniplyCitations/1.0 (+https://omniply.io; mailto:ops@omniply.io)'
@@ -157,7 +192,7 @@ const UA = 'OmniplyCitations/1.0 (+https://omniply.io; mailto:ops@omniply.io)'
 // NCBI allows 3 requests/s without a key (10 with NCBI_API_KEY). Serialize.
 let ncbiChain: Promise<unknown> = Promise.resolve()
 const NCBI_GAP_MS = process.env.NCBI_API_KEY ? 120 : 400
-function ncbiQueue<T>(fn: () => Promise<T>): Promise<T> {
+export function ncbiQueue<T>(fn: () => Promise<T>): Promise<T> {
   const run = ncbiChain.then(() => new Promise((r) => setTimeout(r, NCBI_GAP_MS))).then(fn)
   ncbiChain = run.catch(() => undefined)
   return run
@@ -169,7 +204,7 @@ async function getJson(url: string): Promise<unknown> {
   return res.json()
 }
 
-function ncbiKey(): string {
+export function ncbiKey(): string {
   return process.env.NCBI_API_KEY ? `&api_key=${process.env.NCBI_API_KEY}` : ''
 }
 
@@ -288,17 +323,59 @@ function rebuildTag(tag: FactTag, url: string | null): string {
   return `[Source: ${fields.join(', ')}]`
 }
 
+/** Check one URL against a fact: identity for identifiers, page title otherwise. */
+async function checkUrlForFact(
+  url: string,
+  tag: FactTag,
+  r: Resolvers,
+  ctx: Record<string, unknown>,
+): Promise<{ ok: boolean; title: string; status: 'verified' | 'unchecked' }> {
+  const ident = identifyUrl(url)
+  if (ident) {
+    const resolved = ident.kind === 'pubmed' ? await r.pubmedTitle(ident.id) : ident.kind === 'pmc' ? await r.pmcTitle(ident.id) : await r.doiTitle(ident.id)
+    if (resolved && titleCoversFact(resolved, tag.fact)) return { ok: true, title: resolved, status: 'verified' }
+    logger.info({ ...ctx, url, resolved: resolved?.slice(0, 90) ?? null, fact: tag.fact.slice(0, 90) }, '[source-verify] identifier does not match its fact')
+    return { ok: false, title: '', status: 'unchecked' }
+  }
+  // A PubMed / PMC / DOI URL without an identifier (a search-results page, a
+  // malformed id) is not a specific page and cannot be verified: reject.
+  if (IDENTIFIER_HOST_RE.test(url)) {
+    logger.info({ ...ctx, url }, '[source-verify] identifier host without an identifier (search page?)')
+    return { ok: false, title: '', status: 'unchecked' }
+  }
+  const fetched = await r.pageTitle(url)
+  // A bot wall is not a title: NCBI Bookshelf (StatPearls) answers with a
+  // reCAPTCHA page, Cloudflare with "Just a moment". Treat as unchecked.
+  const pageTitle = fetched !== null && BOT_WALL_RE.test(fetched) ? null : fetched
+  if (pageTitle === null) return { ok: true, title: `${tag.institution}${tag.publisher ? `, ${tag.publisher}` : ''}`, status: 'unchecked' }
+  if (titleCoversFact(pageTitle, tag.fact) || titleCoversFact(pageTitle, `${tag.institution} ${tag.publisher}`)) return { ok: true, title: pageTitle, status: 'verified' }
+  logger.info({ ...ctx, url, pageTitle: pageTitle.slice(0, 90), fact: tag.fact.slice(0, 90) }, '[source-verify] page title does not match its fact')
+  return { ok: false, title: '', status: 'unchecked' }
+}
+
+/** Pages Google retrieved for the span that carries this fact (B16). */
+export function groundedCandidates(tag: FactTag, supports: GroundingSupportPages[]): string[] {
+  const out: string[] = []
+  for (const sp of supports) {
+    const o = termOverlap(sp.text, tag.fact)
+    if (o.shared >= 3 || (o.shared >= 2 && o.ratio >= 0.5)) for (const u of sp.urls) if (u && !out.includes(u)) out.push(u)
+  }
+  return out
+}
+
 /**
  * Verify every source tag in a research output. Returns the rewritten text
- * (verified or repaired URLs kept, unverifiable URLs removed) and the list of
- * fact→source pairs the inserter may link.
+ * (verified, grounded or repaired URLs kept, unverifiable URLs removed,
+ * unsupported figure facts removed) and the fact→source pairs the inserter
+ * may link.
  */
 export async function verifyFactSources(
   text: string,
   ctx: Record<string, unknown> = {},
   r: Resolvers = liveResolvers,
+  opts: VerifyOptions = {},
 ): Promise<VerifyResult> {
-  const stats = { tags: 0, verified: 0, repaired: 0, unchecked: 0, dropped: 0, root: 0, obs: 0 }
+  const stats: VerifyResult['stats'] = { tags: 0, verified: 0, repaired: 0, grounded: 0, unchecked: 0, dropped: 0, root: 0, obs: 0, supportChecked: 0, unlinkedQualitative: 0, figureDropped: 0, supportCost: 0 }
   const sources: FactSource[] = []
   if (!text) return { text, sources, stats }
   let tags: FactTag[]
@@ -316,55 +393,47 @@ export async function verifyFactSources(
       stats.obs++
       continue
     }
-    let url = tag.url
+    let url: string | null = null
     let title = ''
     let status: SourceStatus = 'dropped'
 
-    if (url && isRootUrl(url)) {
-      stats.root++
-      url = null
-    }
-    if (url && !isCitable(url)) {
-      // Off-policy host: the fact may still be used, the link may not.
-      url = null
-    }
-
-    if (url) {
-      const ident = identifyUrl(url)
+    // 1. The model's own URL, if it survives identity.
+    if (tag.url && isRootUrl(tag.url)) stats.root++
+    if (tag.url && !isRootUrl(tag.url) && isCitable(tag.url)) {
       try {
-        if (ident) {
-          const resolved =
-            ident.kind === 'pubmed' ? await r.pubmedTitle(ident.id) : ident.kind === 'pmc' ? await r.pmcTitle(ident.id) : await r.doiTitle(ident.id)
-          if (resolved && titleCoversFact(resolved, tag.fact)) {
-            title = resolved
-            status = 'verified'
-          } else {
-            logger.info({ ...ctx, url, resolved: resolved?.slice(0, 90) ?? null, fact: tag.fact.slice(0, 90) }, '[source-verify] identifier does not match its fact')
-            url = null
-          }
-        } else {
-          const fetched = await r.pageTitle(url)
-          // A bot wall is not a title: NCBI Bookshelf (StatPearls) answers with a
-          // reCAPTCHA page, Cloudflare with "Just a moment". Treat as unchecked.
-          const pageTitle = fetched !== null && BOT_WALL_RE.test(fetched) ? null : fetched
-          if (pageTitle === null) {
-            status = 'unchecked'
-            title = `${tag.institution}${tag.publisher ? `, ${tag.publisher}` : ''}`
-          } else if (titleCoversFact(pageTitle, tag.fact) || titleCoversFact(pageTitle, `${tag.institution} ${tag.publisher}`)) {
-            title = pageTitle
-            status = 'verified'
-          } else {
-            logger.info({ ...ctx, url, pageTitle: pageTitle.slice(0, 90), fact: tag.fact.slice(0, 90) }, '[source-verify] page title does not match its fact')
-            url = null
-          }
+        const c = await checkUrlForFact(tag.url, tag, r, ctx)
+        if (c.ok) {
+          url = tag.url
+          title = c.title
+          status = c.status
         }
       } catch (err) {
-        logger.warn({ ...ctx, url, err }, '[source-verify] resolver failed, treating as unchecked')
-        status = 'unchecked'
+        logger.warn({ ...ctx, url: tag.url, err }, '[source-verify] resolver failed, treating as unchecked')
+        url = tag.url
         title = tag.institution
+        status = 'unchecked'
       }
     }
 
+    // 2. Pages Google actually retrieved for this span (grounding supports).
+    if (!url && opts.supports?.length) {
+      for (const cand of groundedCandidates(tag, opts.supports)) {
+        if (isRootUrl(cand) || !isCitable(cand)) continue
+        try {
+          const c = await checkUrlForFact(cand, tag, r, ctx)
+          if (c.ok) {
+            url = cand
+            title = c.title
+            status = 'grounded'
+            break
+          }
+        } catch {
+          /* next candidate */
+        }
+      }
+    }
+
+    // 3. Title search for a paper the tag names but mis-identifies.
     if (!url && looksLikePaper(tag)) {
       try {
         const fixed = await repairByTitle(tag, r)
@@ -379,8 +448,36 @@ export async function verifyFactSources(
       }
     }
 
+    // 4. Support check and the rulings: qualitative loses the link, figure is dropped.
+    let removeFact = false
+    let quote = ''
+    let verdict: FactSource['verdict'] | undefined
+    if (url && opts.support) {
+      const figure = isFigureFactLocal(tag.fact)
+      const sup = await opts.support(tag.fact, url)
+      stats.supportChecked++
+      stats.supportCost += sup.cost
+      verdict = sup.verdict
+      quote = sup.quote
+      const fails = sup.verdict === 'unsupported' || (figure && sup.verdict === 'partial')
+      if (fails) {
+        logger.info({ ...ctx, url, verdict: sup.verdict, figure, fact: tag.fact.slice(0, 90) }, '[source-verify] source does not support its fact')
+        if (figure) {
+          removeFact = true
+          stats.figureDropped++
+        } else {
+          url = null
+          stats.unlinkedQualitative++
+        }
+      }
+    }
+
+    if (removeFact) {
+      edits.push({ start: tag.factStart, end: tag.end, replacement: '' })
+      continue
+    }
     if (url && status !== 'dropped') {
-      sources.push({ fact: tag.fact, url, title, status })
+      sources.push({ fact: tag.fact, url, title, status, quote, verdict })
       stats[status]++
     } else {
       status = 'dropped'
@@ -395,7 +492,19 @@ export async function verifyFactSources(
     const e = edits[i]
     out = out.slice(0, e.start) + e.replacement + out.slice(e.end)
   }
+  out = out.replace(/\n{3,}/g, '\n\n')
   return { text: out, sources, stats }
+}
+
+const NUMBER_WORDS_RE =
+  /\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|fifteen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|thousand|million|billion|half|third|quarter|double|twice|threefold|fourfold)\b/i
+
+/** A fact that carries a quantity (digits other than a lone year, a percentage, a number word). */
+export function isFigureFactLocal(fact: string): boolean {
+  const digits = fact.match(/\d+(?:[.,]\d+)?/g) ?? []
+  if (digits.some((d) => !/^(19|20)\d\d$/.test(d))) return true
+  if (/%|percent|per cent/i.test(fact)) return true
+  return NUMBER_WORDS_RE.test(fact)
 }
 
 /** Identity check for step-12 curated pairs (title claimed by the model vs the real page). */
@@ -509,4 +618,71 @@ export function anchorFactSources(html: string, sources: FactSource[]): { html: 
     out = out.slice(0, e.start) + `<a href="${e.url}" target="_blank" rel="noopener noreferrer">${body}</a>${punct}` + out.slice(e.end)
   }
   return { html: out, placed, unplaced }
+}
+
+// ── B16: verified-source floor ────────────────────────────────────────────────
+
+export const SOURCE_FLOOR = 6
+
+/**
+ * When fewer than SOURCE_FLOOR verified sources survive, look for reviews,
+ * meta-analyses and guidelines per section heading on PubMed. Fill sources
+ * carry the heading as their "fact": they may appear in the references list
+ * and be linked where a sentence already states the matter; they never add
+ * new claims to the prose (ruling 2026-11-09).
+ */
+export async function pubmedFill(
+  headings: string[],
+  topic: string,
+  needed: number,
+  r: Resolvers = liveResolvers,
+  ctx: Record<string, unknown> = {},
+): Promise<FactSource[]> {
+  const out: FactSource[] = []
+  const seen = new Set<string>()
+  for (const h of headings) {
+    if (out.length >= needed) break
+    const terms = [...contentTerms(`${h} ${topic}`)].slice(0, 6)
+    if (terms.length < 2) continue
+    const q = `${terms.join(' ')} AND (review[pt] OR meta-analysis[pt] OR guideline[pt] OR systematic review[pt]) AND ("last 10 years"[dp])`
+    let hits: Array<{ id: string; title: string }> = []
+    try {
+      hits = await r.pubmedSearch(q)
+    } catch (err) {
+      logger.warn({ ...ctx, heading: h, err }, '[source-verify] fill search failed')
+      continue
+    }
+    for (const hit of hits) {
+      const url = `https://pubmed.ncbi.nlm.nih.gov/${hit.id}/`
+      if (seen.has(url)) continue
+      const o = termOverlap(hit.title, `${h} ${topic}`)
+      if (o.shared < 2) continue
+      seen.add(url)
+      out.push({ fact: `${h}. ${hit.title}`, url, title: hit.title, status: 'fill' })
+      if (out.length >= needed) break
+    }
+  }
+  if (out.length) logger.info({ ...ctx, added: out.length, headings: headings.length }, '[source-verify] pubmed fill added sources')
+  return out
+}
+
+/** B16: fact sources on record (verified at steps 7/8 as step 121, PubMed fill as 122), falling back to tag parsing for older jobs. */
+export function loadFactSources(completedSteps: Map<number, string>): FactSource[] {
+  const out: FactSource[] = []
+  for (const n of [121, 122]) {
+    try {
+      const list = JSON.parse(completedSteps.get(n) ?? '[]') as FactSource[]
+      for (const f of list) if (f?.url && !out.some((o) => o.url === f.url)) out.push(f)
+    } catch {
+      /* ignore */
+    }
+  }
+  if (out.length === 0) {
+    for (const n of [8, 7]) {
+      for (const t of parseFactTags(completedSteps.get(n) ?? '')) {
+        if (t.url && !out.some((o) => o.url === t.url)) out.push({ fact: t.fact, url: t.url, title: `${t.institution}${t.publisher ? `, ${t.publisher}` : ''}`, status: 'unchecked' })
+      }
+    }
+  }
+  return out
 }

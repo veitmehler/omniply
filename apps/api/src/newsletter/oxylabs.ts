@@ -284,3 +284,32 @@ export async function urlStatus(url: string): Promise<number> {
     return 0
   }
 }
+
+// ── B16: People Also Ask + related searches for the article pipeline (step 6) ──
+
+export interface SerpQuestionBlocks {
+  questions: string[]
+  relatedSearches: string[]
+}
+
+/**
+ * Parsed Google SERP blocks that carry real user phrasing: the People Also Ask
+ * questions and the related searches. Shape confirmed live 2026-11-09:
+ * `results.related_questions.items[].question` and
+ * `results.related_searches[0].related_searches[]`.
+ */
+export async function googleSerpQuestionBlocks(query: string, geo: string, domain = 'com'): Promise<SerpQuestionBlocks> {
+  const resp = await oxyQuery({ source: 'google_search', query, parse: true, geo_location: geo, domain, pages: 1 })
+  const content = resp.results?.[0]?.content as { results?: Record<string, unknown> } | undefined
+  const r = (content?.results ?? {}) as {
+    related_questions?: { items?: Array<{ question?: string }> } | Array<{ question?: string }>
+    related_searches?: Array<{ related_searches?: string[] }> | { related_searches?: string[] }
+  }
+  const rqRaw = r.related_questions
+  const items = Array.isArray(rqRaw) ? rqRaw : rqRaw?.items ?? []
+  const questions = items.map((i) => (i.question ?? '').trim()).filter(Boolean)
+  const rsRaw = r.related_searches
+  const rsList = Array.isArray(rsRaw) ? rsRaw.flatMap((x) => x.related_searches ?? []) : rsRaw?.related_searches ?? []
+  const relatedSearches = rsList.map((x) => String(x).trim()).filter(Boolean)
+  return { questions, relatedSearches }
+}
