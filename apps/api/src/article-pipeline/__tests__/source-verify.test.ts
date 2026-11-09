@@ -83,10 +83,13 @@ describe('verifyFactSources', () => {
     expect(r.sources[0].status).toBe('repaired')
     expect(r.sources[1].status).toBe('verified')
   })
-  it('keeps a bot-blocked page as unchecked', async () => {
+  it('keeps a bot-blocked page as unchecked, including a reCAPTCHA page served as the title', async () => {
     const r = await verifyFactSources('Walking helps. [Source: AIHW, Australian Government, 2023, https://www.aihw.gov.au/reports/back-problems]', {}, { ...fake, pageTitle: async () => null })
     expect(r.stats.unchecked).toBe(1)
     expect(r.text).toContain('https://www.aihw.gov.au/reports/back-problems')
+    const r2 = await verifyFactSources('Sciatica is a symptom. [Source: StatPearls, NCBI Bookshelf, 2024, https://www.ncbi.nlm.nih.gov/books/NBK507908/]', {}, { ...fake, pageTitle: async () => 'Checking your browser - reCAPTCHA' })
+    expect(r2.stats.unchecked).toBe(1)
+    expect(r2.text).toContain('NBK507908')
   })
 })
 

@@ -61,6 +61,7 @@ export interface VerifyResult {
 }
 
 const TAG_RE = /\[Source:\s*([^\]]*)\]/g
+export const BOT_WALL_RE = /checking your browser|recaptcha|just a moment|access denied|attention required|are you a human|verify you are|403 forbidden|cloudflare/i
 
 const STOP = new Set(
   'the a an and or of to in on for with by from at as is are was were be been being that this these those it its their there here than then into over under about after before between during without within while when where which who whom whose what why how all any each some most more less few many much very also only just not no yes can could may might will would shall should must do does did done have has had having per vs versus among around across along through toward towards upon via own same other another such both either neither one two three four five six seven eight nine ten first second third new old high low large small long short early late often usually rarely sometimes never always people person patient patients adults adult study studies trial trials review reviews analysis data results findings found reported showed shows show report year years'.split(/\s+/),
@@ -342,7 +343,10 @@ export async function verifyFactSources(
             url = null
           }
         } else {
-          const pageTitle = await r.pageTitle(url)
+          const fetched = await r.pageTitle(url)
+          // A bot wall is not a title: NCBI Bookshelf (StatPearls) answers with a
+          // reCAPTCHA page, Cloudflare with "Just a moment". Treat as unchecked.
+          const pageTitle = fetched !== null && BOT_WALL_RE.test(fetched) ? null : fetched
           if (pageTitle === null) {
             status = 'unchecked'
             title = `${tag.institution}${tag.publisher ? `, ${tag.publisher}` : ''}`
