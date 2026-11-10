@@ -47,7 +47,7 @@ export interface FactTag {
   factStart: number
 }
 
-export type SourceStatus = 'verified' | 'repaired' | 'grounded' | 'unchecked' | 'dropped'
+export type SourceStatus = 'verified' | 'repaired' | 'grounded' | 'retrieved' | 'unchecked' | 'dropped'
 
 export interface FactSource {
   fact: string
@@ -67,10 +67,24 @@ export interface GroundingSupportPages {
 
 export type SupportChecker = (fact: string, url: string) => Promise<{ verdict: 'supported' | 'partial' | 'unsupported' | 'unknown'; quote: string; cost: number }>
 
+/** B21: a fact the retrieval researcher extracted from a page it chose, with the verbatim sentence. */
+export interface RetrievedFactRecord {
+  fact: string
+  url: string
+  title: string
+  quote: string
+}
+
 export interface VerifyOptions {
   supports?: GroundingSupportPages[]
   /** When given, every surviving URL is checked for support and the rulings apply. */
   support?: SupportChecker
+  /** B21: retrieval facts. Identity is by construction (the URL was attached by code to the page the
+   * fact was read from), so the title gate and the LLM judge are skipped; the quote is checked
+   * against the page text deterministically when the page is readable. */
+  retrieved?: RetrievedFactRecord[]
+  /** true = quote found in the page, false = not found, null = page unreadable. */
+  quoteCheck?: (quote: string, url: string) => Promise<boolean | null>
 }
 
 export interface VerifyResult {
@@ -81,6 +95,7 @@ export interface VerifyResult {
     verified: number
     repaired: number
     grounded: number
+    retrieved: number
     unchecked: number
     dropped: number
     root: number
@@ -363,6 +378,14 @@ export function groundedCandidates(tag: FactTag, supports: GroundingSupportPages
   return out
 }
 
+/** B21: the retrieval record for a tag (same URL, same fact up to whitespace/case). */
+function findRetrieved(tag: FactTag, recs?: RetrievedFactRecord[]): RetrievedFactRecord | undefined {
+  if (!recs?.length || !tag.url) return undefined
+  const u = tag.url.trim().replace(/\/$/, '')
+  const f = tag.fact.toLowerCase().replace(/\s+/g, ' ').trim()
+  return recs.find((r) => r.url.trim().replace(/\/$/, '') === u && r.fact.toLowerCase().replace(/\s+/g, ' ').trim() === f)
+}
+
 /**
  * Verify every source tag in a research output. Returns the rewritten text
  * (verified, grounded or repaired URLs kept, unverifiable URLs removed,
@@ -375,7 +398,7 @@ export async function verifyFactSources(
   r: Resolvers = liveResolvers,
   opts: VerifyOptions = {},
 ): Promise<VerifyResult> {
-  const stats: VerifyResult['stats'] = { tags: 0, verified: 0, repaired: 0, grounded: 0, unchecked: 0, dropped: 0, root: 0, obs: 0, supportChecked: 0, unlinkedQualitative: 0, figureDropped: 0, supportCost: 0 }
+  const stats: VerifyResult['stats'] = { tags: 0, verified: 0, repaired: 0, grounded: 0, retrieved: 0, unchecked: 0, dropped: 0, root: 0, obs: 0, supportChecked: 0, unlinkedQualitative: 0, figureDropped: 0, supportCost: 0 }
   const sources: FactSource[] = []
   if (!text) return { text, sources, stats }
   let tags: FactTag[]
@@ -396,10 +419,21 @@ export async function verifyFactSources(
     let url: string | null = null
     let title = ''
     let status: SourceStatus = 'dropped'
+    let retrievedQuote = ''
+
+    // 0. B21: a retrieval fact — the page is the one it was read from. Keep it on its own
+    //    provenance; only a quote demonstrably absent from a readable page fails it.
+    const rec = tag.url ? findRetrieved(tag, opts.retrieved) : undefined
+    if (rec && isCitable(rec.url)) {
+      url = rec.url
+      title = rec.title
+      status = 'retrieved'
+      retrievedQuote = rec.quote
+    }
 
     // 1. The model's own URL, if it survives identity.
-    if (tag.url && isRootUrl(tag.url)) stats.root++
-    if (tag.url && !isRootUrl(tag.url) && isCitable(tag.url)) {
+    if (!url && tag.url && isRootUrl(tag.url)) stats.root++
+    if (!url && tag.url && !isRootUrl(tag.url) && isCitable(tag.url)) {
       try {
         const c = await checkUrlForFact(tag.url, tag, r, ctx)
         if (c.ok) {
@@ -453,7 +487,25 @@ export async function verifyFactSources(
     let removeFact = false
     let quote = ''
     let verdict: FactSource['verdict'] | undefined
-    if (url && opts.support) {
+    if (url && status === 'retrieved') {
+      quote = retrievedQuote
+      verdict = 'unknown'
+      if (opts.quoteCheck && retrievedQuote) {
+        const found = await opts.quoteCheck(retrievedQuote, url)
+        if (found === true) verdict = 'supported'
+        if (found === false) {
+          const figure = isFigureFactLocal(tag.fact)
+          logger.info({ ...ctx, url, figure, fact: tag.fact.slice(0, 90) }, '[source-verify] retrieval quote not found in its page')
+          if (figure) {
+            removeFact = true
+            stats.figureDropped++
+          } else {
+            url = null
+            stats.unlinkedQualitative++
+          }
+        }
+      }
+    } else if (url && opts.support) {
       const figure = isFigureFactLocal(tag.fact)
       const sup = await opts.support(tag.fact, url)
       stats.supportChecked++
@@ -687,7 +739,7 @@ export function loadFactSources(completedSteps: Map<number, string>): FactSource
   for (const n of [121, 122]) {
     try {
       const list = JSON.parse(completedSteps.get(n) ?? '[]') as FactSource[]
-      for (const f of list) if (f?.url && !out.some((o) => o.url === f.url)) out.push(f)
+      for (const f of list) if (f?.url && !out.some((o) => o.url === f.url && o.fact === f.fact)) out.push(f)
     } catch {
       /* ignore */
     }

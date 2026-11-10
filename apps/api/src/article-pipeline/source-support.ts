@@ -240,3 +240,14 @@ export async function checkSupport(
     return { verdict: 'unknown', quote: '', via: 'none', cost: 0 }
   }
 }
+
+/** B21: is the retrieval quote present in the page? null when nobody can read the page. */
+export async function quoteInPage(quote: string, url: string, deps: SupportDeps = liveSupportDeps): Promise<boolean | null> {
+  try {
+    const src = await fetchSourceText(url, deps)
+    if (!src.text) return null
+    return quoteGrounded(quote, src.text)
+  } catch {
+    return null
+  }
+}

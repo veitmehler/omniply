@@ -68,6 +68,8 @@ export interface StepRunResult {
   outputTokens: number
   cost: number
   durationMs: number
+  /** B21: facts the retrieval researcher produced (steps 7/8 in RESEARCH_MODE=retrieval). */
+  retrieved?: Array<{ fact: string; url: string; title: string; quote: string }>
   provider: string
   model: string
   groundingSources?: Array<{ title: string; uri: string; domain?: string }>

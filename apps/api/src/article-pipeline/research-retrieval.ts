@@ -36,9 +36,9 @@ export interface RetrievalDeps {
   pubmedSearch: (query: string) => Promise<Array<{ id: string; title: string }>>
   pubmedAbstract: (id: string) => Promise<string | null>
   /** Extract facts for `unit` from a source text (abstract). */
-  extractFromText: (unit: string, title: string, text: string, industry: string) => Promise<{ facts: Array<{ fact: string; quote: string }>; cost: number; tokens: { input: number; output: number } }>
+  extractFromText: (unit: string, title: string, text: string, industry: string, topic: string) => Promise<{ facts: Array<{ fact: string; quote: string }>; cost: number; tokens: { input: number; output: number } }>
   /** Extract facts for `unit` from a page Google reads (URL context). */
-  extractFromUrl: (unit: string, url: string, industry: string) => Promise<{ facts: Array<{ fact: string; quote: string }>; cost: number; tokens: { input: number; output: number }; retrieved: boolean }>
+  extractFromUrl: (unit: string, url: string, industry: string, topic: string) => Promise<{ facts: Array<{ fact: string; quote: string }>; cost: number; tokens: { input: number; output: number }; retrieved: boolean }>
 }
 
 export interface RetrievalResult {
@@ -116,6 +116,7 @@ export function buildPubmedQueries(unit: string, topic: string): string[] {
 export function rankCandidates(results: SerpOrganic[], unit: string, topic: string, seen: Set<string>): SerpOrganic[] {
   const local = new Set<string>()
   const unitKey = searchTerms(unit).join(' ')
+  const topicKey = searchTerms(topic).join(' ')
   const scored = results
     .filter((r) => {
       const k = norm(r.url)
@@ -123,8 +124,8 @@ export function rankCandidates(results: SerpOrganic[], unit: string, topic: stri
       local.add(k)
       return true
     })
-    .map((r, i) => ({ r, i, unit: termOverlap(`${r.title} ${r.snippet}`, unitKey).shared, all: termOverlap(`${r.title} ${r.snippet}`, `${unit} ${topic}`).shared }))
-    .filter((x) => x.unit >= 1)
+    .map((r, i) => ({ r, i, unit: termOverlap(`${r.title} ${r.snippet}`, unitKey).shared, topic: topicKey ? termOverlap(`${r.title} ${r.snippet}`, topicKey).shared : 1, all: termOverlap(`${r.title} ${r.snippet}`, `${unit} ${topic}`).shared }))
+    .filter((x) => x.unit >= 1 && x.topic >= 1)
     .sort((a, b) => {
       const ta = sourceTier(a.r.url) === 'primary' ? 0 : 1
       const tb = sourceTier(b.r.url) === 'primary' ? 0 : 1
@@ -178,10 +179,11 @@ async function geminiJson(prompt: string, tools?: unknown[]): Promise<{ text: st
   return { text, cost: calculateCost(EXTRACT_MODEL, input, output), tokens: { input, output }, retrieved: tools ? /SUCCESS/i.test(status) : true }
 }
 
-function extractionPrompt(unit: string, industry: string, sourceLabel: string): string {
+function extractionPrompt(unit: string, industry: string, sourceLabel: string, topic = ''): string {
   return (
-    `You extract facts for an article written by a ${industry} practice. The article section is: "${unit}".\n` +
-    `From the source below, return up to ${MAX_FACTS_PER_SOURCE} facts that are directly relevant to that section. ` +
+    `You extract facts for an article written by a ${industry} practice.${topic ? ` The article is about: "${topic}".` : ''} The article section is: "${unit}".\n` +
+    `From the source below, return up to ${MAX_FACTS_PER_SOURCE} facts that are directly relevant to that section AND to the article's subject. ` +
+    `If the source is about a different condition, population or treatment than the article (for example a page on Parkinson's disease for an article on back stiffness), return [] even if a sentence mentions a shared word. ` +
     `A fact is one plain sentence stating what was found, with its figure, rate or duration when the source gives one. ` +
     `Each fact must rest on one sentence of the source, copied exactly as "quote". Never use general knowledge; if the source has nothing relevant, return [].\n` +
     `Output ONLY a JSON array: [{"fact": "...", "quote": "..."}]\n\n${sourceLabel}`
@@ -225,13 +227,13 @@ export const liveRetrievalDeps: RetrievalDeps = {
       return null
     }
   },
-  async extractFromText(unit, title, text, industry) {
-    const r = await geminiJson(extractionPrompt(unit, industry, `SOURCE TITLE: ${title}\nSOURCE TEXT:\n${text.slice(0, 6000)}`))
+  async extractFromText(unit, title, text, industry, topic) {
+    const r = await geminiJson(extractionPrompt(unit, industry, `SOURCE TITLE: ${title}\nSOURCE TEXT:\n${text.slice(0, 6000)}`, topic))
     const facts = parseFacts(r.text).filter((f) => quoteInText(f.quote, text))
     return { facts, cost: r.cost, tokens: r.tokens }
   },
-  async extractFromUrl(unit, url, industry) {
-    const r = await geminiJson(extractionPrompt(unit, industry, `SOURCE PAGE (read it): ${url}`), [{ url_context: {} }])
+  async extractFromUrl(unit, url, industry, topic) {
+    const r = await geminiJson(extractionPrompt(unit, industry, `SOURCE PAGE (read it): ${url}`, topic), [{ url_context: {} }])
     return { facts: r.retrieved ? parseFacts(r.text) : [], cost: r.cost, tokens: r.tokens, retrieved: r.retrieved }
   },
 }
@@ -293,7 +295,7 @@ export async function runRetrievalResearch(opts: {
           const abs = await deps.pubmedAbstract(h.id)
           if (!abs) continue
           stats.pagesRead++
-          const ex = await deps.extractFromText(unit, h.title, abs, industry)
+          const ex = await deps.extractFromText(unit, h.title, abs, industry, opts.topic)
           cost += ex.cost
           tokens.input += ex.tokens.input
           tokens.output += ex.tokens.output
@@ -319,7 +321,7 @@ export async function runRetrievalResearch(opts: {
     for (const c of candidates) {
       seen.add(norm(c.url))
       try {
-        const ex = await deps.extractFromUrl(unit, c.url, industry)
+        const ex = await deps.extractFromUrl(unit, c.url, industry, opts.topic)
         cost += ex.cost
         tokens.input += ex.tokens.input
         tokens.output += ex.tokens.output

@@ -20,6 +20,7 @@ import { checkSupport } from './source-support'
 import { resolveChunkUrisIndexed } from './grounding-resolver'
 import { restoreBoundary } from '../lib/text/boundary-restore'
 import { runRetrievalResearch } from './research-retrieval'
+import { quoteInPage } from './source-support'
 import { researchUnitsFor } from './research-units'
 import { recordLLMUsage } from '../lib/llm-usage'
 import type { StepRunResult } from './step-runner'
@@ -286,7 +287,9 @@ export async function runPipelinePhaseA(jobId: string): Promise<void> {
               })
             }
             const support = process.env.SOURCE_SUPPORT === '0' ? undefined : (fact: string, url: string) => checkSupport(fact, url, { jobId, stepNumber })
-            const v = await verifyFactSources(stepOutput, { jobId, stepNumber }, undefined, { supports, support })
+            const retrieved = result.retrieved
+            const quoteCheck = retrieved?.length ? (quote: string, url: string) => quoteInPage(quote, url) : undefined
+            const v = await verifyFactSources(stepOutput, { jobId, stepNumber }, undefined, { supports, support, retrieved, quoteCheck })
             if (v.text !== stepOutput) {
               stepOutput = v.text
               ctx.completedSteps.set(stepNumber, stepOutput)
@@ -295,7 +298,7 @@ export async function runPipelinePhaseA(jobId: string): Promise<void> {
             logger.info({ jobId, stepNumber, supports: supports.length, ...v.stats }, '[executor] fact sources verified')
             const prior: FactSource[] = JSON.parse(ctx.completedSteps.get(121) ?? '[]')
             const merged = [...prior]
-            for (const src of v.sources) if (!merged.some((m) => m.url === src.url)) merged.push(src)
+            for (const src of v.sources) if (!merged.some((m) => m.url === src.url && m.fact === src.fact)) merged.push(src)
             await persistSyntheticStep(jobId, ctx, 121, JSON.stringify(merged))
 
             // Floor: after the second research step, fill from PubMed when thin.
@@ -581,6 +584,7 @@ async function runRetrievalStep(jobId: string, stepNumber: number, ctx: Pipeline
     groundingSources: r.chunkUris.map((u) => ({ title: '', uri: u })),
     groundingSupports: r.supports.map((su) => ({ text: su.text, chunkIndices: su.urls.map((u) => r.chunkUris.indexOf(u)).filter((i) => i >= 0) })),
     groundingChunkUris: r.chunkUris,
+    retrieved: r.facts.map((f) => ({ fact: f.fact, url: f.url, title: f.title, quote: f.quote })),
   }
 }
 
