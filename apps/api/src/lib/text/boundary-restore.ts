@@ -16,6 +16,9 @@ const FRESH_BOUNDARY: RegExp[] = [
   /\b(when|once|if) (you come in|i assess you|i see you|i examine you|you're in front of me|someone comes in)\b[^.!?]{0,220}\bi (check|test|watch|look|assess|examine|feel|press|measure)/i,
   /\bi (check|test|watch|look at|assess|examine|feel|press|measure)\b[^.!?]{0,200}\b(that|which|what i find) (decides|tells me|settles|determines|shapes)\b/i,
   /\bwhat i find (in the room|when i (see|assess|examine) you|on the table)\b/i,
+  // B18: the writer's actual shapes — a first-person check done on the reader, with or without a "decides" clause.
+  /\bi (check|test|assess|examine|measure|feel|watch|look at)\b[^.!?]{0,120}\b(your|you)\b[^.!?]{0,160}\b(reflex|strength|sensation|range of motion|movement|move|gait|posture|alignment|segment|joint|nerve|tension|swelling|warmth)/i,
+  /\b(if|when) you come in\b[^.!?]{0,200}\bi('ll| will)? (check|test|assess|examine|look)/i,
 ]
 
 export function isBoundarySentence(sentence: string): boolean {

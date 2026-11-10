@@ -30,6 +30,8 @@ export interface LLMCallOptions {
   jsonMode?: boolean
   /** Gemini 2.5: set `0` to disable thinking so output budget is not consumed by reasoning tokens. */
   thinkingBudget?: number
+  /** Gemini 3: thinkingConfig.thinkingLevel ('low' | 'high'). B18: research steps run low; budget 0 is rejected by the model. */
+  thinkingLevel?: 'low' | 'high'
   /**
    * Image parts attached to the user turn (vision input). Only OpenAIAdapter honors this today —
    * see .plans/client-story-review-mining.implementation-plan.md. Other adapters ignore it.

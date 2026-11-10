@@ -29,7 +29,7 @@
  * as it was (minus an unverifiable URL) and never throws.
  */
 import { logger } from '../lib/logger'
-import { fetchPageTitle, isCitable } from './citation-policy'
+import { fetchPageTitle, isCitable, sourceTier } from './citation-policy'
 
 export interface FactTag {
   /** Plain text of the fact the tag belongs to (markdown stripped, ≤ 600 chars). */
@@ -433,8 +433,9 @@ export async function verifyFactSources(
       }
     }
 
-    // 3. Title search for a paper the tag names but mis-identifies.
-    if (!url && looksLikePaper(tag)) {
+    // 3. Title search on PubMed for any fact still without a source (strict match; B18: no longer
+    //    limited to paper-like tags — this is the fact-driven fill).
+    if (!url) {
       try {
         const fixed = await repairByTitle(tag, r)
         if (fixed) {
@@ -459,7 +460,10 @@ export async function verifyFactSources(
       stats.supportCost += sup.cost
       verdict = sup.verdict
       quote = sup.quote
-      const fails = sup.verdict === 'unsupported' || (figure && sup.verdict === 'partial')
+      // B18 rule for sources nobody could read: keep only an authority-tier page that
+      // grounding supplied (Google retrieved it for this very fact); drop otherwise.
+      const unreadable = sup.verdict === 'unknown' && !(status === 'grounded' && sourceTier(url) !== 'rejected')
+      const fails = sup.verdict === 'unsupported' || (figure && sup.verdict === 'partial') || unreadable
       if (fails) {
         logger.info({ ...ctx, url, verdict: sup.verdict, figure, fact: tag.fact.slice(0, 90) }, '[source-verify] source does not support its fact')
         if (figure) {
@@ -667,7 +671,7 @@ export async function pubmedFill(
       const url = `https://pubmed.ncbi.nlm.nih.gov/${hit.id}/`
       if (seen.has(url)) continue
       const o = termOverlap(hit.title, `${h} ${topic}`)
-      if (o.shared < 2) continue
+      if (o.shared < 3) continue
       seen.add(url)
       out.push({ fact: `${h}. ${hit.title}`, url, title: hit.title, status: 'fill' })
       if (out.length >= needed) break

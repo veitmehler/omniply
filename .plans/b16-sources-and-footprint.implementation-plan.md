@@ -113,3 +113,19 @@ Removed: step 12 (grounded Gemini + JSON call, ~$0.05), step 6 grounded fee if G
 1. Floor = minimum of 6 verified sources; PubMed fill feeds references and existing claims only, never new prose.
 2. Media hostname for non-WordPress clients: parked, WordPress-only focus.
 3. Step 6: switch to Oxylabs PAA; the three-request fetch is a sizing step, not a gate.
+
+## 7. B17 outcome (2026-11-10) and B18 scope (rulings by Veit 2026-11-10)
+
+B17 (artifact https://claude.ai/artifact/A4hyHyhVjJo3DpSvz2xrcK): 3/3 pass E-E-A-T and "AI pick-up" review; links 11/4/7; alt-text gate works. Findings: (1) the mandatory-search retry grounded only 2 of 6 research calls; (2) government and NCBI pages are unreadable from the droplet (Cloudflare/Akamai/reCAPTCHA; Oxylabs proxy refuses those hosts, Scraper API plan rejects arbitrary URLs); (3) the heading-based PubMed fill returns off-topic reviews; (4) Gemini cost is undercounted: `thoughtsTokenCount` (4,381 vs 468 visible on a probe call, billed at the output rate) is never read; (5) the bench placeholder domain did not exist and was the only remaining "AI" tell.
+
+Rulings: severely limit reasoning on steps 7/8 (waste of money); instruct the grounded search to use only authoritative sources and measure what comes back; use Google's own fetcher (URL context) as the reader for blocked hosts and measure its cost.
+
+### B18 work items
+- **A. Cost accounting + thinking cap.** `gemini.ts`: bill `thoughtsTokenCount` as output tokens in both paths; log it. New adapter option `thinkingLevel` (Gemini 3 `thinkingConfig.thinkingLevel`), set to low for steps 7/8 (step runner) and for the support judge. Measure feed quality and cost on the batch.
+- **B. Grounding reliability.** Retry up to 3× with escalating mandatory-search prompts; if still ungrounded, split the research into per-section calls (short prompts grounded first time in every probe). Log attempts per step.
+- **C. Authoritative-only search.** Research prompt: searches restricted to PubMed/PMC, government health agencies, universities, hospital systems, professional colleges (site: filters in the model's own queries); clinic, product, aggregator and news hosts excluded at search time. Domain policy stays as the gate. Bench reports rejected hosts to see what the instruction changed.
+- **D. Readers for blocked hosts.** `source-support.ts`: when the page cannot be read from the server, ask Gemini with the URL-context tool (Google fetches the page): verdict + quote + retrieval status; cost logged per call. NCBI Bookshelf: map NBK id → PubMed record (esearch) → abstract via efetch. Rule for still-unreadable sources: keep only when authority-tier AND supplied by grounding; drop otherwise.
+- **E. Fill driven by facts.** Title-search repair (strict match) for every dropped fact, not only paper-like tags; heading fill demoted to last resort with ≥3 shared terms.
+- **F. Small gates.** Boundary detector accepts the shapes the writer produces ("I check … you/your"); alt text max 160 chars.
+- **G. Bench.** Image URLs rewritten to the client's real site domain (coastchiropractic.com.au for the demo account), slug-based filenames.
+- Batch B18 on the same three topics after deploy; compare grounded/verified counts, links, Gemini cost (now including thinking) against B17.

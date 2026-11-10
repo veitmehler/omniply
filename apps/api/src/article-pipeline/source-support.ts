@@ -19,15 +19,19 @@ import { logger } from '../lib/logger'
 import { runNewsletterPrompt } from '../newsletter/llm'
 import { scrapeUrl } from '../newsletter/oxylabs'
 import { identifyUrl, ncbiQueue, NCBI_BASE, ncbiKey, BOT_WALL_RE } from './source-verify'
+import { getSystemApiKey } from '../lib/system-keys'
+import { calculateCost } from './llm/cost-table'
 
 export type SupportVerdict = 'supported' | 'partial' | 'unsupported' | 'unknown'
 
 export interface SupportResult {
   verdict: SupportVerdict
   quote: string
-  /** How the source text was obtained; 'none' when nothing could be read. */
-  via: 'abstract' | 'page' | 'scraper' | 'none'
+  /** How the source text was obtained; 'none' when nothing could be read; 'google' = read by Gemini's URL-context tool. */
+  via: 'abstract' | 'page' | 'scraper' | 'google' | 'none'
 }
+
+const URL_CONTEXT_MODEL = 'gemini-3.1-flash-lite'
 
 const TIMEOUT_MS = 10_000
 const MAX_SOURCE_CHARS = 6_000
@@ -69,12 +73,53 @@ async function fetchText(url: string): Promise<string | null> {
 
 export interface SupportDeps {
   pubmedAbstract: (pmid: string) => Promise<string | null>
+  /** NCBI Bookshelf chapter (NBK id) → its PubMed record's abstract, through the E-utilities API. */
+  bookshelfAbstract: (nbk: string) => Promise<string | null>
   pageHtml: (url: string) => Promise<string | null>
   scrape: (url: string) => Promise<string | null>
   judge: (fact: string, source: string) => Promise<{ text: string; cost: number }>
+  /** Google reads the page (Gemini URL-context tool) and answers; null when retrieval failed. */
+  judgeViaGoogle: (fact: string, url: string) => Promise<{ text: string; cost: number; retrieved: boolean } | null>
 }
 
 export const liveSupportDeps: SupportDeps = {
+  async bookshelfAbstract(nbk) {
+    try {
+      const sr = await ncbiQueue(() => fetch(`${NCBI_BASE}/esearch.fcgi?db=pubmed&term=${nbk}&retmode=json${ncbiKey()}`, { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(TIMEOUT_MS) }))
+      const sj = (await sr.json()) as { esearchresult?: { idlist?: string[] } }
+      const pmid = sj.esearchresult?.idlist?.[0]
+      if (!pmid) return null
+      return liveSupportDeps.pubmedAbstract(pmid)
+    } catch {
+      return null
+    }
+  },
+  async judgeViaGoogle(fact, url) {
+    const key = await getSystemApiKey('gemini')
+    if (!key) return null
+    const body = {
+      contents: [{ role: 'user', parts: [{ text: `Read this page: ${url}\n\nDoes the page state the following? "${fact}"\nAnswer ONLY as JSON: {"verdict":"supported|partial|unsupported","quote":"<one sentence copied from the page, or empty>"}. "supported" means the page states the claim including any figure at the same scope; "partial" means it covers the claim but not the exact figure or scope; "unsupported" means the page does not say this.` }] }],
+      tools: [{ url_context: {} }],
+      generationConfig: { maxOutputTokens: 300 },
+    }
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${URL_CONTEXT_MODEL}:generateContent?key=${key}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(45_000),
+    })
+    if (!res.ok) return null
+    const j = (await res.json()) as {
+      candidates?: Array<{ content?: { parts?: Array<{ text?: string }> }; urlContextMetadata?: { urlMetadata?: Array<{ urlRetrievalStatus?: string }> }; url_context_metadata?: { url_metadata?: Array<{ url_retrieval_status?: string }> } }>
+      usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number; thoughtsTokenCount?: number; toolUsePromptTokenCount?: number }
+    }
+    const c = j.candidates?.[0]
+    const status = c?.urlContextMetadata?.urlMetadata?.[0]?.urlRetrievalStatus ?? c?.url_context_metadata?.url_metadata?.[0]?.url_retrieval_status ?? ''
+    const text = (c?.content?.parts ?? []).map((p) => p.text ?? '').join('')
+    const um = j.usageMetadata ?? {}
+    const cost = calculateCost(URL_CONTEXT_MODEL, (um.promptTokenCount ?? 0) + (um.toolUsePromptTokenCount ?? 0), (um.candidatesTokenCount ?? 0) + (um.thoughtsTokenCount ?? 0))
+    return { text, cost, retrieved: /SUCCESS/i.test(status) }
+  },
   async pubmedAbstract(pmid) {
     try {
       const res = await ncbiQueue(() =>
@@ -107,6 +152,11 @@ export async function fetchSourceText(url: string, deps: SupportDeps = liveSuppo
   const ident = identifyUrl(url)
   if (ident?.kind === 'pubmed') {
     const abs = await deps.pubmedAbstract(ident.id)
+    if (abs) return { text: abs.slice(0, MAX_SOURCE_CHARS), via: 'abstract' }
+  }
+  const nbk = url.match(/ncbi\.nlm\.nih\.gov\/books\/(NBK\d+)/i)?.[1]
+  if (nbk) {
+    const abs = await deps.bookshelfAbstract(nbk)
     if (abs) return { text: abs.slice(0, MAX_SOURCE_CHARS), via: 'abstract' }
   }
   const html = await deps.pageHtml(url)
@@ -159,7 +209,18 @@ export async function checkSupport(
 ): Promise<SupportResult & { cost: number }> {
   try {
     const src = await fetchSourceText(url, deps)
-    if (!src.text) return { verdict: 'unknown', quote: '', via: 'none', cost: 0 }
+    if (!src.text) {
+      // B18: the page blocks our server (Cloudflare / Akamai / reCAPTCHA): let Google read it.
+      const g = await deps.judgeViaGoogle(fact, url)
+      if (g && g.retrieved) {
+        const parsed = parseVerdict(g.text)
+        if (parsed) {
+          logger.info({ ...ctx, url, verdict: parsed.verdict, cost: g.cost }, '[source-support] read by Google URL context')
+          return { verdict: parsed.verdict, quote: parsed.quote, via: 'google', cost: g.cost }
+        }
+      }
+      return { verdict: 'unknown', quote: '', via: 'none', cost: g?.cost ?? 0 }
+    }
     const out = await deps.judge(fact, src.text)
     const parsed = parseVerdict(out.text)
     if (!parsed) {

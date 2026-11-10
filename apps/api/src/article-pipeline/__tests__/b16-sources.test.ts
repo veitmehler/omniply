@@ -63,15 +63,18 @@ describe('support check rulings', () => {
 
 describe('source-support plumbing', () => {
   const deps: SupportDeps = {
+    bookshelfAbstract: async (nbk) => (nbk === 'NBK507908' ? 'Sciatica represents a debilitating condition characterized by pain within the sciatic nerve distribution.' : null),
+    judgeViaGoogle: async (fact, url) => (/aihw/.test(url) ? { text: '{"verdict":"supported","quote":"Around 4.0 million (16%) people in Australia were living with back problems."}', cost: 0.012, retrieved: true } : null),
     pubmedAbstract: async (id) => (id === '37559207' ? 'Spontaneous resorption of lumbar disc herniation occurred in approximately 70% of patients treated conservatively.' : null),
-    pageHtml: async (url) => (/aihw/.test(url) ? '<html><title>Back problems - AIHW</title><body>' + 'About one in six Australians (16%) had back problems in 2022. '.repeat(20) + '</body></html>' : /books/.test(url) ? '<html><title>Checking your browser - reCAPTCHA</title><body>x</body></html>' : null),
-    scrape: async (url) => (/books/.test(url) ? '<html><body>' + 'Sciatica describes pain along the sciatic nerve. '.repeat(30) + '</body></html>' : null),
+    pageHtml: async (url) => (/aihw/.test(url) ? '<html><title>Back problems - AIHW</title><body>' + 'About one in six Australians (16%) had back problems in 2022. '.repeat(20) + '</body></html>' : /walled/.test(url) ? '<html><title>Checking your browser - reCAPTCHA</title><body>x</body></html>' : null),
+    scrape: async (url) => (/walled/.test(url) ? '<html><body>' + 'Sciatica describes pain along the sciatic nerve. '.repeat(30) + '</body></html>' : null),
     judge: async (fact, source) => ({ text: `{"verdict":"supported","quote":"${source.slice(0, 60)}"}`, cost: 0.0005 }),
   }
   it('reads the abstract for PubMed, the page for others, the scraper on a bot wall', async () => {
     expect((await fetchSourceText('https://pubmed.ncbi.nlm.nih.gov/37559207/', deps)).via).toBe('abstract')
     expect((await fetchSourceText('https://www.aihw.gov.au/reports/back-problems', deps)).via).toBe('page')
-    expect((await fetchSourceText('https://www.ncbi.nlm.nih.gov/books/NBK507908/', deps)).via).toBe('scraper')
+    expect((await fetchSourceText('https://www.ncbi.nlm.nih.gov/books/NBK507908/', deps)).via).toBe('abstract')
+    expect((await fetchSourceText('https://www.example-walled.org/page', deps)).via).toBe('scraper')
   })
   it('downgrades a quote that is not in the source', () => {
     expect(quoteGrounded('About one in six Australians had back problems', 'about one in six australians (16%) had back problems in 2022.')).toBe(true)
@@ -81,6 +84,39 @@ describe('source-support plumbing', () => {
     const r = await checkSupport('About one in six Australians have back problems.', 'https://www.aihw.gov.au/reports/back-problems', {}, deps)
     expect(r.verdict).toBe('supported')
     expect(r.quote).toMatch(/one in six/)
+  })
+  it('B18: reads Bookshelf through PubMed and blocked pages through Google', async () => {
+    const blocked = { ...deps, pageHtml: async () => null, scrape: async () => null }
+    expect((await fetchSourceText('https://www.ncbi.nlm.nih.gov/books/NBK507908/', blocked)).via).toBe('abstract')
+    const r = await checkSupport('About one in six Australians have back problems.', 'https://www.aihw.gov.au/reports/back-problems-blocked', {}, blocked)
+    expect(r.via).toBe('google')
+    expect(r.verdict).toBe('supported')
+    expect(r.cost).toBeCloseTo(0.012)
+    const none = await checkSupport('Walking helps.', 'https://www.safetyandquality.gov.au/x', {}, blocked)
+    expect(none.verdict).toBe('unknown')
+  })
+})
+
+describe('B18: unreadable-source rule and fact-driven fill', () => {
+  it('keeps an unreadable authority page only when grounding supplied it', async () => {
+    const feed =
+      'Back problems affect about one in six Australians at any time. [Source: AIHW, Australian Government, 2024]\n\n' +
+      'Stay active rather than resting in bed. [Source: ACSQHC, Australian Government, 2022, https://www.safetyandquality.gov.au/standards/clinical-care-standards/low-back-pain-clinical-care-standard]'
+    const supports = [{ text: 'Back problems affect about one in six Australians at any time', urls: ['https://www.aihw.gov.au/reports/back-problems'] }]
+    const unknown = async () => ({ verdict: 'unknown' as const, quote: '', cost: 0 })
+    const r = await verifyFactSources(feed, {}, { ...resolvers, pageTitle: async () => null }, { supports, support: unknown })
+    expect(r.sources.map((s) => [s.url, s.status])).toEqual([['https://www.aihw.gov.au/reports/back-problems', 'grounded']])
+    expect(r.text).toContain('[Source: ACSQHC, Australian Government, 2022]')
+  })
+  it('repairs a fact with no paper-like tag through the PubMed title search', async () => {
+    const feed = 'Spontaneous resorption of a herniated lumbar disc happens in most people under conservative treatment. [Source: Health Central, 2023]'
+    const r = await verifyFactSources(feed, {}, { ...resolvers, pubmedSearch: async () => [{ id: '37559207', title: 'Incidence of Spontaneous Resorption of Lumbar Disc Herniation: A Meta-analysis' }] })
+    expect(r.sources[0]).toMatchObject({ status: 'repaired', url: 'https://pubmed.ncbi.nlm.nih.gov/37559207/' })
+  })
+  it('recognises the writer\'s own boundary shapes', () => {
+    expect(isBoundarySentence('I check the reflexes in your legs, sensation across the skin, muscle strength, and nerve tension signs, and I do it without forcing painful movements.')).toBe(true)
+    expect(isBoundarySentence('If you come in, I\'ll check your active and passive range of motion.')).toBe(true)
+    expect(isBoundarySentence('I see plenty of runners with this.')).toBe(false)
   })
 })
 

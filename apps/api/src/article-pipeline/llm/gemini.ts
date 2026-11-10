@@ -93,7 +93,9 @@ export class GeminiAdapter implements LLMAdapter {
       ...(options.jsonMode ? { responseMimeType: 'application/json' } : {}),
       ...(options.thinkingBudget !== undefined
         ? { thinkingConfig: { thinkingBudget: options.thinkingBudget } }
-        : {}),
+        : options.thinkingLevel
+          ? { thinkingConfig: { thinkingLevel: options.thinkingLevel } }
+          : {}),
     }
 
     const genModel = genAI.getGenerativeModel({
@@ -114,8 +116,12 @@ export class GeminiAdapter implements LLMAdapter {
     const text = response.text() || ''
     if (!text.trim()) throw new LLMError('Gemini returned empty response')
 
-    const inputTokens = response.usageMetadata?.promptTokenCount ?? 0
-    const outputTokens = response.usageMetadata?.candidatesTokenCount ?? 0
+    // B18: Gemini bills thinking tokens at the output rate and tool-use prompt
+    // tokens (URL context pages) at the input rate; neither was counted before
+    // (probe 2026-11-10: 4,381 thinking vs 468 visible output tokens on one call).
+    const um = (response.usageMetadata ?? {}) as { promptTokenCount?: number; candidatesTokenCount?: number; thoughtsTokenCount?: number; toolUsePromptTokenCount?: number }
+    const inputTokens = (um.promptTokenCount ?? 0) + (um.toolUsePromptTokenCount ?? 0)
+    const outputTokens = (um.candidatesTokenCount ?? 0) + (um.thoughtsTokenCount ?? 0)
 
     const rawFinish = response.candidates?.[0]?.finishReason
     const finishReason =
@@ -154,7 +160,9 @@ export class GeminiAdapter implements LLMAdapter {
         maxOutputTokens: maxTokens,
         ...(options.thinkingBudget !== undefined
           ? { thinkingConfig: { thinkingBudget: options.thinkingBudget } }
-          : {}),
+          : options.thinkingLevel
+            ? { thinkingConfig: { thinkingLevel: options.thinkingLevel } }
+            : {}),
       },
     }
 
@@ -177,8 +185,9 @@ export class GeminiAdapter implements LLMAdapter {
     const text: string = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
     if (!text.trim()) throw new LLMError('Gemini (search) returned empty response')
 
-    const inputTokens = data?.usageMetadata?.promptTokenCount ?? 0
-    const outputTokens = data?.usageMetadata?.candidatesTokenCount ?? 0
+    const um = (data?.usageMetadata ?? {}) as { promptTokenCount?: number; candidatesTokenCount?: number; thoughtsTokenCount?: number; toolUsePromptTokenCount?: number }
+    const inputTokens = (um.promptTokenCount ?? 0) + (um.toolUsePromptTokenCount ?? 0)
+    const outputTokens = (um.candidatesTokenCount ?? 0) + (um.thoughtsTokenCount ?? 0)
 
     const rawFinish = data?.candidates?.[0]?.finishReason
     const finishReason =

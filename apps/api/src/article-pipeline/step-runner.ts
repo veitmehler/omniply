@@ -1,5 +1,6 @@
 import { prisma } from '@omniply/shared'
 import { logger } from '../lib/logger'
+import type { LLMResponse } from './llm/adapter'
 import { getLLMAdapter } from './llm/factory'
 import { LLMError } from './llm/adapter'
 import { cleanTextOutput, cleanAndParseJSON } from './output-cleaner'
@@ -21,8 +22,16 @@ const SEARCH_JSON_STEPS = new Set([12])
 
 // B16: research feeds must come from retrieved pages, not recall.
 const GROUNDING_REQUIRED_STEPS = new Set([7, 8])
-const FORCED_SEARCH_PREFIX =
-  'MANDATORY: use the Google Search tool to find every fact below. Never answer from memory. The URL in each source tag must be a page you retrieved in this session for that fact; leave out any fact you cannot retrieve a page for.'
+// B18: research steps run with low reasoning (Veit: deep thinking there is a waste of money;
+// probe 2026-11-10: thinking tokens roughly halved, grounding unaffected).
+const THINKING_LOW_STEPS = new Set([7, 8])
+const FORCED_SEARCH_PREFIXES = [
+  'MANDATORY: use the Google Search tool to find every fact below. Never answer from memory. The URL in each source tag must be a page you retrieved in this session for that fact; leave out any fact you cannot retrieve a page for.',
+  'You MUST call the Google Search tool before writing anything. Run at least one search per section or question, restricted to PubMed, government health agencies, universities, hospital systems and professional colleges. Facts without a retrieved page are not written.',
+  'Begin by searching. Do not write a single fact until a Google Search has returned a page for it. If search returns nothing usable for a section, write "No retrievable sources" for that section instead of a fact.',
+]
+const MAX_GROUNDING_RETRIES = FORCED_SEARCH_PREFIXES.length
+const MAX_SPLIT_UNITS = 8
 
 // Fallback token budget for JSON steps when no per-step maxTokens is set in the DB.
 // Avoids truncation before the full JSON structure is emitted.
@@ -62,12 +71,55 @@ export interface StepRunResult {
   groundingChunkUris?: Array<string | null>
 }
 
+
+/** Sum tokens and cost of a second call into a response (retries are billed). */
+function addUsage(base: LLMResponse, extra: LLMResponse): LLMResponse {
+  return {
+    ...base,
+    tokens: { input: base.tokens.input + extra.tokens.input, output: base.tokens.output + extra.tokens.output, total: base.tokens.total + extra.tokens.total },
+    cost: base.cost + extra.cost,
+  }
+}
+
+/** Concatenate per-unit grounded responses; chunk indices in supports are offset so they stay valid. */
+function mergeGrounded(parts: LLMResponse[]): LLMResponse | null {
+  if (parts.length === 0) return null
+  const content = parts.map((p) => p.content.trim()).filter(Boolean).join('\n\n')
+  const groundingSources: NonNullable<LLMResponse['groundingSources']> = []
+  const groundingChunkUris: Array<string | null> = []
+  const groundingSupports: NonNullable<LLMResponse['groundingSupports']> = []
+  for (const p of parts) {
+    const offset = groundingChunkUris.length
+    const uris = p.groundingChunkUris ?? (p.groundingSources ?? []).map((g) => g.uri)
+    groundingChunkUris.push(...uris)
+    groundingSources.push(...(p.groundingSources ?? []))
+    for (const su of p.groundingSupports ?? []) groundingSupports.push({ text: su.text, chunkIndices: su.chunkIndices.map((i) => i + offset) })
+  }
+  return { ...parts[0], content, finishReason: 'stop', groundingSources, groundingChunkUris, groundingSupports }
+}
+
 export class StepRunner {
   constructor(
     private jobId: string,
     private stepNumber: number,
     private ctx: PipelineContext,
   ) {}
+
+  /** Units for split research: outline H2 headings (step 8) or the step-6 questions (step 7). */
+  private researchUnits(): string[] {
+    if (this.stepNumber === 7) {
+      const raw = this.ctx.completedSteps.get(6) ?? ''
+      const qs = [...raw.matchAll(/"([^"\n]{12,200}\?)"/g)].map((m) => m[1].trim())
+      return [...new Set(qs)]
+    }
+    const outline = this.ctx.completedSteps.get(4) ?? this.ctx.completedSteps.get(1) ?? ''
+    const heads = outline
+      .split(/\n/)
+      .filter((l) => /^\s*(##\s|H2:)/i.test(l))
+      .map((l) => l.replace(/^\s*##\s*|^\s*H2:\s*/i, '').trim())
+      .filter((l) => l.length > 8 && l.length < 160)
+    return [...new Set(heads)]
+  }
 
   async execute(): Promise<StepRunResult> {
     const template = await resolvePromptByStep(this.stepNumber, { userId: this.ctx.userId })
@@ -199,10 +251,12 @@ export class StepRunner {
           )
         }
 
+        const thinkingLevel = THINKING_LOW_STEPS.has(this.stepNumber) && provider === 'gemini' ? ('low' as const) : undefined
         let llmResponse = await adapter.call({
           systemPrompt: phase2SystemPrompt,
           userPrompt: phase2UserPrompt,
           model,
+          ...(thinkingLevel ? { thinkingLevel } : {}),
           // Fix B: larger token budget for JSON steps — model must finish emitting
           // the full JSON structure without truncation mid-array.
           // Per-step value from DB takes precedence; fall back to JSON_STEP_MAX_TOKENS
@@ -216,29 +270,58 @@ export class StepRunner {
           jsonMode: isTwoPhase ? true : false,
         })
 
-        // B16: on long research prompts Gemini often answers from memory without
-        // calling Google Search (probe 2026-11-09: 11.7k chars, zero grounding
-        // metadata). A grounded step that returns no grounding is re-run once
-        // with the search made mandatory in the prompt itself.
+        // B16/B18: on long research prompts Gemini often answers from memory without
+        // calling Google Search (B17: the single forced retry grounded 2 of 6 calls).
+        // Escalate up to three forced prompts; if still ungrounded, split the
+        // research into per-section (step 8) or per-question (step 7) calls, which
+        // grounded first time in every probe, and merge the grounding metadata.
         if (useSearch && !isTwoPhase && GROUNDING_REQUIRED_STEPS.has(this.stepNumber) && !(llmResponse.groundingSources?.length)) {
-          logger.warn({ jobId: this.jobId, step: this.stepNumber }, '[step-runner] grounded step returned no grounding — retrying with mandatory search')
-          const forced = await adapter.call({
-            systemPrompt: phase2SystemPrompt,
-            userPrompt: `${FORCED_SEARCH_PREFIX}\n\n${phase2UserPrompt}`,
-            model,
-            maxTokens: template.maxTokens ?? (isJsonStep ? JSON_STEP_MAX_TOKENS : undefined),
-            useGenerativeSearch: true,
-            jsonMode: false,
-          })
-          if (forced.groundingSources?.length) {
-            llmResponse = {
-              ...forced,
-              tokens: { input: llmResponse.tokens.input + forced.tokens.input, output: llmResponse.tokens.output + forced.tokens.output, total: llmResponse.tokens.total + forced.tokens.total },
-              cost: llmResponse.cost + forced.cost,
-            }
-          } else {
-            logger.warn({ jobId: this.jobId, step: this.stepNumber }, '[step-runner] mandatory-search retry still ungrounded — keeping first output')
+          let grounded: LLMResponse | null = null
+          for (let attempt = 1; attempt <= MAX_GROUNDING_RETRIES && !grounded; attempt++) {
+            logger.warn({ jobId: this.jobId, step: this.stepNumber, attempt }, '[step-runner] grounded step returned no grounding — retrying with mandatory search')
+            const forced = await adapter.call({
+              systemPrompt: phase2SystemPrompt,
+              userPrompt: `${FORCED_SEARCH_PREFIXES[attempt - 1]}\n\n${phase2UserPrompt}`,
+              model,
+              maxTokens: template.maxTokens ?? (isJsonStep ? JSON_STEP_MAX_TOKENS : undefined),
+              useGenerativeSearch: true,
+              jsonMode: false,
+              ...(thinkingLevel ? { thinkingLevel } : {}),
+            })
+            llmResponse = addUsage(llmResponse, forced)
+            if (forced.groundingSources?.length) grounded = { ...forced, tokens: llmResponse.tokens, cost: llmResponse.cost }
           }
+          if (!grounded) {
+            const units = this.researchUnits()
+            if (units.length >= 2) {
+              logger.warn({ jobId: this.jobId, step: this.stepNumber, units: units.length }, '[step-runner] still ungrounded — splitting research into per-unit calls')
+              const parts: LLMResponse[] = []
+              for (const unit of units.slice(0, MAX_SPLIT_UNITS)) {
+                try {
+                  const r = await adapter.call({
+                    systemPrompt: phase2SystemPrompt,
+                    userPrompt: `${FORCED_SEARCH_PREFIXES[0]}\n\nFOCUS: research ONLY this ${this.stepNumber === 7 ? 'question' : 'section'}: "${unit}". Find up to 6 facts for it.\n\n${phase2UserPrompt}`,
+                    model,
+                    maxTokens: 4096,
+                    useGenerativeSearch: true,
+                    jsonMode: false,
+                    ...(thinkingLevel ? { thinkingLevel } : {}),
+                  })
+                  parts.push(r)
+                } catch (err) {
+                  logger.warn({ jobId: this.jobId, step: this.stepNumber, unit, err }, '[step-runner] split unit failed, skipping')
+                }
+              }
+              const merged = mergeGrounded(parts)
+              if (merged && merged.groundingSources?.length) {
+                for (const r of parts) llmResponse = addUsage(llmResponse, r)
+                grounded = { ...merged, tokens: llmResponse.tokens, cost: llmResponse.cost }
+                logger.info({ jobId: this.jobId, step: this.stepNumber, parts: parts.length, sources: merged.groundingSources.length, supports: merged.groundingSupports?.length ?? 0 }, '[step-runner] split research grounded')
+              }
+            }
+          }
+          if (grounded) llmResponse = grounded
+          else logger.warn({ jobId: this.jobId, step: this.stepNumber }, '[step-runner] research stayed ungrounded after retries and split — keeping first output')
         }
 
         if (VERBOSE) {
