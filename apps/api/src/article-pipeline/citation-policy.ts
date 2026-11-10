@@ -66,7 +66,6 @@ const PRIMARY_HOSTS = [
   'scielo.br',
   'scielo.org',
   'ijsr.net',
-  'researchgate.net',
   'semanticscholar.org',
   'psycnet.apa.org',
 ]
@@ -121,7 +120,7 @@ const AUTHORITY_HOSTS = [
 ]
 
 /** Explicit denials beat everything (aggregators that read like sources). */
-const DENY_HOSTS = ['mercola.com', 'studyfinds.com', 'studyfinds.org', 'sciencedaily.com', 'medicalxpress.com', 'news-medical.net', 'healthline.com', 'webmd.com', 'verywellhealth.com', 'medicalnewstoday.com', 'wikipedia.org', 'encyclopedia.pub', 'quora.com', 'reddit.com', 'pinterest.com', 'facebook.com', 'youtube.com', 'linkedin.com', 'medium.com']
+const DENY_HOSTS = ['researchgate.net', 'mercola.com', 'studyfinds.com', 'studyfinds.org', 'sciencedaily.com', 'medicalxpress.com', 'news-medical.net', 'healthline.com', 'webmd.com', 'verywellhealth.com', 'medicalnewstoday.com', 'wikipedia.org', 'encyclopedia.pub', 'quora.com', 'reddit.com', 'pinterest.com', 'facebook.com', 'youtube.com', 'linkedin.com', 'medium.com']
 
 const AUTHORITY_TLD_RE = /(?:^|\.)(?:gov|gov\.au|gov\.uk|gov\.nz|edu|edu\.au|ac\.uk|ac\.nz)$/i
 

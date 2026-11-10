@@ -624,6 +624,9 @@ export function anchorFactSources(html: string, sources: FactSource[]): { html: 
 
 export const SOURCE_FLOOR = 6
 
+/** Heading words that carry no retrieval value on PubMed. */
+const CONVERSATIONAL = new Set(['hurting','hurt','fast','stop','actually','really','worth','getting','checked','mean','means','help','helps','feel','feeling','make','makes','worse','better','home','alone','managing','time','first','hours','days','days','week','weeks'])
+
 /**
  * When fewer than SOURCE_FLOOR verified sources survive, look for reviews,
  * meta-analyses and guidelines per section heading on PubMed. Fill sources
@@ -640,17 +643,25 @@ export async function pubmedFill(
 ): Promise<FactSource[]> {
   const out: FactSource[] = []
   const seen = new Set<string>()
+  const topicTerms = [...contentTerms(topic)].filter((t) => !CONVERSATIONAL.has(t)).slice(0, 2)
   for (const h of headings) {
     if (out.length >= needed) break
-    const terms = [...contentTerms(`${h} ${topic}`)].slice(0, 6)
-    if (terms.length < 2) continue
-    const q = `${terms.join(' ')} AND (review[pt] OR meta-analysis[pt] OR guideline[pt] OR systematic review[pt]) AND ("last 10 years"[dp])`
+    // Live check 2026-11-09: conversational heading words ("hurting", "fast",
+    // "stop") AND-ed together return nothing on PubMed. Query = topic's two
+    // key terms + the heading's specific terms, narrowing until there are hits.
+    const headTerms = [...contentTerms(h)].filter((t) => !topicTerms.includes(t) && !CONVERSATIONAL.has(t))
     let hits: Array<{ id: string; title: string }> = []
-    try {
-      hits = await r.pubmedSearch(q)
-    } catch (err) {
-      logger.warn({ ...ctx, heading: h, err }, '[source-verify] fill search failed')
-      continue
+    for (const width of [2, 1, 0]) {
+      const terms = [...topicTerms, ...headTerms.slice(0, width)]
+      if (terms.length < 2) continue
+      const q = `${terms.join(' ')} AND (review[pt] OR meta-analysis[pt] OR guideline[pt] OR systematic review[pt]) AND ("last 10 years"[dp])`
+      try {
+        hits = await r.pubmedSearch(q)
+      } catch (err) {
+        logger.warn({ ...ctx, heading: h, err }, '[source-verify] fill search failed')
+        break
+      }
+      if (hits.length > 0) break
     }
     for (const hit of hits) {
       const url = `https://pubmed.ncbi.nlm.nih.gov/${hit.id}/`

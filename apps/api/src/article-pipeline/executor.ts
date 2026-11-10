@@ -266,6 +266,10 @@ export async function runPipelinePhaseA(jobId: string): Promise<void> {
             if (result.groundingSupports?.length && result.groundingChunkUris?.length) {
               const urls = await resolveChunkUrisIndexed(result.groundingChunkUris)
               supports = result.groundingSupports.map((su) => ({ text: su.text, urls: su.chunkIndices.map((i) => urls[i]).filter((u): u is string => !!u) }))
+              // The model sometimes copies the redirect URI itself into a tag; swap in the real page.
+              result.groundingChunkUris.forEach((uri, i) => {
+                if (uri && urls[i] && stepOutput.includes(uri)) stepOutput = stepOutput.split(uri).join(urls[i]!)
+              })
             }
             const support = process.env.SOURCE_SUPPORT === '0' ? undefined : (fact: string, url: string) => checkSupport(fact, url, { jobId, stepNumber })
             const v = await verifyFactSources(stepOutput, { jobId, stepNumber }, undefined, { supports, support })

@@ -19,6 +19,11 @@ const SEARCH_STEPS = new Set([7, 8, 10, 12])
 //   Phase 2 — standard call with jsonMode:true → converts prose to JSON
 const SEARCH_JSON_STEPS = new Set([12])
 
+// B16: research feeds must come from retrieved pages, not recall.
+const GROUNDING_REQUIRED_STEPS = new Set([7, 8])
+const FORCED_SEARCH_PREFIX =
+  'MANDATORY: use the Google Search tool to find every fact below. Never answer from memory. The URL in each source tag must be a page you retrieved in this session for that fact; leave out any fact you cannot retrieve a page for.'
+
 // Fallback token budget for JSON steps when no per-step maxTokens is set in the DB.
 // Avoids truncation before the full JSON structure is emitted.
 const JSON_STEP_MAX_TOKENS = 16384
@@ -194,7 +199,7 @@ export class StepRunner {
           )
         }
 
-        const llmResponse = await adapter.call({
+        let llmResponse = await adapter.call({
           systemPrompt: phase2SystemPrompt,
           userPrompt: phase2UserPrompt,
           model,
@@ -210,6 +215,31 @@ export class StepRunner {
           useGenerativeSearch: isTwoPhase ? false : useSearch,
           jsonMode: isTwoPhase ? true : false,
         })
+
+        // B16: on long research prompts Gemini often answers from memory without
+        // calling Google Search (probe 2026-11-09: 11.7k chars, zero grounding
+        // metadata). A grounded step that returns no grounding is re-run once
+        // with the search made mandatory in the prompt itself.
+        if (useSearch && !isTwoPhase && GROUNDING_REQUIRED_STEPS.has(this.stepNumber) && !(llmResponse.groundingSources?.length)) {
+          logger.warn({ jobId: this.jobId, step: this.stepNumber }, '[step-runner] grounded step returned no grounding — retrying with mandatory search')
+          const forced = await adapter.call({
+            systemPrompt: phase2SystemPrompt,
+            userPrompt: `${FORCED_SEARCH_PREFIX}\n\n${phase2UserPrompt}`,
+            model,
+            maxTokens: template.maxTokens ?? (isJsonStep ? JSON_STEP_MAX_TOKENS : undefined),
+            useGenerativeSearch: true,
+            jsonMode: false,
+          })
+          if (forced.groundingSources?.length) {
+            llmResponse = {
+              ...forced,
+              tokens: { input: llmResponse.tokens.input + forced.tokens.input, output: llmResponse.tokens.output + forced.tokens.output, total: llmResponse.tokens.total + forced.tokens.total },
+              cost: llmResponse.cost + forced.cost,
+            }
+          } else {
+            logger.warn({ jobId: this.jobId, step: this.stepNumber }, '[step-runner] mandatory-search retry still ungrounded — keeping first output')
+          }
+        }
 
         if (VERBOSE) {
           logger.info(
