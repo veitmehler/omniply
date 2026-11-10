@@ -33,6 +33,8 @@ describe('classifyEditorIssue', () => {
       'The finding was published in the Journal of Spinal Disorders.',
       'Smith and colleagues reported the same pattern.',
       'A recent systematic review concluded that heat helps early on.',
+      'A six-month sit-stand desk intervention alleviated overall musculoskeletal discomfort in participants.',
+      'The cohort reported less pain at baseline than expected.',
     ])
       expect(classifyEditorIssue(s), s).toBe('source')
   })

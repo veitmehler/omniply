@@ -116,6 +116,8 @@ export const SOURCE_METADATA: RegExp[] = [
   /\b(19|20)\d\d (study|trial|review|meta-analysis|survey|paper|research)\b/i,
   /\b[A-Z][a-z]+ \((19|20)\d\d\)/,
   /\b(journal of|the lancet|\bbmj\b|\bjama\b|new england journal|annals of|archives of|british journal|american journal|european journal|international journal)\b/i,
+  // B19: research register leaking from the fact feed into prose (judges: "reads like an abstract pasted in").
+  /\b(intervention(s)?|cohort(s)?|participants|study subjects|outcome measure(s)?|at baseline|statistically significant|randomi[sz]ed|placebo-controlled|meta-analytic|effect size|confidence interval|the sample)\b/i,
 ]
 
 const GLYPH_RE = /(^|>|\n)([ \t]*)[☐☑☒□■✓✔✗➜➤•▪◦][ \t]*(?=\S)/g
@@ -242,7 +244,7 @@ export type ParagraphRewriter = (paragraph: string, heading: string) => Promise<
 
 const REASONS: Record<EditorIssue | 'opener', string> = {
   phrase: 'It contains a stock phrase, a tour-guide transition, or a reference to the article itself. Say the same thing plainly, the way a person would in conversation, or drop the empty part.',
-  source: 'It carries citation metadata: a study year, a journal, researchers or authors, or a study as the subject of the sentence. State the finding itself as plain fact and remove the metadata; the link added later is the citation.',
+  source: 'It carries citation metadata or research register: a study year, a journal, researchers or authors, a study as the subject of the sentence, or words like intervention, cohort, participants, outcome measure. Say what happened to people and what it means, the way a clinician would across the desk; the link added later is the citation.',
   opener: 'It opens this section with the same words as the previous section. Open it differently, keeping the same content.',
 }
 

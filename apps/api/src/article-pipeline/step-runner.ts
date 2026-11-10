@@ -30,7 +30,10 @@ const FORCED_SEARCH_PREFIXES = [
   'You MUST call the Google Search tool before writing anything. Run at least one search per section or question, restricted to PubMed, government health agencies, universities, hospital systems and professional colleges. Facts without a retrieved page are not written.',
   'Begin by searching. Do not write a single fact until a Google Search has returned a page for it. If search returns nothing usable for a section, write "No retrievable sources" for that section instead of a fact.',
 ]
-const MAX_GROUNDING_RETRIES = FORCED_SEARCH_PREFIXES.length
+// B19 (Veit 2026-11-10): full-length retries were the expensive part (back pain B18:
+// three refused retries cost more than the whole article). Go straight to the
+// per-unit split, which is short and grounded first time in every probe; a single
+// forced retry is used only when there is nothing to split.
 const MAX_SPLIT_UNITS = 8
 
 // Fallback token budget for JSON steps when no per-step maxTokens is set in the DB.
@@ -277,11 +280,37 @@ export class StepRunner {
         // grounded first time in every probe, and merge the grounding metadata.
         if (useSearch && !isTwoPhase && GROUNDING_REQUIRED_STEPS.has(this.stepNumber) && !(llmResponse.groundingSources?.length)) {
           let grounded: LLMResponse | null = null
-          for (let attempt = 1; attempt <= MAX_GROUNDING_RETRIES && !grounded; attempt++) {
-            logger.warn({ jobId: this.jobId, step: this.stepNumber, attempt }, '[step-runner] grounded step returned no grounding — retrying with mandatory search')
+          const units = this.researchUnits()
+          if (units.length >= 2) {
+            logger.warn({ jobId: this.jobId, step: this.stepNumber, units: units.length }, '[step-runner] grounded step returned no grounding — splitting research into per-unit calls')
+            const parts: LLMResponse[] = []
+            for (const unit of units.slice(0, MAX_SPLIT_UNITS)) {
+              try {
+                const r = await adapter.call({
+                  systemPrompt: phase2SystemPrompt,
+                  userPrompt: `${FORCED_SEARCH_PREFIXES[0]}\n\nFOCUS: research ONLY this ${this.stepNumber === 7 ? 'question' : 'section'}: "${unit}". Find up to 6 facts for it.\n\n${phase2UserPrompt}`,
+                  model,
+                  maxTokens: 4096,
+                  useGenerativeSearch: true,
+                  jsonMode: false,
+                  ...(thinkingLevel ? { thinkingLevel } : {}),
+                })
+                parts.push(r)
+              } catch (err) {
+                logger.warn({ jobId: this.jobId, step: this.stepNumber, unit, err }, '[step-runner] split unit failed, skipping')
+              }
+            }
+            const merged = mergeGrounded(parts)
+            if (merged && merged.groundingSources?.length) {
+              for (const r of parts) llmResponse = addUsage(llmResponse, r)
+              grounded = { ...merged, tokens: llmResponse.tokens, cost: llmResponse.cost }
+              logger.info({ jobId: this.jobId, step: this.stepNumber, parts: parts.length, sources: merged.groundingSources.length, supports: merged.groundingSupports?.length ?? 0 }, '[step-runner] split research grounded')
+            }
+          } else {
+            logger.warn({ jobId: this.jobId, step: this.stepNumber }, '[step-runner] grounded step returned no grounding and nothing to split — one forced retry')
             const forced = await adapter.call({
               systemPrompt: phase2SystemPrompt,
-              userPrompt: `${FORCED_SEARCH_PREFIXES[attempt - 1]}\n\n${phase2UserPrompt}`,
+              userPrompt: `${FORCED_SEARCH_PREFIXES[0]}\n\n${phase2UserPrompt}`,
               model,
               maxTokens: template.maxTokens ?? (isJsonStep ? JSON_STEP_MAX_TOKENS : undefined),
               useGenerativeSearch: true,
@@ -290,35 +319,6 @@ export class StepRunner {
             })
             llmResponse = addUsage(llmResponse, forced)
             if (forced.groundingSources?.length) grounded = { ...forced, tokens: llmResponse.tokens, cost: llmResponse.cost }
-          }
-          if (!grounded) {
-            const units = this.researchUnits()
-            if (units.length >= 2) {
-              logger.warn({ jobId: this.jobId, step: this.stepNumber, units: units.length }, '[step-runner] still ungrounded — splitting research into per-unit calls')
-              const parts: LLMResponse[] = []
-              for (const unit of units.slice(0, MAX_SPLIT_UNITS)) {
-                try {
-                  const r = await adapter.call({
-                    systemPrompt: phase2SystemPrompt,
-                    userPrompt: `${FORCED_SEARCH_PREFIXES[0]}\n\nFOCUS: research ONLY this ${this.stepNumber === 7 ? 'question' : 'section'}: "${unit}". Find up to 6 facts for it.\n\n${phase2UserPrompt}`,
-                    model,
-                    maxTokens: 4096,
-                    useGenerativeSearch: true,
-                    jsonMode: false,
-                    ...(thinkingLevel ? { thinkingLevel } : {}),
-                  })
-                  parts.push(r)
-                } catch (err) {
-                  logger.warn({ jobId: this.jobId, step: this.stepNumber, unit, err }, '[step-runner] split unit failed, skipping')
-                }
-              }
-              const merged = mergeGrounded(parts)
-              if (merged && merged.groundingSources?.length) {
-                for (const r of parts) llmResponse = addUsage(llmResponse, r)
-                grounded = { ...merged, tokens: llmResponse.tokens, cost: llmResponse.cost }
-                logger.info({ jobId: this.jobId, step: this.stepNumber, parts: parts.length, sources: merged.groundingSources.length, supports: merged.groundingSupports?.length ?? 0 }, '[step-runner] split research grounded')
-              }
-            }
           }
           if (grounded) llmResponse = grounded
           else logger.warn({ jobId: this.jobId, step: this.stepNumber }, '[step-runner] research stayed ungrounded after retries and split — keeping first output')
