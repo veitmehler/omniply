@@ -57,6 +57,13 @@ const TIMEOUT_MS = 45_000
 const MAX_PAGES_PER_UNIT = 3
 const MAX_PUBMED_PER_UNIT = 2
 const MAX_FACTS_PER_SOURCE = 3
+const MAX_PAGES_PER_HOST = 1
+const UNIT_CONCURRENCY = 3
+/** Question words that survive the stopword list but carry no search meaning. */
+const GENERIC = new Set(['take', 'heal', 'help', 'actually', 'really', 'make', 'long', 'much', 'many', 'does', 'should', 'could', 'would', 'thing', 'need', 'want', 'know', 'work', 'good', 'best', 'safe', 'mean', 'happen', 'like', 'feel', 'better', 'worse', 'guide', 'beginner', 'matter'])
+export function searchTerms(s: string): string[] {
+  return [...contentTerms(s)].filter((t) => !GENERIC.has(t))
+}
 
 /** Hosts the SERP may return. The domain policy is applied again on every result. */
 const AUTHORITY_SITES = [
@@ -79,8 +86,8 @@ const AUTHORITY_SITES = [
 
 /** Two queries per unit: papers, then official bodies and hospital systems. */
 export function buildQueries(unit: string, topic: string): string[] {
-  const unitTerms = [...contentTerms(unit)].slice(0, 5)
-  const topicTerms = [...contentTerms(topic)].filter((t) => !unitTerms.includes(t)).slice(0, 2)
+  const unitTerms = searchTerms(unit).slice(0, 5)
+  const topicTerms = searchTerms(topic).filter((t) => !unitTerms.includes(t)).slice(0, 2)
   const core = [...unitTerms, ...topicTerms].join(' ')
   if (!core) return []
   const papers = `${core} (${AUTHORITY_SITES.slice(0, 4).join(' OR ')})`
@@ -88,18 +95,27 @@ export function buildQueries(unit: string, topic: string): string[] {
   return [papers, bodies]
 }
 
-/** PubMed query for a unit: reviews, meta-analyses, guidelines, last 10 years. */
-export function buildPubmedQuery(unit: string, topic: string): string | null {
-  const unitTerms = [...contentTerms(unit)].slice(0, 4)
-  const topicTerms = [...contentTerms(topic)].filter((t) => !unitTerms.includes(t)).slice(0, 2)
+/** PubMed queries for a unit, widest first: reviews, meta-analyses, guidelines, last 10 years.
+ * Generic verbs are dropped; the caller tries each until one returns hits. */
+export function buildPubmedQueries(unit: string, topic: string): string[] {
+  const unitTerms = searchTerms(unit).slice(0, 4)
+  const topicTerms = searchTerms(topic).filter((t) => !unitTerms.includes(t)).slice(0, 2)
   const terms = [...unitTerms, ...topicTerms]
-  if (terms.length < 2) return null
-  return `${terms.join(' ')} AND (review[pt] OR meta-analysis[pt] OR guideline[pt] OR systematic review[pt]) AND ("last 10 years"[dp])`
+  const filter = '(review[pt] OR meta-analysis[pt] OR guideline[pt] OR systematic review[pt]) AND ("last 10 years"[dp])'
+  const out: string[] = []
+  for (const n of [4, 3, 2]) {
+    if (terms.length < n) continue
+    out.push(`${terms.slice(0, n).join(' ')} AND ${filter}`)
+  }
+  if (out.length === 0 && terms.length === 1) out.push(`${terms[0]} AND ${filter}`)
+  return [...new Set(out)]
 }
 
-/** Rank candidates by overlap with the unit (title + snippet), policy-filtered, deduped. */
+/** Rank candidates: policy-filtered, deduped, at least one unit term in title+snippet, primary tier
+ * (journals, NCBI, Cochrane) before official bodies, more overlap first, one page per host. */
 export function rankCandidates(results: SerpOrganic[], unit: string, topic: string, seen: Set<string>): SerpOrganic[] {
   const local = new Set<string>()
+  const unitKey = searchTerms(unit).join(' ')
   const scored = results
     .filter((r) => {
       const k = norm(r.url)
@@ -107,10 +123,23 @@ export function rankCandidates(results: SerpOrganic[], unit: string, topic: stri
       local.add(k)
       return true
     })
-    .map((r) => ({ r, o: termOverlap(`${r.title} ${r.snippet}`, `${unit} ${topic}`) }))
-    .filter((x) => x.o.shared >= 2)
-    .sort((a, b) => b.o.shared - a.o.shared || (sourceTier(a.r.url) === 'primary' ? -1 : 1))
-  return scored.map((x) => x.r)
+    .map((r, i) => ({ r, i, unit: termOverlap(`${r.title} ${r.snippet}`, unitKey).shared, all: termOverlap(`${r.title} ${r.snippet}`, `${unit} ${topic}`).shared }))
+    .filter((x) => x.unit >= 1)
+    .sort((a, b) => {
+      const ta = sourceTier(a.r.url) === 'primary' ? 0 : 1
+      const tb = sourceTier(b.r.url) === 'primary' ? 0 : 1
+      return ta - tb || b.all - a.all || a.i - b.i
+    })
+  const perHost = new Map<string, number>()
+  const out: SerpOrganic[] = []
+  for (const x of scored) {
+    const h = hostOf(x.r.url)
+    const n = perHost.get(h) ?? 0
+    if (n >= MAX_PAGES_PER_HOST) continue
+    perHost.set(h, n + 1)
+    out.push(x.r)
+  }
+  return out
 }
 
 function norm(u: string): string {
@@ -241,14 +270,21 @@ export async function runRetrievalResearch(opts: {
   const ctx = { jobId: opts.jobId, stepNumber: opts.stepNumber }
   const industry = opts.industry || 'health'
 
-  for (const unit of opts.units) {
+  const runUnit = async (unit: string) => {
     const before = facts.length
     // 1. PubMed papers (free, identifiers real by construction).
-    const pq = buildPubmedQuery(unit, opts.topic)
-    if (pq) {
+    let hits: Array<{ id: string; title: string }> = []
+    for (const pq of buildPubmedQueries(unit, opts.topic)) {
       try {
         stats.queries++
-        const hits = (await deps.pubmedSearch(pq)).slice(0, MAX_PUBMED_PER_UNIT)
+        hits = (await deps.pubmedSearch(pq)).slice(0, MAX_PUBMED_PER_UNIT)
+      } catch (err) {
+        logger.warn({ ...ctx, unit, err }, '[research-retrieval] pubmed search failed')
+      }
+      if (hits.length > 0) break
+    }
+    {
+      try {
         for (const h of hits) {
           const url = `https://pubmed.ncbi.nlm.nih.gov/${h.id}/`
           if (seen.has(norm(url))) continue
@@ -295,6 +331,11 @@ export async function runRetrievalResearch(opts: {
     }
     if (facts.length === before) stats.unitsEmpty++
   }
+  const queue = [...opts.units]
+  await Promise.all(Array.from({ length: Math.min(UNIT_CONCURRENCY, queue.length) }, async () => {
+    for (let u = queue.shift(); u !== undefined; u = queue.shift()) await runUnit(u)
+  }))
+  // Keep feed order by unit, then by discovery.
   stats.facts = facts.length
 
   // Grounding-support shape: each fact's own text maps to its page, so the verifier pairs them deterministically.

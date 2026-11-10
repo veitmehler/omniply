@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildQueries, buildPubmedQuery, rankCandidates, parseFacts, assembleFeed, runRetrievalResearch, type RetrievalDeps } from '../research-retrieval'
+import { buildQueries, buildPubmedQueries, rankCandidates, parseFacts, assembleFeed, runRetrievalResearch, type RetrievalDeps } from '../research-retrieval'
 import { researchUnitsFor, batchUnits } from '../research-units'
 
 const TOPIC = 'Sciatica relief: what actually helps'
@@ -27,14 +27,19 @@ describe('research-retrieval query building', () => {
     expect(bodies).not.toContain('site:pubmed')
   })
   it('pubmed query restricts to reviews and the last decade', () => {
-    const q = buildPubmedQuery('How long does sciatica take to heal?', TOPIC)
-    expect(q).toMatch(/review\[pt\]/)
-    expect(q).toMatch(/last 10 years/)
+    const qs = buildPubmedQueries('How long does sciatica take to heal?', TOPIC)
+    expect(qs.length).toBeGreaterThan(0)
+    expect(qs[0]).toMatch(/review\[pt\]/)
+    expect(qs[0]).toMatch(/last 10 years/)
+    expect(qs[0]).not.toMatch(/\bheal\b|\btake\b/)
+    expect(qs[qs.length - 1]).toMatch(/^sciatica/)
   })
-  it('ranks by overlap, drops denied hosts and already-seen urls', () => {
+  it('ranks primary tier first, drops denied hosts, off-topic and already-seen urls, one page per host', () => {
     const ranked = rankCandidates(
       [
         { url: 'https://www.researchgate.net/x', title: 'sciatica heal time review', snippet: 'sciatica heal' },
+        { url: 'https://www.nhs.uk/conditions/sciatica/', title: 'Sciatica', snippet: 'usually gets better in a few weeks' },
+        { url: 'https://www.nhs.uk/conditions/sciatica/treatment', title: 'Sciatica treatment', snippet: 'exercise' },
         { url: 'https://www.ncbi.nlm.nih.gov/books/NBK1/', title: 'Sciatica', snippet: 'Most sciatica episodes heal within weeks' },
         { url: 'https://www.cdc.gov/flu', title: 'Flu season', snippet: 'vaccines' },
         { url: 'https://www.mayoclinic.org/sciatica', title: 'Sciatica symptoms', snippet: 'heal' },
@@ -43,7 +48,7 @@ describe('research-retrieval query building', () => {
       TOPIC,
       new Set(['https://www.mayoclinic.org/sciatica']),
     )
-    expect(ranked.map((r) => r.url)).toEqual(['https://www.ncbi.nlm.nih.gov/books/NBK1/'])
+    expect(ranked.map((r) => r.url)).toEqual(['https://www.ncbi.nlm.nih.gov/books/NBK1/', 'https://www.nhs.uk/conditions/sciatica/'])
   })
 })
 
