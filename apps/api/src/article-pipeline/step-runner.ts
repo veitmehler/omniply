@@ -6,6 +6,7 @@ import { LLMError } from './llm/adapter'
 import { cleanTextOutput, cleanAndParseJSON } from './output-cleaner'
 import { resolveVariables } from './variable-resolver'
 import type { PipelineContext } from './variable-resolver'
+import { researchUnitsFor, batchUnits } from './research-units'
 
 // Steps whose output is parsed as JSON
 const JSON_STEPS = new Set([2, 12, 13])
@@ -108,20 +109,9 @@ export class StepRunner {
     private ctx: PipelineContext,
   ) {}
 
-  /** Units for split research: outline H2 headings (step 8) or the step-6 questions (step 7). */
+  /** Units for split research (shared with the retrieval-first path). */
   private researchUnits(): string[] {
-    if (this.stepNumber === 7) {
-      const raw = this.ctx.completedSteps.get(6) ?? ''
-      const qs = [...raw.matchAll(/"([^"\n]{12,200}\?)"/g)].map((m) => m[1].trim())
-      return [...new Set(qs)]
-    }
-    const outline = this.ctx.completedSteps.get(4) ?? this.ctx.completedSteps.get(1) ?? ''
-    const heads = outline
-      .split(/\n/)
-      .filter((l) => /^\s*(##\s|H2:)/i.test(l))
-      .map((l) => l.replace(/^\s*##\s*|^\s*H2:\s*/i, '').trim())
-      .filter((l) => l.length > 8 && l.length < 160)
-    return [...new Set(heads)]
+    return researchUnitsFor(this.stepNumber, this.ctx.completedSteps)
   }
 
   async execute(): Promise<StepRunResult> {
@@ -284,11 +274,13 @@ export class StepRunner {
           if (units.length >= 2) {
             logger.warn({ jobId: this.jobId, step: this.stepNumber, units: units.length }, '[step-runner] grounded step returned no grounding — splitting research into per-unit calls')
             const parts: LLMResponse[] = []
-            for (const unit of units.slice(0, MAX_SPLIT_UNITS)) {
+            // B21: two units per call — same first-try grounding in the probes, half the fees.
+            for (const batch of batchUnits(units.slice(0, MAX_SPLIT_UNITS), 2)) {
+              const unit = batch.join('" and "')
               try {
                 const r = await adapter.call({
                   systemPrompt: phase2SystemPrompt,
-                  userPrompt: `${FORCED_SEARCH_PREFIXES[0]}\n\nFOCUS: research ONLY this ${this.stepNumber === 7 ? 'question' : 'section'}: "${unit}". Find up to 6 facts for it.\n\n${phase2UserPrompt}`,
+                  userPrompt: `${FORCED_SEARCH_PREFIXES[0]}\n\nFOCUS: research ONLY ${batch.length > 1 ? 'these ' + (this.stepNumber === 7 ? 'questions' : 'sections') : 'this ' + (this.stepNumber === 7 ? 'question' : 'section')}: "${unit}". Find up to 6 facts for each.\n\n${phase2UserPrompt}`,
                   model,
                   maxTokens: 4096,
                   useGenerativeSearch: true,

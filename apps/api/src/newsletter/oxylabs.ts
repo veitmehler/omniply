@@ -313,3 +313,25 @@ export async function googleSerpQuestionBlocks(query: string, geo: string, domai
   const relatedSearches = rsList.map((x) => String(x).trim()).filter(Boolean)
   return { questions, relatedSearches }
 }
+
+// ── B21: organic results with titles + snippets (retrieval-first research) ──
+
+export interface SerpOrganic {
+  url: string
+  title: string
+  snippet: string
+}
+
+/** Parsed organic results (Oxylabs parsed SERP: `desc` is the snippet field; fallbacks kept). */
+export async function googleSerpOrganic(query: string, geo = 'United States', domain = 'com'): Promise<SerpOrganic[]> {
+  const resp = await oxyQuery({ source: 'google_search', query, parse: true, geo_location: geo, domain, pages: 1 })
+  const content = resp.results?.[0]?.content as { results?: { organic?: Array<Record<string, unknown>> }; organic?: Array<Record<string, unknown>> } | undefined
+  const organic = content?.results?.organic ?? content?.organic ?? []
+  const out: SerpOrganic[] = []
+  for (const o of organic) {
+    const url = typeof o.url === 'string' ? o.url : ''
+    if (!url.startsWith('http')) continue
+    out.push({ url, title: String(o.title ?? ''), snippet: String(o.desc ?? o.snippet ?? o.description ?? '') })
+  }
+  return out
+}

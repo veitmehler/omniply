@@ -19,6 +19,10 @@ import { verifyFactSources, anchorFactSources, pubmedFill, loadFactSources, SOUR
 import { checkSupport } from './source-support'
 import { resolveChunkUrisIndexed } from './grounding-resolver'
 import { restoreBoundary } from '../lib/text/boundary-restore'
+import { runRetrievalResearch } from './research-retrieval'
+import { researchUnitsFor } from './research-units'
+import { recordLLMUsage } from '../lib/llm-usage'
+import type { StepRunResult } from './step-runner'
 
 // B16: step 12 (find_citations) retired — every URL it produced was typed by the
 // model; the references list is now built from the sources actually used.
@@ -43,6 +47,12 @@ const EDITOR_PASS_STEPS = new Set([11])
 /** Research outputs whose [Source: …] tags are identity-verified and repaired
  * before the writer sees them (source-verify.ts). SOURCE_VERIFY=0 disables. */
 const SOURCE_VERIFY_STEPS = new Set([7, 8])
+
+/** B21: RESEARCH_MODE=retrieval replaces the grounded research calls (steps 7/8) with our own
+ * retrieval (PubMed API + site-restricted search + page extraction with verbatim quotes).
+ * Default 'grounded'. Falls back to the grounded step when the feed ends under the floor. */
+const RESEARCH_MODE = process.env.RESEARCH_MODE === 'retrieval' ? 'retrieval' : 'grounded'
+const RETRIEVAL_MIN_FACTS = 8
 
 /** Steps whose Gemini grounding sources should be captured as research sources (Tier 1 citations). */
 const GROUNDING_CAPTURE_STEPS = new Set([6, 7, 8, 10])
@@ -140,7 +150,11 @@ export async function runPipelinePhaseA(jobId: string): Promise<void> {
       if (stepNumber === 2) {
         await executeStep2WithValidation(jobId, stepNumber, ctx)
       } else {
-        const result = await new StepRunner(jobId, stepNumber, ctx).execute()
+        let result: StepRunResult | null = null
+        if (RESEARCH_MODE === 'retrieval' && SOURCE_VERIFY_STEPS.has(stepNumber)) {
+          result = await runRetrievalStep(jobId, stepNumber, ctx)
+        }
+        if (!result) result = await new StepRunner(jobId, stepNumber, ctx).execute()
 
         // Strip local-intent keyword modifiers ("near me" etc.) from plain-text keyword steps
         let stepOutput = result.output
@@ -514,6 +528,62 @@ function htmlHasCitationAnchorsForUrls(html: string, urls: string[]): boolean {
  * If research sources are available, they are used as the primary inline citation pool.
  * Step 12 citations are used as fallback when no research sources exist.
  */
+/**
+ * B21: retrieval-first research for steps 7/8. Returns null (→ grounded step) when the
+ * retrieval feed is too thin, so the pipeline never regresses below today's path.
+ */
+async function runRetrievalStep(jobId: string, stepNumber: number, ctx: PipelineContext): Promise<StepRunResult | null> {
+  const units = researchUnitsFor(stepNumber, ctx.completedSteps)
+  if (units.length === 0) {
+    logger.warn({ jobId, stepNumber }, '[executor] retrieval research: no units, using grounded step')
+    return null
+  }
+  const bs = await prisma.brandSettings.findUnique({ where: { userId: ctx.userId }, select: { industry: true } })
+  const t0 = Date.now()
+  await prisma.pipelineStep.upsert({
+    where: { jobId_stepNumber: { jobId, stepNumber } },
+    create: { jobId, stepNumber, stepName: stepNumber === 7 ? 'find_faq_facts' : 'find_article_facts', status: 'running', provider: 'retrieval', model: 'serp+pubmed+flash-lite', startedAt: new Date() },
+    update: { status: 'running', startedAt: new Date(), errorMessage: null, provider: 'retrieval', model: 'serp+pubmed+flash-lite' },
+  })
+  let r: Awaited<ReturnType<typeof runRetrievalResearch>>
+  try {
+    r = await runRetrievalResearch({ jobId, stepNumber, units, topic: ctx.topicText, industry: bs?.industry ?? '' })
+  } catch (err) {
+    logger.warn({ jobId, stepNumber, err }, '[executor] retrieval research failed, using grounded step')
+    return null
+  }
+  await recordLLMUsage(ctx.userId, `article_step_${stepNumber}_retrieval`, {
+    content: '',
+    tokens: { input: r.tokens.input, output: r.tokens.output, total: r.tokens.input + r.tokens.output },
+    cost: r.cost,
+    model: 'gemini-3.1-flash-lite',
+    provider: 'gemini',
+    finishReason: 'stop',
+  })
+  if (r.facts.length < RETRIEVAL_MIN_FACTS) {
+    logger.warn({ jobId, stepNumber, min: RETRIEVAL_MIN_FACTS, ...r.stats }, '[executor] retrieval feed under floor, using grounded step')
+    return null
+  }
+  const durationMs = Date.now() - t0
+  await prisma.pipelineStep.update({
+    where: { jobId_stepNumber: { jobId, stepNumber } },
+    data: { status: 'completed', output: r.text, completedAt: new Date(), inputTokens: r.tokens.input, outputTokens: r.tokens.output, cost: r.cost, duration: durationMs },
+  })
+  logger.info({ jobId, stepNumber, ...r.stats, cost: Number(r.cost.toFixed(4)), durationMs }, '[executor] retrieval research used')
+  return {
+    output: r.text,
+    inputTokens: r.tokens.input,
+    outputTokens: r.tokens.output,
+    cost: r.cost,
+    durationMs,
+    provider: 'retrieval',
+    model: 'serp+pubmed+flash-lite',
+    groundingSources: r.chunkUris.map((u) => ({ title: '', uri: u })),
+    groundingSupports: r.supports.map((su) => ({ text: su.text, chunkIndices: su.urls.map((u) => r.chunkUris.indexOf(u)).filter((i) => i >= 0) })),
+    groundingChunkUris: r.chunkUris,
+  }
+}
+
 /** Store a code-produced artefact as a synthetic step (same pattern as step 120). */
 async function persistSyntheticStep(jobId: string, ctx: PipelineContext, stepNumber: number, output: string): Promise<void> {
   ctx.completedSteps.set(stepNumber, output)
