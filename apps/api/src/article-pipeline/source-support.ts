@@ -148,16 +148,18 @@ export const liveSupportDeps: SupportDeps = {
 }
 
 /** Read the source text: abstract for PubMed, page text otherwise, scraper on bot walls. */
-export async function fetchSourceText(url: string, deps: SupportDeps = liveSupportDeps): Promise<{ text: string; via: SupportResult['via'] }> {
+export async function fetchSourceText(url: string, deps: SupportDeps = liveSupportDeps, opts: { full?: boolean } = {}): Promise<{ text: string; via: SupportResult['via'] }> {
+  // B21b: the quote check needs the whole page; the judge gets the first MAX_SOURCE_CHARS.
+  const cap = opts.full ? Number.MAX_SAFE_INTEGER : MAX_SOURCE_CHARS
   const ident = identifyUrl(url)
   if (ident?.kind === 'pubmed') {
     const abs = await deps.pubmedAbstract(ident.id)
-    if (abs) return { text: abs.slice(0, MAX_SOURCE_CHARS), via: 'abstract' }
+    if (abs) return { text: abs.slice(0, cap), via: 'abstract' }
   }
   const nbk = url.match(/ncbi\.nlm\.nih\.gov\/books\/(NBK\d+)/i)?.[1]
   if (nbk) {
     const abs = await deps.bookshelfAbstract(nbk)
-    if (abs) return { text: abs.slice(0, MAX_SOURCE_CHARS), via: 'abstract' }
+    if (abs) return { text: abs.slice(0, cap), via: 'abstract' }
   }
   const html = await deps.pageHtml(url)
   let text = html ? stripHtml(html) : ''
@@ -166,11 +168,11 @@ export async function fetchSourceText(url: string, deps: SupportDeps = liveSuppo
   if (blocked) {
     const scraped = await deps.scrape(url)
     const st = scraped ? stripHtml(scraped) : ''
-    if (st.length >= 400) return { text: st.slice(0, MAX_SOURCE_CHARS), via: 'scraper' }
-    if (text.length >= 400) return { text: text.slice(0, MAX_SOURCE_CHARS), via: 'page' }
+    if (st.length >= 400) return { text: st.slice(0, cap), via: 'scraper' }
+    if (text.length >= 400) return { text: text.slice(0, cap), via: 'page' }
     return { text: '', via: 'none' }
   }
-  return { text: text.slice(0, MAX_SOURCE_CHARS), via: 'page' }
+  return { text: text.slice(0, cap), via: 'page' }
 }
 
 function parseVerdict(raw: string): { verdict: SupportVerdict; quote: string } | null {
@@ -244,9 +246,13 @@ export async function checkSupport(
 /** B21: is the retrieval quote present in the page? null when nobody can read the page. */
 export async function quoteInPage(quote: string, url: string, deps: SupportDeps = liveSupportDeps): Promise<boolean | null> {
   try {
-    const src = await fetchSourceText(url, deps)
+    const src = await fetchSourceText(url, deps, { full: true })
     if (!src.text) return null
-    return quoteGrounded(quote, src.text)
+    if (quoteGrounded(quote, src.text)) return true
+    // An abstract cannot disprove a quote taken from the full chapter or article (NCBI Bookshelf,
+    // PMC read through Google). Only a PubMed record, where extraction used the same abstract, can.
+    if (src.via === 'abstract' && !/pubmed\.ncbi\.nlm\.nih\.gov/i.test(url)) return null
+    return false
   } catch {
     return null
   }

@@ -82,3 +82,22 @@ describe('B21 ranking requires a topic term', () => {
     expect(ranked.map((r) => r.url)).toEqual(['https://www.ncbi.nlm.nih.gov/books/NBK1/'])
   })
 })
+
+describe('B21b quote check', () => {
+  it('reads the whole page and lets an abstract-only view stay undecided', async () => {
+    const { quoteInPage } = await import('../source-support')
+    const long = 'x '.repeat(4000) + 'Morning stiffness lasting over an hour points to inflammation. ' + 'y '.repeat(10)
+    const deps = {
+      pubmedAbstract: async () => 'Short abstract about something else.',
+      bookshelfAbstract: async () => 'Short abstract about something else.',
+      pageHtml: async () => `<html><title>Page</title><body><p>${long}</p></body></html>`,
+      scrape: async () => null,
+      judge: async () => ({ text: '', cost: 0 }),
+      judgeViaGoogle: async () => null,
+    } as unknown as import('../source-support').SupportDeps
+    expect(await quoteInPage('Morning stiffness lasting over an hour points to inflammation', 'https://www.hopkinsmedicine.org/x', deps)).toBe(true)
+    expect(await quoteInPage('nowhere in this page at all', 'https://www.hopkinsmedicine.org/x', deps)).toBe(false)
+    expect(await quoteInPage('from the full chapter', 'https://www.ncbi.nlm.nih.gov/books/NBK1/', deps)).toBe(null)
+    expect(await quoteInPage('from the full chapter', 'https://pubmed.ncbi.nlm.nih.gov/123/', deps)).toBe(false)
+  })
+})
