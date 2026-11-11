@@ -49,10 +49,12 @@ const EDITOR_PASS_STEPS = new Set([11])
  * before the writer sees them (source-verify.ts). SOURCE_VERIFY=0 disables. */
 const SOURCE_VERIFY_STEPS = new Set([7, 8])
 
-/** B21: RESEARCH_MODE=retrieval replaces the grounded research calls (steps 7/8) with our own
- * retrieval (PubMed API + site-restricted search + page extraction with verbatim quotes).
- * Default 'grounded'. Falls back to the grounded step when the feed ends under the floor. */
-const RESEARCH_MODE = process.env.RESEARCH_MODE === 'retrieval' ? 'retrieval' : 'grounded'
+/** B21: research mode for steps 7/8. 'retrieval' (DEFAULT since 2026-11-11, Veit's ruling after
+ * the B21 series) = our own retrieval: PubMed API + site-restricted search + page extraction with
+ * verbatim quotes, verified on provenance. 'grounded' = the Gemini grounded-search path, kept as
+ * the automatic fallback when the retrieval feed ends under the floor, and selectable with
+ * RESEARCH_MODE=grounded. */
+const RESEARCH_MODE = process.env.RESEARCH_MODE === 'grounded' ? 'grounded' : 'retrieval'
 const RETRIEVAL_MIN_FACTS = 8
 
 /** Steps whose Gemini grounding sources should be captured as research sources (Tier 1 citations). */
