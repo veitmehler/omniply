@@ -114,3 +114,14 @@ describe('connectionsBlock — house-signature plasma currents', () => {
     expect(b.replace(/\s+/g, ' ')).toContain('never by adding elements')
   })
 })
+
+describe('website URL normalisation (Whealth onboarding bug, 2026-11-11)', () => {
+  it('adds https to a scheme-less site and leaves real URLs alone', async () => {
+    const { normalizeWebsiteUrl } = await import('../site-analysis')
+    expect(normalizeWebsiteUrl('www.cabaretehealth.com')).toBe('https://www.cabaretehealth.com')
+    expect(normalizeWebsiteUrl(' https://coastchiropractic.com.au ')).toBe('https://coastchiropractic.com.au')
+    expect(normalizeWebsiteUrl('HTTP://x.y')).toBe('HTTP://x.y')
+    expect(normalizeWebsiteUrl('')).toBe(null)
+    expect(normalizeWebsiteUrl(undefined)).toBe(null)
+  })
+})

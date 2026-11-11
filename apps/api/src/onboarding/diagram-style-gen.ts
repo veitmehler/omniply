@@ -16,7 +16,7 @@
  * untouched → branded jewel guide fallback (Veit 2026-09-18).
  */
 import { prisma, brandSettingsForUser, buildDiagramStyleGuide } from '@omniply/shared'
-import { screenshotHomepage, pixelClusters } from './site-analysis'
+import { screenshotHomepage, pixelClusters, normalizeWebsiteUrl } from './site-analysis'
 import { getSystemApiKey } from '../lib/system-keys'
 import { logger } from '../lib/logger'
 import { instrumentCall } from '../lib/net/instrument'
@@ -206,7 +206,7 @@ export async function generateDiagramStyleGuideFromWebsite(
   if (acct?.account?.vertical === 'azavea') return null // locked design
 
   const brand = await brandSettingsForUser(userId).catch(() => null)
-  const website = brand?.organizationWebsite?.trim()
+  const website = normalizeWebsiteUrl(brand?.organizationWebsite)
   const primary = brand?.diagramPrimaryColor?.trim()?.toUpperCase()
   const secondary = brand?.diagramSecondaryColor?.trim()?.toUpperCase()
   if (!website || !/^#[0-9A-F]{6}$/.test(primary ?? '') || !/^#[0-9A-F]{6}$/.test(secondary ?? '')) {

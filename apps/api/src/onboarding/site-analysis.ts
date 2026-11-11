@@ -356,11 +356,25 @@ async function looksBlank(png: Buffer): Promise<boolean> {
   return Math.max(...counts.values()) / (total || 1) > 0.92
 }
 
+/**
+ * A website as a clinic typed it ("www.cabaretehealth.com") is not a URL the
+ * browser will open: page.goto needs a scheme. The onboarding crawl already
+ * normalises; the screenshot path did not, so every style-guide attempt for a
+ * scheme-less site failed (Whealth, found 2026-11-11). Null for empty input.
+ */
+export function normalizeWebsiteUrl(website: string | null | undefined): string | null {
+  const w = (website ?? '').trim()
+  if (!w) return null
+  return /^https?:\/\//i.test(w) ? w : `https://${w}`
+}
+
 export async function screenshotHomepage(websiteUrl: string): Promise<Buffer | null> {
+  const target = normalizeWebsiteUrl(websiteUrl)
+  if (!target) return null
   try {
     const raw = await withRasterPage(async (page) => {
       await page.setViewport({ width: 1440, height: 1200 })
-      await page.goto(websiteUrl, { waitUntil: 'networkidle2', timeout: 30_000 })
+      await page.goto(target, { waitUntil: 'networkidle2', timeout: 30_000 })
       // Consent banners / modals darken or cover the page and poison the pixel
       // evidence (Wellness Way bench finding) — hide the usual suspects plus
       // any full-viewport fixed overlay before shooting.
