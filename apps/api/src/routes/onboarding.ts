@@ -5,6 +5,7 @@
  * either to a clerkId. State is per-account and resumable.
  */
 import type { FastifyInstance } from 'fastify'
+import { extractBeatsFromOnboardingSession } from '../article-pipeline/client-stories/beats'
 import { configureNewsletterDelivery } from '../lib/ghl/settings'
 import { prisma, resolveAccountForClerkId } from '@omniply/shared'
 import { requireAuth } from '../middleware/auth'
@@ -137,6 +138,12 @@ export async function onboardingRoutes(app: FastifyInstance) {
     })
     await prisma.onboardingSession.update({ where: { id: r.session.id }, data: { status: 'completed' } })
     logger.info({ accountId: r.account.accountId }, '[onboarding] completed — starting first burst')
+
+    // Story bank (2026-11-11): every spoken answer is scanned for real stories, sanitized and
+    // stored for articles and social arcs. Best-effort, after completion.
+    void extractBeatsFromOnboardingSession(r.account.accountId, { route: 'onboarding/complete' }).catch((err) =>
+      logger.warn({ err }, '[onboarding] story-beat extraction failed'),
+    )
 
     // Newsletter delivery auto-config (Veit 2026-09-17): audience tags
     // (find-or-create) + From identity from captured business details —

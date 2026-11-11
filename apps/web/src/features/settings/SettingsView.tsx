@@ -12,6 +12,7 @@ import { GhlSettingsPanel } from '@/components/GhlSettingsPanel'
 import { VoiceSettingsPanel } from '@/components/VoiceSettingsPanel'
 import { AppearanceSection } from '@/features/settings/AppearanceSection'
 import { WritingStyleSection } from '@/features/settings/WritingStyleSection'
+import { StoryBeatsSection } from '@/features/settings/StoryBeatsSection'
 import { BrandProfileSection } from '@/features/settings/BrandProfileSection'
 import { AutoGenerateSection } from '@/features/settings/AutoGenerateSection'
 import { SocialPostsSection } from '@/features/settings/SocialPostsSection'
@@ -54,6 +55,8 @@ export function SettingsView({ embedMode = false }: { embedMode?: boolean }) {
         <TeamSection embedMode={embedMode} />
 
         <WritingStyleSection settings={settings} />
+
+        <StoryBeatsSection />
 
         <BrandProfileSection settings={settings} />
 

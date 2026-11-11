@@ -1595,15 +1595,22 @@ model ClientStory {
   id             String    @id @default(cuid())
   accountId      String
   account        Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  storyText      String    @db.Text // de-identified narrative — no names, no stars, no "a reviewer wrote"
+  storyText      String    @db.Text // publishable, sanitized narrative — no names, no stars, no "a reviewer wrote"
   topicTags      String[] // 2-4 keywords from triage, used for topic-matching at generation time
-  sourceReviewId String    @unique
-  sourceReview   RawReview @relation(fields: [sourceReviewId], references: [id], onDelete: Cascade)
+  // Story bank (2026-11-11): one pool feeds articles AND social story arcs.
+  // source: review | onboarding | manual. kind: client_case | owner_moment.
+  source         String    @default("review")
+  kind           String    @default("client_case")
+  originalText   String?   @db.Text // what the owner/reviewer actually said (audit; never published)
+  sourceHash     String? // idempotent upsert key for non-review sources (sha256 of the original excerpt)
+  sourceReviewId String?   @unique
+  sourceReview   RawReview? @relation(fields: [sourceReviewId], references: [id], onDelete: Cascade)
   lastUsedAt     DateTime? // null = never used; gates the once-a-month cap
   useCount       Int       @default(0)
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
+  @@unique([accountId, sourceHash])
   @@index([accountId, lastUsedAt])
   @@map("client_stories")
 }

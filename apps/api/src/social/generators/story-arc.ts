@@ -1,4 +1,5 @@
 import { prisma, brandSettingsForUser } from '@omniply/shared'
+import { narratorBeatsForUser } from '../../article-pipeline/client-stories/bank'
 import { loadSocialBrandTheme, commentHookFromTheme } from '../brand-theme'
 import { verticalForUser } from '../../lib/prompt-resolver'
 import { getLLMAdapter } from '../../article-pipeline/llm/factory'
@@ -205,12 +206,16 @@ export async function generateStoryArc(opts: {
 }): Promise<StoryBeat[]> {
   const { userId, beatCount, logCtx } = opts
 
-  const [brand, theme, t, vertical] = await Promise.all([
+  const [brand, theme, t, vertical, bankBeats] = await Promise.all([
     brandSettingsForUser(userId),
     loadSocialBrandTheme(userId),
     loadPromptTemplate(230, { userId }),
     verticalForUser(userId).catch(() => null),
+    narratorBeatsForUser(userId).catch(() => ''),
   ])
+  // Story bank (2026-11-11): sanitized beats from the bank; the raw onboarding field only
+  // for accounts whose bank is still empty.
+  const narratorBeats = bankBeats || brand?.storyBeats || ''
 
   // Authority engine v2 (Veit 2026-10-15; chiro port 2026-10-16): eligible
   // accounts carry ONE dominant rhetorical register per arc, drawn from the
@@ -267,7 +272,7 @@ export async function generateStoryArc(opts: {
   const userPrompt = buildUserPrompt({
     beatCount,
     narratorName: brand?.storyNarratorName ?? brand?.defaultAuthorName ?? 'the owner',
-    narratorBeats: brand?.storyBeats ?? '',
+    narratorBeats,
     writingStyle: theme.writingStyle || '',
     restrictions,
     articleTitle: opts.articleTitle,
@@ -285,7 +290,7 @@ export async function generateStoryArc(opts: {
     allowedFigures: [
       ...new Set([
         ...listFigures(opts.articleMaterial),
-        ...listFigures(brand?.storyBeats ?? ''),
+        ...listFigures(narratorBeats),
         ...listFigures(theme.socialCallToAction ?? ''),
       ]),
     ]
@@ -470,10 +475,10 @@ export async function generateStoryArc(opts: {
   const figureCorpus = buildFigureCorpus([
     opts.articleTitle,
     opts.articleMaterial,
-    brand?.storyBeats,
+    narratorBeats,
     theme.socialCallToAction,
   ])
-  const allowedMenu = [...new Set(listFigures(opts.articleMaterial + '\n' + (brand?.storyBeats ?? '')))]
+  const allowedMenu = [...new Set(listFigures(opts.articleMaterial + '\n' + narratorBeats))]
     .slice(0, 60)
     .join(' · ')
   let hookFixCalls = 0

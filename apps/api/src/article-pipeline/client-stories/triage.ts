@@ -7,6 +7,7 @@
 import { prisma, brandSettingsForUser } from '@omniply/shared'
 import { logger } from '../../lib/logger'
 import { runNewsletterJsonPrompt } from '../../newsletter/llm'
+import { syncProofPool } from './beats'
 
 interface TriageJson {
   isStory?: boolean
@@ -43,6 +44,10 @@ export async function triagePendingReviews(accountId: string, reviewIds: string[
                 ? data.topicTags.filter((t): t is string => typeof t === 'string' && t.trim().length > 0)
                 : [],
               sourceReviewId: review.id,
+              source: 'review',
+              kind: 'client_case',
+              originalText: review.reviewText,
+              sourceHash: review.fingerprint,
             },
           }),
           prisma.rawReview.update({ where: { id: review.id }, data: { triageStatus: 'story' } }),
@@ -54,4 +59,5 @@ export async function triagePendingReviews(accountId: string, reviewIds: string[
       logger.warn({ accountId, reviewId: review.id, err }, '[client-stories/triage] triage failed for one review — left pending')
     }
   }
+  await syncProofPool(accountId).catch((err) => logger.warn({ accountId, err }, '[client-stories/triage] proof pool sync failed'))
 }

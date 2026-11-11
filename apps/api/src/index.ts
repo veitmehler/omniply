@@ -41,6 +41,7 @@ import { topicRoutes } from './routes/topics'
 import { contentPlanRoutes } from './routes/content-plan'
 import { newsletterTopicOverrideRoutes } from './routes/newsletter-topic-override'
 import { brandSettingsDiscoveryRoutes } from './routes/brand-settings'
+import { clientStoryRoutes } from './routes/client-stories'
 import { editRequestRoutes } from './routes/edit-requests'
 import multipart from '@fastify/multipart'
 import { articleRoutes } from './routes/articles'
@@ -143,6 +144,7 @@ async function main() {
   await app.register(contentPlanRoutes, { prefix: '/api' })
   await app.register(newsletterTopicOverrideRoutes, { prefix: '/api' })
   await app.register(brandSettingsDiscoveryRoutes, { prefix: '/api' })
+  await app.register(clientStoryRoutes, { prefix: '/api' })
   await app.register(editRequestRoutes, { prefix: '/api' })
   await app.register(articleRoutes, { prefix: '/api' })
   await app.register(wpConnectionRoutes, { prefix: '/api' })

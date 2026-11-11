@@ -16,6 +16,35 @@ function scoreOverlap(topicTags: string[], topicText: string): number {
   return topicTags.reduce((score, tag) => (haystack.includes(tag.toLowerCase()) ? score + 1 : score), 0)
 }
 
+export interface StoryCandidate {
+  id: string
+  storyText: string
+  topicTags: string[]
+  kind: string
+  source: string
+  lastUsedAt: Date | null
+  useCount: number
+}
+
+/**
+ * One story per article (Veit 2026-11-11). Order: the best-matching client case,
+ * then the best-matching owner moment, then — so an article never goes without a
+ * real story while the bank has one — the least-used onboarding beat. Review
+ * stories with no topic overlap are still skipped: a mismatched review case reads
+ * worse than none.
+ */
+export function pickStory(candidates: StoryCandidate[], topicText: string): StoryCandidate | null {
+  const scored = candidates.map((c) => ({ c, score: scoreOverlap(c.topicTags, topicText) }))
+  const byScore = (a: { score: number; c: StoryCandidate }, b: { score: number; c: StoryCandidate }) =>
+    b.score - a.score || a.c.useCount - b.c.useCount || (a.c.lastUsedAt?.getTime() ?? 0) - (b.c.lastUsedAt?.getTime() ?? 0)
+  const cases = scored.filter((x) => x.c.kind === 'client_case' && x.score > 0).sort(byScore)
+  if (cases[0]) return cases[0].c
+  const moments = scored.filter((x) => x.c.kind === 'owner_moment' && x.score > 0).sort(byScore)
+  if (moments[0]) return moments[0].c
+  const onboarding = scored.filter((x) => x.c.source === 'onboarding').sort(byScore)
+  return onboarding[0]?.c ?? null
+}
+
 /**
  * If `topic.realCaseStudies` is empty, pick the best-matching unused-this-month
  * ClientStory for the account and write it in. Never overwrites a user-provided
@@ -37,17 +66,12 @@ export async function injectClientStory(topicId: string): Promise<void> {
       accountId: accountId.accountId,
       OR: [{ lastUsedAt: null }, { lastUsedAt: { lt: new Date(Date.now() - ONCE_A_MONTH_MS) } }],
     },
-    select: { id: true, storyText: true, topicTags: true },
+    select: { id: true, storyText: true, topicTags: true, kind: true, source: true, lastUsedAt: true, useCount: true },
   })
   if (candidates.length === 0) return
 
-  const best = candidates
-    .map((c) => ({ ...c, score: scoreOverlap(c.topicTags, topic.topic) }))
-    .sort((a, b) => b.score - a.score)[0]
-
-  // A weak/no match is worse than the prompt's own generalized fallback — only inject
-  // when at least one tag genuinely overlaps the topic.
-  if (best.score === 0) return
+  const best = pickStory(candidates, topic.topic)
+  if (!best) return
 
   await prisma.$transaction([
     prisma.topic.update({ where: { id: topicId }, data: { realCaseStudies: best.storyText } }),
