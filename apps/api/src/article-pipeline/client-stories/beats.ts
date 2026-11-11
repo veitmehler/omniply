@@ -49,7 +49,7 @@ export function transcriptsFromStepData(stepData: unknown): Transcript[] {
 
 /** Grey-zone substances and certainty words that must never reach a published beat. */
 const BANNED_RE =
-  /\b(peptides?|bpc[- ]?157|tb[- ]?500|semaglutide|ozempic|wegovy|tirzepatide|ivermectin|hcg|testosterone|steroids?|hgh|growth hormone|nandrolone|sarms?|clenbuterol|ketamine|psilocybin|ibogaine)\b|\b(the true cause|cured|cures?\b|healed|reversed|fixed (?:her|his|their)|guarantee[ds]?|poison(?:ed|ing)?)\b/i
+  /\b(peptides?|bpc[- ]?157|tb[- ]?500|semaglutide|ozempic|wegovy|tirzepatide|ivermectin|hcg|testosterone|steroids?|hgh|growth hormone|nandrolone|sarms?|clenbuterol|ketamine|psilocybin|ibogaine)\b|\b(the true cause|cured|cures?\b|healed|reversed|fixed (?:her|his|their)|poison(?:ed|ing)?)\b|(?<!\b(?:no|not|never|don't|can't|won't|without|isn't|wasn't)\s)\bguarantee[ds]?\b/i
 /** Honorific + capitalised name, the one name shape the model keeps slipping through. */
 const NAMED_PERSON_RE = /\b(Dr|Doctor|Mr|Mrs|Ms|Nurse|Coach)\.?\s+[A-Z][a-z]+/
 const EXACT_AGE_RE = /\b(?:aged?|age of|years? old)\b[^.]{0,6}\b\d{2}\b|\b\d{2}-year-old\b/i

@@ -16,6 +16,14 @@ describe('story bank — lint (the gate after the sanitizer)', () => {
     expect(lintBeat('Dr Ramirez sent her to me after two hip replacements had not solved the fatigue, and we started with a full heavy-metals scan that week.').reason).toMatch(/named person/)
     expect(lintBeat('A 65-year-old woman with two hip replacements and a thyroid problem came in exhausted, and her heavy-metals scan pointed to mercury.').reason).toMatch(/exact age/)
     expect(lintBeat('Too short to be a story.').reason).toMatch(/short/)
+    expect(lintBeat('I guarantee this works for everyone who walks through the door, and I tell every client exactly that on their first visit.').reason).toMatch(/guarantee/)
+  })
+  it('allows a negated guarantee (the sanitizer\'s own disclaimer)', () => {
+    expect(
+      lintBeat(
+        'One person in our community caught dengue and COVID at the same time. They worked with a supervised protocol to support their immune system, and by their own account they bounced back faster than others around them. That is no guarantee for anyone else, but it stayed with me.',
+      ).ok,
+    ).toBe(true)
   })
 })
 
