@@ -47,9 +47,17 @@ export function transcriptsFromStepData(stepData: unknown): Transcript[] {
   return out
 }
 
-/** Grey-zone substances and certainty words that must never reach a published beat. */
+/** Grey-zone substances: never published by name — replaced, not dropped (sanitize, don't flag). */
+const SUBSTANCE_RE =
+  /\b(peptides?|bpc[- ]?157|tb[- ]?500|semaglutide|ozempic|wegovy|tirzepatide|ivermectin|hcg|testosterone|steroids?|hgh|growth hormone|nandrolone|sarms?|clenbuterol|ketamine|psilocybin|ibogaine)\b/gi
+/** Certainty and cure language the model was told not to use; a beat that still has it is dropped. */
 const BANNED_RE =
-  /\b(peptides?|bpc[- ]?157|tb[- ]?500|semaglutide|ozempic|wegovy|tirzepatide|ivermectin|hcg|testosterone|steroids?|hgh|growth hormone|nandrolone|sarms?|clenbuterol|ketamine|psilocybin|ibogaine)\b|\b(the true cause|cured|cures?\b|healed|reversed|fixed (?:her|his|their)|poison(?:ed|ing)?)\b|(?<!\b(?:no|not|never|don't|can't|won't|without|isn't|wasn't)\s)\bguarantee[ds]?\b/i
+  /\b(the true cause|cured|cures?\b|healed|reversed|fixed (?:her|his|their)|poison(?:ed|ing)?)\b|(?<!\b(?:no|not|never|don't|can't|won't|without|isn't|wasn't)\s)\bguarantee[ds]?\b/i
+
+/** Deterministic substance sanitizer: "looking into peptides and supplements" → "looking into a supervised protocol and supplements". */
+export function sanitizeSubstances(text: string): string {
+  return text.replace(SUBSTANCE_RE, 'a supervised protocol')
+}
 /** Honorific + capitalised name, the one name shape the model keeps slipping through. */
 const NAMED_PERSON_RE = /\b(Dr|Doctor|Mr|Mrs|Ms|Nurse|Coach)\.?\s+[A-Z][a-z]+/
 const EXACT_AGE_RE = /\b(?:aged?|age of|years? old)\b[^.]{0,6}\b\d{2}\b|\b\d{2}-year-old\b/i
@@ -61,7 +69,7 @@ export interface LintResult {
 
 /** Deterministic gate after the model. A failing beat is dropped (no human review step). */
 export function lintBeat(text: string): LintResult {
-  const t = text.trim()
+  const t = sanitizeSubstances(text.trim())
   const sentences = t.split(/(?<=[.!?])\s+/).filter((s) => s.trim().length > 0)
   if (t.length < 60) return { ok: false, reason: 'too short' }
   if (sentences.length > 5) return { ok: false, reason: 'too long' }
@@ -95,7 +103,7 @@ export async function extractAndStoreBeats(
   transcripts: Transcript[],
   ctx: Record<string, unknown> = {},
   runPrompt: (vars: Record<string, string>) => Promise<{ beats?: ExtractedBeat[] }> = async (vars) =>
-    (await runNewsletterJsonPrompt<{ beats?: ExtractedBeat[] }>('cs_beat_extract', vars, { maxTokens: 4096 })).data,
+    (await runNewsletterJsonPrompt<{ beats?: ExtractedBeat[] }>('cs_beat_extract', vars, { maxTokens: 8192 })).data,
 ): Promise<BeatStoreResult> {
   const result: BeatStoreResult = { extracted: 0, stored: 0, dropped: [] }
   if (transcripts.length === 0) return result
@@ -111,18 +119,19 @@ export async function extractAndStoreBeats(
   const beats = Array.isArray(data?.beats) ? data.beats : []
   result.extracted = beats.length
   for (const b of beats) {
-    const text = (b.text ?? '').trim()
+    const text0 = (b.text ?? '').trim()
     const original = (b.originalExcerpt ?? '').trim()
-    if (!text || !original) {
-      result.dropped.push({ reason: 'empty', text })
+    if (!text0 || !original) {
+      result.dropped.push({ reason: 'empty', text: text0 })
       continue
     }
-    const lint = lintBeat(text)
+    const lint = lintBeat(text0)
     if (!lint.ok) {
-      result.dropped.push({ reason: lint.reason ?? 'lint', text })
-      logger.info({ ...ctx, accountId, reason: lint.reason, text: text.slice(0, 120) }, '[client-stories/beats] beat dropped by lint')
+      result.dropped.push({ reason: lint.reason ?? 'lint', text: text0 })
+      logger.info({ ...ctx, accountId, reason: lint.reason, text: text0.slice(0, 120) }, '[client-stories/beats] beat dropped by lint')
       continue
     }
+    const text = sanitizeSubstances(text0)
     const kind = b.kind === 'owner_moment' ? 'owner_moment' : 'client_case'
     const sourceHash = beatHash(original)
     await prisma.clientStory.upsert({

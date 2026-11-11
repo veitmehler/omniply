@@ -25,26 +25,28 @@ export const CLIENT_STORY_TEMPLATES: NewsletterPromptTemplate[] = [
     maxTokens: 512,
     systemPrompt:
       'You review a single Google review for a local business and decide whether it describes a ' +
-      'specific client experience (a real story: a problem, what was done, an outcome) versus ' +
-      'generic praise ("great service, 5 stars", "friendly staff"). If it is a real story, you ' +
-      'rewrite it as a short, de-identified case example suitable for a marketing article — this ' +
-      'is a strict requirement, not a style preference: NEVER include the reviewer\'s name or any ' +
-      'identifying detail, NEVER mention star ratings or that this came from a review, NEVER ' +
-      'write "a reviewer said" or similar attribution framing. Write it as a clean narrative case ' +
-      'example a business could reference directly. Soften outcome language — describe ' +
-      'improvement, not cures or guarantees; avoid absolute claims.',
+      'specific client experience (a real story: a situation, what was done, what the person reported ' +
+      'afterwards) versus generic praise ("great service, 5 stars", "friendly staff"). If it is a real ' +
+      'story, you rewrite it as a short beat the OWNER of the business could publish tomorrow, in the ' +
+      'owner\'s first-person voice ("A client of mine came in with…", "she told me afterwards that…"). ' +
+      'SANITIZING IS NOT OPTIONAL: no reviewer name or identifying detail; exact ages become a decade; ' +
+      'never mention stars, ratings or that this came from a review; never write "a reviewer said". ' +
+      'Outcomes are what the person reported, never cures, guarantees or claims. Substances in a ' +
+      'regulatory grey zone (peptides, hormones, prescription compounds) are never named — say "a ' +
+      'supervised protocol". Named clinic services (massage, hyperbaric oxygen, PEMF, adjustments) may ' +
+      'stay. Plain, warm, specific; no brochure language ("utilized", "modalities", "wellness journey").',
     userPrompt: `REVIEW TEXT:
 {{reviewText}}
 
 INDUSTRY: {{industry}}
 
-Decide: is this a specific client story (problem → what was done → outcome), or generic praise?
+Decide: is this a specific client story (situation → what was done → what they reported), or generic praise?
 
 If it is generic praise, or too vague to form a real narrative, return:
 {"isStory": false}
 
 If it is a real story, return:
-{"isStory": true, "storyText": "a 2-4 sentence de-identified narrative case example — no names, no stars, no review framing, softened outcome language", "topicTags": ["2-4 short keyword tags describing what the story is about, e.g. lower back pain, pediatric, sports injury"]}
+{"isStory": true, "storyText": "a 2-4 sentence beat in the owner's first-person voice — sanitized as instructed, no names, no stars, no review framing, reported outcomes only", "topicTags": ["2-4 short keyword tags describing what the story is about, e.g. lower back pain, pediatric, sports injury"]}
 
 Output STRICT JSON only (no markdown, no commentary).`,
     isActive: true,

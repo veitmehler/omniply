@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { lintBeat, transcriptsFromStepData, beatHash } from '../beats'
+import { lintBeat, transcriptsFromStepData, beatHash, sanitizeSubstances } from '../beats'
 import { pickStory, type StoryCandidate } from '../select'
 
 describe('story bank — lint (the gate after the sanitizer)', () => {
@@ -10,8 +10,9 @@ describe('story bank — lint (the gate after the sanitizer)', () => {
       ).ok,
     ).toBe(true)
   })
-  it('drops grey-zone substances, cure certainty, honorific names and exact ages', () => {
-    expect(lintBeat('A client used peptides to recover from dengue and COVID at the same time and came back faster than anyone around her expected to see.').reason).toMatch(/peptides/)
+  it('replaces grey-zone substances; drops cure certainty, honorific names and exact ages', () => {
+    expect(sanitizeSubstances('She had been looking into peptides and supplements without much luck, and BPC-157 came up twice in her notes.')).toBe('She had been looking into a supervised protocol and supplements without much luck, and a supervised protocol came up twice in her notes.')
+    expect(lintBeat('A client used peptides to recover from dengue and COVID at the same time and came back faster than anyone around her expected to see.').ok).toBe(true)
     expect(lintBeat('Her fillings were the true cause of everything we had seen, and once they were out her energy came back within a few weeks of that.').reason).toMatch(/true cause/)
     expect(lintBeat('Dr Ramirez sent her to me after two hip replacements had not solved the fatigue, and we started with a full heavy-metals scan that week.').reason).toMatch(/named person/)
     expect(lintBeat('A 65-year-old woman with two hip replacements and a thyroid problem came in exhausted, and her heavy-metals scan pointed to mercury.').reason).toMatch(/exact age/)

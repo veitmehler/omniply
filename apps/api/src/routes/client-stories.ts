@@ -8,7 +8,7 @@ import { prisma, resolveAccountForClerkId } from '@omniply/shared'
 import { requireAuth } from '../middleware/auth'
 import { logger } from '../lib/logger'
 import { listStoriesForAccount } from '../article-pipeline/client-stories/bank'
-import { extractBeatsFromOnboardingSession, lintBeat, syncProofPool, beatHash } from '../article-pipeline/client-stories/beats'
+import { extractBeatsFromOnboardingSession, lintBeat, syncProofPool, beatHash, sanitizeSubstances } from '../article-pipeline/client-stories/beats'
 import { triagePendingReviews } from '../article-pipeline/client-stories/triage'
 
 const MAX_TEXT = 1200
@@ -29,7 +29,7 @@ export async function clientStoryRoutes(app: FastifyInstance) {
     if (!clerkId) return
     const account = await resolveAccountForClerkId(clerkId)
     if (!account) return reply.status(404).send({ error: 'User not found' })
-    const text = (request.body?.storyText ?? '').trim().slice(0, MAX_TEXT)
+    const text = sanitizeSubstances((request.body?.storyText ?? '').trim().slice(0, MAX_TEXT))
     const lint = lintBeat(text)
     if (!lint.ok) return reply.status(422).send({ error: `This story cannot be published as written (${lint.reason}). Remove names, exact ages, cure claims and grey-zone substance names, then try again.` })
     const kind = request.body?.kind === 'owner_moment' ? 'owner_moment' : 'client_case'
@@ -53,7 +53,7 @@ export async function clientStoryRoutes(app: FastifyInstance) {
     if (!existing) return reply.status(404).send({ error: 'Story not found' })
     const data: { storyText?: string; kind?: string; topicTags?: string[] } = {}
     if (typeof request.body?.storyText === 'string') {
-      const text = request.body.storyText.trim().slice(0, MAX_TEXT)
+      const text = sanitizeSubstances(request.body.storyText.trim().slice(0, MAX_TEXT))
       const lint = lintBeat(text)
       if (!lint.ok) return reply.status(422).send({ error: `This story cannot be published as written (${lint.reason}). Remove names, exact ages, cure claims and grey-zone substance names, then try again.` })
       data.storyText = text
