@@ -57,7 +57,7 @@ import { mapWithConcurrency } from '../../lib/concurrency'
 const DIAGRAM_TAIL_CONCURRENCY = 3
 import { buildRestylePrompt, restyleDiagram } from './diagram-restyle'
 import { runRestyleLadder } from './diagram-ladder'
-import { overlayLogo } from './diagram-logo'
+import { overlayBrandLogo, type LogoVariant } from './diagram-logo'
 import { processLogo } from '../../newsletter/logo-process'
 
 const CDN_BASE = process.env.CDN_BASE ?? ''
@@ -922,7 +922,10 @@ async function maybeWpTags(jobId: string): Promise<void> {
 interface DiagramRestyleConfig {
   geminiKey: string
   prompt: string
-  logoBuffer: Buffer | null
+  /** Both watermark variants; the canvas luminance picks one per diagram (B21 logo fix). */
+  logos: { light: Buffer | null; dark: Buffer | null }
+  /** Explicit per-account choice, or null = decide per canvas. */
+  logoVariant: LogoVariant | null
 }
 
 /**
@@ -955,61 +958,64 @@ export async function buildDiagramRestyleConfig(
     primaryColor: brandStyle?.diagramPrimaryColor,
     secondaryColor: brandStyle?.diagramSecondaryColor,
   })
-  let logoBuffer: Buffer | null = null
-  const logoUrl = await resolveDiagramLogoUrl(jobId, brandStyle)
-  if (logoUrl) {
+  const urls = await resolveDiagramLogoUrls(jobId, brandStyle)
+  const logos: DiagramRestyleConfig['logos'] = { light: null, dark: null }
+  for (const v of ['light', 'dark'] as const) {
+    const url = urls[v]
+    if (!url) continue
     try {
-      logoBuffer = await downloadImageFromUrl(logoUrl)
+      logos[v] = await downloadImageFromUrl(url)
     } catch (err) {
-      logger.warn({ jobId, err }, '[enrichment] diagram logo download failed — proceeding without watermark')
+      logger.warn({ jobId, variant: v, err }, '[enrichment] diagram logo download failed — variant unavailable')
     }
   }
-  return { geminiKey, prompt, logoBuffer }
+  const logoVariant: LogoVariant | null = brandStyle?.diagramLogoVariant === 'dark' ? 'dark' : brandStyle?.diagramLogoVariant === 'light' ? 'light' : null
+  return { geminiKey, prompt, logos, logoVariant }
 }
 
 /**
- * Resolve the watermark logo URL for the chosen light/dark variant:
- *  1. Newsletter variants (nlLogoLightUrl / nlLogoDarkUrl).
- *  2. Auto-generated-from-org-logo variants, cached on BrandSettings (regenerated
- *     only when organizationLogoUrl changes).
- *  3. Raw organizationLogoUrl → socialLogoUrl → none.
+ * Resolve BOTH watermark logo variants (B21 logo fix, 2026-11-11):
+ *  1. Diagram variants generated from the org logo, the dark one tinted with the
+ *     brand's diagram primary colour (was a hard-coded navy). Regenerated when the
+ *     source logo or the tint changes (the tint is part of the storage key).
+ *  2. Newsletter light/dark variants.
+ *  3. Raw organizationLogoUrl → socialLogoUrl for both.
+ * The canvas luminance decides which one lands on each diagram.
  */
-async function resolveDiagramLogoUrl(
+async function resolveDiagramLogoUrls(
   jobId: string,
   brand: Awaited<ReturnType<typeof brandSettingsForUser>>,
-): Promise<string | null> {
-  if (!brand) return null
-  const variant = brand.diagramLogoVariant === 'dark' ? 'dark' : 'light'
+): Promise<{ light: string | null; dark: string | null }> {
+  if (!brand) return { light: null, dark: null }
 
-  // 1. Newsletter light/dark variants.
-  const nlUrl = variant === 'dark' ? brand.nlLogoDarkUrl : brand.nlLogoLightUrl
-  if (nlUrl) return nlUrl
-
-  // 2. Auto-generate (and cache) from the org logo when no newsletter variants exist.
   const org = brand.organizationLogoUrl
   if (org) {
+    const tint = /^#[0-9a-f]{6}$/i.test(brand.diagramPrimaryColor ?? '') ? brand.diagramPrimaryColor!.toLowerCase() : '#011328'
+    const token = `diagram-logo-${tint.slice(1)}`
     let lightUrl = brand.diagramLogoLightUrl
     let darkUrl = brand.diagramLogoDarkUrl
-    const stale = brand.diagramLogoSourceUrl !== org || !lightUrl || !darkUrl
+    const stale = brand.diagramLogoSourceUrl !== org || !lightUrl || !darkUrl || !darkUrl.includes(token)
     if (stale) {
       try {
-        const generated = await processLogo(brand.userId, org, '#011328', `brand-assets/${brand.userId}/diagram-logo`)
+        const generated = await processLogo(brand.userId, org, tint, `brand-assets/${brand.userId}/${token}`)
         lightUrl = generated.lightUrl
         darkUrl = generated.darkUrl
         await prisma.brandSettings.update({
           where: { userId: brand.userId },
           data: { diagramLogoSourceUrl: org, diagramLogoLightUrl: lightUrl, diagramLogoDarkUrl: darkUrl },
         })
+        logger.info({ jobId, tint }, '[enrichment] diagram logo variants generated')
       } catch (err) {
-        logger.warn({ jobId, err }, '[enrichment] diagram logo variant generation failed — using raw logo')
+        logger.warn({ jobId, err }, '[enrichment] diagram logo variant generation failed — using stored/newsletter variants')
       }
     }
-    const gen = variant === 'dark' ? darkUrl : lightUrl
-    if (gen) return gen
+    if (lightUrl && darkUrl) return { light: lightUrl, dark: darkUrl }
   }
 
-  // 3. Last-ditch raw logo.
-  return brand.organizationLogoUrl || brand.socialLogoUrl || null
+  if (brand.nlLogoLightUrl || brand.nlLogoDarkUrl) return { light: brand.nlLogoLightUrl ?? null, dark: brand.nlLogoDarkUrl ?? null }
+
+  const raw = brand.organizationLogoUrl || brand.socialLogoUrl || null
+  return { light: raw, dark: raw }
 }
 
 /** Guarantee an exact 1:1 image (Gemini image-to-image returns ~square; this is the guard). */
@@ -1100,7 +1106,8 @@ async function saveDiagramAndInsert(opts: SaveDiagramOpts): Promise<void> {
     })
     if (winner) {
       const square = await ensureSquare(winner)
-      const branded = await overlayLogo(square, restyle.logoBuffer)
+      const { png: branded, variant: logoVariantUsed } = await overlayBrandLogo(square, restyle.logos, restyle.logoVariant)
+      logger.info({ jobId, position: section.position, logoVariantUsed }, '[enrichment] diagram watermark variant')
       const sdims = await sharp(branded).metadata()
       stylizedKey = `articles/${sitePage.userId}/${jobId}/diagrams/${section.position}-stylized.png`
       await uploadBufferWithKey(stylizedKey, branded, 'image/png')

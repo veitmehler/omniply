@@ -77,3 +77,57 @@ export async function overlayLogo(
     return basePng
   }
 }
+
+export type LogoVariant = 'light' | 'dark'
+
+/**
+ * Mean luminance (0..1) of the watermark box — the bottom-right region where
+ * overlayLogo places the logo, using the same budgets and margin.
+ */
+export async function watermarkRegionLuminance(basePng: Buffer, options: LogoOverlayOptions = {}): Promise<number | null> {
+  const { widthRatio, heightRatio, marginRatio } = { ...DEFAULTS, ...options }
+  try {
+    const meta = await sharp(basePng).metadata()
+    const W = meta.width ?? 0
+    const H = meta.height ?? 0
+    if (!W || !H) return null
+    const w = Math.max(1, Math.round(W * widthRatio))
+    const h = Math.max(1, Math.round(H * heightRatio))
+    const margin = Math.round(W * marginRatio)
+    const left = Math.max(0, W - w - margin)
+    const top = Math.max(0, H - h - margin)
+    const { data } = await sharp(basePng).extract({ left, top, width: Math.min(w, W - left), height: Math.min(h, H - top) }).removeAlpha().raw().toBuffer({ resolveWithObject: true })
+    let sum = 0
+    for (let i = 0; i < data.length; i += 3) sum += 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2]
+    return sum / (data.length / 3) / 255
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Which logo goes on this canvas (Whealth finding, 2026-11-11: a white logo
+ * landed on a cream canvas because the variant was a static per-account
+ * setting). An explicit account choice wins; otherwise the canvas decides:
+ * a light watermark corner takes the dark logo, a dark corner the light one.
+ */
+export async function pickLogoVariant(basePng: Buffer, explicit: LogoVariant | null | undefined): Promise<LogoVariant> {
+  if (explicit === 'light' || explicit === 'dark') return explicit
+  const lum = await watermarkRegionLuminance(basePng)
+  if (lum === null) return 'light'
+  return lum >= 0.5 ? 'dark' : 'light'
+}
+
+/** Overlay the right variant for the canvas. Falls back to whichever variant exists. */
+export async function overlayBrandLogo(
+  basePng: Buffer,
+  logos: { light: Buffer | null; dark: Buffer | null },
+  explicit: LogoVariant | null | undefined,
+  options: LogoOverlayOptions = {},
+): Promise<{ png: Buffer; variant: LogoVariant | null }> {
+  if (!logos.light && !logos.dark) return { png: basePng, variant: null }
+  let variant = await pickLogoVariant(basePng, explicit)
+  if (!logos[variant]) variant = variant === 'dark' ? 'light' : 'dark'
+  const png = await overlayLogo(basePng, logos[variant], options)
+  return { png, variant }
+}

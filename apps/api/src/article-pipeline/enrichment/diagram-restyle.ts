@@ -83,7 +83,54 @@ export const RENDITION_RULES = `
   (semibold) sans-serif weight — never heavy black, never light-vs-bold
   mixes. This overrides any bold or weight-contrast instruction stated
   above. This diagram is one of a series: identical text weight across the
-  series.`
+  series.
+- COMPOSITION FILL: the drawn diagram spans at least 85% of the canvas width
+  AND at least 85% of its height, with outer margins of no more than 8% per
+  side. Reach that by enlarging nodes, type, spacing and connections — never
+  by adding elements. A small composition floating in empty canvas is
+  rejected and re-rendered.`
+
+/** Below this share of width or height the restyle is "floating in empty canvas" (Whealth smoke, 2026-11-11). */
+export const OCCUPANCY_MIN = 0.72
+
+/**
+ * Share of the canvas the drawn content spans (bounding box of pixels that
+ * differ from the canvas colour sampled at the four corners). Deterministic,
+ * no model call. Null when unmeasurable.
+ */
+export async function contentOccupancy(png: Buffer): Promise<{ width: number; height: number } | null> {
+  try {
+    const { data, info } = await sharp(png).removeAlpha().raw().toBuffer({ resolveWithObject: true })
+    const W = info.width
+    const H = info.height
+    if (!W || !H) return null
+    const px = (x: number, y: number) => {
+      const i = (y * W + x) * 3
+      return [data[i], data[i + 1], data[i + 2]] as const
+    }
+    const inset = Math.max(2, Math.round(Math.min(W, H) * 0.02))
+    const corners = [px(inset, inset), px(W - 1 - inset, inset), px(inset, H - 1 - inset), px(W - 1 - inset, H - 1 - inset)]
+    const canvas = corners.reduce((a, c) => [a[0] + c[0] / 4, a[1] + c[1] / 4, a[2] + c[2] / 4], [0, 0, 0])
+    const TH = 40
+    let minX = W, minY = H, maxX = -1, maxY = -1
+    const step = Math.max(1, Math.round(Math.min(W, H) / 512))
+    for (let y = 0; y < H; y += step) {
+      for (let x = 0; x < W; x += step) {
+        const i = (y * W + x) * 3
+        if (Math.abs(data[i] - canvas[0]) + Math.abs(data[i + 1] - canvas[1]) + Math.abs(data[i + 2] - canvas[2]) > TH) {
+          if (x < minX) minX = x
+          if (x > maxX) maxX = x
+          if (y < minY) minY = y
+          if (y > maxY) maxY = y
+        }
+      }
+    }
+    if (maxX < 0) return { width: 0, height: 0 }
+    return { width: (maxX - minX + 1) / W, height: (maxY - minY + 1) / H }
+  } catch {
+    return null
+  }
+}
 
 /**
  * Per-diagram EXACT TEXT INVENTORY block (Veit 2026-09-18): the labels are

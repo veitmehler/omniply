@@ -17,6 +17,8 @@ import {
   buildInventoryBlock,
   buildRetryFeedbackBlock,
   LADDER_MODELS,
+  contentOccupancy,
+  OCCUPANCY_MIN,
 } from './diagram-restyle'
 import { verifyRestyledDiagram } from './diagram-verify'
 import { extractLabelInventory } from './mermaid-label-lint'
@@ -35,6 +37,9 @@ export async function runRestyleLadder(input: LadderInput): Promise<Buffer | nul
   const inventory = extractLabelInventory(input.mermaidSyntax)
   const inventoryBlock = buildInventoryBlock(inventory)
   let lastIssues: string[] = []
+  // Fidelity-correct but floating in empty canvas: kept as the fallback winner so a
+  // small-but-right image never loses to the Mermaid render (soft gate).
+  let soft: { png: Buffer; score: number } | null = null
 
   for (let attempt = 1; attempt <= LADDER_MODELS.length; attempt++) {
     const model = LADDER_MODELS[attempt - 1]
@@ -74,11 +79,25 @@ export async function runRestyleLadder(input: LadderInput): Promise<Buffer | nul
       continue
     }
 
+    const occ = await contentOccupancy(restyled.png)
+    if (occ && (occ.width < OCCUPANCY_MIN || occ.height < OCCUPANCY_MIN)) {
+      const score = Math.min(occ.width, occ.height)
+      if (!soft || score > soft.score) soft = { png: restyled.png, score }
+      lastIssues = [
+        `The diagram occupies only ${Math.round(occ.width * 100)}% of the canvas width and ${Math.round(occ.height * 100)}% of its height. Enlarge the whole composition (bigger nodes, larger type, wider spacing) so it spans at least 85% of both, with margins under 8% per side. Keep every node, label and connection exactly as they are.`,
+      ]
+      logger.warn(
+        { jobId: input.jobId, position: input.position, attempt, model, occupancy: occ },
+        attempt < LADDER_MODELS.length ? '[enrichment] restyle floats in empty canvas — re-rendering larger' : '[enrichment] restyle still small on final rung — keeping best attempt',
+      )
+      continue
+    }
+
     logger.info(
-      { jobId: input.jobId, position: input.position, attempt, model },
+      { jobId: input.jobId, position: input.position, attempt, model, occupancy: occ },
       '[enrichment] restyle passed fidelity verify',
     )
     return restyled.png
   }
-  return null
+  return soft ? soft.png : null
 }
