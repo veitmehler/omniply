@@ -97,6 +97,8 @@ describe('B21b quote check', () => {
     } as unknown as import('../source-support').SupportDeps
     expect(await quoteInPage('Morning stiffness lasting over an hour points to inflammation', 'https://www.hopkinsmedicine.org/x', deps)).toBe(true)
     expect(await quoteInPage('nowhere in this page at all', 'https://www.hopkinsmedicine.org/x', deps)).toBe(false)
+    const stub = { ...deps, pageHtml: async () => `<html><title>Page</title><body><p>${'short shell '.repeat(50)}</p></body></html>` }
+    expect(await quoteInPage('nowhere in this page at all', 'https://www.hopkinsmedicine.org/x', stub)).toBe(null)
     expect(await quoteInPage('from the full chapter', 'https://www.ncbi.nlm.nih.gov/books/NBK1/', deps)).toBe(null)
     expect(await quoteInPage('from the full chapter', 'https://pubmed.ncbi.nlm.nih.gov/123/', deps)).toBe(false)
   })

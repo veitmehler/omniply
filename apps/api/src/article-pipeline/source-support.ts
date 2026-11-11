@@ -35,6 +35,8 @@ const URL_CONTEXT_MODEL = 'gemini-3.1-flash-lite'
 
 const TIMEOUT_MS = 10_000
 const MAX_SOURCE_CHARS = 6_000
+/** B21c: below this a fetched page is a stub, not evidence of absence. */
+const QUOTE_CHECK_MIN_CHARS = 2_500
 const UA = 'OmniplyCitations/1.0 (+https://omniply.io; mailto:ops@omniply.io)'
 
 const NUMBER_WORDS =
@@ -249,6 +251,9 @@ export async function quoteInPage(quote: string, url: string, deps: SupportDeps 
     const src = await fetchSourceText(url, deps, { full: true })
     if (!src.text) return null
     if (quoteGrounded(quote, src.text)) return true
+    // A stub (JS shell, consent page, scraper fragment) is not the page the extractor read:
+    // Johns Hopkins came back as 773 characters from the droplet. Undecided, not disproved.
+    if (src.via !== 'abstract' && src.text.length < QUOTE_CHECK_MIN_CHARS) return null
     // An abstract cannot disprove a quote taken from the full chapter or article (NCBI Bookshelf,
     // PMC read through Google). Only a PubMed record, where extraction used the same abstract, can.
     if (src.via === 'abstract' && !/pubmed\.ncbi\.nlm\.nih\.gov/i.test(url)) return null
