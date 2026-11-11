@@ -70,8 +70,46 @@ const SYSTEM_PROMPT =
   'When mentioning court cases or legal decisions: describe them ONLY as examples of what actually happened in that specific case; NEVER assert a case as \"precedent\" or claim it establishes a legal rule for a different context unless the source material explicitly states that holding applies. ' +
   'Output ONLY a JSON array, no code fences, no commentary.'
 
+/**
+ * Clinic narrator (Veit 2026-11-11): for chiro / wellness accounts the narrator IS the
+ * practitioner who wrote the article. Client stories from the story bank are sanitized
+ * (no identities, reported outcomes only) and may be told as the narrator's own moments.
+ * Azavea keeps the builder narrator above, untouched.
+ */
+const CLINIC_SYSTEM_PROMPT =
+  'You are a ghostwriter for a practitioner who owns a clinic, writing serialized first-person story posts. ' +
+  'The voice must read like a real person: short lines, concrete scenes, an admission of doubt before any insight, ' +
+  'no hype, no hashtags, no emoji. Never use em-dashes; use commas, colons, or separate sentences. ' +
+  'TRUTH RULE (the most important rule): events that happened TO THE NARRATOR may come ONLY from the provided ' +
+  'narrator moments, retold faithfully, and from the article the narrator wrote. You may NEVER invent a personal ' +
+  'experience, client, test, conversation or discovery, even a plausible one. A post with zero personal scenes is fine; ' +
+  'a post with a fabricated one is a failure. ' +
+  'The narrator WROTE the article: refer to it as their own ("in my article", "I wrote about", "when I put this ' +
+  'piece together"), never as something they read or found. The narrator is the clinician: the provided moments ' +
+  'about clients are their own experience and may be told as such, exactly as given. ' +
+  'COMPLIANCE (hard rules): never add identifying detail to a client moment (no names, no exact ages, no places ' +
+  'beyond what the moment states); never promise health outcomes; outcomes are what a person reported, never a cure; ' +
+  'never name substances that the moments do not name; numbers come only from the article material or a moment. ' +
+  'When mentioning court cases or legal decisions: describe them ONLY as examples of what actually happened in that specific case; NEVER assert a case as \"precedent\" or claim it establishes a legal rule for a different context unless the source material explicitly states that holding applies. ' +
+  'Output ONLY a JSON array, no code fences, no commentary.'
+
+export type NarratorRole = 'builder' | 'clinician'
+
+function narratorRules(role: NarratorRole): string {
+  if (role === 'clinician') {
+    return `- VOICE: first person throughout. The narrator wrote the article and runs the clinic: "in my article I lay out...", "what I see in the room is...", "a client of mine...".
+- The narrator moments are REAL client stories and moments from the narrator's own practice, already written to be publishable: tell them as the narrator's own experience, exactly as given, and let at least one beat rest on a moment when one fits the article's subject.
+- The article is the narrator's own work: its scenes, metaphors and story boxes may be presented as "what I wrote" or "what I see", never as "the article I read" or "the article says".
+- HARD RULE: nothing happens to the narrator that is not in a narrator moment or the article. No invented clients, tests, conversations, or timelines. Never add names, exact ages, places, substances or outcomes that a moment does not contain.`
+  }
+  return `- VOICE: first-person observer throughout. The narrator comments as "I" even on article material ("I keep seeing...", "I read the FTC notices so you do not have to", "Here is what jumped out at me").
+- The article's own scenes, metaphors, and story boxes are your PRIMARY narrative material: RETELL them as scenes the narrator PRESENTS about a practice owner ("Picture the owner who...", "The scene from the article stuck with me: ..."). Prefer retelling an article scene over abstract observation.
+- HARD RULE: an article scene may NEVER become the narrator's own experience. The narrator is a software builder: no patients, no patient files, no clinic, no board letters or investigations addressed to them. ALSO BANNED as invented events: discovery calls, client consultations, conversations with practice owners, or looking at any practice's dashboards, phone logs, calendars, or data ("a practice owner books a call with me" is a FABRICATION unless it appears in a narrator moment). First person is a commentary lens, never invented events.`
+}
+
 function buildUserPrompt(opts: {
   beatCount: number
+  narratorRole: NarratorRole
   narratorName: string
   narratorBeats: string
   writingStyle: string
@@ -91,7 +129,7 @@ function buildUserPrompt(opts: {
     : '(none yet)'
   return `Write a ${opts.beatCount}-post story arc based on this article. The posts publish in order (morning/evening slots on consecutive posting days) and together tell ONE story with rising tension.
 
-NARRATOR: ${opts.narratorName}, the practice/business owner, first person.
+NARRATOR: ${opts.narratorName}, ${opts.narratorRole === 'clinician' ? 'the practitioner who owns the clinic and WROTE this article' : 'the practice/business owner'}, first person.
 REAL narrator moments you may draw on (never invent new biographical facts beyond these and the article):
 ${opts.narratorBeats || '(none provided: stay with industry observations and the article material only)'}
 
@@ -113,9 +151,7 @@ ${prior}
 
 ARC RULES:
 - Beat 1 opens on a concrete scene or surprising observation, never a summary.
-- VOICE: first-person observer throughout. The narrator comments as "I" even on article material ("I keep seeing...", "I read the FTC notices so you do not have to", "Here is what jumped out at me").
-- The article's own scenes, metaphors, and story boxes are your PRIMARY narrative material: RETELL them as scenes the narrator PRESENTS about a practice owner ("Picture the owner who...", "The scene from the article stuck with me: ..."). Prefer retelling an article scene over abstract observation.
-- HARD RULE: an article scene may NEVER become the narrator's own experience. The narrator is a software builder: no patients, no patient files, no clinic, no board letters or investigations addressed to them. ALSO BANNED as invented events: discovery calls, client consultations, conversations with practice owners, or looking at any practice's dashboards, phone logs, calendars, or data ("a practice owner books a call with me" is a FABRICATION unless it appears in a narrator moment). First person is a commentary lens, never invented events.
+${narratorRules(opts.narratorRole)}
 - Beats 2 and onward OPEN with one short re-anchoring line that orients a first-time reader (half a sentence referencing where the story stands) before continuing.
 - Every beat except the last ends mid-tension with an open loop to the next.
 - SCHEDULE: beats alternate morning and evening, starting with a morning beat. A MORNING beat's open loop points at TONIGHT ("Tonight: ..."); an EVENING beat's open loop (except the last beat, which resolves) points at TOMORROW ("Tomorrow morning: ..."). Never use the wrong label, and NEVER write clock times in the copy (no "at 19:00", no "at 7 PM"): "Tonight" and "Tomorrow morning" are the only schedule words.
@@ -216,6 +252,15 @@ export async function generateStoryArc(opts: {
   // Story bank (2026-11-11): sanitized beats from the bank; the raw onboarding field only
   // for accounts whose bank is still empty.
   const narratorBeats = bankBeats || brand?.storyBeats || ''
+  // Narrator role by vertical: Azavea's builder narrator (and its stored system prompt) stay as
+  // they are; every clinic vertical gets the clinician narrator. A vertical-specific template row
+  // (230, chiro/wellness) may still override the clinic system prompt text.
+  const narratorRole: NarratorRole = vertical === 'azavea' ? 'builder' : 'clinician'
+  const clinicRow =
+    narratorRole === 'clinician' && vertical
+      ? await prisma.promptTemplate.findFirst({ where: { stepNumber: 230, vertical, isActive: true }, select: { systemPrompt: true } }).catch(() => null)
+      : null
+  const systemPrompt = narratorRole === 'clinician' ? clinicRow?.systemPrompt?.trim() || CLINIC_SYSTEM_PROMPT : t?.systemPrompt?.trim() || SYSTEM_PROMPT
 
   // Authority engine v2 (Veit 2026-10-15; chiro port 2026-10-16): eligible
   // accounts carry ONE dominant rhetorical register per arc, drawn from the
@@ -271,6 +316,7 @@ export async function generateStoryArc(opts: {
 
   const userPrompt = buildUserPrompt({
     beatCount,
+    narratorRole,
     narratorName: brand?.storyNarratorName ?? brand?.defaultAuthorName ?? 'the owner',
     narratorBeats,
     writingStyle: theme.writingStyle || '',
@@ -302,7 +348,7 @@ export async function generateStoryArc(opts: {
   const model = t?.defaultModel ?? 'claude-sonnet-4-5-20250929'
   const adapter = getLLMAdapter(provider)
   const run = await adapter.call({
-    systemPrompt: t?.systemPrompt ?? SYSTEM_PROMPT,
+    systemPrompt,
     userPrompt,
     model,
     temperature: 0.7,
@@ -320,7 +366,7 @@ export async function generateStoryArc(opts: {
       '[story-arc] unparseable output — retrying once',
     )
     const retry = await adapter.call({
-      systemPrompt: t?.systemPrompt ?? SYSTEM_PROMPT,
+      systemPrompt,
       userPrompt,
       model,
       temperature: 0.6,
