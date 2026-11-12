@@ -1,5 +1,6 @@
 import { getLLMAdapter } from '../../article-pipeline/llm/factory'
 import { cleanTextOutput } from '../../article-pipeline/output-cleaner'
+import { stripMetaCommentary } from '../../lib/text/meta-commentary'
 import { loadPromptTemplate } from '../../article-pipeline/enrichment/prompt-template'
 import { sendFailureAlert } from '../../lib/alerts'
 import { logger } from '../../lib/logger'
@@ -55,7 +56,7 @@ Rules:
 - FIRST LINE = the hook: a concrete moment, image, or surprising specific from the source content. Never a summary, never the title restated.
 - Open a loop the caption does not close; the payoff lives in the content, not the caption.
 - Curiosity through specificity; no clickbait cliches ("you won't believe").
-- Return ONLY the caption text: no quotes, labels, or JSON
+- Return ONLY the caption text: no quotes, labels, or JSON. Never comment on the source, the brief or your own choices; if the source is thin, write from the heading and title without saying so.
 - Stay under {{charLimit}} characters
 - Do not use markdown or em-dashes
 - Match native {{platform}} posting style
@@ -129,8 +130,8 @@ export async function generatePlatformCaption(opts: {
     })
     await recordLLMUsage(logCtx.userId, 'social_caption', run)
 
-    const caption = (await sanitizeDashesText(cleanTextOutput(run.content), { ...logCtx, surface: 'caption' })).trim()
-    if (!caption) throw new Error('Empty caption')
+    const caption = stripMetaCommentary((await sanitizeDashesText(cleanTextOutput(run.content), { ...logCtx, surface: 'caption' })).trim())
+    if (!caption) throw new Error('Empty caption (only commentary came back)')
 
     return caption.length <= charLimit ? caption : caption.slice(0, charLimit - 1).trim() + '…'
   } catch (err) {

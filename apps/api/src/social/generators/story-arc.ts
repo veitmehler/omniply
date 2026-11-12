@@ -1,5 +1,6 @@
 import { prisma, brandSettingsForUser } from '@omniply/shared'
 import { narratorBeatsForUser } from '../../article-pipeline/client-stories/bank'
+import { fixSentenceSpacing } from '../../lib/text/meta-commentary'
 import { loadSocialBrandTheme, commentHookFromTheme } from '../brand-theme'
 import { verticalForUser } from '../../lib/prompt-resolver'
 import { getLLMAdapter } from '../../article-pipeline/llm/factory'
@@ -492,7 +493,7 @@ export async function generateStoryArc(opts: {
     ctaBridges.push(bridgeUnsafe ? null : stripDashes(bridgeRaw))
     beats.push({
       postText: fixLoopLabel(
-        blankLineThoughts(stripDashes((await sanitizeDashesText(postText, { ...logCtx, surface: 'story_post' })).trim())),
+        blankLineThoughts(fixSentenceSpacing(stripDashes((await sanitizeDashesText(postText, { ...logCtx, surface: 'story_post' })).trim()))),
         beatIdx,
       ),
       slides: (

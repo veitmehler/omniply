@@ -55,6 +55,12 @@ function resolveStoryContent(story: StorySlot, ctx: MatrixRunContext): SlotConte
   if (story.storyType === 'tips_bullets' && ctx.newsletterCtx) {
     return { text: ctx.newsletterCtx.tips.join('\n'), title: 'Tips of the Day' }
   }
+  // Pitch stories (promote the day's feed asset): the caption writer needs the article's
+  // substance, not only its title — a title-only source made Sonnet 5.5 narrate the gap in
+  // the caption itself (Whealth social bench 2026-11-11).
+  if (story.storyType === 'pitch_carousel' || story.storyType === 'pitch_hook') {
+    return { text: pitchContentText(ctx), title: ctx.contextTitle }
+  }
   return { text: ctx.contextTitle, title: ctx.contextTitle }
 }
 

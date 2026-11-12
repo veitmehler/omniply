@@ -1,4 +1,5 @@
 import { getLLMAdapter } from '../../article-pipeline/llm/factory'
+import { stripMetaCommentary } from '../../lib/text/meta-commentary'
 import { loadPromptTemplate } from '../../article-pipeline/enrichment/prompt-template'
 import { logger } from '../../lib/logger'
 import { loadSocialBrandTheme } from '../brand-theme'
@@ -41,6 +42,7 @@ const BATCH_RULES = `Rules for EVERY caption:
 - Do not use markdown or em-dashes.
 - Match native {{platform}} posting style.
 - Apply the brand writing style; if empty, default to the platform tone.
+- Never comment on the source, the brief or your own choices inside a caption; if a slot's section text is thin, write from its heading and the article title without saying so.
 
 Rules ACROSS the captions (critical):
 - Each caption draws ONLY on its own section text. Never borrow scenes, anecdotes, statistics, or phrasings from another slot's section.
@@ -143,9 +145,10 @@ ${BATCH_RULES.replace(/\{\{charLimit\}\}/g, String(charLimit)).replace(/\{\{plat
     if (typeof raw !== 'string' || !raw.trim()) {
       throw new Error(`Batched captions: missing caption for slot ${s.slotKey}`)
     }
-    const caption = (
-      await sanitizeDashesText(raw.trim(), { ...logCtx, platform, slotKey: s.slotKey, surface: 'caption' })
-    ).trim()
+    const caption = stripMetaCommentary(
+      (await sanitizeDashesText(raw.trim(), { ...logCtx, platform, slotKey: s.slotKey, surface: 'caption' })).trim(),
+    )
+    if (!caption) throw new Error(`Batched captions: only commentary came back for slot ${s.slotKey}`)
     out[s.slotKey] = caption.length <= charLimit ? caption : caption.slice(0, charLimit - 1).trim() + '…'
   }
 
