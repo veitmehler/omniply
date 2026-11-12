@@ -8,6 +8,8 @@ import type { SpecAssets } from './generate-spec'
 import type { SlotContent } from './content'
 import type { StorySlot } from './weekly-matrix'
 import { resolveNewsletterSlotContent } from './newsletter-content'
+import { sectionAtIndex } from './article-social-selectors'
+import { sectionIndexOfSource } from './weekly-matrix'
 import { generateQuoteCardAsset, generateTipsBulletStoryAsset } from '../generate-assets'
 import { generateStoryCarouselVideo, generateStoryHookVideo } from '../generate-video-assets'
 import type { MatrixRunContext } from './matrix-processor'
@@ -39,8 +41,30 @@ function pitchContentText(ctx: MatrixRunContext): string {
   return ctx.contextTitle
 }
 
+/**
+ * What a PITCH story promotes is the specific feed post it trails (Veit 2026-11-12): its caption
+ * must tease THAT post — the arc beat for a story post, the section for a carousel — not the
+ * article intro, which gave S1, S2 and S3 the same hook.
+ */
+async function promotedFeedContent(story: StorySlot, run: SocialAutomationRun, ctx: MatrixRunContext): Promise<SlotContent | null> {
+  const source = story.source
+  if (!source || !ctx.articleCtx) return null
+  if (source === 'art_story') {
+    if (!run.jobId) return null
+    const page = await prisma.sitePage.findFirst({ where: { jobId: run.jobId }, select: { storyArcJson: true } })
+    const arc = (page?.storyArcJson as { postText?: string; slides?: string[] }[] | null) ?? null
+    const beat = arc?.[story.beatIndex ?? 0]
+    if (beat?.postText) return { text: beat.postText, title: beat.slides?.[0] ?? ctx.contextTitle }
+    return null
+  }
+  if (source === 'art_keytakeaways') return { text: ctx.articleCtx.keyTakeawaysText, title: 'Key Takeaways' }
+  const idx = sectionIndexOfSource(source)
+  if (idx !== null) return sectionAtIndex(ctx.articleCtx, idx)
+  return null
+}
+
 /** Standalone content for a quote / tips story (pitch stories reuse the feed asset instead). */
-function resolveStoryContent(story: StorySlot, ctx: MatrixRunContext): SlotContent {
+async function resolveStoryContent(story: StorySlot, run: SocialAutomationRun, ctx: MatrixRunContext): Promise<SlotContent> {
   if (story.storyType === 'quote') {
     if (ctx.newsletterCtx) {
       // Newsletter quote: sourced from the feature so it doesn't duplicate the tips story.
@@ -59,6 +83,8 @@ function resolveStoryContent(story: StorySlot, ctx: MatrixRunContext): SlotConte
   // substance, not only its title — a title-only source made Sonnet 5.5 narrate the gap in
   // the caption itself (Whealth social bench 2026-11-11).
   if (story.storyType === 'pitch_carousel' || story.storyType === 'pitch_hook') {
+    const promoted = await promotedFeedContent(story, run, ctx).catch(() => null)
+    if (promoted?.text?.trim()) return promoted
     return { text: pitchContentText(ctx), title: ctx.contextTitle }
   }
   return { text: ctx.contextTitle, title: ctx.contextTitle }
@@ -127,7 +153,7 @@ async function generateStoryAsset(opts: {
     }
     case 'quote':
     default: {
-      const content = resolveStoryContent(story, ctx)
+      const content = await resolveStoryContent(story, run, ctx)
       const card = await generateQuoteCardAsset({
         userId: run.userId,
         content: content.text,
@@ -169,7 +195,7 @@ export async function processStorySlot(opts: {
         )
         const syntheticSpec = { isStory: true, postType: assets.postType, slotKey: story.slotKey } as unknown as SocialPostSpec
 
-        const captionText = resolveStoryContent(story, ctx)
+        const captionText = await resolveStoryContent(story, run, ctx)
         const buildResult = await buildPostsForSpec({
           logCtx: specCtx,
           spec: syntheticSpec,

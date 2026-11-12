@@ -197,6 +197,8 @@ export interface StorySlot {
   promotesFeedKey?: string
   /** Content source for pitch/quote resolution (mirrors the companion feed slot). */
   source?: PostSource
+  /** Story-arc beat the promoted feed post carries (art_story / nl_story sources). */
+  beatIndex?: number
 }
 
 export interface FeedEntry {
@@ -219,10 +221,10 @@ export function storySlotsForDay(kind: SourceKind, feedEntries: FeedEntry[]): St
       // story_text (2026-09-03): the 9:16 story PITCHES the feed story post
       // (reuses its hook slide) — the old generic pull-quote had no relation
       // to the beat and read as nonsense.
-      return { slotKey, storyType: 'pitch_carousel', anchorHour: hour, promotesFeedKey: fe.slotKey, source }
+      return { slotKey, storyType: 'pitch_carousel', anchorHour: hour, promotesFeedKey: fe.slotKey, source, beatIndex: fe.daySlot.beatIndex }
     }
     if (postType === 'hook_video') {
-      return { slotKey, storyType: 'pitch_hook', anchorHour: hour, promotesFeedKey: fe.slotKey, source }
+      return { slotKey, storyType: 'pitch_hook', anchorHour: hour, promotesFeedKey: fe.slotKey, source, beatIndex: fe.daySlot.beatIndex }
     }
     if (kind === 'newsletter') {
       // nl_overview (video_reel) → tips-bullets story; nl_tips (quote) → a
