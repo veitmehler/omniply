@@ -405,6 +405,18 @@ describe('stripPunctuationDashes', () => {
     expect(stripPunctuationDashes('sessions run 45-60 minutes')).toBe('sessions run 45 to 60 minutes')
   })
 
+  // Dasha IG transcript 2026-11-06: "Monday–Saturday 10 AM to 6 PM" came
+  // out as "Monday, Saturday", which reads as two days. Day and month
+  // ranges render as "to" (Spanish names as "a").
+  it('renders day and month ranges as "to"', () => {
+    expect(stripPunctuationDashes("We're open Monday–Saturday 10 AM to 6 PM")).toBe("We're open Monday to Saturday 10 AM to 6 PM")
+    expect(stripPunctuationDashes('Mon - Fri 9–5')).toBe('Mon to Fri 9 to 5')
+    expect(stripPunctuationDashes('closed June—August')).toBe('closed June to August')
+    expect(stripPunctuationDashes('abierto lunes–sábado')).toBe('abierto lunes a sábado')
+    // Not a range: a dash used as punctuation after a day name still becomes a comma.
+    expect(stripPunctuationDashes('Monday — the team is in')).toBe('Monday, the team is in')
+  })
+
   it('range handling never weakens the prose dash elimination', () => {
     expect(stripPunctuationDashes('We open at 8 — closed Sundays')).toBe('We open at 8, closed Sundays')
     expect(stripPunctuationDashes('X-ray results in 2-3 days — call us')).toBe(

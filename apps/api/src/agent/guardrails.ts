@@ -303,6 +303,18 @@ export const MAX_VISITOR_TURNS = 30
  * grammar. Word-internal hyphens (X-ray, well-being) are untouched. The
  * prompt rule catches ~95%; this guarantees the rest.
  */
+const PERIOD_NAMES = [
+  'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday',
+  'Mon', 'Tue', 'Tues', 'Wed', 'Thu', 'Thur', 'Thurs', 'Fri', 'Sat', 'Sun',
+  'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December',
+  'Jan', 'Feb', 'Mar', 'Apr', 'Jun', 'Jul', 'Aug', 'Sep', 'Sept', 'Oct', 'Nov', 'Dec',
+  'lunes', 'martes', 'miércoles', 'miercoles', 'jueves', 'viernes', 'sábado', 'sabado', 'domingo',
+  'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
+]
+const PERIOD_ALT = PERIOD_NAMES.join('|')
+const DAY_MONTH_RANGE_RE = new RegExp(`\\b(${PERIOD_ALT})\\.?\\s*[—–-]\\s*(${PERIOD_ALT})\\b`, 'gi')
+const SPANISH_PERIOD_RE = /^(lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo|enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)$/i
+
 export function stripPunctuationDashes(text: string): string {
   return (
     text
@@ -316,6 +328,10 @@ export function stripPunctuationDashes(text: string): string {
       // "765 to 333 to 4455" — phone numbers keep their hyphens. The
       // lookbehind keeps date-ish chains ("2026-10-08") intact too.
       .replace(/(?<![\d—–-])(\d{1,2}(?::\d{2})?\s*(?:[AaPp]\.?[Mm]\.?)?)\s*[—–-]\s*(?=\d{1,2}(?!\d))/g, '$1 to ')
+      // Day/month RANGES (Dasha IG transcript 2026-11-06: "Monday–Saturday"
+      // became "Monday, Saturday"). A dash between two day or month names,
+      // English or Spanish, full or abbreviated, reads as "to"/"a".
+      .replace(DAY_MONTH_RANGE_RE, (_m, a: string, b: string) => `${a} ${SPANISH_PERIOD_RE.test(a) ? 'a' : 'to'} ${b}`)
       .replace(/\s*[—–]\s*/g, ', ') // remaining em/en dashes, any spacing
       .replace(/\s+-\s+/g, ', ') // spaced hyphen used as punctuation
       .replace(/,\s*,/g, ', ') // collapse accidental double commas
