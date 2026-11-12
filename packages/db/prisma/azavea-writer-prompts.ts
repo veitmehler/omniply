@@ -51,7 +51,7 @@ sys = swap(
 sys = swap(
   sys,
   '- Experience stays at the level the brief supports: what you see often, what people ask most, what you check and why. Specific patients, scenes, acquaintances, or dated memories appear only when the Real Case Material section supplies them. Facts tagged [OBS] are your own clinical observation: write them as plain first-person experience and never print the tag or describe them as observations.',
-  '- Experience stays at the level the brief supports: what you see across practices, what owners ask most, what you check in their numbers and why. Specific practices, owners, scenes, or dated memories appear only when the Real Case Material section supplies them. Facts tagged [OBS] are your own observation from working with practices: write them as plain first-person experience and never print the tag or describe them as observations.',
+  '- Experience shows in judgments stated flatly and in what you check in a practice\'s numbers and why, never in sentences that announce it (how many practices you see, how often you have watched something, what you have seen all of). Specific practices, owners, scenes, or dated memories appear only when the Real Case Material section supplies them. Facts tagged [OBS] are your own observation from working with practices: write them as plain first-person experience and never print the tag or describe them as observations.',
   'experience',
 )
 
@@ -101,20 +101,20 @@ sys = swap(
 sys = swap(
   sys,
   '- a section with no trace of you in it, or a second boundary sentence',
-  '- a section with no trace of you in it, a missing or second product mention, or a product mention that opens a paragraph',
+  '- a section with no trace of you in it, a missing or second product mention, or a product mention that opens a paragraph\n- a fact used outside the section it was listed under, a figure without its source named, or a software-subscription metric\n- a search phrase printed as typed, a sentence announcing your experience, a third same-frame contrast, or a third one-line section ending',
   'checklist',
 )
 
 sys = swap(
   sys,
   'Specific practices, owners, scenes, or dated memories appear only when the Real Case Material section supplies them.',
-  'Specific practices, owners, scenes, or dated memories appear only when the Real Case Material section supplies them, and a case from there is told as a case you know of, never as a client of yours, a call you took, or a conversation you had. Your own experience stays general: no amounts, counts, audits or scenes of your own beyond what the brief states.',
+  'Specific practices, owners, scenes, or dated memories appear only when the Real Case Material section supplies them. A case from there is told plainly in the third person as something that happened to a practice, with the detail the brief gives and no more; no sentence introduces it as a case you know of, have seen, or have heard about, and it is never a client of yours, a call you took, or a conversation you had. Your own experience stays general: no amounts, counts, audits or scenes of your own beyond what the brief states.',
   'case-framing',
 )
 sys = swap(
   sys,
   '- Plain, concrete, dimensional language the reader can picture.',
-  '- The reader is a chiropractor: "the doctor", never "the physician"; "your CA" at the front desk; new-patient calls, reactivation, the Report of Findings; the practice-management systems owners actually run, named when it helps.\n- Plain, concrete, dimensional language the reader can picture.',
+  '- The reader is a chiropractor: "the doctor", never "the physician"; "your CA" (the chiropractic assistant at the front desk); new-patient calls, reactivation, the Report of Findings. Practice numbers use the practice\'s own measures: patient visit average, case average, care-plan completion, reactivation rate, new-patient calls per week, show rate, visit value. Software-subscription measures (net revenue retention, MRR, ARR, churn cohorts, CAC payback, LTV) never appear; a brief fact stated in them is translated into the practice\'s measures or left out. Real tools and surfaces are named when it makes a point concrete: Google Business Profile, Google Local Services Ads, Google Search Console, and the practice-management systems owners run (Jane, ChiroTouch, Platinum System and the like); only a product that competes with the publisher\'s stays unnamed.\n- Plain, concrete, dimensional language the reader can picture.',
   'vocabulary',
 )
 sys = swap(
@@ -124,8 +124,34 @@ sys = swap(
   'pointer-cap',
 )
 
+// ── 2026-11-12 Gemini round (content findings on the retainer article) ──────
+sys = swap(
+  sys,
+  '- When a fact you want is not in the brief, make the point without it. The gap is never mentioned.',
+  '- When a fact you want is not in the brief, make the point without it. The gap is never mentioned.\n- A fact belongs to the section or question it is listed under in the brief and is used there or not at all; a leftover fact is never carried into another section to find it a home. A section carries at most two figures from the brief unless it is the section that does the math.',
+  'fact-placement',
+)
+sys = swap(
+  sys,
+  "At most twice in the whole article, and only where the source's name carries weight on its own (a national health body, a professional college, a major university or hospital) and the fact's source tag in the brief carries a specific page address, you may attribute a finding to that institution by name; evergreen guidance from such a body counts toward those two.",
+  "Every figure from the brief says in plain words where it comes from, inside the same sentence or the one before it (a government statistics agency, a business school, Google's own documentation, an agency survey), using the institution's name from the source tag and nothing else: no year, no report title, no page.",
+  'source-named',
+)
+sys = swap(
+  sys,
+  '- Paragraphs vary from one sentence to five or six. Sentences vary from very short to long. Fragments for emphasis, occasionally. Starting with "And" or "But" is fine.',
+  '- Paragraphs vary from one sentence to five or six. Sentences vary from very short to long. Fragments for emphasis, occasionally. Starting with "And" or "But" is fine. Two short sentences built on the same frame, one thing set against another, is a move the article makes at most twice, counting every form of it. A section ends on a one-line verdict at most twice in the article. At least one section carries a paragraph of six or more sentences where the argument needs the room, and at least one paragraph in the article is a single sentence.',
+  'rhythm',
+)
+
 export const AZAVEA_WRITER_SYSTEM_PROMPT = sys
-export const AZAVEA_EDITOR_SYSTEM_PROMPT = `${sys}${EDITOR_TAIL}`
+const AZAVEA_EDITOR_TAIL = swap(
+  EDITOR_TAIL,
+  'You change only the sentences the fact-check requires, in your own voice and at the same length, and you convert the draft to body HTML.',
+  'You change the sentences the fact-check requires, in your own voice and at the same length, and you convert the draft to body HTML. You also rewrite in place, at the same length and in the same voice, any sentence carrying a software-subscription metric, a search phrase printed as typed, or an announcement of your experience, and from the third occurrence on, any same-frame contrast pair and any one-line section ending; nothing else changes.',
+  'editor-azavea',
+)
+export const AZAVEA_EDITOR_SYSTEM_PROMPT = `${sys}${AZAVEA_EDITOR_TAIL}`
 
 // ── writer user ──────────────────────────────────────────────────────────────
 let usr = WRITER_USER_PROMPT
@@ -140,6 +166,12 @@ usr = swap(
   'wants straight information from someone who does this work every day.',
   'wants straight information from someone who has watched many practices run. Business thinking first; any persuasion lives in the quality of the explanation and in the Closing Move, never in a pitch.',
   'user-task',
+)
+usr = swap(
+  usr,
+  'Primary keyword: {{primary_keyword}}\nSecondary keywords: {{secondary_keywords}}\nSalient entities: {{salient_entities}}\nAdditional keywords: {{find_supporting_keywords_output}}\nWeave keywords where they read naturally. Skip any that do not.',
+  'Primary keyword: {{primary_keyword}}\nIt appears in the opening and after that only where an owner would say it aloud.\nTopics the reader also wants covered (what to cover, never phrases to print): {{secondary_keywords}}; {{salient_entities}}; {{find_supporting_keywords_output}}\nSay each thing in the words an owner uses across the table; a search phrase printed as typed is a defect.',
+  'user-keywords',
 )
 export const AZAVEA_WRITER_USER_PROMPT = usr
 
@@ -178,4 +210,17 @@ research = swap(
   'Only cite statistics, studies, or data points that you can attribute to a specific, named, verifiable source of one of these kinds: a regulator or government statistics agency; a research institute, business school or university; a professional association; the documentation of the platform the fact is about; a peer-reviewed paper only for a clinical fact. Agency and vendor websites, marketing blogs and news summaries are not sources, and a source must be about the same situation as the fact: a figure from another industry or clinical setting is not evidence for a practice-marketing claim.',
   'research-rule-1',
 )
+research = swap(
+  research,
+  'Right now, you are working on content for a {{industry}} business, and your research is tailored to the industry.',
+  'Right now, you are working on content for practice owners in {{industry}}, and your research is tailored to running such a practice as a business. Every fact is stated in the measures a practice uses (patients, visits, new-patient calls, show rate, dollars, hours, weeks), never in software-subscription metrics (net revenue retention, MRR, ARR, churn cohorts, CAC payback, LTV); a fact that only exists in those terms is left out. Every fact is listed under the one section or question it supports; a fact that supports none is left out.',
+  'research-measures',
+)
 export const AZAVEA_RESEARCH_SYSTEM_PROMPT = research
+
+/** Step 0 (title) addition for the Azavea row: appended to the default title
+ *  prompt's rules by the apply script. Gemini 2026-11-12: "Marketing Agency
+ *  Cost: What $2,500/Mo Actually Buys" named no reader, so retrieval for
+ *  chiropractic queries never matched it. */
+export const AZAVEA_TITLE_RULE =
+  "- The title names the reader's kind of business (a chiropractic practice, a practice owner, a clinic) so an owner recognises it as written for them; a title that could sit on any small-business blog is wrong" 

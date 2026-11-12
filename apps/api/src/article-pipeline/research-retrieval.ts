@@ -36,9 +36,9 @@ export interface RetrievalDeps {
   pubmedSearch: (query: string) => Promise<Array<{ id: string; title: string }>>
   pubmedAbstract: (id: string) => Promise<string | null>
   /** Extract facts for `unit` from a source text (abstract). */
-  extractFromText: (unit: string, title: string, text: string, industry: string, topic: string) => Promise<{ facts: Array<{ fact: string; quote: string }>; cost: number; tokens: { input: number; output: number } }>
+  extractFromText: (unit: string, title: string, text: string, industry: string, topic: string, vertical?: string | null) => Promise<{ facts: Array<{ fact: string; quote: string }>; cost: number; tokens: { input: number; output: number } }>
   /** Extract facts for `unit` from a page Google reads (URL context). */
-  extractFromUrl: (unit: string, url: string, industry: string, topic: string) => Promise<{ facts: Array<{ fact: string; quote: string }>; cost: number; tokens: { input: number; output: number }; retrieved: boolean }>
+  extractFromUrl: (unit: string, url: string, industry: string, topic: string, vertical?: string | null) => Promise<{ facts: Array<{ fact: string; quote: string }>; cost: number; tokens: { input: number; output: number }; retrieved: boolean }>
 }
 
 export interface RetrievalResult {
@@ -186,9 +186,16 @@ async function geminiJson(prompt: string, tools?: unknown[]): Promise<{ text: st
   return { text, cost: calculateCost(EXTRACT_MODEL, input, output), tokens: { input, output }, retrieved: tools ? /SUCCESS/i.test(status) : true }
 }
 
-function extractionPrompt(unit: string, industry: string, sourceLabel: string, topic = ''): string {
+/** Azavea (practice-owner business articles): facts arrive in the practice's own
+ *  measures, never in software-subscription metrics (NRR entered a retainer
+ *  article this way, 2026-11-12). Clinic verticals get no extra line. */
+const AZAVEA_EXTRACTION_RULE =
+  'The reader runs a healthcare practice as a business. State a figure in the measures a practice uses (patients, visits, new-patient calls, show rate, dollars, hours, weeks). Skip any fact expressed as a software-subscription metric (net revenue retention, MRR, ARR, churn cohorts, CAC payback, LTV) and any fact about an industry that is not a local service business, even when the words overlap. '
+
+export function extractionPrompt(unit: string, industry: string, sourceLabel: string, topic = '', vertical?: string | null): string {
   return (
     `You extract facts for an article written by a ${industry} practice.${topic ? ` The article is about: "${topic}".` : ''} The article section is: "${unit}".\n` +
+    (vertical === 'azavea' ? AZAVEA_EXTRACTION_RULE : '') +
     `From the source below, return up to ${MAX_FACTS_PER_SOURCE} facts that are directly relevant to that section AND to the article's subject. ` +
     `If the source is about a different condition, population or treatment than the article (for example a page on Parkinson's disease for an article on back stiffness), return [] even if a sentence mentions a shared word. ` +
     `A fact is one plain sentence stating what was found, with its figure, rate or duration when the source gives one. ` +
@@ -234,13 +241,13 @@ export const liveRetrievalDeps: RetrievalDeps = {
       return null
     }
   },
-  async extractFromText(unit, title, text, industry, topic) {
-    const r = await geminiJson(extractionPrompt(unit, industry, `SOURCE TITLE: ${title}\nSOURCE TEXT:\n${text.slice(0, 6000)}`, topic))
+  async extractFromText(unit, title, text, industry, topic, vertical) {
+    const r = await geminiJson(extractionPrompt(unit, industry, `SOURCE TITLE: ${title}\nSOURCE TEXT:\n${text.slice(0, 6000)}`, topic, vertical))
     const facts = parseFacts(r.text).filter((f) => quoteInText(f.quote, text))
     return { facts, cost: r.cost, tokens: r.tokens }
   },
-  async extractFromUrl(unit, url, industry, topic) {
-    const r = await geminiJson(extractionPrompt(unit, industry, `SOURCE PAGE (read it): ${url}`, topic), [{ url_context: {} }])
+  async extractFromUrl(unit, url, industry, topic, vertical) {
+    const r = await geminiJson(extractionPrompt(unit, industry, `SOURCE PAGE (read it): ${url}`, topic, vertical), [{ url_context: {} }])
     return { facts: r.retrieved ? parseFacts(r.text) : [], cost: r.cost, tokens: r.tokens, retrieved: r.retrieved }
   },
 }
@@ -304,7 +311,7 @@ export async function runRetrievalResearch(opts: {
           const abs = await deps.pubmedAbstract(h.id)
           if (!abs) continue
           stats.pagesRead++
-          const ex = await deps.extractFromText(unit, h.title, abs, industry, opts.topic)
+          const ex = await deps.extractFromText(unit, h.title, abs, industry, opts.topic, opts.vertical)
           cost += ex.cost
           tokens.input += ex.tokens.input
           tokens.output += ex.tokens.output
@@ -330,7 +337,7 @@ export async function runRetrievalResearch(opts: {
     for (const c of candidates) {
       seen.add(norm(c.url))
       try {
-        const ex = await deps.extractFromUrl(unit, c.url, industry, opts.topic)
+        const ex = await deps.extractFromUrl(unit, c.url, industry, opts.topic, opts.vertical)
         cost += ex.cost
         tokens.input += ex.tokens.input
         tokens.output += ex.tokens.output

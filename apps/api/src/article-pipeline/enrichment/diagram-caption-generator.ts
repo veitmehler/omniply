@@ -27,7 +27,7 @@ Diagram content (Mermaid source, for your eyes only):
 
 Return a JSON object with exactly two fields. They serve different readers and must not repeat each other.
 
-"altText": for a reader who cannot see the image. In 60 to 110 characters, say what the picture shows about the subject: the things it connects, the sequence it lays out, the comparison it makes. Name the clinical content, never the kind of chart. Words such as diagram, chart, flowchart, mindmap, map, graph, nodes, branches, class, state, or the name of any drawing tool do not appear. Write a complete phrase that a person would say when describing the picture to a friend on the phone.
+"altText": for a reader who cannot see the image. In 60 to 110 characters, say what the picture shows about the subject: the things it connects, the sequence it lays out, the comparison it makes. Name the clinical content, never the kind of chart. Words such as diagram, chart, flowchart, mindmap, map, graph, nodes, branches, class, state, or the name of any drawing tool do not appear. Write a complete phrase that a person would say when describing the picture to a friend on the phone. An abbreviation in the diagram is copied as written or expanded only the way the section heading or article topic expands it; never guess what it stands for (in a chiropractic article "CA" is the chiropractic assistant at the front desk, not an accountant).
 
 "caption": for a sighted reader. One sentence of 15 to 25 words giving the point the picture makes, the insight rather than the inventory. Do not begin with "This" or "The diagram". Do not repeat the alt text.
 

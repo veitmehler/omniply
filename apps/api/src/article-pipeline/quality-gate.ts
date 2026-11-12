@@ -286,7 +286,43 @@ export async function getArticleBodyHtml(jobId: string): Promise<string | null> 
 export async function runQualityCheck(jobId: string): Promise<QualityVerdict> {
   const body = await getArticleBodyHtml(jobId)
   if (!body) throw new Error(`No article body found for job ${jobId}`)
+  const cut = truncationIssue(body)
+  if (cut) return truncationVerdict(cut)
   const evaluation = await evaluateArticleQuality(body)
   const verdict = await judgeQualityVerdict(evaluation.text)
   return verdict
+}
+
+/**
+ * Deterministic completeness check (Azavea retainer article, 2026-11-12: the
+ * writer hit its output-token cap mid-section, the last section was four
+ * words with no full stop, the LLM judge wrote "cuts off abruptly" and still
+ * passed it as minor). A truncated article is never a minor issue: this
+ * returns the reason when the body ends mid-sentence or its last section is
+ * a stub, and null when the ending looks complete.
+ */
+export const TRUNCATION_MIN_LAST_SECTION_WORDS = 40
+
+export function truncationIssue(bodyHtml: string): string | null {
+  const text = bodyHtml
+    .replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+  if (!text) return null
+  const last = text.slice(-1)
+  if (!/[.!?"”’)\]…:]/.test(last)) return 'Article ends mid-sentence: the last paragraph has no closing punctuation.'
+  const sections = bodyHtml.split(/<h2\b[^>]*>/i)
+  if (sections.length > 1) {
+    const lastSection = sections[sections.length - 1]
+    const body = lastSection.replace(/^[\s\S]*?<\/h2>/i, '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+    const words = body ? body.split(' ').length : 0
+    if (words < TRUNCATION_MIN_LAST_SECTION_WORDS) return `Article ends abruptly: the last section has only ${words} words.`
+  }
+  return null
+}
+
+export function truncationVerdict(reason: string): QualityVerdict {
+  return { verdict: 'revise', severity: 'major', reasons: [reason], geminiSummary: `Deterministic completeness check failed before evaluation: ${reason}` }
 }

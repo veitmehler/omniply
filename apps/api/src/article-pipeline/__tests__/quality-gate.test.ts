@@ -141,3 +141,29 @@ describe('prepareEvalText (truncation bug, live test 2026-10-09)', () => {
     expect(out.length).toBeLessThan(EVAL_INPUT_CAP + 500)
   })
 })
+
+import { truncationIssue, truncationVerdict } from '../quality-gate'
+
+describe('truncationIssue (deterministic completeness, 2026-11-12)', () => {
+  const full = '<h2>What does it cost?</h2><p>' + 'A full sentence about cost. '.repeat(20) + '</p><h2>What is one routine?</h2><p>' + 'Run it every Monday with the CA and the doctor. '.repeat(12) + '</p>'
+  it('passes a complete article', () => {
+    expect(truncationIssue(full)).toBeNull()
+  })
+  it('flags the Azavea retainer ending: four words, no full stop', () => {
+    const cut = '<h2>What does it cost?</h2><p>' + 'A full sentence about cost. '.repeat(20) + '</p><h2>What\'s one routine you can run yourself on Monday?</h2>\n\n<p>Run a weekly reactivation routine</p>'
+    expect(truncationIssue(cut)).toMatch(/mid-sentence/)
+  })
+  it('flags a stub last section even when it ends with a full stop', () => {
+    const stub = '<h2>What does it cost?</h2><p>' + 'A full sentence about cost. '.repeat(20) + '</p><h2>Monday routine</h2><p>Run it weekly.</p>'
+    expect(truncationIssue(stub)).toMatch(/only 3 words/)
+  })
+  it('accepts endings on a quote, a bracket or an ellipsis', () => {
+    for (const end of ['"done."', 'done.)', 'done…', 'done!', 'done?']) {
+      expect(truncationIssue('<h2>A</h2><p>' + 'Sentence. '.repeat(50) + end + '</p>')).toBeNull()
+    }
+  })
+  it('builds a major revise verdict', () => {
+    const v = truncationVerdict('Article ends mid-sentence.')
+    expect(v).toMatchObject({ verdict: 'revise', severity: 'major', reasons: ['Article ends mid-sentence.'] })
+  })
+})

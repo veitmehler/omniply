@@ -99,3 +99,16 @@ describe('Azavea vertical sources (business, not clinical)', () => {
     expect(rankCandidates([{ url: 'https://www.pewresearch.org/x', title: 'retainer marketing practice survey', snippet: 'retainer' }], 'marketing retainer', 'practice marketing', new Set(), 'wellness')).toHaveLength(0)
   })
 })
+
+import { extractionPrompt } from '../research-retrieval'
+
+describe('extraction prompt by vertical (2026-11-12)', () => {
+  it('adds the practice-measures rule for Azavea only', () => {
+    const az = extractionPrompt('Patient retention', 'chiropractic', 'SOURCE PAGE: x', 'retainers', 'azavea')
+    expect(az).toMatch(/net revenue retention/)
+    expect(az).toMatch(/measures a practice uses/)
+    const chiro = extractionPrompt('Back stiffness', 'chiropractic', 'SOURCE PAGE: x', 'stiffness', 'chiro')
+    expect(chiro).not.toMatch(/net revenue retention/)
+    expect(extractionPrompt('Back stiffness', 'chiropractic', 'SOURCE PAGE: x', 'stiffness')).not.toMatch(/subscription/)
+  })
+})
