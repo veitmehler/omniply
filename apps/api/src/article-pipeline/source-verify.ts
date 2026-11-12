@@ -627,7 +627,9 @@ export function anchorFactSources(html: string, sources: FactSource[]): { html: 
     const inner = bm[2]
     if (/<[a-z/!]/i.test(inner)) continue // already marked up (links, bold, glosses)
     const innerStart = bm.index + bm[0].indexOf(inner)
-    const sentRe = /[^.!?]+[.!?]+(?=\s|$)|[^.!?]+$/g
+    // A period between digits ("47.2%") is not a sentence end (Argon 2026-11-12:
+    // the link started at "2% of insurers" because the split fell inside the figure).
+    const sentRe = /(?:[^.!?]|(?<=\d)\.(?=\d))+[.!?]+(?=\s|$)|(?:[^.!?]|(?<=\d)\.(?=\d))+$/g
     let sm: RegExpExecArray | null
     while ((sm = sentRe.exec(inner)) !== null) {
       const raw = sm[0]

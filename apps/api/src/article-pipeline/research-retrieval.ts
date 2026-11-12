@@ -192,27 +192,52 @@ async function geminiJson(prompt: string, tools?: unknown[]): Promise<{ text: st
 const AZAVEA_EXTRACTION_RULE =
   'The reader runs a healthcare practice as a business. State a figure in the measures a practice uses (patients, visits, new-patient calls, show rate, dollars, hours, weeks). Skip any fact expressed as a software-subscription metric (net revenue retention, MRR, ARR, churn cohorts, CAC payback, LTV) and any fact about an industry that is not a local service business, even when the words overlap. '
 
+/** Argon round on Dasha's articles (2026-11-12): a bench-press row scraped
+ *  from a review's summary table, a nurses' occupational study, hospital HBOT
+ *  indications, an ophthalmology exam list and US insurance percentages all
+ *  reached a wellness-clinic article because extraction matched terms, not
+ *  the reader's situation. Every fact now carries its setting and a verdict
+ *  on whether it applies to the reader; non-applying facts are dropped here. */
+const SETTING_RULE =
+  'READER CHECK: the article is read by the practice\'s own clients or patients in everyday life (for a business article, by the practice owner). ' +
+  'Return a fact ONLY when its population and setting match that reader. Skip hospital, inpatient, surgical and critical-care protocols; animal, cell and tissue studies; occupational studies of other professions (nurses, soldiers, students); and another country\'s insurance, reimbursement or regulation unless the article is explicitly about that country. ' +
+  'Never extract a row from a table, a figure legend or a list of study conditions: a fact rests on one sentence of prose that a reader could have read. '
+
 export function extractionPrompt(unit: string, industry: string, sourceLabel: string, topic = '', vertical?: string | null): string {
   return (
     `You extract facts for an article written by a ${industry} practice.${topic ? ` The article is about: "${topic}".` : ''} The article section is: "${unit}".\n` +
+    SETTING_RULE +
     (vertical === 'azavea' ? AZAVEA_EXTRACTION_RULE : '') +
     `From the source below, return up to ${MAX_FACTS_PER_SOURCE} facts that are directly relevant to that section AND to the article's subject. ` +
     `If the source is about a different condition, population or treatment than the article (for example a page on Parkinson's disease for an article on back stiffness), return [] even if a sentence mentions a shared word. ` +
     `A fact is one plain sentence stating what was found, with its figure, rate or duration when the source gives one. ` +
     `Each fact must rest on one sentence of the source, copied exactly as "quote". Never use general knowledge; if the source has nothing relevant, return [].\n` +
-    `Output ONLY a JSON array: [{"fact": "...", "quote": "..."}]\n\n${sourceLabel}`
+    `Output ONLY a JSON array: [{"fact": "...", "quote": "...", "setting": "<population and setting, under 8 words>", "applies": true|false}] where "applies" is false when the setting does not match the reader.\n\n${sourceLabel}`
   )
 }
 
-export function parseFacts(raw: string): Array<{ fact: string; quote: string }> {
+/** A quote that is a table row rather than prose: mostly numbers, symbols and
+ *  abbreviations with hardly any running words ("High VOL BP (8x10x70%1RM) 6- & 30-h post"). */
+export function looksLikeTableRow(quote: string): boolean {
+  const tokens = quote.trim().split(/\s+/).filter(Boolean)
+  if (tokens.length === 0) return true
+  const wordy = tokens.filter((t) => /^[A-Za-z][a-z]{2,}[,.;:]?$/.test(t)).length
+  const numeric = tokens.filter((t) => /\d/.test(t)).length
+  if (wordy < 5) return true
+  return numeric / tokens.length > 0.4 || /\d\s*[x×]\s*\d/.test(quote)
+}
+
+export function parseFacts(raw: string): Array<{ fact: string; quote: string; setting?: string }> {
   const m = raw.match(/\[[\s\S]*\]/)
   if (!m) return []
   try {
-    const arr = JSON.parse(m[0]) as Array<{ fact?: string; quote?: string }>
+    const arr = JSON.parse(m[0]) as Array<{ fact?: string; quote?: string; setting?: string; applies?: unknown }>
     return arr
       .filter((x) => x && typeof x.fact === 'string' && x.fact.trim().length > 20 && typeof x.quote === 'string' && x.quote.trim().length > 15)
+      .filter((x) => x.applies !== false && String(x.applies).toLowerCase() !== 'false')
+      .filter((x) => !looksLikeTableRow(x.quote!))
       .slice(0, MAX_FACTS_PER_SOURCE)
-      .map((x) => ({ fact: x.fact!.trim(), quote: x.quote!.trim().slice(0, 400) }))
+      .map((x) => ({ fact: x.fact!.trim(), quote: x.quote!.trim().slice(0, 400), ...(typeof x.setting === 'string' ? { setting: x.setting.trim().slice(0, 80) } : {}) }))
   } catch {
     return []
   }

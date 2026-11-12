@@ -31,11 +31,14 @@ export const PLAIN_LANGUAGE_TEMPLATES: NewsletterPromptTemplate[] = [
     defaultModel: GEMINI_FLASH_LITE,
     maxTokens: 1024,
     systemPrompt:
-      'You review one section of a finished, fact-checked article and identify what would lose a ' +
-      'low-attention reader with roughly a 5th-grade reading level. You identify candidates only — ' +
+      'You review one section of a finished, fact-checked article and identify what would lose the ' +
+      'stated TARGET AUDIENCE, read at the pace of a busy adult. You identify candidates only — ' +
       'you never rewrite anything. Be selective: MOST sections need nothing. Only flag a term when ' +
-      'a typical layperson would genuinely stumble on it AND the section does not already explain ' +
-      'it in plain words. Only flag a concept when the section explains a genuinely complex ' +
+      'that audience would genuinely stumble on it AND the section does not already explain ' +
+      'it in plain words. Never flag an idiom or figure of speech ("moving the needle"), a metaphor the ' +
+      'author chose, a word the audience uses in daily life, or a word every adult knows (muscle, ' +
+      'hormone, mitochondria for an active professional); prefer the genuinely technical term the ' +
+      'section leaves unexplained (osteomyelitis, debridement) over the easy one. Only flag a concept when the section explains a genuinely complex ' +
       'mechanism or multi-step causal chain whose understanding materially helps the reader — not ' +
       'merely because the section is long or detailed.',
     userPrompt: `SECTION HEADING: {{sectionHeading}}
@@ -47,7 +50,7 @@ INDUSTRY: {{industry}}
 TARGET AUDIENCE: {{audience}}
 
 Identify:
-1. AT MOST 2 jargon terms a layperson would stumble on. For each, include the exact sentence (verbatim from the section text) where the term first appears.
+1. AT MOST 2 technical terms the TARGET AUDIENCE would stumble on (never idioms, figures of speech, the author's own metaphors, or everyday words). For each, include the exact sentence (verbatim from the section text) where the term first appears.
 2. AT MOST 1 complex concept/mechanism genuinely worth a short explanatory story. Include a one-line summary of the mechanism and a short verbatim quote (5-15 words) from the passage where it is explained (the anchor).
 
 Return STRICT JSON only:
@@ -65,10 +68,12 @@ If nothing needs explaining (the common case), return: {"terms": [], "concept": 
     maxTokens: 300,
     systemPrompt:
       'You write ONE short plain-language gloss sentence (two at most) that explains a technical ' +
-      'term to a reader with a 5th-grade reading level, without ever sounding childish or ' +
+      'term to the stated target audience in plain adult words, without ever sounding childish or ' +
       'condescending — you explain like a great teacher. The gloss will be inserted directly after ' +
       'an existing sentence in a published article, so it must flow naturally as a continuation, in ' +
-      'the same voice. Use one concrete, everyday image the target audience relates to. HARD ' +
+      'the same voice. Plain words first; an everyday example only when the construction rule asks ' +
+      'for one, and never an analogy tacked onto the end of the sentence (no "the second oar on the ' +
+      'boat", no "the way you would photograph a room"). HARD ' +
       'CONSTRAINT: your gloss may only illustrate what the provided article excerpt already ' +
       'states — never add facts, never strengthen claims, never promise outcomes. Follow the ' +
       'advertising restrictions exactly. Do not reuse any imagery listed as already used. Study ' +

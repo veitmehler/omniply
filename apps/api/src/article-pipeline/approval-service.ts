@@ -160,19 +160,44 @@ export function cleanStepOutput(text: string): string {
   return text.replace(/^#+\s+[^\r\n]+\s*\r?\n+/, '').trimStart()
 }
 
+const YES_NO_AUX =
+  /^(is|are|was|were|can|could|does|do|did|will|would|should|has|have|had|may|might|must|am|isn'?t|aren'?t|can'?t|doesn'?t|don'?t|didn'?t|won'?t|wouldn'?t|shouldn'?t|hasn'?t|haven'?t)$/i
+const WH_WORD = /^(how|why|what|when|where|which|who|whom|whose)$/i
+// After a wh-word, the next word must carry the verb of a real question:
+// an auxiliary ("What does…", "Why haven't…") or a present-tense verb
+// ("What counts as…", "What happens when…"). "What a Guide-led Assessment
+// Measures" and "Why the Same Week Costs…" are statements and stay as they are.
+const WH_NEXT_VERB =
+  /^(happens|counts|matters|makes|causes|helps|works|changes|comes|goes|means|drives|keeps|stops|sets|belongs|triggers|separates|decides|follows|limits|costs|takes|gets|needs|wins|loses|feels|looks|lasts|pays|buys|fixes|fails|holds|tells|shows|turns|lies|starts|ends|stands|signals|defines|explains|predicts|qualifies|determines|distinguishes)$/i
+const HOW_QUALIFIER = /^(long|much|many|often|far|soon|quickly|fast|late|early|well|hard|big|old|to|about)$/i
+
+/** True when the visible heading text has the grammatical form of a question. */
+export function isInterrogativeHeading(text: string): boolean {
+  const words = text.replace(/[?!.]+$/, '').trim().split(/\s+/).map((w) => w.replace(/[^\w'’-]/g, '').replace(/’/g, "'"))
+  if (words.length < 2) return false
+  const [first, second, third] = words
+  if (YES_NO_AUX.test(first)) return true
+  if (!WH_WORD.test(first)) return false
+  if (YES_NO_AUX.test(second) || WH_NEXT_VERB.test(second)) return true
+  if (/^how$/i.test(first) && HOW_QUALIFIER.test(second)) return true
+  // "What kind of X does…", "Which treatments are…": the verb two words on.
+  if (third && (YES_NO_AUX.test(third) || WH_NEXT_VERB.test(third))) return true
+  return false
+}
+
 /**
  * Ensures every H2 that is phrased as a question ends with a `?`.
- * Detection: the visible text starts with a common English interrogative word.
+ * Detection: the visible text has interrogative FORM (isInterrogativeHeading),
+ * not merely a leading wh-word (Argon 2026-11-12: "What a Guide-led
+ * Assessment Measures?" was a statement with a question mark forced on).
  * Only appends `?` when the heading has no terminal punctuation at all.
  */
 export function normalizeH2Questions(html: string): string {
-  const QUESTION_START =
-    /^(how|why|what|when|where|which|who|is|are|can|does|do|will|should|could|would|has|have|did)\b/i
   const TERMINAL_PUNCT = /[?!.]$/
 
   return html.replace(/<h2([^>]*)>([\s\S]*?)<\/h2>/gi, (match, attrs: string, inner: string) => {
     const text = inner.replace(/<[^>]+>/g, '').trim()
-    if (!QUESTION_START.test(text) || TERMINAL_PUNCT.test(text)) return match
+    if (!isInterrogativeHeading(text) || TERMINAL_PUNCT.test(text)) return match
 
     // Inject `?` just before any trailing closing HTML tags, or at the end of inner.
     const fixedInner = inner.trimEnd().replace(/(<\/[a-z][^>]*>(?:\s*<\/[a-z][^>]*>)*)$/i, '?$1')

@@ -117,12 +117,13 @@ Someone new to the subject who feels behind. The article removes the overwhelm b
 
 ## The arc
 - Start with the reader's situation as they would describe it, then the one thing that reorders their thinking.
-- The sequence is real: each stage depends on the one before, or the article says plainly that order does not matter. Each stage has something the reader can actually observe to know it is done.
+- The sequence is real: each stage depends on the one before, or the article says plainly that order does not matter. Each stage has something the reader can actually observe to know it is done, said in that stage's own words; the check is never a formula repeated from stage to stage.
 - Where a stage is the practitioner's rather than the reader's, the article says what happens at that point and what the reader brings to it.
 - The reader leaves knowing what to do first, what comes after, and the point at which a professional takes over.
 
 ## Posture
-- The promised outcome is something the reader can complete on their own: being prepared for a consultation, having a shortlist, having the right questions written down.
+- The promised outcome is something the reader can complete on their own: being prepared for a consultation, having the right questions written down, knowing what to look for.
+- When the author provides the service, the questions a reader should ask any provider are answered in the same breath for the author's own practice, from the brief; the reader is never sent to compare other providers or to shortlist them.
 - ${CONSULTATION_RULE}
 - ${SELF_DIAGNOSIS_RULE}
 - ${CASE_RULE}`,
