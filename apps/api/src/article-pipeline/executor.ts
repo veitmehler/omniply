@@ -20,6 +20,7 @@ import { checkSupport } from './source-support'
 import { resolveChunkUrisIndexed } from './grounding-resolver'
 import { restoreBoundary } from '../lib/text/boundary-restore'
 import { runRetrievalResearch } from './research-retrieval'
+import { verticalForUser } from '../lib/prompt-resolver'
 import { quoteInPage } from './source-support'
 import { researchUnitsFor } from './research-units'
 import { recordLLMUsage } from '../lib/llm-usage'
@@ -291,7 +292,8 @@ export async function runPipelinePhaseA(jobId: string): Promise<void> {
             const support = process.env.SOURCE_SUPPORT === '0' ? undefined : (fact: string, url: string) => checkSupport(fact, url, { jobId, stepNumber })
             const retrieved = result.retrieved
             const quoteCheck = retrieved?.length ? (quote: string, url: string) => quoteInPage(quote, url) : undefined
-            const v = await verifyFactSources(stepOutput, { jobId, stepNumber }, undefined, { supports, support, retrieved, quoteCheck })
+            const vertical = await verticalForUser(ctx.userId).catch(() => null)
+            const v = await verifyFactSources(stepOutput, { jobId, stepNumber }, undefined, { supports, support, retrieved, quoteCheck, vertical })
             if (v.text !== stepOutput) {
               stepOutput = v.text
               ctx.completedSteps.set(stepNumber, stepOutput)
@@ -552,7 +554,7 @@ async function runRetrievalStep(jobId: string, stepNumber: number, ctx: Pipeline
   })
   let r: Awaited<ReturnType<typeof runRetrievalResearch>>
   try {
-    r = await runRetrievalResearch({ jobId, stepNumber, units, topic: ctx.topicText, industry: bs?.industry ?? '' })
+    r = await runRetrievalResearch({ jobId, stepNumber, units, topic: ctx.topicText, industry: bs?.industry ?? '', vertical: await verticalForUser(ctx.userId).catch(() => null) })
   } catch (err) {
     logger.warn({ jobId, stepNumber, err }, '[executor] retrieval research failed, using grounded step')
     return null

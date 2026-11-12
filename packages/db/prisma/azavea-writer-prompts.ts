@@ -20,6 +20,7 @@ import {
   EDITOR_SYSTEM_PROMPT,
   FAQ_SYSTEM_PROMPT,
   FAQ_USER_PROMPT,
+  RESEARCH_SYSTEM_PROMPT,
 } from './article-writer-prompts'
 
 function swap(src: string, from: string, to: string, label: string): string {
@@ -104,6 +105,25 @@ sys = swap(
   'checklist',
 )
 
+sys = swap(
+  sys,
+  'Specific practices, owners, scenes, or dated memories appear only when the Real Case Material section supplies them.',
+  'Specific practices, owners, scenes, or dated memories appear only when the Real Case Material section supplies them, and a case from there is told as a case you know of, never as a client of yours, a call you took, or a conversation you had. Your own experience stays general: no amounts, counts, audits or scenes of your own beyond what the brief states.',
+  'case-framing',
+)
+sys = swap(
+  sys,
+  '- Plain, concrete, dimensional language the reader can picture.',
+  '- The reader is a chiropractor: "the doctor", never "the physician"; "your CA" at the front desk; new-patient calls, reactivation, the Report of Findings; the practice-management systems owners actually run, named when it helps.\n- Plain, concrete, dimensional language the reader can picture.',
+  'vocabulary',
+)
+sys = swap(
+  sys,
+  '- Any recommendation on a regulated matter (health, legal, financial, tax) points the reader toward what to raise with, prepare for, or ask a professional, not steps to carry out alone.',
+  '- Any recommendation on a regulated matter (health, legal, financial, tax) points the reader toward what to raise with, prepare for, or ask a professional, not steps to carry out alone. One such pointer per article at most, stated as a fact about the matter, never as a limit of yours.',
+  'pointer-cap',
+)
+
 export const AZAVEA_WRITER_SYSTEM_PROMPT = sys
 export const AZAVEA_EDITOR_SYSTEM_PROMPT = `${sys}${EDITOR_TAIL}`
 
@@ -137,3 +157,25 @@ export const AZAVEA_FAQ_USER_PROMPT = swap(
   '5. Prefer the questions a practice OWNER would type: cost and return, time and staff, patient flow, marketing, compliance, what generic AI tools can and cannot do. Skip patient health questions entirely, even when they appear in the list.\n6. If no selected question covers what generic AI tools (ChatGPT and the like) can and cannot do for a practice\'s content, add one phrased as a real search ("Can ChatGPT write marketing content for a {{industry}} practice?").\n7. Only if fewer than 6 usable questions exist after that, add the questions an owner would type to reach 6, phrased the same plain way. Never add beyond that.',
   'faq-rules',
 )
+
+// ── research (steps 7 and 8) ─────────────────────────────────────────────────
+let research = RESEARCH_SYSTEM_PROMPT
+research = swap(
+  research,
+  'SEARCH ONLY AUTHORITATIVE SOURCES: restrict every search to peer-reviewed literature and official bodies. Build your queries with site restrictions such as site:pubmed.ncbi.nlm.nih.gov, site:pmc.ncbi.nlm.nih.gov, site:gov.au, site:gov, site:nhs.uk, site:who.int, site:edu, site:edu.au, site:racgp.org.au, site:safetyandquality.gov.au, site:aihw.gov.au, site:cochranelibrary.com, and the websites of professional colleges and major hospital systems. Never use results from clinic websites, product or mattress sites, health content aggregators (Healthline, WebMD, Medical News Today, Verywell), Wikipedia, YouTube, news sites or blogs, even when they appear first.',
+  'SEARCH ONLY AUTHORITATIVE BUSINESS AND REGULATORY SOURCES: this article is about running a practice as a business, not about treating patients. Restrict every search to regulators and government statistics (site:ftc.gov, site:sba.gov, site:bls.gov, site:census.gov, site:cms.gov, site:hhs.gov, state licensing boards), research institutes and business schools (site:pewresearch.org, site:hbr.org, site:sloanreview.mit.edu, site:nber.org, site:brookings.edu, site:edu), professional associations (site:acatoday.org, site:fclb.org, site:ama-assn.org) and the platforms\' own documentation (site:support.google.com, site:thinkwithgoogle.com). A clinical study (PubMed, journals) is used ONLY when the fact itself is clinical, such as a no-show rate or a patient outcome, never as a stand-in for a business claim: a triage study is not evidence about lead response, and a hospital AI study is not evidence about marketing copy. Never use results from agency or vendor websites, marketing blogs, Wikipedia, YouTube or news sites, even when they appear first.',
+  'research-sites',
+)
+research = swap(
+  research,
+  'The author of this article is a licensed professional (a "{{industry}}" in {{geolocation}}). All output must be written so it would pass review by their professional licensing body and applicable advertising regulators.',
+  'The author writes for practice owners, who are licensed professionals bound by health-advertising rules in {{jurisdiction}}. All output must be written so it would pass review by an advertising regulator and by the reader\'s own licensing body.',
+  'research-author',
+)
+research = swap(
+  research,
+  'Only cite statistics, studies, or data points that you can attribute to a specific, named, verifiable source of one of these kinds: a peer-reviewed paper or systematic review; a national health body or government health agency; a professional college or association; a major university or hospital system. Commercial clinic websites, product sites, health content aggregators and news summaries are not sources.',
+  'Only cite statistics, studies, or data points that you can attribute to a specific, named, verifiable source of one of these kinds: a regulator or government statistics agency; a research institute, business school or university; a professional association; the documentation of the platform the fact is about; a peer-reviewed paper only for a clinical fact. Agency and vendor websites, marketing blogs and news summaries are not sources, and a source must be about the same situation as the fact: a figure from another industry or clinical setting is not evidence for a practice-marketing claim.',
+  'research-rule-1',
+)
+export const AZAVEA_RESEARCH_SYSTEM_PROMPT = research

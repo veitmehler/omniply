@@ -84,12 +84,19 @@ const AUTHORITY_SITES = [
   'site:health.harvard.edu',
 ]
 
-/** Two queries per unit: papers, then official bodies and hospital systems. */
-export function buildQueries(unit: string, topic: string): string[] {
+/** Azavea (business topics for practice owners): regulators, government statistics, business schools, platform docs. */
+const BUSINESS_SITES_A = ['site:ftc.gov', 'site:sba.gov', 'site:bls.gov', 'site:census.gov', 'site:cms.gov', 'site:hhs.gov', 'site:pewresearch.org']
+const BUSINESS_SITES_B = ['site:hbr.org', 'site:sloanreview.mit.edu', 'site:thinkwithgoogle.com', 'site:support.google.com', 'site:acatoday.org', 'site:fclb.org', 'site:ama-assn.org', 'site:nber.org', 'site:brookings.edu']
+
+/** Two queries per unit: papers, then official bodies and hospital systems (clinics); regulators/statistics, then business schools and platform docs (Azavea). */
+export function buildQueries(unit: string, topic: string, vertical?: string | null): string[] {
   const unitTerms = searchTerms(unit).slice(0, 5)
   const topicTerms = searchTerms(topic).filter((t) => !unitTerms.includes(t)).slice(0, 2)
   const core = [...unitTerms, ...topicTerms].join(' ')
   if (!core) return []
+  if (vertical === 'azavea') {
+    return [`${core} (${BUSINESS_SITES_A.join(' OR ')})`, `${core} (${BUSINESS_SITES_B.join(' OR ')})`]
+  }
   const papers = `${core} (${AUTHORITY_SITES.slice(0, 4).join(' OR ')})`
   const bodies = `${core} (${AUTHORITY_SITES.slice(4).join(' OR ')})`
   return [papers, bodies]
@@ -113,22 +120,22 @@ export function buildPubmedQueries(unit: string, topic: string): string[] {
 
 /** Rank candidates: policy-filtered, deduped, at least one unit term in title+snippet, primary tier
  * (journals, NCBI, Cochrane) before official bodies, more overlap first, one page per host. */
-export function rankCandidates(results: SerpOrganic[], unit: string, topic: string, seen: Set<string>): SerpOrganic[] {
+export function rankCandidates(results: SerpOrganic[], unit: string, topic: string, seen: Set<string>, vertical?: string | null): SerpOrganic[] {
   const local = new Set<string>()
   const unitKey = searchTerms(unit).join(' ')
   const topicKey = searchTerms(topic).join(' ')
   const scored = results
     .filter((r) => {
       const k = norm(r.url)
-      if (!isCitable(r.url) || seen.has(k) || local.has(k)) return false
+      if (!isCitable(r.url, vertical) || seen.has(k) || local.has(k)) return false
       local.add(k)
       return true
     })
     .map((r, i) => ({ r, i, unit: termOverlap(`${r.title} ${r.snippet}`, unitKey).shared, topic: topicKey ? termOverlap(`${r.title} ${r.snippet}`, topicKey).shared : 1, all: termOverlap(`${r.title} ${r.snippet}`, `${unit} ${topic}`).shared }))
     .filter((x) => x.unit >= 1 && x.topic >= 1)
     .sort((a, b) => {
-      const ta = sourceTier(a.r.url) === 'primary' ? 0 : 1
-      const tb = sourceTier(b.r.url) === 'primary' ? 0 : 1
+      const ta = sourceTier(a.r.url, vertical) === 'primary' ? 0 : 1
+      const tb = sourceTier(b.r.url, vertical) === 'primary' ? 0 : 1
       return ta - tb || b.all - a.all || a.i - b.i
     })
   const perHost = new Map<string, number>()
@@ -261,6 +268,8 @@ export async function runRetrievalResearch(opts: {
   units: string[]
   topic: string
   industry: string
+  /** 'azavea' switches to business/regulatory sources and skips the PubMed path. */
+  vertical?: string | null
   deps?: RetrievalDeps
 }): Promise<RetrievalResult> {
   const deps = opts.deps ?? liveRetrievalDeps
@@ -276,7 +285,7 @@ export async function runRetrievalResearch(opts: {
     const before = facts.length
     // 1. PubMed papers (free, identifiers real by construction).
     let hits: Array<{ id: string; title: string }> = []
-    for (const pq of buildPubmedQueries(unit, opts.topic)) {
+    for (const pq of opts.vertical === 'azavea' ? [] : buildPubmedQueries(unit, opts.topic)) {
       try {
         stats.queries++
         hits = (await deps.pubmedSearch(pq)).slice(0, MAX_PUBMED_PER_UNIT)
@@ -307,7 +316,7 @@ export async function runRetrievalResearch(opts: {
     }
     // 2. Authority pages via our own search.
     let candidates: SerpOrganic[] = []
-    for (const q of buildQueries(unit, opts.topic)) {
+    for (const q of buildQueries(unit, opts.topic, opts.vertical)) {
       try {
         stats.queries++
         const res = await deps.serp(q)
@@ -316,7 +325,7 @@ export async function runRetrievalResearch(opts: {
         logger.warn({ ...ctx, unit, err }, '[research-retrieval] serp failed')
       }
     }
-    candidates = rankCandidates(candidates, unit, opts.topic, seen).slice(0, MAX_PAGES_PER_UNIT)
+    candidates = rankCandidates(candidates, unit, opts.topic, seen, opts.vertical).slice(0, MAX_PAGES_PER_UNIT)
     stats.candidates += candidates.length
     for (const c of candidates) {
       seen.add(norm(c.url))

@@ -83,3 +83,19 @@ describe('research-retrieval extraction + feed', () => {
     expect(r.text).toContain('[Source: Sciatica: a review, pubmed.ncbi.nlm.nih.gov, https://pubmed.ncbi.nlm.nih.gov/123/]')
   })
 })
+
+describe('Azavea vertical sources (business, not clinical)', () => {
+  it('builds regulator/business queries and admits business hosts only for azavea', async () => {
+    const { isCitable, sourceTier } = await import('../citation-policy')
+    const [a, b] = buildQueries('What does a marketing retainer include?', 'Marketing retainers for practices', 'azavea')
+    expect(a).toContain('site:ftc.gov')
+    expect(a).not.toContain('pubmed')
+    expect(b).toContain('site:hbr.org')
+    expect(isCitable('https://hbr.org/2024/01/x', 'azavea')).toBe(true)
+    expect(isCitable('https://hbr.org/2024/01/x', 'chiro')).toBe(false)
+    expect(isCitable('https://hbr.org/2024/01/x')).toBe(false)
+    expect(sourceTier('https://www.ftc.gov/business-guidance', 'chiro')).toBe('authority')
+    expect(rankCandidates([{ url: 'https://www.pewresearch.org/x', title: 'retainer marketing practice survey', snippet: 'retainer' }], 'marketing retainer', 'practice marketing', new Set(), 'azavea')).toHaveLength(1)
+    expect(rankCandidates([{ url: 'https://www.pewresearch.org/x', title: 'retainer marketing practice survey', snippet: 'retainer' }], 'marketing retainer', 'practice marketing', new Set(), 'wellness')).toHaveLength(0)
+  })
+})

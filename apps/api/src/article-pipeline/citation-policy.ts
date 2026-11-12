@@ -136,17 +136,41 @@ function matches(host: string, list: string[]): boolean {
   return list.some((h) => host === h || host.endsWith(`.${h}`))
 }
 
-export function sourceTier(url: string): SourceTier {
+/**
+ * Business and regulatory sources for the Azavea vertical only (Veit 2026-11-12): its articles
+ * are about running a practice, so the weight sits with regulators, government statistics,
+ * business schools and the platforms' own documentation. Clinic verticals never see this list.
+ */
+export const BUSINESS_HOSTS = [
+  'pewresearch.org',
+  'hbr.org',
+  'sloanreview.mit.edu',
+  'thinkwithgoogle.com',
+  'support.google.com',
+  'business.google.com',
+  'developers.google.com',
+  'fclb.org',
+  'acatoday.org',
+  'ama-assn.org',
+  'ada.org',
+  'nber.org',
+  'brookings.edu',
+  'mckinsey.com',
+  'gartner.com',
+]
+
+export function sourceTier(url: string, vertical?: string | null): SourceTier {
   const host = hostOf(url)
   if (!host) return 'rejected'
   if (matches(host, DENY_HOSTS)) return 'rejected'
   if (matches(host, PRIMARY_HOSTS)) return 'primary'
   if (matches(host, AUTHORITY_HOSTS) || AUTHORITY_TLD_RE.test(host)) return 'authority'
+  if (vertical === 'azavea' && matches(host, BUSINESS_HOSTS)) return 'authority'
   return 'rejected'
 }
 
-export function isCitable(url: string): boolean {
-  return sourceTier(url) !== 'rejected'
+export function isCitable(url: string, vertical?: string | null): boolean {
+  return sourceTier(url, vertical) !== 'rejected'
 }
 
 export interface PoolCandidate {

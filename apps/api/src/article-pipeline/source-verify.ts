@@ -85,6 +85,8 @@ export interface VerifyOptions {
   retrieved?: RetrievedFactRecord[]
   /** true = quote found in the page, false = not found, null = page unreadable. */
   quoteCheck?: (quote: string, url: string) => Promise<boolean | null>
+  /** Account vertical: 'azavea' admits business/regulatory hosts (citation-policy BUSINESS_HOSTS). */
+  vertical?: string | null
 }
 
 export interface VerifyResult {
@@ -424,7 +426,7 @@ export async function verifyFactSources(
     // 0. B21: a retrieval fact — the page is the one it was read from. Keep it on its own
     //    provenance; only a quote demonstrably absent from a readable page fails it.
     const rec = tag.url ? findRetrieved(tag, opts.retrieved) : undefined
-    if (rec && isCitable(rec.url)) {
+    if (rec && isCitable(rec.url, opts.vertical)) {
       url = rec.url
       title = rec.title
       status = 'retrieved'
@@ -433,7 +435,7 @@ export async function verifyFactSources(
 
     // 1. The model's own URL, if it survives identity.
     if (!url && tag.url && isRootUrl(tag.url)) stats.root++
-    if (!url && tag.url && !isRootUrl(tag.url) && isCitable(tag.url)) {
+    if (!url && tag.url && !isRootUrl(tag.url) && isCitable(tag.url, opts.vertical)) {
       try {
         const c = await checkUrlForFact(tag.url, tag, r, ctx)
         if (c.ok) {
@@ -452,7 +454,7 @@ export async function verifyFactSources(
     // 2. Pages Google actually retrieved for this span (grounding supports).
     if (!url && opts.supports?.length) {
       for (const cand of groundedCandidates(tag, opts.supports)) {
-        if (isRootUrl(cand) || !isCitable(cand)) continue
+        if (isRootUrl(cand) || !isCitable(cand, opts.vertical)) continue
         try {
           const c = await checkUrlForFact(cand, tag, r, ctx)
           if (c.ok) {
@@ -514,7 +516,7 @@ export async function verifyFactSources(
       quote = sup.quote
       // B18 rule for sources nobody could read: keep only an authority-tier page that
       // grounding supplied (Google retrieved it for this very fact); drop otherwise.
-      const unreadable = sup.verdict === 'unknown' && !(status === 'grounded' && sourceTier(url) !== 'rejected')
+      const unreadable = sup.verdict === 'unknown' && !(status === 'grounded' && sourceTier(url, opts.vertical) !== 'rejected')
       const fails = sup.verdict === 'unsupported' || (figure && sup.verdict === 'partial') || unreadable
       if (fails) {
         logger.info({ ...ctx, url, verdict: sup.verdict, figure, fact: tag.fact.slice(0, 90) }, '[source-verify] source does not support its fact')
