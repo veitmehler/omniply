@@ -67,7 +67,9 @@ export function thinkingOffTypeFor(model: string): 'between_tools' | 'disabled' 
   return model.startsWith('claude-haiku') ? 'disabled' : 'between_tools'
 }
 
-export function thinkingConfigFor(model: string, maxTokens: number): { type: string } | null {
+export function thinkingConfigFor(model: string, maxTokens: number, forced?: 'off' | 'adaptive'): { type: string } | null {
   if (!supportsThinkingControl(model)) return null
+  if (forced === 'off') return { type: thinkingOffTypeFor(model) }
+  if (forced === 'adaptive') return { type: 'adaptive' }
   return maxTokens < SMALL_CALL_THINKING_OFF_BELOW ? { type: thinkingOffTypeFor(model) } : { type: 'adaptive' }
 }

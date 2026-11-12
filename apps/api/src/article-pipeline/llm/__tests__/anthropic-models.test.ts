@@ -39,3 +39,15 @@ describe('cost table 5.5 rows', () => {
     expect(calculateCost('claude-haiku-5-5', 100_001, 10_000)).toBeCloseTo((100_001 / 1e6) * 0.5 + 0.025, 6)
   })
 })
+
+import { thinkingConfigFor as thinkingConfigForced } from '../anthropic-models'
+
+describe('thinkingConfigFor forced mode (step-runner length retry, 2026-11-12)', () => {
+  it("'off' wins over the size rule on 5.x models and is a no-op on 4.5", () => {
+    expect(thinkingConfigForced('claude-sonnet-5-5', 16384, 'off')).toEqual({ type: 'between_tools' })
+    expect(thinkingConfigForced('claude-haiku-5-5', 16384, 'off')).toEqual({ type: 'disabled' })
+    expect(thinkingConfigForced('claude-sonnet-5-5', 1024, 'adaptive')).toEqual({ type: 'adaptive' })
+    expect(thinkingConfigForced('claude-sonnet-4-5-20250929', 16384, 'off')).toBeNull()
+    expect(thinkingConfigForced('claude-sonnet-5-5', 16384)).toEqual({ type: 'adaptive' })
+  })
+})

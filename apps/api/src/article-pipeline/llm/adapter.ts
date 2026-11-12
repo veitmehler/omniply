@@ -32,6 +32,9 @@ export interface LLMCallOptions {
   thinkingBudget?: number
   /** Gemini 3: thinkingConfig.thinkingLevel ('low' | 'high'). B18: research steps run low; budget 0 is rejected by the model. */
   thinkingLevel?: 'low' | 'high'
+  /** Anthropic 5.x: 'off' forces thinking off for this call (the step runner's retry after a
+   *  'length' finish — adaptive thinking shares max_tokens with the text, 2026-11-12). */
+  thinking?: 'off' | 'adaptive'
   /**
    * Image parts attached to the user turn (vision input). Only OpenAIAdapter honors this today —
    * see .plans/client-story-review-mining.implementation-plan.md. Other adapters ignore it.

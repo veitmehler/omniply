@@ -69,7 +69,7 @@ export class AnthropicAdapter implements LLMAdapter {
           }),
         )
 
-      const thinkingCfg = thinkingConfigFor(model, maxTokens)
+      const thinkingCfg = thinkingConfigFor(model, maxTokens, options.thinking)
       let response: Anthropic.Message
       try {
         response = await call(thinkingCfg)

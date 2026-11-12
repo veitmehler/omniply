@@ -26,6 +26,12 @@ const GROUNDING_REQUIRED_STEPS = new Set([7, 8])
 // B18: research steps run with low reasoning (Veit: deep thinking there is a waste of money;
 // probe 2026-11-10: thinking tokens roughly halved, grounding unaffected).
 const THINKING_LOW_STEPS = new Set([7, 8])
+// Prose steps that must never persist a draft cut off at the token ceiling
+// (writer, editor, inline citations). Azavea retainer rerun #2, 2026-11-12:
+// adaptive thinking on Sonnet 5.5 spent 15k of a 16k window, the draft
+// stopped mid-sentence at 667 words and the editor pass papered an ending
+// over it, so the quality gate saw a complete article.
+const PROSE_NO_TRUNCATION_STEPS = new Set([9, 11, 110])
 const FORCED_SEARCH_PREFIXES = [
   'MANDATORY: use the Google Search tool to find every fact below. Never answer from memory. The URL in each source tag must be a page you retrieved in this session for that fact; leave out any fact you cannot retrieve a page for.',
   'You MUST call the Google Search tool before writing anything. Run at least one search per section or question, restricted to PubMed, government health agencies, universities, hospital systems and professional colleges. Facts without a retrieved page are not written.',
@@ -268,6 +274,36 @@ export class StepRunner {
           useGenerativeSearch: isTwoPhase ? false : useSearch,
           jsonMode: isTwoPhase ? true : false,
         })
+
+        // Thinking overflow: a 'length' finish on an Anthropic prose call is
+        // retried once with thinking off, so the whole window goes to text.
+        if (llmResponse.finishReason === 'length' && provider === 'anthropic' && !isTwoPhase) {
+          logger.warn(
+            { jobId: this.jobId, step: this.stepNumber, outputTokens: llmResponse.tokens.output, maxTokens: template.maxTokens ?? null },
+            '[step-runner] output hit the token ceiling — retrying once with thinking off',
+          )
+          const retry = await adapter.call({
+            systemPrompt: phase2SystemPrompt,
+            userPrompt: phase2UserPrompt,
+            model,
+            maxTokens: template.maxTokens ?? (isJsonStep ? JSON_STEP_MAX_TOKENS : undefined),
+            useGenerativeSearch: false,
+            jsonMode: false,
+            thinking: 'off',
+          })
+          retry.cost += llmResponse.cost
+          retry.tokens = {
+            input: retry.tokens.input + llmResponse.tokens.input,
+            output: retry.tokens.output + llmResponse.tokens.output,
+            total: retry.tokens.total + llmResponse.tokens.total,
+          }
+          llmResponse = retry
+        }
+        if (llmResponse.finishReason === 'length' && PROSE_NO_TRUNCATION_STEPS.has(this.stepNumber)) {
+          throw new LLMError(
+            `Output truncated at the token ceiling (${llmResponse.tokens.output} output tokens, finishReason length) after a thinking-off retry`,
+          )
+        }
 
         // B16/B18: on long research prompts Gemini often answers from memory without
         // calling Google Search (B17: the single forced retry grounded 2 of 6 calls).
