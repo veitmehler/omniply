@@ -146,6 +146,34 @@ CHAT TRANSCRIPT:
 Reply with the summary text only.`,
     isActive: true,
   },
+  {
+    // DM gate layer 3 (2026-11-12, agent/dm-gate.ts): social DMs in
+    // 'inquiries' mode are classified before any turn runs. No vertical
+    // override — the question is the same for every business.
+    stepNumber: 504,
+    key: 'agent_dm_intent',
+    stepName: 'agent_dm_intent',
+    defaultProvider: 'anthropic',
+    defaultModel: HAIKU,
+    maxTokens: 120,
+    systemPrompt:
+      'You triage direct messages that arrive in a small business\'s Instagram, Facebook or WhatsApp inbox. Decide whether the message is a genuine inquiry from a prospective or current customer that a front desk should answer, or something else. Output JSON only.',
+    userPrompt: `Business: {{practiceName}} ({{industry}}).
+
+Classify this inbound direct message.
+
+"inquiry" = a prospective or current customer asking the business something: services, prices, availability, booking, hours, location, what might help them, whether something is offered, a follow-up on a visit.
+
+"not_inquiry" = anything else: creator or influencer pitches, promo codes and affiliate links, collaboration, sponsorship or "repost" offers, sales pitches to the business, friend or family chatter, replies in a personal conversation, compliments with no question, spam, automated messages, job applications.
+
+When the message is short and ambiguous but could plausibly be a customer reaching out, choose "inquiry".
+
+MESSAGE:
+{{message}}
+
+Reply with JSON only: {"intent": "inquiry" | "not_inquiry", "reason": "<under 12 words>"}`,
+    isActive: true,
+  },
 ]
 
 /**

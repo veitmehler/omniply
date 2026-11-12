@@ -52,6 +52,11 @@ model Account {
   ghlReviewToken  String?   @unique
   // Social DM agent webhook token (custom value omniply_dm_webhook).
   ghlDmToken     String?   @unique
+  // Per-channel reply modes for the DM responder (2026-11-12, Dasha's IG
+  // inbox): { whatsapp, instagram, facebook } each 'off' | 'inquiries' |
+  // 'all'. Null = defaults (WhatsApp all, Instagram/Facebook inquiries).
+  // Semantics in agent/dm-gate.ts.
+  dmChannelModes Json?
   // Voice agent (.plans/voice-agent-elevenlabs.implementation-plan.md):
   // per-account secret in the custom-LLM URL ElevenLabs calls (auth + account
   // resolver, same posture as ghlDmToken); dismissal hides the dashboard card.

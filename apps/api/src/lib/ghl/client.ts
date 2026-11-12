@@ -964,6 +964,53 @@ export async function findGhlConversationChannel(
   }
 }
 
+export interface GhlThreadMessage {
+  direction: string | null
+  body: string | null
+  dateAdded: string | null
+  messageType: string | null
+}
+
+/**
+ * Recent messages of the contact's conversation, newest last (DM gate's
+ * owner-active check, 2026-11-12). Empty on any failure — the gate treats
+ * an unreadable thread as "owner not active".
+ */
+export async function fetchGhlThreadForContact(
+  apiKey: string,
+  locationId: string,
+  contactId: string,
+  limit = 30,
+): Promise<GhlThreadMessage[]> {
+  try {
+    const found = await ghlRequest<{ conversations?: { id: string }[] }>(
+      apiKey,
+      `/conversations/search?locationId=${encodeURIComponent(locationId)}&contactId=${encodeURIComponent(contactId)}`,
+    )
+    const conv = found.conversations?.[0]
+    if (!conv) return []
+    const data = await ghlRequest<{ messages?: { messages?: unknown[] } | unknown[] }>(
+      apiKey,
+      `/conversations/${encodeURIComponent(conv.id)}/messages?limit=${limit}`,
+    )
+    const raw = Array.isArray(data.messages) ? data.messages : (data.messages?.messages ?? [])
+    const out: GhlThreadMessage[] = []
+    for (const m of raw) {
+      if (!m || typeof m !== 'object') continue
+      const r = m as Record<string, unknown>
+      out.push({
+        direction: typeof r.direction === 'string' ? r.direction : null,
+        body: typeof r.body === 'string' ? r.body : null,
+        dateAdded: typeof r.dateAdded === 'string' ? r.dateAdded : null,
+        messageType: typeof r.messageType === 'string' ? r.messageType : typeof r.type === 'string' ? r.type : null,
+      })
+    }
+    return out.reverse()
+  } catch {
+    return []
+  }
+}
+
 /** Send an outbound conversation message on a native channel (IG/FB/SMS…). */
 /** SMS send that returns the message id (self-test probe needs to poll the
  * delivery status; the boolean wrapper below stays for fire-and-forget). */

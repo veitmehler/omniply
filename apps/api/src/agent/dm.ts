@@ -4,6 +4,11 @@ import { getGhlCredentials } from '../lib/ghl/settings'
 import { getGhlContactTags, sendGhlConversationMessage } from '../lib/ghl/client'
 import { runAgentTurn } from './engine'
 import { applyBotGuard } from './bot-guard'
+import { agentContextForAccount } from './context'
+import { channelKeyForSendType, gateDmTurn, parseDmIntent, resolveDmChannelModes, type DmIntent } from './dm-gate'
+import { runNewsletterPrompt } from '../newsletter/llm'
+import { recordLLMUsage } from '../lib/llm-usage'
+import { cleanAndParseJSON } from '../article-pipeline/output-cleaner'
 
 /**
  * Social DM transport (transport 2 of the transport-agnostic agent core).
@@ -161,6 +166,38 @@ export async function processDmTurn(data: DmJobData): Promise<void> {
     return
   }
 
+  // Channel gate (layer 4, 2026-11-12 — see dm-gate.ts): the account's
+  // per-channel mode decides whether this message gets a turn at all.
+  const channelKey = channelKeyForSendType(sendType)
+  const account = await prisma.account.findUnique({ where: { id: data.accountId }, select: { dmChannelModes: true } })
+  const modes = resolveDmChannelModes(account?.dmChannelModes)
+  const mode = channelKey ? modes[channelKey] : 'all'
+  const verdict = await gateDmTurn({
+    mode,
+    message: data.message,
+    loadThread: async () => {
+      const { fetchGhlThreadForContact } = await import('../lib/ghl/client')
+      const [thread, replies] = await Promise.all([
+        fetchGhlThreadForContact(creds.apiKey, creds.locationId, data.contactId),
+        prisma.agentMessage.findMany({
+          where: { role: 'assistant', conversation: { accountId: data.accountId, visitorKey: `ghl:${data.contactId}` } },
+          orderBy: { createdAt: 'desc' },
+          take: 30,
+          select: { content: true },
+        }),
+      ])
+      return { thread, agentReplies: replies.map((r) => r.content) }
+    },
+    classify: (message) => classifyDmIntent(data.accountId, data.ownerUserId, message),
+  })
+  if (!verdict.reply) {
+    logger.info(
+      { accountId: data.accountId, contactId: data.contactId, channel: sendType, mode, reason: verdict.reason, detail: verdict.detail ?? null },
+      '[agent-dm] channel gate skip',
+    )
+    return
+  }
+
   const result = await runAgentTurn({
     accountId: data.accountId,
     visitorKey: `ghl:${data.contactId}`,
@@ -197,5 +234,33 @@ export async function processDmTurn(data: DmJobData): Promise<void> {
         data: { flagged: true, flagReason: 'dm-send-failed' },
       })
       .catch(() => {})
+  }
+}
+
+/**
+ * DM gate layer 3: one Haiku call (prompt agent_dm_intent) deciding whether
+ * a cold social DM is a customer inquiry. Returns null on any failure so the
+ * gate fails open.
+ */
+export async function classifyDmIntent(
+  accountId: string,
+  ownerUserId: string,
+  message: string,
+): Promise<{ intent: DmIntent; reason: string | null } | null> {
+  try {
+    const ctx = await agentContextForAccount(accountId)
+    const { content, response } = await runNewsletterPrompt(
+      'agent_dm_intent',
+      { practiceName: ctx?.practiceName ?? 'the business', industry: ctx?.vertical ?? 'local business', message: message.slice(0, 1500) },
+      { userId: ownerUserId, vertical: ctx?.vertical, jsonMode: true, maxTokens: 120, temperature: 0 },
+    )
+    await recordLLMUsage(ownerUserId, 'agent', response)
+    const { data } = cleanAndParseJSON(content)
+    const parsed = parseDmIntent(data)
+    if (!parsed) logger.warn({ accountId, content: content.slice(0, 200) }, '[agent-dm] intent classifier returned no verdict')
+    return parsed
+  } catch (err) {
+    logger.warn({ err, accountId }, '[agent-dm] intent classifier failed — gate fails open')
+    return null
   }
 }

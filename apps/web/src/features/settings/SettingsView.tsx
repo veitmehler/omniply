@@ -21,6 +21,7 @@ import { ArticleTypographySection } from '@/features/settings/ArticleTypographyS
 import { WordPressSection } from '@/features/settings/WordPressSection'
 import { ChatAssistantSection } from '@/features/settings/ChatAssistantSection'
 import { ChatKnowledgeSection } from '@/features/settings/ChatKnowledgeSection'
+import { SocialRepliesSection } from '@/features/settings/SocialRepliesSection'
 import { VoiceAssistantSection } from '@/features/settings/VoiceAssistantSection'
 import { PmsSection } from '@/features/settings/PmsSection'
 import { BookingAssistantSection } from '@/features/settings/BookingAssistantSection'
@@ -73,6 +74,8 @@ export function SettingsView({ embedMode = false }: { embedMode?: boolean }) {
         <ChatAssistantSection />
 
         <ChatKnowledgeSection />
+
+        <SocialRepliesSection />
 
         <VoiceAssistantSection />
 

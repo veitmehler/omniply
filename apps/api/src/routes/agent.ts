@@ -18,6 +18,7 @@ import { prisma, canonicalAccountUserId, brandSettingsForUser } from '@omniply/s
 import { resolvePromptByKey } from '../lib/prompt-resolver'
 import { logger } from '../lib/logger'
 import { acceptDmWebhook, type DmJobData } from '../agent/dm'
+import { DM_CHANNEL_DEFAULTS, parseDmChannelModes, resolveDmChannelModes } from '../agent/dm-gate'
 import { getBoss, QUEUES } from '../queues/index'
 import { requireAuth } from '../middleware/auth'
 import { fillPrompt } from '../newsletter/llm'
@@ -314,6 +315,29 @@ export async function agentRoutes(app: FastifyInstance) {
       return { ok: true, faqCount: faqs.length }
     },
   )
+
+  // DM responder channel modes (dm-gate.ts, 2026-11-12): Settings → "Social
+  // messaging replies". Owner-scoped like /agent/kb.
+  app.get('/agent/dm-channels', async (request, reply) => {
+    const clerkId = await requireAuth(request, reply)
+    if (!clerkId) return
+    const user = await prisma.user.findUnique({ where: { clerkId }, select: { accountId: true } })
+    if (!user?.accountId) return reply.status(404).send({ error: 'No account' })
+    const account = await prisma.account.findUnique({ where: { id: user.accountId }, select: { dmChannelModes: true } })
+    return { modes: resolveDmChannelModes(account?.dmChannelModes), defaults: DM_CHANNEL_DEFAULTS }
+  })
+
+  app.put<{ Body: Record<string, unknown> }>('/agent/dm-channels', async (request, reply) => {
+    const clerkId = await requireAuth(request, reply)
+    if (!clerkId) return
+    const user = await prisma.user.findUnique({ where: { clerkId }, select: { accountId: true } })
+    if (!user?.accountId) return reply.status(404).send({ error: 'No account' })
+    const modes = parseDmChannelModes(request.body ?? {})
+    if (!modes) return reply.status(400).send({ error: 'Each channel must be off, inquiries or all.' })
+    await prisma.account.update({ where: { id: user.accountId }, data: { dmChannelModes: modes } })
+    logger.info({ accountId: user.accountId, modes }, '[agent-dm] channel modes updated')
+    return { ok: true, modes }
+  })
 
   app.post('/agent/provision', async (request, reply) => {
     const clerkId = await requireAuth(request, reply)
