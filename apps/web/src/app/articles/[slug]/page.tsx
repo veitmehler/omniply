@@ -10,6 +10,69 @@ export const revalidate = 300
 const DO_API_BASE = process.env.DO_API_BASE ?? 'https://svc.omniply.io'
 const PUBLIC_BASE = 'https://omniply.io'
 
+/** Visible author identity (2026-11-12). The JSON-LD already names Veit as
+ *  author Person (sameAs LinkedIn) and Omniply as publisher Organization; the
+ *  page used to credit "the Omniply content engine", contradicting both the
+ *  schema and the first-person essays. Experience and Expertise belong to a
+ *  person, so the byline and the box name him; the engine is disclosed in the
+ *  box, not hidden. */
+const AUTHOR = {
+  name: 'Veit Mehler',
+  role: 'Founder, Omniply',
+  linkedin: 'https://linkedin.com/in/veitmehler',
+  about: `${PUBLIC_BASE}/about`,
+  companyLinkedin: 'https://www.linkedin.com/company/omniply-marketing/',
+  credentials:
+    'Sixteen years running marketing for health practices before he learned to code and built Omniply, the platform that runs the marketing and front-desk work of chiropractic and wellness practices.',
+  disclosure:
+    "Written in Veit's voice by Omniply's own engine from his briefs, and reviewed by him before publishing.",
+}
+
+function AuthorBox() {
+  return (
+    <aside
+      className="author-box mt-12 flex flex-col gap-4 rounded-xl border p-6 sm:flex-row sm:items-start"
+      style={{ borderColor: TOKENS.line, background: '#F4F7F9' }}
+      aria-label="About the author"
+    >
+      <div
+        className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-lg font-bold text-white"
+        style={{ background: TOKENS.ink }}
+        aria-hidden="true"
+      >
+        VM
+      </div>
+      <div className="min-w-0">
+        <div className="text-base font-semibold" style={{ color: '#1C2B36' }}>
+          <a href={AUTHOR.linkedin} target="_blank" rel="me noopener" className="hover:underline">
+            {AUTHOR.name}
+          </a>
+          <span className="font-normal" style={{ color: TOKENS.muted }}>
+            {' '}· {AUTHOR.role}
+          </span>
+        </div>
+        <p className="mt-2 text-[15px] leading-relaxed" style={{ color: '#1C2B36' }}>
+          {AUTHOR.credentials}
+        </p>
+        <p className="mt-2 text-sm italic" style={{ color: TOKENS.muted }}>
+          {AUTHOR.disclosure}
+        </p>
+        <p className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm font-medium">
+          <a href={AUTHOR.linkedin} target="_blank" rel="me noopener" style={{ color: TOKENS.ink }} className="underline">
+            Veit on LinkedIn
+          </a>
+          <a href={AUTHOR.about} style={{ color: TOKENS.ink }} className="underline">
+            About Omniply
+          </a>
+          <a href={AUTHOR.companyLinkedin} target="_blank" rel="noopener" style={{ color: TOKENS.ink }} className="underline">
+            Omniply on LinkedIn
+          </a>
+        </p>
+      </div>
+    </aside>
+  )
+}
+
 interface PublicArticle {
   slug: string
   title: string
@@ -159,14 +222,20 @@ export default async function ArticlePage({ params }: { params: Promise<{ slug: 
             {article.title}
           </h1>
           <div className="mt-5 text-[15px] text-white/75">
+            By{' '}
+            <a href={AUTHOR.linkedin} target="_blank" rel="me noopener" className="font-semibold text-white hover:underline">
+              {AUTHOR.name}
+            </a>
+            , {AUTHOR.role} ·{' '}
             {new Date(article.publishedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
-            {article.readingTime ? ` · ${article.readingTime} min read` : ''} · by the Omniply content engine, reviewed by a human
+            {article.readingTime ? ` · ${article.readingTime} min read` : ''}
           </div>
         </div>
       </section>
       <article className="mx-auto w-full max-w-[1024px] px-5 py-14 md:px-8">
         <div className="article-body" dangerouslySetInnerHTML={{ __html: article.bodyHtml }} />
         <SourcesBox citations={article.citations} />
+        <AuthorBox />
         {article.disclaimer && (
           <p className="mt-12 border-t pt-6 text-sm italic" style={{ color: TOKENS.muted, borderColor: TOKENS.line }}>
             {article.disclaimer}
