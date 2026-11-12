@@ -18,6 +18,7 @@ import {
   WRITER_SYSTEM_PROMPT,
   WRITER_USER_PROMPT,
   EDITOR_SYSTEM_PROMPT,
+  EDITOR_USER_PROMPT,
   FAQ_SYSTEM_PROMPT,
   FAQ_USER_PROMPT,
   RESEARCH_SYSTEM_PROMPT,
@@ -139,6 +140,12 @@ sys = swap(
 )
 sys = swap(
   sys,
+  '- Lists only for things a reader gathers or does, formal requirements, or specifications: at most two or three in the whole article, with items as uneven in length as a real checklist. Concepts, benefits, and reasons stay in prose.',
+  '- Lists only for things a reader gathers or does, formal requirements, or specifications: at most two or three in the whole article, with items as uneven in length as a real checklist. Concepts, benefits, and reasons stay in prose. A section that sets two or more options side by side (what each costs, takes in hours, risks, and leaves the practice owning) presents that comparison once in the article as a plain markdown table of at most five rows and four columns, with the judgment in the prose around it, never inside the cells.',
+  'comparison-table',
+)
+sys = swap(
+  sys,
   '- Paragraphs vary from one sentence to five or six. Sentences vary from very short to long. Fragments for emphasis, occasionally. Starting with "And" or "But" is fine.',
   '- Paragraphs vary from one sentence to five or six. Sentences vary from very short to long. Fragments for emphasis, occasionally. Starting with "And" or "But" is fine. Two short sentences built on the same frame, one thing set against another, is a move the article makes at most twice, counting every form of it. A section ends on a one-line verdict at most twice in the article. At least one section carries a paragraph of six or more sentences where the argument needs the room, and at least one paragraph in the article is a single sentence.',
   'rhythm',
@@ -152,6 +159,12 @@ const AZAVEA_EDITOR_TAIL = swap(
   'editor-azavea',
 )
 export const AZAVEA_EDITOR_SYSTEM_PROMPT = `${sys}${AZAVEA_EDITOR_TAIL}`
+export const AZAVEA_EDITOR_USER_PROMPT = swap(
+  EDITOR_USER_PROMPT,
+  'lists where the draft has them.',
+  'lists where the draft has them, and a markdown table as a <table> with a <thead> row and <tbody> rows, cell text unchanged.',
+  'editor-user-tables',
+)
 
 // ── writer user ──────────────────────────────────────────────────────────────
 let usr = WRITER_USER_PROMPT
@@ -170,7 +183,7 @@ usr = swap(
 usr = swap(
   usr,
   'Primary keyword: {{primary_keyword}}\nSecondary keywords: {{secondary_keywords}}\nSalient entities: {{salient_entities}}\nAdditional keywords: {{find_supporting_keywords_output}}\nWeave keywords where they read naturally. Skip any that do not.',
-  'Primary keyword: {{primary_keyword}}\nIt appears in the opening and after that only where an owner would say it aloud.\nTopics the reader also wants covered (what to cover, never phrases to print): {{secondary_keywords}}; {{salient_entities}}; {{find_supporting_keywords_output}}\nSay each thing in the words an owner uses across the table; a search phrase printed as typed is a defect.',
+  'Primary keyword: {{primary_keyword}}\nIt appears in the opening in the words an owner would say, paraphrased whenever the phrase reads like a search query, and after that only where an owner would say it aloud.\nTopics the reader also wants covered (what to cover, never phrases to print): {{secondary_keywords}}; {{salient_entities}}; {{find_supporting_keywords_output}}\nSay each thing in the words an owner uses across the table; a search phrase printed as typed is a defect.',
   'user-keywords',
 )
 export const AZAVEA_WRITER_USER_PROMPT = usr
@@ -223,4 +236,4 @@ export const AZAVEA_RESEARCH_SYSTEM_PROMPT = research
  *  Cost: What $2,500/Mo Actually Buys" named no reader, so retrieval for
  *  chiropractic queries never matched it. */
 export const AZAVEA_TITLE_RULE =
-  "- The title names the reader's kind of business (a chiropractic practice, a practice owner, a clinic) so an owner recognises it as written for them; a title that could sit on any small-business blog is wrong" 
+  "- The title names the reader's kind of practice by its industry (a chiropractic practice, a wellness clinic), never a small business in general, so an owner recognises it as written for them; a title that could sit on any small-business blog is wrong\n- The title is written in the words an owner would say across the table, never as a search phrase printed as typed; the keywords in the brief tell you what the article covers, not what to print (Gemini 2026-11-12: a title built on a search phrase made that phrase the primary keyword and it surfaced verbatim in the opening)" 
