@@ -197,6 +197,7 @@ export function rankCitationPool(
   curated: PoolCandidate[],
   grounding: PoolCandidate[],
   cap = DEFAULT_POOL_CAP,
+  vertical?: string | null,
 ): { pool: RankedCandidate[]; rejected: RankedCandidate[] } {
   const seen = new Set<string>()
   const pool: RankedCandidate[] = []
@@ -208,7 +209,7 @@ export function rankCitationPool(
   // that IS present and low still rejects.
   const curatedSorted = [...curated].sort((a, b) => (b.authority ?? MIN_CURATED_AUTHORITY) - (a.authority ?? MIN_CURATED_AUTHORITY))
   for (const c of curatedSorted) {
-    const tier = sourceTier(c.url)
+    const tier = sourceTier(c.url, vertical)
     const key = norm(c.url)
     if (seen.has(key)) continue
     seen.add(key)
@@ -219,7 +220,7 @@ export function rankCitationPool(
     pool.push({ ...c, tier, origin: 'curated' })
   }
   const groundingSorted = [...grounding]
-    .map((g) => ({ ...g, tier: sourceTier(g.url), origin: 'grounding' as const }))
+    .map((g) => ({ ...g, tier: sourceTier(g.url, vertical), origin: 'grounding' as const }))
     .sort((a, b) => (a.tier === 'primary' ? 0 : 1) - (b.tier === 'primary' ? 0 : 1))
   for (const g of groundingSorted) {
     const key = norm(g.url)

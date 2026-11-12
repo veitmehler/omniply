@@ -620,7 +620,8 @@ async function ensurePhaseAInlineCitations(jobId: string, ctx: PipelineContext):
   // pages follow. Step 12 is retired: nothing in the pool is typed by a model.
   const factSources = loadFactSources(ctx.completedSteps)
   const curatedPairs: Array<{ title: string; url: string }> = []
-  const ranked = rankCitationPool([...factSources.map((f) => ({ title: f.title, url: f.url })), ...curatedPairs], researchPairs)
+  const poolVertical = await verticalForUser(ctx.userId).catch(() => null)
+  const ranked = rankCitationPool([...factSources.map((f) => ({ title: f.title, url: f.url })), ...curatedPairs], researchPairs, undefined, poolVertical)
   logger.info(
     {
       jobId,

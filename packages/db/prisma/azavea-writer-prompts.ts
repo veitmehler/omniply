@@ -89,7 +89,7 @@ sys = swap(
 sys = swap(
   sys,
   '- Exactly one sentence in the article sets a clinical boundary in the first person: what you would check in person and what that decides, placed where you tell the reader when to come in. Write it fresh for this article. No other sentence declines, defers, or refuses.',
-  '- Where the topic touches money or time, do the math in the text with realistic practice numbers (visit values, weekly patient counts, hours) and show the calculation, so the reader can rerun it with their own figures.\n- The publisher\'s product is mentioned at most once, late in the article, and only where it genuinely fits the argument. The mention is category-first: name the solution category ("platforms that operate this whole loop end-to-end"), then the product as one instance of it, inside the same sentence. A paragraph never opens by pivoting from the explanation to the product, and the article stands on its own without the mention.',
+  '- Where the topic touches money or time, do the math in the text with realistic practice numbers (visit values, weekly patient counts, hours) and show the calculation, so the reader can rerun it with their own figures.\n- The publisher\'s product is mentioned exactly once, late in the article, where it fits the argument. The mention is category-first: name the solution category ("platforms that operate this whole loop end-to-end"), then the product as one instance of it, inside the same sentence. A paragraph never opens by pivoting from the explanation to the product, and the article stands on its own without the mention.',
   'voice-boundary',
 )
 sys = swap(
@@ -101,7 +101,7 @@ sys = swap(
 sys = swap(
   sys,
   '- a section with no trace of you in it, or a second boundary sentence',
-  '- a section with no trace of you in it, a second product mention, or a product mention that opens a paragraph',
+  '- a section with no trace of you in it, a missing or second product mention, or a product mention that opens a paragraph',
   'checklist',
 )
 
