@@ -171,6 +171,10 @@ export class StepRunner {
         startedAt: new Date(),
         errorMessage: null,
         retryCount: { increment: 0 },
+        // The row may carry the retrieval researcher's label when that path fell back to this
+        // grounded step (B21): the provider/model that actually ran must win.
+        provider,
+        model,
       },
     })
 
