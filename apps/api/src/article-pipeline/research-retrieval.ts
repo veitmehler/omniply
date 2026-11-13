@@ -201,7 +201,8 @@ const AZAVEA_EXTRACTION_RULE =
 const SETTING_RULE =
   'READER CHECK: the article is read by the practice\'s own clients or patients in everyday life (for a business article, by the practice owner). ' +
   'Return a fact ONLY when its population and setting match that reader. Skip hospital, inpatient, surgical and critical-care protocols; animal, cell and tissue studies; occupational studies of other professions (nurses, soldiers, students); and another country\'s insurance, reimbursement or regulation unless the article is explicitly about that country. ' +
-  'Never extract a row from a table, a figure legend or a list of study conditions: a fact rests on one sentence of prose that a reader could have read. '
+  'Never extract a row from a table, a figure legend or a list of study conditions: a fact rests on one sentence of prose that a reader could have read. ' +
+  'RELEVANCE CHECK (2026-11-13): a fact is about the section\'s own subject at the reader\'s level, something the reader could repeat to a friend without a biochemistry lesson. A laboratory finding (a plasma compound, a cellular marker, DNA strand breaks) that only connects to the section through a chain of inference does not apply; mark it "applies": false. '
 
 export function extractionPrompt(unit: string, industry: string, sourceLabel: string, topic = '', vertical?: string | null): string {
   return (

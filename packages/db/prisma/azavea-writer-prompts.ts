@@ -134,7 +134,7 @@ sys = swap(
 )
 sys = swap(
   sys,
-  "At most twice in the whole article, and only where the source's name carries weight on its own (a national health body, a professional college, a major university or hospital) and the fact's source tag in the brief carries a specific page address, you may attribute a finding to that institution by name; evergreen guidance from such a body counts toward those two.",
+  'No finding is attributed to an institution by name either: a health body, a clinic system, a college or an agency never appears as the subject or the authority of a sentence ("advises", "guidance is", "is clear that"); the link that is added later carries the attribution, and the finding stands in your voice.',
   "Every figure from the brief says in plain words where it comes from, inside the same sentence or the one before it (a government statistics agency, a business school, Google's own documentation, an agency survey), using the institution's name from the source tag and nothing else: no year, no report title, no page.",
   'source-named',
 )
@@ -146,7 +146,7 @@ sys = swap(
 )
 sys = swap(
   sys,
-  '- Paragraphs vary from one sentence to five or six. Sentences vary from very short to long. Fragments for emphasis, occasionally. Starting with "And" or "But" is fine.',
+  '- Paragraphs vary from one sentence to five or six. Sentences vary from very short to long. Fragments for emphasis, occasionally. Starting with "And" or "But" is fine. A sentence that sets one thing against another in a short contrast (this, not that; it isn\'t X, it\'s Y) is a move the article makes at most twice, counting every form of it.',
   '- Paragraphs vary from one sentence to five or six. Sentences vary from very short to long. Fragments for emphasis, occasionally. Starting with "And" or "But" is fine. Two short sentences built on the same frame, one thing set against another, is a move the article makes at most twice, counting every form of it. A section ends on a one-line verdict at most twice in the article. At least one section carries a paragraph of six or more sentences where the argument needs the room, and at least one paragraph in the article is a single sentence.',
   'rhythm',
 )
@@ -182,7 +182,7 @@ usr = swap(
 )
 usr = swap(
   usr,
-  'Primary keyword: {{primary_keyword}}\nSecondary keywords: {{secondary_keywords}}\nSalient entities: {{salient_entities}}\nAdditional keywords: {{find_supporting_keywords_output}}\nWeave keywords where they read naturally. Skip any that do not.',
+  'Primary keyword: {{primary_keyword}}\nIt appears in the opening in the words a person would say across the desk, paraphrased whenever the phrase reads like a search query, and after that only where you would say it aloud.\nTopics the reader also wants covered (what to cover, never phrases to print): {{secondary_keywords}}; {{salient_entities}}; {{find_supporting_keywords_output}}\nSay each thing the way you would say it to the person in front of you; a search phrase printed as typed is a defect.',
   'Primary keyword: {{primary_keyword}}\nIt appears in the opening in the words an owner would say, paraphrased whenever the phrase reads like a search query, and after that only where an owner would say it aloud.\nTopics the reader also wants covered (what to cover, never phrases to print): {{secondary_keywords}}; {{salient_entities}}; {{find_supporting_keywords_output}}\nSay each thing in the words an owner uses across the table; a search phrase printed as typed is a defect.',
   'user-keywords',
 )

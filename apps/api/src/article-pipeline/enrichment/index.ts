@@ -402,6 +402,7 @@ export async function runArticleEnrichment(jobId: string): Promise<void> {
         },
         config: plConfig,
         accentHex: plTheme.primaryColor,
+        title: sitePage.title,
       })
       geoHtml = pl.html
       totalCost += pl.cost

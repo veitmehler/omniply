@@ -206,14 +206,40 @@ export function deviceShapeReason(text: string, opts: { allowLike?: boolean } = 
 // template's favorite move — "X just means Y" — repeated three times per
 // article. Construction is now drawn per gloss, with "just means" allowed
 // only by the apposition draw and at most once per article.
+// Gemini read 2026-11-13: with "just means" gone the model settled on "In plain
+// terms, it means", "In practice, it means" and "That is the …" as its new
+// frame, three times in one article; the gloss starts on the term's own
+// subject, never on a label announcing a translation.
+const GLOSS_NO_LABEL =
+  ' Never open with "Think of", "Picture" or "Imagine", and never with a label announcing a translation ("In plain terms", "In practice, it means", "Put simply", "In other words", "That is the", "This is the", "Simply put"): the gloss starts on the thing itself.'
 export const GLOSS_CONSEQUENCE =
-  'GLOSS CONSTRUCTION (hard rule): define the term by what it does or causes in the body, woven mid-sentence. Never write "just means" or "simply means". Never open with "Think of", "Picture" or "Imagine".'
+  'GLOSS CONSTRUCTION (hard rule): define the term by what it does or causes in the body, woven mid-sentence. Never write "just means" or "simply means".' + GLOSS_NO_LABEL
 export const GLOSS_EXAMPLE =
-  'GLOSS CONSTRUCTION (hard rule): define the term through one quick, concrete everyday example. Never write "just means" or "simply means". Never open with "Think of", "Picture" or "Imagine".'
+  'GLOSS CONSTRUCTION (hard rule): define the term through one quick, concrete everyday example. Never write "just means" or "simply means".' + GLOSS_NO_LABEL
 export const GLOSS_PLAIN =
-  'GLOSS CONSTRUCTION (hard rule): explain the term in one plain sentence, as if across the table. No metaphor scaffold, and never "just means" or "simply means". Never open with "Think of", "Picture" or "Imagine".'
+  'GLOSS CONSTRUCTION (hard rule): explain the term in one plain sentence, as if across the table. No metaphor scaffold, and never "just means" or "simply means".' + GLOSS_NO_LABEL
 export const GLOSS_APPOSITION =
-  'GLOSS CONSTRUCTION: restate the term as a short plain apposition right after it. You may use "just means" this one time. Never open with "Think of", "Picture" or "Imagine".'
+  'GLOSS CONSTRUCTION: restate the term as a short plain apposition right after it. You may use "just means" this one time.' + GLOSS_NO_LABEL
+
+/** Labels announcing a translation; the gloss then reads as a device, not as the author. */
+export const GLOSS_LABEL_RE = /^\s*(?:in plain (?:terms|english|words)|in practice,? (?:it|this|that) means|put simply|simply put|in other words|that is (?:the|a|an)\b|this is (?:the|a|an)\b)/i
+/** A hedge or disclaimer inside a gloss: the verifier's pressure leaking into the prose (the IGF-1 gloss, 2026-11-13). */
+export const GLOSS_HEDGE_RE = /\b(?:not the same as proof|is not proof|no guarantee|guarantees? nothing|any one person|individual results|not medical advice|does not (?:mean|prove|guarantee) that|which is not the same as|proof of a particular)\b/i
+/** A story sentence: a gloss dropped into an anecdote reads as a footnote mid-story (amalgam, HbA1c, 2026-11-13). */
+export const STORY_SENTENCE_RE = /\b(?:came (?:to|in to|back to) (?:me|us|the clinic)|came back with|one (?:client|patient|man|woman)|(?:client|patient|woman|man|athlete|mother|father) (?:in (?:her|his) (?:twenties|thirties|forties|fifties|sixties|seventies|20s|30s|40s|50s|60s|70s)|who (?:came|had|was|arrived))|in (?:her|his) (?:twenties|thirties|forties|fifties|sixties|seventies|20s|30s|40s|50s|60s|70s)|years? old\b|i believe (?:it|she|he) was|i remember|(?:she|he)(?:'d| had| came| was told| arrived)|they (?:came|had been)|was told (?:he|she|they)|(?:her|his) (?:heavy-metal )?(?:scan|results|bloods|blood work|panel) (?:pointed|showed|came back))\b/i
+
+/**
+ * Deterministic gloss gate, free, before the paid verify call. Null = usable;
+ * otherwise the reason handed back to the model for one retry.
+ */
+export function glossGateReason(text: string): string | null {
+  if (GLOSS_LABEL_RE.test(text)) return 'it opens with a label announcing a translation ("in plain terms", "in practice, it means", "that is the"), which the GLOSS CONSTRUCTION forbids: start on the thing itself'
+  if (GLOSS_HEDGE_RE.test(text)) return 'it carries a hedge or disclaimer; a gloss only says what the term is, it never qualifies what it proves'
+  // The person switch ("the area you are holding … that I can feel it give") is
+  // a prompt rule only: "I" and "you" together are the practitioner's normal
+  // register ("the joints at the back of your pelvis, which I check first").
+  return null
+}
 
 /** Gloss construction draw: apposition ("just means") at most once per article. */
 export function pickGlossOpener(rng: () => number, state?: { justMeansUsed: boolean }): string {
@@ -550,6 +576,7 @@ async function generateVerified(args: GenerateArgs): Promise<{ text: string; tit
       (!allowJustMeans && JUST_MEANS_RE.test(text)
         ? 'it uses the "just means" construction, which your GLOSS CONSTRUCTION forbids'
         : null) ??
+      (args.kind === 'term' ? glossGateReason(text) : null) ??
       overlapReason(text, args.vars.sectionExcerpt ?? '') ??
       deviceShapeReason(text, { allowLike: args.allowLike })
     if (gateReason) {
@@ -626,6 +653,37 @@ export interface ArticlePassArgs {
   config: PlainLanguageConfigData
   /** Brand accent hex for box styling (themeFromBrand().primaryColor). */
   accentHex: string
+  /** Article title: its terms are the subject and are never glossed (sciatica re-defined mid-article, 2026-11-13). */
+  title?: string
+}
+
+/**
+ * Terms the article has already explained: everything in the title and every
+ * "<term> is …" / "<term>, the …" definition in the lead paragraphs. The
+ * detector sees one section at a time and cannot know these.
+ */
+export function seedExplainedTerms(title: string | undefined, html: string): Set<string> {
+  const out = new Set<string>()
+  const add = (s: string) => {
+    const t = s.trim().toLowerCase()
+    if (t) out.add(t)
+  }
+  const TITLE_STOP = new Set(['what', 'when', 'where', 'which', 'while', 'after', 'before', 'first', 'hours', 'this', 'that', 'your', 'with', 'from', 'guide', 'tips', 'really', 'actually', 'helps', 'matters', 'should', 'could', 'would', 'every', 'still', 'minute', 'week', 'weekly', 'daily', 'getting', 'checked', 'morning', 'night', 'home', 'beginner', "beginner's", 'post', 'care'])
+  for (const w of (title ?? '').toLowerCase().split(/[^a-z0-9'-]+/)) if (w.length >= 4 && !TITLE_STOP.has(w)) add(w)
+  const lead = [...html.matchAll(/<p[^>]*>([\s\S]*?)<\/p>/gi)].slice(0, 2).map((m) => stripTags(m[1]))
+  for (const p of lead) {
+    for (const m of p.matchAll(/\b([A-Za-z][A-Za-z-]{3,}(?:\s[A-Za-z-]{3,})?)\s+(?:is|are)\s+(?:the|a|an)\b/g)) add(m[1])
+    for (const m of p.matchAll(/\b([A-Za-z][A-Za-z-]{3,}),\s+(?:the|a|an)\s/g)) add(m[1])
+  }
+  return out
+}
+
+/** The detector flagged a term inside a story sentence or the article's own subject: not glossed. */
+export function glossSkipReason(term: string, sentence: string | undefined, explained: Set<string>): string | null {
+  const t = term.trim().toLowerCase()
+  if (explained.has(t) || [...explained].some((e) => e.length >= 5 && (t.includes(e) || e.includes(t)))) return 'the article already names or explains it (title or lead)'
+  if (sentence && STORY_SENTENCE_RE.test(sentence)) return 'the sentence is part of a story'
+  return null
 }
 
 /**
@@ -658,7 +716,8 @@ export async function runPlainLanguagePass(args: ArticlePassArgs): Promise<Plain
   let lastBoxedSectionIdx = -2
 
   const exemplars = formatExemplars(config)
-  const explainedTerms = new Set<string>()
+  const explainedTerms = seedExplainedTerms(args.title, html)
+  if (explainedTerms.size > 0) logger.info({ jobId, seeded: [...explainedTerms] }, '[plain-language] terms the article already names (title + lead) will not be glossed')
   // Vehicle registry: seeded from the base article's own imagery so devices
   // never double a metaphor the author already spent (B6's main residual tell).
   const tallyUsage = async (r: LLMResponse) => {
@@ -703,6 +762,11 @@ export async function runPlainLanguagePass(args: ArticlePassArgs): Promise<Plain
         if (plannedGlossTotal >= MAX_GLOSSES_PER_ARTICLE) break
         const norm = t.term.trim().toLowerCase()
         if (explainedTerms.has(norm)) continue
+        const skip = glossSkipReason(t.term, t.sentence, explainedTerms)
+        if (skip) {
+          logger.info({ jobId, position: section.position, term: t.term, skip }, '[plain-language] term not glossed')
+          continue
+        }
         const glossImage = pickImageMode(rng, imageState)
         const generated = await generateVerified({
           kind: 'term',

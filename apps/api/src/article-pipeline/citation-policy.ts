@@ -232,7 +232,13 @@ export function rankCitationPool(
     }
     pool.push(g)
   }
-  return { pool: pool.slice(0, cap), rejected }
+  // The cap limits what the model pass has to match against (grounding pages);
+  // verified fact sources are anchored in code and all stay. Gemini read
+  // 2026-11-13: the article-body step's dead-butt page, verified "supported",
+  // fell past the cap behind the FAQ step's sources, and its sentence then
+  // took the nearest leftover paper.
+  const curatedKept = pool.filter((p) => p.origin === 'curated').length
+  return { pool: pool.slice(0, Math.max(cap, curatedKept)), rejected }
 }
 
 /** True when a stored title is just the host name (what the grounding resolver stores). */

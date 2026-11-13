@@ -605,12 +605,27 @@ export async function verifyCuratedIdentity<T extends { title: string; url: stri
 // ── Deterministic fact anchoring ─────────────────────────────────────────────
 
 const MIN_ANCHOR_SHARED = 3
-const MIN_ANCHOR_RATIO = 0.35
+/** Share of a fact's distinctive weight the sentence must carry (Gemini read 2026-11-13). */
+export const MIN_ANCHOR_COVERAGE = 0.5
+
+/** Crude stem so a paraphrase still matches: "herniated"/"herniation", "resorb"/"resorption". */
+export function stemTerm(t: string): string {
+  return t.length > 5 ? t.slice(0, 5) : t
+}
 
 /**
  * Link each fact source to the article sentence that states its fact. Only
  * plain sentences (no inline markup) inside <p> or <li> are candidates; one
  * link per sentence, one per URL. Returns the HTML and the URLs placed.
+ *
+ * Gemini read of the Argon bench (2026-11-13): three links in one article sat
+ * on sentences their paper never made ("dead butt syndrome" carried the disc
+ * herniation paper) because the old score counted every shared word alike and
+ * took sources in pool order. Now every term is weighted by how rare it is
+ * across the facts and the article's sentences (topic words like back, pain,
+ * lower weigh little), a sentence must carry at least half of a fact's
+ * distinctive weight, and the (fact, sentence) pairs are taken best first
+ * across the whole pool, so a URL with several facts lands on its best match.
  */
 export function anchorFactSources(html: string, sources: FactSource[]): { html: string; placed: string[]; unplaced: FactSource[] } {
   const placed: string[] = []
@@ -637,35 +652,54 @@ export function anchorFactSources(html: string, sources: FactSource[]): { html: 
       const trail = raw.length - raw.trimEnd().length
       const text = raw.trim()
       if (text.split(/\s+/).length < 6) continue
-      cands.push({ start: innerStart + sm.index + lead, end: innerStart + sm.index + raw.length - trail, text, terms: contentTerms(text) })
+      cands.push({ start: innerStart + sm.index + lead, end: innerStart + sm.index + raw.length - trail, text, terms: new Set([...contentTerms(text)].map(stemTerm)) })
     }
   }
 
-  for (const s of sources) {
-    if (usedUrls.has(s.url)) continue
-    const factTerms = contentTerms(s.fact)
-    if (factTerms.size === 0) {
-      unplaced.push(s)
-      continue
-    }
-    let best: { c: (typeof cands)[number]; shared: number; ratio: number } | null = null
+  const factTermsOf = sources.map((s) => new Set([...contentTerms(s.fact)].map(stemTerm)))
+
+  // Term rarity across the article's sentences: a word half the article uses
+  // (the topic itself) carries almost no weight; a word the article never
+  // uses weighs as much as one it uses once.
+  const df = new Map<string, number>()
+  for (const c of cands) for (const t of c.terms) df.set(t, (df.get(t) ?? 0) + 1)
+  const weight = (t: string) => Math.log(1 + Math.max(1, cands.length) / Math.max(1, df.get(t) ?? 0))
+
+  // Every admissible (fact, sentence) pair, scored by how much of the fact's
+  // distinctive weight the sentence carries; distinctive = at or above the
+  // fact's own median term weight, so the topic's generic words drop out.
+  const pairs: Array<{ si: number; c: (typeof cands)[number]; coverage: number; shared: number }> = []
+  sources.forEach((s, si) => {
+    const factTerms = factTermsOf[si]
+    if (factTerms.size === 0) return
+    const weights = [...factTerms].map(weight).sort((a, b) => a - b)
+    const median = weights[Math.floor(weights.length / 2)]
+    const distinctive = [...factTerms].filter((t) => weight(t) >= median)
+    const total = distinctive.reduce((acc, t) => acc + weight(t), 0)
+    if (total === 0) return
     for (const c of cands) {
-      if (usedSpans.some(([a, b]) => c.start < b && c.end > a)) continue
       const shared = [...c.terms].filter((t) => factTerms.has(t)).length
-      const ratio = shared / Math.max(1, Math.min(c.terms.size, factTerms.size))
-      if (shared >= MIN_ANCHOR_SHARED && ratio >= MIN_ANCHOR_RATIO && (!best || shared > best.shared || (shared === best.shared && ratio > best.ratio))) {
-        best = { c, shared, ratio }
-      }
+      if (shared < MIN_ANCHOR_SHARED) continue
+      const coverage = distinctive.filter((t) => c.terms.has(t)).reduce((acc, t) => acc + weight(t), 0) / total
+      if (coverage >= MIN_ANCHOR_COVERAGE) pairs.push({ si, c, coverage, shared })
     }
-    if (!best) {
-      unplaced.push(s)
-      continue
-    }
-    usedSpans.push([best.c.start, best.c.end])
+  })
+  pairs.sort((a, b) => b.coverage - a.coverage || b.shared - a.shared || a.si - b.si)
+
+  const placedFacts = new Set<number>()
+  for (const p of pairs) {
+    const s = sources[p.si]
+    if (usedUrls.has(s.url)) continue
+    if (usedSpans.some(([a, b]) => p.c.start < b && p.c.end > a)) continue
+    usedSpans.push([p.c.start, p.c.end])
     usedUrls.add(s.url)
+    placedFacts.add(p.si)
     placed.push(s.url)
-    edits.push({ start: best.c.start, end: best.c.end, url: s.url })
+    edits.push({ start: p.c.start, end: p.c.end, url: s.url })
   }
+  sources.forEach((s, si) => {
+    if (!placedFacts.has(si) && !usedUrls.has(s.url)) unplaced.push(s)
+  })
 
   edits.sort((a, b) => b.start - a.start)
   let out = html

@@ -49,7 +49,7 @@ describe('Azavea writer overrides (derived, defaults untouched)', () => {
     for (const k of ['net revenue retention', 'same-frame', 'Google Business Profile', 'told plainly in the third person']) {
       expect(WRITER_SYSTEM_PROMPT).not.toContain(k)
     }
-    expect(WRITER_USER_PROMPT).toContain('Weave keywords where they read naturally')
+    expect(WRITER_USER_PROMPT).toContain('never phrases to print') // 2026-11-13: keywords-as-topics is the default too
     expect(WRITER_SYSTEM_PROMPT).not.toContain('markdown table')
   })
 })

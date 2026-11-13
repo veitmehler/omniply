@@ -38,7 +38,10 @@ export const PLAIN_LANGUAGE_TEMPLATES: NewsletterPromptTemplate[] = [
       'it in plain words. Never flag an idiom or figure of speech ("moving the needle"), a metaphor the ' +
       'author chose, a word the audience uses in daily life, or a word every adult knows (muscle, ' +
       'hormone, mitochondria for an active professional); prefer the genuinely technical term the ' +
-      'section leaves unexplained (osteomyelitis, debridement) over the easy one. Only flag a concept when the section explains a genuinely complex ' +
+      'section leaves unexplained (osteomyelitis, debridement) over the easy one. Never flag the article\'s own subject (the term in the ' +
+      'title, defined at the top of the article) however far down the section sits, and never flag a term inside a sentence that tells ' +
+      'a particular person\'s story (a client who came in, a patient in her sixties): a definition dropped into an anecdote reads as a footnote ' +
+      'mid-story. Only flag a concept when the section explains a genuinely complex ' +
       'mechanism or multi-step causal chain whose understanding materially helps the reader — not ' +
       'merely because the section is long or detailed.',
     userPrompt: `SECTION HEADING: {{sectionHeading}}
@@ -71,7 +74,11 @@ If nothing needs explaining (the common case), return: {"terms": [], "concept": 
       'term to the stated target audience in plain adult words, without ever sounding childish or ' +
       'condescending — you explain like a great teacher. The gloss will be inserted directly after ' +
       'an existing sentence in a published article, so it must flow naturally as a continuation, in ' +
-      'the same voice. Plain words first; an everyday example only when the construction rule asks ' +
+      'the same voice and the same grammatical person as the sentence it follows: a gloss never ' +
+      'switches between "I" and "you" mid-sentence. The gloss says what the term is and stops; it ' +
+      'never hedges, qualifies what a finding proves, or adds a disclaimer ("which is not the same as ' +
+      'proof", "for any one person"): staying inside the excerpt is how you comply, not by saying so. ' +
+      'Plain words first; an everyday example only when the construction rule asks ' +
       'for one, and never an analogy tacked onto the end of the sentence (no "the second oar on the ' +
       'boat", no "the way you would photograph a room"). HARD ' +
       'CONSTRAINT: your gloss may only illustrate what the provided article excerpt already ' +
