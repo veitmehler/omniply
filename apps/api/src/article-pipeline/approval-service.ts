@@ -163,6 +163,7 @@ export function cleanStepOutput(text: string): string {
 const YES_NO_AUX =
   /^(is|are|was|were|can|could|does|do|did|will|would|should|has|have|had|may|might|must|am|isn'?t|aren'?t|can'?t|doesn'?t|don'?t|didn'?t|won'?t|wouldn'?t|shouldn'?t|hasn'?t|haven'?t)$/i
 const WH_WORD = /^(how|why|what|when|where|which|who|whom|whose)$/i
+const WH_CONTRACTION = /^(how|why|what|when|where|who)'s$/i
 // After a wh-word, the next word must carry the verb of a real question:
 // an auxiliary ("What does…", "Why haven't…") or a present-tense verb
 // ("What counts as…", "What happens when…"). "What a Guide-led Assessment
@@ -177,9 +178,14 @@ export function isInterrogativeHeading(text: string): boolean {
   if (words.length < 2) return false
   const [first, second, third] = words
   if (YES_NO_AUX.test(first)) return true
+  // "What's a quick routine…", "Where's the line…": the contraction carries its own auxiliary.
+  if (WH_CONTRACTION.test(first)) return true
   if (!WH_WORD.test(first)) return false
   if (YES_NO_AUX.test(second) || WH_NEXT_VERB.test(second)) return true
-  if (/^how$/i.test(first) && HOW_QUALIFIER.test(second)) return true
+  // "How long does soreness last", "How much pressure is right": a question needs an
+  // auxiliary within two words of the qualifier. "How Long Adaptation Takes" and
+  // "How Often to Use Recovery Tools" are statements (ARGON bench 2026-11-13).
+  if (/^how$/i.test(first) && HOW_QUALIFIER.test(second) && (YES_NO_AUX.test(third ?? '') || YES_NO_AUX.test(words[3] ?? ''))) return true
   // "What kind of X does…", "Which treatments are…": the verb two words on.
   if (third && (YES_NO_AUX.test(third) || WH_NEXT_VERB.test(third))) return true
   return false

@@ -6,11 +6,17 @@ import { looksLikeTableRow, parseFacts, extractionPrompt } from '../research-ret
 // Argon (Gemini) round on Dasha's articles, 2026-11-12.
 describe('question marks only on headings with interrogative form', () => {
   it('leaves statements that merely start with a wh-word alone', () => {
-    for (const h of ['What a Guide-led Assessment Measures', 'Why the Same Week Costs Different People Different Amounts', 'What a Steady Routine Costs and What It Asks of You', 'How Recovery Compounds']) {
+    for (const h of ['What a Guide-led Assessment Measures', 'Why the Same Week Costs Different People Different Amounts', 'What a Steady Routine Costs and What It Asks of You', 'How Recovery Compounds', 'How Long Adaptation Takes', 'How Often to Use Recovery Tools']) {
       expect(isInterrogativeHeading(h), h).toBe(false)
     }
     const html = '<h2>What a Guide-led Assessment Measures</h2>'
     expect(normalizeH2Questions(html)).toBe(html)
+  })
+  it('reads a wh-word contraction as a question (ARGON bench 2026-11-13)', () => {
+    for (const h of ["What's a Quick Five-minute Routine for a Stiff Back After Sitting", "Where's the Line Between Sore and Injured", "How's the First Session Different", 'How Much Pressure Is Right', 'How Long Does Soreness Last']) {
+      expect(isInterrogativeHeading(h), h).toBe(true)
+    }
+    expect(normalizeH2Questions("<h2>What's a Quick Routine</h2>")).toBe("<h2>What's a Quick Routine?</h2>")
   })
   it('recognises real questions and appends the mark', () => {
     for (const h of ['What Does a Guide-led Assessment Measure', "Why Haven't the Obvious Fixes Worked", 'How Fast Does a New Inquiry Need to Be Answered', 'What Counts as Overtraining', 'Can I Run This Myself', 'Which Treatments Are Worth the Money', 'How Long Does Soreness Last']) {
