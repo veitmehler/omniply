@@ -56,7 +56,7 @@ interface ServiceView {
     lastErrorMessage: string | null
   }
   providerStatus: { indicator: string; description: string } | null
-  domain: { expiresAt: string | null; daysLeft: number | null; status: string[]; error: string | null } | null
+  domain: { expiresAt: string | null; daysLeft: number | null; status: string[]; nameservers: string[]; parked: boolean; error: string | null } | null
   ledger: Array<{ id: string; kind: string; amount: number; at: string; note: string | null }>
   alertLevel: string | null
 }
@@ -98,6 +98,7 @@ function verdict(s: ServiceView): { tone: Tone; text: string } {
   if (s.credit?.level === 'depleted') return { tone: 'red', text: 'Depleted' }
   if (s.calls.state === 'down') return { tone: 'red', text: 'Not answering' }
   if (s.credit?.level === 'critical') return { tone: 'red', text: 'Nearly empty' }
+  if (s.domain?.parked) return { tone: 'red', text: 'Lapsed, parked' }
   if (s.domain && s.domain.daysLeft !== null && s.domain.daysLeft < 0) return { tone: 'red', text: 'Lapsed' }
   if (s.domain && s.domain.daysLeft !== null && s.domain.daysLeft < 30) return { tone: 'amber', text: 'Expires soon' }
   if (s.credit?.level === 'warn') return { tone: 'amber', text: 'Running low' }

@@ -48,6 +48,18 @@ export function alertText(v: ServiceView, level: AlertLevel, reminder: boolean):
   const c = v.credit
   const balance = c && c.balance !== null ? money(c.balance) : 'unknown'
   const perDay = c ? `${money(c.perDay)} a day` : ''
+  if (v.domain) {
+    const d = v.domain
+    const when = d.expiresAt ? d.expiresAt.slice(0, 10) : 'unknown'
+    const lapsed = d.parked || (d.daysLeft !== null && d.daysLeft < 0)
+    return {
+      subject: lapsed ? `The domain ${v.label} has lapsed${again}` : `The domain ${v.label} expires in ${d.daysLeft} days${again}`,
+      body: lapsed
+        ? `${v.label} is no longer on our nameservers or is past its registration date (${when}).\n\nNameservers now: ${d.nameservers.join(', ') || 'unknown'}\nUsed for: ${v.usedFor}\n\nRenew it at the registrar today: a lapsed domain can be bought by anyone.`
+        : `${v.label} is registered until ${when}, ${d.daysLeft} days from now.\n\nUsed for: ${v.usedFor}\n\nRenew it at the registrar, or turn on auto-renew there.`,
+      sms: lapsed ? `Omniply: the domain ${v.label} has LAPSED. Renew it at the registrar today.` : `Omniply: the domain ${v.label} expires in ${d.daysLeft} days. Renew it at the registrar.`,
+    }
+  }
   if (level === 'blocked') {
     return {
       subject: `${v.label} is out of credit: production is stopped${again}`,

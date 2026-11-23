@@ -46,31 +46,70 @@ export async function fetchStatusFeed(url: string): Promise<ProviderStatus> {
 }
 
 export interface DomainExpiry {
+  /** The earlier of the registry's and the registrar's date: the registrar's is the one that bites. */
   expiresAt: string | null
   /** RDAP status values, e.g. "client hold" or "redemption period" when a domain has lapsed. */
   status: string[]
+  nameservers: string[]
+  /** The nameservers point at a parking service: the domain has lapsed or been taken off our DNS. */
+  parked: boolean
   error: string | null
 }
 
+/** Registry RDAP servers we use directly; rdap.org refuses requests from datacenter addresses. */
+const RDAP_BASE: Record<string, string> = {
+  com: 'https://rdap.verisign.com/com/v1/domain/',
+  net: 'https://rdap.verisign.com/net/v1/domain/',
+  io: 'https://rdap.identitydigital.services/rdap/domain/',
+}
+const PARKING_NS_RE = /lander|parking|parked|parity\.domains|sedoparking|afternic|bodis|above\.com|expired|suspended/i
+const RDAP_HEADERS = { Accept: 'application/rdap+json', 'User-Agent': 'omniply-system-health/1.0' }
+
+interface RdapDomain {
+  events?: Array<{ eventAction?: string; eventDate?: string }>
+  status?: string[]
+  nameservers?: Array<{ ldhName?: string }>
+  links?: Array<{ rel?: string; href?: string }>
+}
+
+async function rdapGet(url: string): Promise<RdapDomain | null> {
+  const res = await withTimeout((signal) => fetch(url, { signal, headers: RDAP_HEADERS, redirect: 'follow' }), 8_000, `rdap ${url}`)
+  return res.ok ? ((await res.json()) as RdapDomain) : null
+}
+
+const eventDate = (d: RdapDomain | null, action: string) => (d?.events ?? []).find((e) => e.eventAction === action)?.eventDate ?? null
+
+/** Pure part, so the lapse rules can be tested without the network. */
+export function readDomainRecords(registry: RdapDomain | null, registrar: RdapDomain | null): DomainExpiry {
+  if (!registry) return { expiresAt: null, status: [], nameservers: [], parked: false, error: 'The registry has no record of this domain' }
+  const dates = [eventDate(registry, 'expiration'), eventDate(registrar, 'registrar expiration'), eventDate(registrar, 'expiration')].filter((d): d is string => Boolean(d))
+  const expiresAt = dates.length ? dates.sort((a, b) => new Date(a).getTime() - new Date(b).getTime())[0] : null
+  const nameservers = (registry.nameservers ?? []).map((n) => (n.ldhName ?? '').toLowerCase()).filter(Boolean)
+  const status = [...new Set([...(registry.status ?? []), ...(registrar?.status ?? [])])]
+  const parked = nameservers.some((n) => PARKING_NS_RE.test(n)) || status.some((st) => /hold|redemption|pending delete/i.test(st))
+  return { expiresAt, status, nameservers, parked, error: expiresAt ? null : 'The registry record carries no expiry date' }
+}
+
 /**
- * Registration expiry of a domain from the public registry record (RDAP).
- * socioply.com lapsed on 2026-11-21 without anyone noticing and took the deploy
- * pipeline with it; this is what would have shown it weeks ahead.
+ * Registration state of a domain from the public registry record (RDAP), plus
+ * the registrar's own record when the registry links to it.
+ *
+ * socioply.com lapsed at the registrar on 2026-11-21 and took the deploy
+ * pipeline with it. The REGISTRY still showed an expiry a year out that day
+ * (registries auto-extend during the grace period), so the date alone would
+ * not have caught it. What did change was the nameservers, which moved to a
+ * parking service; that is checked too, along with the registrar's own date.
  */
 export async function fetchDomainExpiry(domain: string): Promise<DomainExpiry> {
-  return cached(`rdap:${domain}`, 12 * 60 * 60_000, async () => {
+  return cached(`rdap:${domain}`, 6 * 60 * 60_000, async () => {
     try {
-      const res = await withTimeout(
-        (signal) => fetch(`https://rdap.org/domain/${encodeURIComponent(domain)}`, { signal, headers: { Accept: 'application/rdap+json' }, redirect: 'follow' }),
-        8_000,
-        `rdap ${domain}`,
-      )
-      if (!res.ok) return { expiresAt: null, status: [], error: `Registry lookup answered ${res.status}` }
-      const data = (await res.json()) as { events?: Array<{ eventAction?: string; eventDate?: string }>; status?: string[] }
-      const exp = (data.events ?? []).find((e) => e.eventAction === 'expiration')?.eventDate ?? null
-      return { expiresAt: exp, status: data.status ?? [], error: exp ? null : 'The registry record carries no expiry date' }
+      const tld = domain.split('.').pop() ?? ''
+      const registry = await rdapGet(`${RDAP_BASE[tld] ?? 'https://rdap.org/domain/'}${encodeURIComponent(domain)}`)
+      const related = (registry?.links ?? []).find((l) => l.rel === 'related' && /rdap/i.test(l.href ?? ''))?.href
+      const registrar = related ? await rdapGet(related).catch(() => null) : null
+      return readDomainRecords(registry, registrar)
     } catch {
-      return { expiresAt: null, status: [], error: 'Registry lookup did not answer' }
+      return { expiresAt: null, status: [], nameservers: [], parked: false, error: 'Registry lookup did not answer' }
     }
   })
 }

@@ -31,7 +31,7 @@ export interface CatalogEntry {
 }
 
 /** A stop here stops production: critical alerts for these also go out by SMS. */
-export const CORE_SERVICES = new Set(['gemini', 'anthropic'])
+export const CORE_SERVICES = new Set(['gemini', 'anthropic', 'domain:omniply.io'])
 
 export const SERVICE_CATALOG: CatalogEntry[] = [
   {

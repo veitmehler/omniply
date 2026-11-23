@@ -150,3 +150,53 @@ describe('alert decisions', () => {
     expect(needsSms('blocked', false)).toBe(false)
   })
 })
+
+import { readDomainRecords } from '../external'
+
+describe('domain registration', () => {
+  const registry = (ns: string[], exp = '2027-11-21T10:03:46Z', status = ['client transfer prohibited']) => ({
+    events: [{ eventAction: 'registration', eventDate: '2025-11-21T10:03:46Z' }, { eventAction: 'expiration', eventDate: exp }],
+    status,
+    nameservers: ns.map((n) => ({ ldhName: n })),
+  })
+  it('reads a healthy domain', () => {
+    const d = readDomainRecords(registry(['NICOLE.NS.CLOUDFLARE.COM', 'ROAN.NS.CLOUDFLARE.COM']), { events: [{ eventAction: 'registrar expiration', eventDate: '2027-11-21T10:03:46Z' }] })
+    expect(d.expiresAt).toBe('2027-11-21T10:03:46Z')
+    expect(d.parked).toBe(false)
+    expect(d.nameservers).toEqual(['nicole.ns.cloudflare.com', 'roan.ns.cloudflare.com'])
+  })
+  it('catches the socioply.com lapse: registry date a year out, nameservers parked, registrar date passed', () => {
+    const d = readDomainRecords(registry(['ns1.lander.d.parity.domains', 'ns2.lander.d.parity.domains']), { events: [{ eventAction: 'registrar expiration', eventDate: '2026-11-21T10:03:46Z' }] })
+    expect(d.parked).toBe(true)
+    expect(d.expiresAt).toBe('2026-11-21T10:03:46Z') // the earlier, registrar-side date wins
+  })
+  it('treats a hold or redemption status as lapsed even on our own nameservers', () => {
+    expect(readDomainRecords(registry(['roan.ns.cloudflare.com'], '2027-01-01T00:00:00Z', ['client hold']), null).parked).toBe(true)
+    expect(readDomainRecords(registry(['roan.ns.cloudflare.com'], '2027-01-01T00:00:00Z', ['redemption period']), null).parked).toBe(true)
+  })
+  it('says so when the registry has no record', () => {
+    expect(readDomainRecords(null, null).error).toMatch(/no record/)
+  })
+})
+
+import { domainAlertLevel } from '../service'
+import { alertText } from '../notify'
+
+describe('domain alerts', () => {
+  it('warns a month out, turns urgent two weeks out, and treats a passed date as an outage', () => {
+    expect(domainAlertLevel(200)).toBeNull()
+    expect(domainAlertLevel(29)).toBe('warn')
+    expect(domainAlertLevel(13)).toBe('critical')
+    expect(domainAlertLevel(-2)).toBe('down')
+  })
+  it('words a lapse plainly, with the nameservers that gave it away', () => {
+    const t = alertText(
+      { label: 'socioply.com', usedFor: 'Old name', rechargeUrl: null, statusPageUrl: null, warnDays: 14, criticalDays: 3, credit: null, calls: {}, providerStatus: null, domain: { expiresAt: '2026-11-21T10:03:46Z', daysLeft: -2, status: [], nameservers: ['ns1.lander.d.parity.domains'], parked: true, error: null } } as never,
+      'down',
+      false,
+    )
+    expect(t.subject).toBe('The domain socioply.com has lapsed')
+    expect(t.body).toContain('ns1.lander.d.parity.domains')
+    expect(t.sms).toContain('LAPSED')
+  })
+})

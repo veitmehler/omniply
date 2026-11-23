@@ -66,7 +66,7 @@ export interface ServiceView {
     lastErrorMessage: string | null
   }
   providerStatus: ProviderStatus | null
-  domain: { expiresAt: string | null; daysLeft: number | null; status: string[]; error: string | null } | null
+  domain: { expiresAt: string | null; daysLeft: number | null; status: string[]; nameservers: string[]; parked: boolean; error: string | null } | null
   ledger: Array<{ id: string; kind: string; amount: number; at: string; note: string | null }>
   alertLevel: AlertLevel | null
 }
@@ -176,6 +176,13 @@ async function failedWork(): Promise<{ rows: SystemHealth['failedWork']; total: 
     .filter((r) => r.articles + r.newsletters > 0)
     .sort((a, b) => b.articles + b.newsletters - (a.articles + a.newsletters))
   return { rows, total: rows.reduce((acc, r) => acc + r.articles + r.newsletters, 0) }
+}
+
+export function domainAlertLevel(daysLeft: number): AlertLevel | null {
+  if (daysLeft < 0) return 'down'
+  if (daysLeft < 14) return 'critical'
+  if (daysLeft < 30) return 'warn'
+  return null
 }
 
 function maskEmail(e: string | undefined): string | null {
@@ -296,11 +303,16 @@ export async function buildSystemHealth(now: Date = new Date()): Promise<SystemH
               expiresAt: expiry.expiresAt,
               daysLeft: expiry.expiresAt ? Math.floor((new Date(expiry.expiresAt).getTime() - now.getTime()) / DAY) : null,
               status: expiry.status,
+              nameservers: expiry.nameservers,
+              parked: expiry.parked,
               error: expiry.error,
             }
           : null,
         ledger: svc.ledger.slice(0, 12).map((l) => ({ id: l.id, kind: l.kind, amount: l.amount, at: l.at.toISOString(), note: l.note })),
-        alertLevel: alertLevelFor(credit?.level ?? 'unknown', state),
+        // A domain alerts on its registration: parked or past due is an outage, the last two weeks are urgent, the last month a warning.
+        alertLevel:
+          alertLevelFor(credit?.level ?? 'unknown', state) ??
+          (expiry?.parked ? 'down' : expiry?.expiresAt ? domainAlertLevel(Math.floor((new Date(expiry.expiresAt).getTime() - now.getTime()) / DAY)) : null),
       }
     }),
   )
@@ -312,6 +324,7 @@ export async function buildSystemHealth(now: Date = new Date()): Promise<SystemH
     else if (v.credit?.level === 'depleted') needsAction.push({ key: v.key, label: v.label, why: 'balance at zero' })
     else if (v.calls.state === 'down') needsAction.push({ key: v.key, label: v.label, why: 'not answering' })
     else if (v.credit?.level === 'critical') needsAction.push({ key: v.key, label: v.label, why: `under ${v.criticalDays} days of credit` })
+    else if (v.domain?.parked) needsAction.push({ key: v.key, label: v.label, why: 'registration lapsed, the domain is parked' })
     else if (v.domain && v.domain.daysLeft !== null && v.domain.daysLeft < 14) needsAction.push({ key: v.key, label: v.label, why: v.domain.daysLeft < 0 ? 'registration lapsed' : `expires in ${v.domain.daysLeft} days` })
     else if (v.calls.state === 'degraded') degraded.push({ key: v.key, label: v.label, why: `${v.calls.week.failed + v.calls.week.skipped} failed calls this week` })
     else if (v.credit?.level === 'warn') degraded.push({ key: v.key, label: v.label, why: `under ${v.warnDays} days of credit` })
