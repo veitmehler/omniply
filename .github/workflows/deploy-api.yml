@@ -189,7 +189,10 @@ jobs:
             echo "Waiting 10s for API to come up..."
             sleep 10
             for i in 1 2 3 4 5; do
-              if curl -sf https://api.socioply.com/health; then
+              # svc.omniply.io, not api.socioply.com: the old domain lapsed at the
+              # registrar on 2026-11-21 and got parked, which failed this check and
+              # rolled back every deploy no matter what the image contained.
+              if curl -sf https://svc.omniply.io/health; then
                 echo ""
                 echo "Health check PASSED on attempt $i"
                 exit 0
