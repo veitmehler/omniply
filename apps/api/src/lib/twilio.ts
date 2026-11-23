@@ -214,3 +214,42 @@ export async function listInboundMessages(
     .filter((m) => (m.direction ?? '').startsWith('inbound'))
     .map((m) => ({ body: m.body ?? '', from: m.from ?? '' }))
 }
+
+// ── System Health (2026-11-23): master-account balance and operations SMS ────
+
+/** Prepaid balance of the master account. Twilio is one of the few providers that lets us read it. */
+export async function getTwilioBalance(): Promise<{ balance: number; currency: string }> {
+  const auth = masterAuth()
+  const data = await twilioFetch<{ balance: string; currency: string }>(auth, `/Accounts/${auth.sid}/Balance.json`)
+  return { balance: Number(data.balance), currency: data.currency }
+}
+
+/** SMS-capable numbers owned by the master account (the alert sender is one of these). */
+export async function listMasterSmsNumbers(): Promise<string[]> {
+  const auth = masterAuth()
+  const data = await twilioFetch<{ incoming_phone_numbers?: Array<{ phone_number: string; capabilities?: { sms?: boolean } }> }>(
+    auth,
+    `/Accounts/${auth.sid}/IncomingPhoneNumbers.json?PageSize=50`,
+  )
+  return (data.incoming_phone_numbers ?? []).filter((n) => n.capabilities?.sms).map((n) => n.phone_number)
+}
+
+/** Send one text from the master account. Returns the message sid and Twilio's initial status. */
+export async function sendTwilioSms(from: string, to: string, body: string): Promise<{ sid: string; status: string }> {
+  const auth = masterAuth()
+  const data = await twilioFetch<{ sid: string; status: string }>(auth, `/Accounts/${auth.sid}/Messages.json`, {
+    method: 'POST',
+    form: { From: from, To: to, Body: body.slice(0, 600) },
+  })
+  return { sid: data.sid, status: data.status }
+}
+
+/** Delivery status of a sent text (queued | sent | delivered | undelivered | failed) with Twilio's error code when it failed. */
+export async function getTwilioMessageStatus(messageSid: string): Promise<{ status: string; errorCode: number | null; errorMessage: string | null }> {
+  const auth = masterAuth()
+  const data = await twilioFetch<{ status: string; error_code: number | null; error_message: string | null }>(
+    auth,
+    `/Accounts/${auth.sid}/Messages/${messageSid}.json`,
+  )
+  return { status: data.status, errorCode: data.error_code ?? null, errorMessage: data.error_message ?? null }
+}

@@ -2,6 +2,7 @@ import { logger } from '../logger'
 import { statusOf } from './retry'
 import { getCircuitBreaker } from './circuit-breaker'
 import { Semaphore } from '../concurrency'
+import { recordCallOutcome } from './call-stats'
 
 /**
  * Global per-provider concurrency caps — the guard rail that makes the Phase-1
@@ -73,6 +74,7 @@ export async function instrumentCall<T>(
     breaker.assertClosed()
   } catch (err) {
     logger.warn({ provider: meta.provider, op: meta.op, outcome: 'circuit-open' }, '[net] call skipped — circuit open')
+    recordCallOutcome(meta.provider, 'circuit-open')
     throw err
   }
 
@@ -93,6 +95,7 @@ export async function instrumentCall<T>(
   try {
     const result = await fn()
     breaker.onSuccess()
+    recordCallOutcome(meta.provider, 'success')
     logger.info(
       { provider: meta.provider, op: meta.op, durationMs: Date.now() - start, outcome: 'success' },
       '[net] call succeeded',
@@ -103,6 +106,7 @@ export async function instrumentCall<T>(
     const durationMs = Date.now() - start
     const status = statusOf(err)
     const rawMessage = err instanceof Error ? err.message : String(err)
+    recordCallOutcome(meta.provider, 'error', { status, message: rawMessage })
 
     logger.warn(
       { provider: meta.provider, op: meta.op, durationMs, status, outcome: 'error', message: rawMessage },

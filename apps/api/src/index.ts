@@ -51,10 +51,15 @@ import { adminApiRoutes } from './routes/admin-api/index'
 import { populateClerkId } from './middleware/clerk-context'
 import { handleError } from './lib/error-handler'
 import { assertEncryptionConfigured } from '@omniply/shared'
+import { setMediaUsageListener } from '@omniply/shared'
+import { recordMediaSpend } from './lib/media-costs'
 
 async function main() {
   // Fail fast if encryption isn't configured (never boot prod on the dev key).
   assertEncryptionConfigured()
+
+  // System Health: images made through the shared helpers report their cost here.
+  setMediaUsageListener((e) => recordMediaSpend(e.provider, e.model))
 
   // Fastify 5 requires a plain config object for `logger`, not a pino instance.
   // We pass our shared logger as the child logger used by request handlers.

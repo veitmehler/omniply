@@ -15,6 +15,7 @@ import sharp from 'sharp'
 import { logger } from '../../lib/logger'
 import { instrumentCall } from '../../lib/net/instrument'
 import { withTimeout } from '../../lib/net/with-timeout'
+import { meterGeminiResponse } from '../llm/metered-cost'
 
 export const VERIFY_MODEL = 'gemini-3-flash-preview'
 
@@ -99,6 +100,7 @@ Respond with verdict "pass" or "fail" and list every concrete issue found (empty
           const data = (await res.json()) as {
             candidates?: { content?: { parts?: { text?: string; thought?: boolean }[] } }[]
           }
+          meterGeminiResponse(VERIFY_MODEL, data)
           return (data.candidates?.[0]?.content?.parts ?? [])
             .filter((p) => !p.thought)
             .map((p) => p.text ?? '')

@@ -9,6 +9,26 @@ import Anthropic from '@anthropic-ai/sdk'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 
 /**
+ * Spend reporting hook (System Health, 2026-11-23). The API process registers a
+ * listener at boot; every image generated through the helpers below reports
+ * itself, so image cost is counted where the call leaves for the provider
+ * rather than depending on each caller to record it (several never did).
+ * This package cannot import the API's ledger, hence the hook.
+ */
+export type MediaUsageEvent = { provider: 'gemini' | 'fal-ai'; model: string }
+let mediaUsageListener: ((e: MediaUsageEvent) => void) | null = null
+export function setMediaUsageListener(fn: ((e: MediaUsageEvent) => void) | null): void {
+  mediaUsageListener = fn
+}
+function reportMediaUsage(provider: MediaUsageEvent['provider'], model: string): void {
+  try {
+    mediaUsageListener?.({ provider, model })
+  } catch {
+    /* reporting must never fail a generation */
+  }
+}
+
+/**
  * Generate an image prompt from post content using LLM
  * Uses the user's configured LLM provider to create an optimized prompt for image generation
  */
@@ -277,6 +297,7 @@ export async function generateWithFalAI(
     }
 
     // Download the image
+    reportMediaUsage('fal-ai', model)
     return downloadImageFromUrl(imageUrl)
   } catch (error: unknown) {
     console.error('[Fal.ai API] Error:', error)
@@ -346,6 +367,7 @@ export async function generateWithGeminiImage(
   if (!b64) {
     throw new Error('Gemini image API returned no image (possible refusal/safety block)')
   }
+  reportMediaUsage('gemini', model)
   return Buffer.from(b64, 'base64')
 }
 

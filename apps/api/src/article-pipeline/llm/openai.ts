@@ -1,6 +1,6 @@
 import OpenAI from 'openai'
 import { getSystemApiKey } from '../../lib/system-keys'
-import { calculateCost } from './cost-table'
+import { meteredCost } from './metered-cost'
 import type { LLMAdapter, LLMCallOptions, LLMResponse } from './adapter'
 import { LLMError } from './adapter'
 import { instrumentCall } from '../../lib/net/instrument'
@@ -100,7 +100,7 @@ export class OpenAIAdapter implements LLMAdapter {
       return {
         content: text,
         tokens: { input: inputTokens, output: outputTokens, total: inputTokens + outputTokens },
-        cost: calculateCost(model, inputTokens, outputTokens),
+        cost: meteredCost('openai', model, inputTokens, outputTokens),
         model,
         provider: 'openai',
         finishReason,

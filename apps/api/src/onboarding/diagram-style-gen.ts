@@ -22,6 +22,7 @@ import { logger } from '../lib/logger'
 import { instrumentCall } from '../lib/net/instrument'
 import { withTimeout } from '../lib/net/with-timeout'
 import { sendFailureAlert } from '../lib/alerts'
+import { meterGeminiResponse } from '../article-pipeline/llm/metered-cost'
 
 export const STYLE_GUIDE_VISION_MODEL = 'gemini-3-flash-preview'
 
@@ -290,6 +291,7 @@ async function attemptGeneration(
           const data = (await res.json()) as {
             candidates?: { content?: { parts?: { text?: string; thought?: boolean }[] } }[]
           }
+          meterGeminiResponse(STYLE_GUIDE_VISION_MODEL, data)
           return (data.candidates?.[0]?.content?.parts ?? [])
             .filter((p) => !p.thought)
             .map((p) => p.text ?? '')

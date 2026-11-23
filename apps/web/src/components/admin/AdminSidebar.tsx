@@ -17,11 +17,13 @@ import {
   Music,
   Mail,
   CalendarRange,
+  Activity,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const navItems = [
   { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
+  { label: 'System Health', href: '/admin/health', icon: Activity },
   { label: 'LLM Keys', href: '/admin/llm', icon: Key },
   { label: 'Prompts', href: '/admin/prompts', icon: MessageSquareText },
   { label: 'Outline Frameworks', href: '/admin/outline-frameworks', icon: LayoutList },

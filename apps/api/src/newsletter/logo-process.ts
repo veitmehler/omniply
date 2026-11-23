@@ -14,6 +14,7 @@ import { downloadImageFromUrl, uploadBufferWithKey, deleteOldVersions } from '@o
 import { getSystemApiKey } from '../lib/system-keys'
 import { vtoken } from './image-overlay'
 import { logger } from '../lib/logger'
+import { recordMediaSpend } from '../lib/media-costs'
 
 export interface ProcessedLogo {
   lightUrl: string
@@ -58,6 +59,7 @@ async function birefnetCutout(sourceUrl: string): Promise<Buffer> {
   if (!res.ok) throw new Error(`birefnet ${res.status}: ${(await res.text()).slice(0, 200)}`)
   const data = (await res.json()) as { image?: { url?: string } }
   if (!data.image?.url) throw new Error('birefnet returned no image')
+  recordMediaSpend('fal-ai', 'fal-ai/birefnet')
   return downloadImageFromUrl(data.image.url)
 }
 

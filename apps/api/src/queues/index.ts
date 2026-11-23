@@ -120,6 +120,8 @@ export const QUEUES = {
   DEMO_BOOKING_CLEANUP: 'demo-booking-cleanup',
   PMS_CONTACT_POLL: 'pms-contact-poll',
   SMS_CAPABILITY_PROBE: 'sms-capability-probe',
+  // Admin System Health (2026-11-23): balances, provider outages, alert delivery.
+  SYSTEM_HEALTH_CHECK: 'system-health-check',
   GOOGLE_REVIEWS_BACKFILL: 'google-reviews-backfill',
   STRIPE_EVENT_RERESOLVE: 'stripe-event-reresolve',
 } as const

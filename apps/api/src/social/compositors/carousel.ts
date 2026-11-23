@@ -11,6 +11,7 @@ import { centeredTextLines, escapeXml, leftAlignedTextLines, wrapText } from '..
 import { withTimeout } from '../../lib/net/with-timeout'
 import { withRetry } from '../../lib/net/retry'
 import { generateWithGeminiImage, prisma } from '@omniply/shared'
+import { recordMediaSpend } from '../../lib/media-costs'
 
 /** Per-image cost for Gemini image models (~1290 output tokens), mirrored from diagram-restyle. */
 const GEMINI_IMAGE_COST_USD = 0.039
@@ -717,6 +718,7 @@ export async function generateCarouselBackground(
     ),
   )
 
+  recordMediaSpend('fal-ai', model)
   const data = result.data as { images?: Array<{ url: string }> }
   const url = data?.images?.[0]?.url
   if (!url) {

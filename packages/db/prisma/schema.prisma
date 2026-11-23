@@ -1297,6 +1297,100 @@ model SystemApiKey {
   @@map("system_api_keys")
 }
 
+// ── Admin System Health dashboard (2026-11-23) ───────────────────────────────
+// Built after Gemini's prepaid credit ran out unnoticed for ten days. One row
+// per external service we depend on or pay for; rows are created from the code
+// catalog (apps/api/src/lib/system-health/catalog.ts) and only ever EDITED here
+// by an admin, never overwritten.
+model ServiceAccount {
+  key             String    @id // 'gemini', 'digitalocean', 'domain:omniply.io'
+  label           String
+  usedFor         String    @default("")
+  // prepaid = runs dry | quota = plan allowance | postpaid = billed after | fixed = flat plan | fee = per payment | domain
+  billing         String
+  // tracked = last stated balance + top-ups − our metered spend | live = read from the provider | none
+  balanceMode     String    @default("none")
+  meteredProvider String? // LLMUsage.provider subtracted from a tracked balance
+  callProvider    String? // provider name in provider_call_stats (lib/net instrumentCall)
+  warnDays        Int       @default(14)
+  criticalDays    Int       @default(3)
+  rechargeUrl     String?
+  statusFeedUrl   String? // Atlassian-style …/api/v2/status.json
+  statusPageUrl   String?
+  monthlyAmount   Float? // fixed plans: entered by the admin
+  renewsOn        DateTime?
+  notes           String?   @db.Text
+  sortOrder       Int       @default(100)
+  enabled         Boolean   @default(true)
+  // Alert state, so one condition mails once and then reminds daily.
+  alertLevel      String? // warn | critical | depleted | blocked | down
+  alertAt         DateTime?
+  updatedAt       DateTime  @updatedAt
+  ledger          ServiceLedgerEntry[]
+
+  @@map("service_accounts")
+}
+
+// What the admin tells us about a prepaid account: "it showed $X" (set) or
+// "I added $X" (topup). A tracked balance is the last `set`, plus later
+// top-ups, minus our metered spend since then.
+model ServiceLedgerEntry {
+  id         String         @id @default(cuid())
+  serviceKey String
+  service    ServiceAccount @relation(fields: [serviceKey], references: [key], onDelete: Cascade)
+  kind       String // set | topup
+  amount     Float
+  at         DateTime
+  note       String?
+  createdAt  DateTime       @default(now())
+
+  @@index([serviceKey, at])
+  @@map("service_ledger_entries")
+}
+
+// Outcomes of our own calls to each provider, one row per provider per UTC
+// hour, flushed from memory by lib/net/call-stats.ts. Until 2026-11-23 these
+// lived only in container logs, which a deploy throws away.
+model ProviderCallStat {
+  id               String    @id @default(cuid())
+  provider         String
+  bucket           DateTime // start of the UTC hour
+  ok               Int       @default(0)
+  failed           Int       @default(0)
+  skipped          Int       @default(0) // circuit open: not even attempted
+  lastSuccessAt    DateTime?
+  lastErrorAt      DateTime?
+  lastErrorStatus  Int?
+  lastErrorMessage String?   @db.Text
+
+  @@unique([provider, bucket])
+  @@index([bucket])
+  @@map("provider_call_stats")
+}
+
+// What we actually sent each provider, measured where the call leaves for it
+// (the LLM adapters, the raw Gemini fetches, the image helpers), one row per
+// provider and model per flush minute. LLMUsage attributes cost to an account
+// and a job and is written by call sites; the 2026-11-23 audit found about
+// twenty paid paths that never write it (shared newsletter research, the
+// quality gate, the editor/hedge/dash passes, source support, onboarding), so
+// a prepaid balance cannot be tracked from it. This table can miss nothing a
+// provider bills for, because it does not depend on a call site remembering.
+model ProviderSpend {
+  id           String   @id @default(cuid())
+  provider     String
+  model        String
+  at           DateTime // flush time: the calls happened in the minute before
+  cost         Float
+  calls        Int
+  inputTokens  Int      @default(0)
+  outputTokens Int      @default(0)
+
+  @@index([provider, at])
+  @@index([at])
+  @@map("provider_spend")
+}
+
 // Admin-managed background music library for social video posts.
 // Tracks are loudness-normalized (EBU R128) and transcoded to AAC on upload,
 // so mix-time levels are predictable for every track.
@@ -1339,6 +1433,11 @@ model PlatformSettings {
   // Cadence-generated content is never counted. See
   // .plans/production-throughput.implementation-plan.md Phase 2.
   weeklyExtraPostCap Int @default(3)
+  // System Health (2026-11-23): where production-stopping alerts are texted,
+  // and the worker's last health-check run (its heartbeat on the dashboard).
+  opsAlertSmsTo     String?
+  opsAlertSmsFrom   String?
+  healthCheckAt     DateTime?
   updatedAt        DateTime @updatedAt
 
   @@map("platform_settings")

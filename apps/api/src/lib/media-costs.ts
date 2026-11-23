@@ -7,6 +7,7 @@
  * audit found (the one image site that was already tracked).
  */
 import { recordLLMUsage } from './llm-usage'
+import { recordProviderSpend } from './net/call-stats'
 
 export const MEDIA_COST_USD = {
   // Gemini image (Nano-Banana family) — matches the established constant
@@ -36,4 +37,24 @@ export async function recordMediaCost(
     provider: kind.startsWith('fal') ? 'fal-ai' : 'gemini',
     finishReason: 'stop',
   })
+}
+
+/** Flat estimate for one generated asset, by provider and model id. */
+export function mediaCostFor(provider: 'gemini' | 'fal-ai', model: string): number {
+  if (provider === 'gemini') return MEDIA_COST_USD['gemini-image']
+  const m = model.toLowerCase()
+  if (m.includes('seedance')) return MEDIA_COST_USD['fal-seedance-video']
+  if (m.includes('schnell')) return MEDIA_COST_USD['fal-flux-schnell']
+  if (m.includes('recraft')) return MEDIA_COST_USD['fal-recraft']
+  if (m.includes('birefnet')) return 0.002 // background removal, priced per megapixel; small
+  return MEDIA_COST_USD['fal-flux-pro']
+}
+
+/**
+ * Count one generated asset in the spend ledger (ProviderSpend). Registered as
+ * the shared image helpers' listener at boot, and called directly by the three
+ * sites that talk to fal without the helper.
+ */
+export function recordMediaSpend(provider: 'gemini' | 'fal-ai', model: string): void {
+  recordProviderSpend(provider, model, mediaCostFor(provider, model))
 }

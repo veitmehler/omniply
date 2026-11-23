@@ -2,6 +2,7 @@ import { prisma } from '@omniply/shared'
 import { logger } from './logger'
 import { Prisma } from '@prisma/client'
 import { getSystemApiKey } from './system-keys'
+import { recordCallOutcome } from './net/call-stats'
 
 const DEFAULT_FROM = 'notifications@omniply.io' // omniply.io is the Resend-verified domain
 
@@ -135,6 +136,7 @@ export async function sendFailureAlert(input: FailureAlertInput): Promise<void> 
         },
         body: JSON.stringify({ from, to, subject, text: body }),
       })
+      recordCallOutcome('resend', response.ok ? 'success' : 'error', { status: response.status, message: `Resend answered ${response.status}` })
       if (!response.ok) {
         logger.warn({ to, status: response.status }, '[alerts] Resend API error')
       } else {
@@ -145,6 +147,34 @@ export async function sendFailureAlert(input: FailureAlertInput): Promise<void> 
     } catch (err) {
       logger.error({ err, to }, '[alerts] failed to send email')
     }
+  }
+}
+
+/**
+ * One plain email to the operations inbox (ALERT_EMAIL_TO): the System Health
+ * alerts. The caller owns grouping and reminders (ServiceAccount.alertLevel /
+ * alertAt), so this just sends. Returns false when nothing is configured.
+ */
+export async function sendOpsEmail(subject: string, text: string): Promise<boolean> {
+  const resendKey = await getResendApiKey()
+  const to = process.env.ALERT_EMAIL_TO
+  if (!resendKey || !to) return false
+  const from = process.env.ALERT_EMAIL_FROM ?? 'alerts@omniply.io'
+  const { deployEnvironment } = await import('./env')
+  const env = deployEnvironment()
+  try {
+    const response = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from, to, subject: `[Omniply${env === 'production' ? '' : ` ${env.toUpperCase()}`}] ${subject}`, text }),
+    })
+    recordCallOutcome('resend', response.ok ? 'success' : 'error', { status: response.status, message: `Resend answered ${response.status}` })
+    if (!response.ok) logger.warn({ status: response.status }, '[alerts] ops email rejected by Resend')
+    else logger.info({ subject }, '[alerts] ops email sent')
+    return response.ok
+  } catch (err) {
+    logger.error({ err }, '[alerts] failed to send ops email')
+    return false
   }
 }
 
@@ -177,6 +207,7 @@ export async function sendTransactionalEmail(input: {
         ...(input.html ? { html: input.html } : {}),
       }),
     })
+    recordCallOutcome('resend', response.ok ? 'success' : 'error', { status: response.status, message: `Resend answered ${response.status}` })
     if (!response.ok) {
       logger.warn({ to: input.to, status: response.status }, '[alerts] transactional Resend error')
       return false

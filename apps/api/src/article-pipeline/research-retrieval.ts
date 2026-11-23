@@ -18,7 +18,7 @@
  */
 import { logger } from '../lib/logger'
 import { getSystemApiKey } from '../lib/system-keys'
-import { calculateCost } from './llm/cost-table'
+import { meteredCost } from './llm/metered-cost'
 import { isCitable, sourceTier } from './citation-policy'
 import { contentTerms, termOverlap, liveResolvers, ncbiQueue, NCBI_BASE, ncbiKey, type GroundingSupportPages } from './source-verify'
 import { googleSerpOrganic, type SerpOrganic } from '../newsletter/oxylabs'
@@ -183,7 +183,7 @@ async function geminiJson(prompt: string, tools?: unknown[]): Promise<{ text: st
   const input = (um.promptTokenCount ?? 0) + (um.toolUsePromptTokenCount ?? 0)
   const output = (um.candidatesTokenCount ?? 0) + (um.thoughtsTokenCount ?? 0)
   const status = c?.urlContextMetadata?.urlMetadata?.[0]?.urlRetrievalStatus ?? ''
-  return { text, cost: calculateCost(EXTRACT_MODEL, input, output), tokens: { input, output }, retrieved: tools ? /SUCCESS/i.test(status) : true }
+  return { text, cost: meteredCost('gemini', EXTRACT_MODEL, input, output), tokens: { input, output }, retrieved: tools ? /SUCCESS/i.test(status) : true }
 }
 
 /** Azavea (practice-owner business articles): facts arrive in the practice's own

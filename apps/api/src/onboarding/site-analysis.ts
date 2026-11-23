@@ -16,6 +16,7 @@ import { withTimeout } from '../lib/net/with-timeout'
 import { assertSafePublicUrl } from '../lib/ssrf'
 import { normalizeHex, hexToHsl, type BrandColor, type BrandInventory } from './palette-compose'
 import type { SiteFacts } from '../lib/hours-compare'
+import { meterGeminiResponse } from '../article-pipeline/llm/metered-cost'
 
 const PAGE_FETCH_TIMEOUT_MS = 15_000
 const MAX_PAGES = 6
@@ -524,6 +525,7 @@ async function geminiGenerate(
   const data = (await res.json()) as {
     candidates?: { content?: { parts?: { text?: string; thought?: boolean }[] } }[]
   }
+  meterGeminiResponse(GEMINI_TEXT_MODEL, data)
   return (
     data.candidates?.[0]?.content?.parts
       ?.filter((p) => !p.thought)

@@ -13,6 +13,7 @@ import { instrumentCall } from '../lib/net/instrument'
 import { withTimeout } from '../lib/net/with-timeout'
 import type { SemanticPalette, SpecializationDraft } from './site-analysis'
 import { nlLabelColorFor } from './palette-compose'
+import { meterGeminiResponse } from '../article-pipeline/llm/metered-cost'
 
 const MODEL = 'gemini-3-flash-preview'
 
@@ -35,6 +36,7 @@ async function geminiJson<T>(apiKey: string, prompt: string, op: string, tempera
   )
   if (!res.ok) throw new Error(`gemini ${op} HTTP ${res.status}`)
   const data = (await res.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[] }
+  meterGeminiResponse(MODEL, data)
   const text = data.candidates?.[0]?.content?.parts?.map((p) => p.text ?? '').join('') ?? ''
   return JSON.parse(text) as T
 }

@@ -1,6 +1,6 @@
 import { fal } from '@fal-ai/client'
 import { getSystemApiKey } from '../../lib/system-keys'
-import { recordMediaCost } from '../../lib/media-costs'
+import { recordMediaCost, recordMediaSpend } from '../../lib/media-costs'
 import { logger } from '../../lib/logger'
 import { withTimeout } from '../../lib/net/with-timeout'
 import { withRetry } from '../../lib/net/retry'
@@ -86,6 +86,7 @@ export async function generateSeedanceClip(opts: SeedanceOptions): Promise<strin
   if (!url) throw new Error('Seedance returned no video URL')
 
   logger.info({ jobId: opts.jobId, model }, '[seedance] clip generated')
+  recordMediaSpend('fal-ai', model)
   await recordMediaCost(opts.userId, 'social_video_clip', 'fal-seedance-video', model)
   return url
 }

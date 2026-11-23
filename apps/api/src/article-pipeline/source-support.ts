@@ -20,7 +20,7 @@ import { runNewsletterPrompt } from '../newsletter/llm'
 import { scrapeUrl } from '../newsletter/oxylabs'
 import { identifyUrl, ncbiQueue, NCBI_BASE, ncbiKey, BOT_WALL_RE } from './source-verify'
 import { getSystemApiKey } from '../lib/system-keys'
-import { calculateCost } from './llm/cost-table'
+import { meteredCost } from './llm/metered-cost'
 
 export type SupportVerdict = 'supported' | 'partial' | 'unsupported' | 'unknown'
 
@@ -119,7 +119,7 @@ export const liveSupportDeps: SupportDeps = {
     const status = c?.urlContextMetadata?.urlMetadata?.[0]?.urlRetrievalStatus ?? c?.url_context_metadata?.url_metadata?.[0]?.url_retrieval_status ?? ''
     const text = (c?.content?.parts ?? []).map((p) => p.text ?? '').join('')
     const um = j.usageMetadata ?? {}
-    const cost = calculateCost(URL_CONTEXT_MODEL, (um.promptTokenCount ?? 0) + (um.toolUsePromptTokenCount ?? 0), (um.candidatesTokenCount ?? 0) + (um.thoughtsTokenCount ?? 0))
+    const cost = meteredCost('gemini', URL_CONTEXT_MODEL, (um.promptTokenCount ?? 0) + (um.toolUsePromptTokenCount ?? 0), (um.candidatesTokenCount ?? 0) + (um.thoughtsTokenCount ?? 0))
     return { text, cost, retrieved: /SUCCESS/i.test(status) }
   },
   async pubmedAbstract(pmid) {

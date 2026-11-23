@@ -12,7 +12,7 @@ import { withTimeout } from '../lib/net/with-timeout'
 import { isRetryableNetworkError } from '../lib/net/retry'
 import { instrumentCall } from '../lib/net/instrument'
 import { generateWithGeminiImage, uploadBufferWithKey } from '@omniply/shared'
-import { recordMediaCost } from '../lib/media-costs'
+import { recordMediaCost, recordMediaSpend } from '../lib/media-costs'
 
 const DEFAULT_FAL_MODEL = 'fal-ai/flux-pro'
 const MAX_RETRIES = 3
@@ -123,6 +123,7 @@ export async function generateFeaturedImage(
       if (!imageUrl) throw new Error('Fal.ai returned no image URL in response')
 
       logger.info({ jobId, attempt, model: falModel }, '[image-gen] featured image generated')
+      recordMediaSpend('fal-ai', falModel)
       await recordMediaCost(
         userId,
         'article_featured_image',

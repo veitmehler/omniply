@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { getSystemApiKey } from '../../lib/system-keys'
-import { calculateCost, GROUNDED_SEARCH_FEE_USD } from './cost-table'
+import { GROUNDED_SEARCH_FEE_USD } from './cost-table'
+import { meteredCost } from './metered-cost'
 import type { LLMAdapter, LLMCallOptions, LLMResponse } from './adapter'
 import { LLMError } from './adapter'
 import { instrumentCall } from '../../lib/net/instrument'
@@ -132,7 +133,7 @@ export class GeminiAdapter implements LLMAdapter {
     return {
       content: text,
       tokens: { input: inputTokens, output: outputTokens, total: inputTokens + outputTokens },
-      cost: calculateCost(model, inputTokens, outputTokens),
+      cost: meteredCost('gemini', model, inputTokens, outputTokens),
       model,
       provider: 'gemini',
       finishReason,
@@ -222,7 +223,7 @@ export class GeminiAdapter implements LLMAdapter {
       tokens: { input: inputTokens, output: outputTokens, total: inputTokens + outputTokens },
       // Grounded requests carry Google's per-request search fee on top of
       // tokens — adding it HERE propagates to every recorder automatically.
-      cost: calculateCost(model, inputTokens, outputTokens) + GROUNDED_SEARCH_FEE_USD,
+      cost: meteredCost('gemini', model, inputTokens, outputTokens, GROUNDED_SEARCH_FEE_USD),
       model,
       provider: 'gemini',
       finishReason,

@@ -55,6 +55,10 @@ import { reviewCountSnapshotHandler } from './handlers/review-count-snapshot'
 import { stripeEventReresolveHandler } from './handlers/stripe-event-reresolve'
 import { pmsContactPollHandler } from './handlers/pms-contact-poll'
 import { smsCapabilityProbeHandler } from './handlers/sms-capability-probe'
+import { setMediaUsageListener } from '@omniply/shared'
+import { recordMediaSpend } from './lib/media-costs'
+import { flushCallStats } from './lib/net/call-stats'
+import { systemHealthCheckHandler } from './handlers/system-health-check'
 
 /**
  * Number of concurrent social-generation runs across ALL clients. Bounded to
@@ -85,11 +89,15 @@ async function main() {
   // Fail fast if encryption isn't configured (never boot prod on the dev key).
   assertEncryptionConfigured()
 
+  // System Health: images made through the shared helpers report their cost here.
+  setMediaUsageListener((e) => recordMediaSpend(e.provider, e.model))
+
   const boss = await getBoss()
 
   // ── Graceful shutdown ───────────────────────────────────────────────────────
   const shutdown = async (signal: string) => {
     logger.info(`[worker] received ${signal}, shutting down…`)
+    await flushCallStats().catch(() => {}) // the last minute of call outcomes and spend
     await stopBoss()
     process.exit(0)
   }
@@ -122,6 +130,7 @@ async function main() {
   await boss.schedule(QUEUES.DEMO_BOOKING_CLEANUP, '30 8 * * *', {}) // daily 08:30 UTC (~1:30am Phoenix) — demo-line bookings swept
   await boss.schedule(QUEUES.PMS_CONTACT_POLL, '*/5 * * * *', {}) // every 5 min — PMS→GHL demographics sync (updated_since cursors)
   await boss.schedule(QUEUES.SMS_CAPABILITY_PROBE, '0 15 * * *', {}) // daily 15:00 UTC (~8am Phoenix) — texting self-test vs sink number
+  await boss.schedule(QUEUES.SYSTEM_HEALTH_CHECK, '*/10 * * * *', {}) // every 10 min — prepaid balances, provider outages, the alert that would have caught the Gemini credit outage
   await boss.schedule(QUEUES.AGENT_RETENTION_CLEANUP, '15 3 * * *', {}) // daily 03:15 UTC — 180d chat-transcript retention (decision D)
   await boss.schedule(QUEUES.AGENT_FINALIZE, '*/10 * * * *', {}) // every 10 min — idle-chat contact reconcile + summary note
   await boss.schedule(QUEUES.AZAVEA_CADENCE, '0 8 * * *', {}) // daily 08:00 UTC — azavea vertical MWF article cadence (no-op on non-slot days)
@@ -193,6 +202,13 @@ async function main() {
     QUEUES.DB_BACKUP,
     { batchSize: 1 },
     withSentry('db-backup', dbBackupHandler),
+  )
+
+  // ── System Health check ────────────────────────────────────
+  await boss.work(
+    QUEUES.SYSTEM_HEALTH_CHECK,
+    { batchSize: 1 },
+    withSentry('system-health-check', async () => { await systemHealthCheckHandler() }),
   )
 
   // ── PG connection monitor ────────────────────────────────────────────────────

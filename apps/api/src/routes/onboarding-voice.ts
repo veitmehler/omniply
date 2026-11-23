@@ -14,6 +14,7 @@ import { logger } from '../lib/logger'
 import { getSystemApiKey } from '../lib/system-keys'
 import { instrumentCall } from '../lib/net/instrument'
 import { withTimeout } from '../lib/net/with-timeout'
+import { meterGeminiResponse } from '../article-pipeline/llm/metered-cost'
 
 const TRANSCRIBE_MODEL = 'gemini-3-flash-preview'
 const MAX_AUDIO_BYTES = 20 * 1024 * 1024
@@ -74,6 +75,7 @@ async function transcribeOnce(
   )
   if (!res.ok) throw new Error(`transcription HTTP ${res.status}`)
   const data = (await res.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[] }
+  meterGeminiResponse(TRANSCRIBE_MODEL, data)
   return (data.candidates?.[0]?.content?.parts?.map((p) => p.text ?? '').join('') ?? '').trim()
 }
 
