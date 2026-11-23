@@ -34,8 +34,46 @@ export interface FailureAlertInput {
   context?: Record<string, unknown>
 }
 
-/** Persist failure and optionally email admin + user via Resend. */
+/** A failure of the same type for the same account inside this window is the same incident. */
+export const ALERT_INCIDENT_WINDOW_MS = 6 * 60 * 60 * 1000
+
+/**
+ * Whether this failure gets an email, given the previous one of the same type
+ * for the same account: the first of an incident does, and so does the first of
+ * each new UTC day while it lasts (the reminder). Every other repeat is only
+ * logged. Kept pure so the rule is testable without a database.
+ */
+export function alertEmailDecision(previousAt: Date | null, now: Date): 'first' | 'reminder' | 'repeat' {
+  if (!previousAt || now.getTime() - previousAt.getTime() > ALERT_INCIDENT_WINDOW_MS) return 'first'
+  if (previousAt.toISOString().slice(0, 10) !== now.toISOString().slice(0, 10)) return 'reminder'
+  return 'repeat'
+}
+
+/**
+ * Persist the failure and email the OPERATIONS inbox (ALERT_EMAIL_TO) via Resend.
+ *
+ * The account owner is never a recipient (Veit, 2026-11-23: "the client
+ * shouldn't get our alert emails, only we should"). Until that day this function
+ * also mailed `user.email`, with the raw error text as the body and no grouping:
+ * during the Gemini credit outage one client received 405 identical
+ * `newsletter_generate_failed` emails in two days, and the flood pushed Resend
+ * over its rate limit 1,044 times, on the key that also sends client email.
+ *
+ * Every failure is still written to ErrorLog (the admin Errors page); only the
+ * email is grouped: one when an incident starts, one reminder per UTC day.
+ */
 export async function sendFailureAlert(input: FailureAlertInput): Promise<void> {
+  // Read the previous occurrence BEFORE this one is written.
+  const now = new Date()
+  const previous = await prisma.errorLog
+    .findFirst({
+      where: { errorType: input.errorType, userId: input.userId ?? null },
+      orderBy: { createdAt: 'desc' },
+      select: { createdAt: true },
+    })
+    .catch(() => null)
+  const decision = alertEmailDecision(previous?.createdAt ?? null, now)
+
   await prisma.errorLog
     .create({
       data: {
@@ -54,26 +92,38 @@ export async function sendFailureAlert(input: FailureAlertInput): Promise<void> 
   const from = process.env.ALERT_EMAIL_FROM ?? 'alerts@omniply.io'
   const adminTo = process.env.ALERT_EMAIL_TO
 
+  // Operations only. The account is named in the body so we know whose it is.
   const recipients = new Set<string>()
   if (adminTo) recipients.add(adminTo)
 
-  if (input.userId) {
-    const user = await prisma.user.findUnique({
-      where: { id: input.userId },
-      select: { email: true },
-    })
-    if (user?.email) recipients.add(user.email)
+  if (!resendKey || recipients.size === 0) return
+  if (decision === 'repeat') {
+    logger.info({ errorType: input.errorType, userId: input.userId }, '[alerts] repeat of an open incident — logged, not mailed')
+    return
   }
 
-  if (!resendKey || recipients.size === 0) return
+  let account = ''
+  if (input.userId) {
+    const user = await prisma.user
+      .findUnique({
+        where: { id: input.userId },
+        select: { email: true, brandSettings: { select: { organizationName: true } } },
+      })
+      .catch(() => null)
+    account = [user?.brandSettings?.organizationName, user?.email].filter(Boolean).join(' · ')
+  }
 
   // Env tag (2026-10-22): staging and prod alerts land in the same inbox —
   // an untagged staging failure reads as a prod incident (the SMS-probe
   // confusion that prompted this).
   const { deployEnvironment } = await import('./env')
   const env = deployEnvironment()
-  const subject = `[Omniply${env === 'production' ? '' : ` ${env.toUpperCase()}`}] ${input.errorType}`
-  const body = `${input.message}\n\n${JSON.stringify(input.context ?? {}, null, 2)}`
+  const subject = `[Omniply${env === 'production' ? '' : ` ${env.toUpperCase()}`}] ${input.errorType}${decision === 'reminder' ? ' (still failing)' : ''}`
+  const body =
+    `${input.message}\n\n` +
+    (account ? `Account: ${account}\n` : '') +
+    `Repeats of this failure for this account are logged on the admin Errors page and not mailed again today.\n\n` +
+    JSON.stringify(input.context ?? {}, null, 2)
 
   for (const to of recipients) {
     try {
