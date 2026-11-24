@@ -3,7 +3,7 @@
     { "src": "^/(product|listing|shop|news|wp-admin|wp-content|wp-includes|wp-json|category|author|tag)(/.*)?$", "status": 410 },
     { "src": "^/(index\\.php|xmlrpc\\.php|hg|test|coming-soon)(/.*)?$", "status": 410 },
     { "src": "^/contact/?$", "dest": "/contact.html" },
-    { "src": "^/terms(-of-use)?/?$", "dest": "/terms.html" },
+    { "src": "^/terms(-of-use|-of-service|-and-conditions)?/?$", "dest": "/terms.html" },
     { "src": "^/privacy(-policy)?/?$", "dest": "/privacy.html" },
     { "handle": "filesystem" },
     { "src": ".*", "status": 410 }

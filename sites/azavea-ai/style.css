@@ -48,3 +48,11 @@ section.band { padding: 72px 0; border-bottom: 1px solid var(--line); }
 .contactband .big { font-size: clamp(24px, 4vw, 34px); font-weight: 700; margin-bottom: 14px; }
 .contactband p { margin-bottom: 6px; }
 @media (max-width: 640px) { section.band { padding: 52px 0; } }
+
+/* ── legal pages (2026-11-24): long text reads from the top, not centred in the viewport ── */
+main:has(.legal) { align-items: flex-start; }
+.card.legal { max-width: 760px; }
+.card.legal h1 { margin-bottom: 8px; }
+.card.legal h2 { margin: 36px 0 10px; scroll-margin-top: 24px; }
+.card.legal p { font-size: 17px; }
+.card.legal strong { color: #fff; }
