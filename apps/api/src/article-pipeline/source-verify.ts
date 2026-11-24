@@ -608,6 +608,18 @@ const MIN_ANCHOR_SHARED = 3
 /** Share of a fact's distinctive weight the sentence must carry (Gemini read 2026-11-13). */
 export const MIN_ANCHOR_COVERAGE = 0.5
 
+/** Distinctive words of the fact the sentence must repeat, whatever their weight. */
+const MIN_ANCHOR_DISTINCTIVE = 2
+/** Share of all the fact's content words a sentence must carry to be linked on a shared figure without a judge. */
+export const MIN_ANCHOR_SHARE_WITH_FIGURE = 0.25
+/** Below this share a pair is not even proposed to the judge. */
+const MIN_ANCHOR_SHARE_PROPOSAL = 0.2
+
+/** The figures a sentence states ("9.2", "150", "48", "72"); thousands separators removed. */
+export function figuresOf(s: string): Set<string> {
+  return new Set(s.replace(/(\d),(?=\d{3}\b)/g, '$1').match(/\d+(?:\.\d+)?/g) ?? [])
+}
+
 /** Crude stem so a paraphrase still matches: "herniated"/"herniation", "resorb"/"resorption". */
 export function stemTerm(t: string): string {
   return t.length > 5 ? t.slice(0, 5) : t
@@ -626,16 +638,32 @@ export function stemTerm(t: string): string {
  * lower weigh little), a sentence must carry at least half of a fact's
  * distinctive weight, and the (fact, sentence) pairs are taken best first
  * across the whole pool, so a URL with several facts lands on its best match.
+ * The parts: anchorSentences → anchorPairs → (a judge) → placeAnchors.
  */
-export function anchorFactSources(html: string, sources: FactSource[]): { html: string; placed: string[]; unplaced: FactSource[] } {
-  const placed: string[] = []
-  const unplaced: FactSource[] = []
-  const usedUrls = new Set<string>()
-  const usedSpans: Array<[number, number]> = []
-  const edits: Array<{ start: number; end: number; url: string }> = []
 
-  // Candidate sentences with absolute offsets.
-  const cands: Array<{ start: number; end: number; text: string; terms: Set<string> }> = []
+interface AnchorSentence {
+  start: number
+  end: number
+  text: string
+  terms: Set<string>
+}
+
+export interface AnchorPair {
+  /** Index into the sources. */
+  si: number
+  sentence: AnchorSentence
+  coverage: number
+  shared: number
+  /** Share of all the fact's content words the sentence carries. */
+  share: number
+  sameFigure: boolean
+  /** Passes the word-matching rule on its own; the rest are proposals a judge must confirm. */
+  strict: boolean
+}
+
+/** Candidate sentences with absolute offsets: plain sentences inside <p> or <li>. */
+function anchorSentences(html: string): AnchorSentence[] {
+  const cands: AnchorSentence[] = []
   const blockRe = /<(p|li)(?:\s[^>]*)?>([\s\S]*?)<\/\1>/gi
   let bm: RegExpExecArray | null
   while ((bm = blockRe.exec(html)) !== null) {
@@ -655,47 +683,90 @@ export function anchorFactSources(html: string, sources: FactSource[]): { html: 
       cands.push({ start: innerStart + sm.index + lead, end: innerStart + sm.index + raw.length - trail, text, terms: new Set([...contentTerms(text)].map(stemTerm)) })
     }
   }
+  return cands
+}
 
+/**
+ * Every (fact, sentence) pair worth considering, best first.
+ *
+ * Bench of 2026-11-24: words the article never uses used to weigh as much as
+ * its rarest word and stayed in the score, so a writer who restated a fact in
+ * plain words could not reach the threshold (the hyperbaric article stated
+ * "9.2% of treatments" and got none of its 23 sources linked). No sentence can
+ * match a word the article does not contain, so those words leave the
+ * distinctive set, and three guards take their place:
+ *   - the sentence repeats at least two of the fact's distinctive words;
+ *   - it carries a fair share of ALL the fact's words, absent ones included;
+ *   - a fact and a sentence that both state figures share at least one
+ *     ("5% per decade" never lands on a sentence about "10% per decade").
+ * A pair is `strict` when it would be safe to link with no judge at all (see
+ * below). Every other pair that clears the guards is a proposal: close wording can still be a different claim (a
+ * long-COVID finding against a sentence on concussion), so a judge decides.
+ */
+export function anchorPairs(html: string, sources: FactSource[]): AnchorPair[] {
+  const cands = anchorSentences(html)
   const factTermsOf = sources.map((s) => new Set([...contentTerms(s.fact)].map(stemTerm)))
 
   // Term rarity across the article's sentences: a word half the article uses
-  // (the topic itself) carries almost no weight; a word the article never
-  // uses weighs as much as one it uses once.
+  // (the topic itself) carries almost no weight.
   const df = new Map<string, number>()
   for (const c of cands) for (const t of c.terms) df.set(t, (df.get(t) ?? 0) + 1)
-  const weight = (t: string) => Math.log(1 + Math.max(1, cands.length) / Math.max(1, df.get(t) ?? 0))
+  const weight = (t: string) => Math.log(1 + Math.max(1, cands.length) / (df.get(t) ?? 1))
 
-  // Every admissible (fact, sentence) pair, scored by how much of the fact's
-  // distinctive weight the sentence carries; distinctive = at or above the
-  // fact's own median term weight, so the topic's generic words drop out.
-  const pairs: Array<{ si: number; c: (typeof cands)[number]; coverage: number; shared: number }> = []
+  const pairs: AnchorPair[] = []
   sources.forEach((s, si) => {
     const factTerms = factTermsOf[si]
-    if (factTerms.size === 0) return
-    const weights = [...factTerms].map(weight).sort((a, b) => a - b)
+    const present = [...factTerms].filter((t) => df.has(t))
+    if (present.length < MIN_ANCHOR_SHARED) return
+    const weights = present.map(weight).sort((a, b) => a - b)
     const median = weights[Math.floor(weights.length / 2)]
-    const distinctive = [...factTerms].filter((t) => weight(t) >= median)
+    const distinctive = present.filter((t) => weight(t) >= median)
     const total = distinctive.reduce((acc, t) => acc + weight(t), 0)
     if (total === 0) return
+    // The same measure over every word of the fact, absent ones at full weight (the 2026-11-13 rule).
+    const fullWeights = [...factTerms].map(weight).sort((a, b) => a - b)
+    const fullMedian = fullWeights[Math.floor(fullWeights.length / 2)]
+    const fullDistinctive = [...factTerms].filter((t) => weight(t) >= fullMedian)
+    const fullTotal = fullDistinctive.reduce((acc, t) => acc + weight(t), 0)
+    const factFigures = figuresOf(s.fact)
     for (const c of cands) {
-      const shared = [...c.terms].filter((t) => factTerms.has(t)).length
+      const shared = present.filter((t) => c.terms.has(t)).length
       if (shared < MIN_ANCHOR_SHARED) continue
-      const coverage = distinctive.filter((t) => c.terms.has(t)).reduce((acc, t) => acc + weight(t), 0) / total
-      if (coverage >= MIN_ANCHOR_COVERAGE) pairs.push({ si, c, coverage, shared })
+      const sentenceFigures = figuresOf(c.text)
+      const sameFigure = [...factFigures].some((f) => sentenceFigures.has(f))
+      if (factFigures.size > 0 && sentenceFigures.size > 0 && !sameFigure) continue
+      const share = shared / factTerms.size
+      if (share < MIN_ANCHOR_SHARE_PROPOSAL) continue
+      const matched = distinctive.filter((t) => c.terms.has(t))
+      const coverage = matched.reduce((acc, t) => acc + weight(t), 0) / total
+      // Strict = safe to link with no judge. Either the rule of 2026-11-13 holds (the sentence carries half
+      // the fact's distinctive weight with the words the article never uses counted in full), or both state
+      // the same figure and the sentence repeats the fact's distinctive words.
+      const fullCoverage = fullTotal > 0 ? fullDistinctive.filter((t) => c.terms.has(t)).reduce((acc, t) => acc + weight(t), 0) / fullTotal : 0
+      const strict = fullCoverage >= MIN_ANCHOR_COVERAGE || (sameFigure && matched.length >= MIN_ANCHOR_DISTINCTIVE && coverage >= MIN_ANCHOR_COVERAGE && share >= MIN_ANCHOR_SHARE_WITH_FIGURE)
+      pairs.push({ si, sentence: c, coverage, shared, share, sameFigure, strict })
     }
   })
-  pairs.sort((a, b) => b.coverage - a.coverage || b.shared - a.shared || a.si - b.si)
+  return pairs.sort((a, b) => Number(b.sameFigure) - Number(a.sameFigure) || b.share * (0.5 + b.coverage) - a.share * (0.5 + a.coverage) || b.shared - a.shared || a.si - b.si)
+}
 
+/** Place links for the given pairs, best first: one link per sentence, one per URL. */
+export function placeAnchors(html: string, sources: FactSource[], pairs: AnchorPair[]): { html: string; placed: string[]; unplaced: FactSource[] } {
+  const placed: string[] = []
+  const unplaced: FactSource[] = []
+  const usedUrls = new Set<string>()
+  const usedSpans: Array<[number, number]> = []
+  const edits: Array<{ start: number; end: number; url: string }> = []
   const placedFacts = new Set<number>()
   for (const p of pairs) {
     const s = sources[p.si]
     if (usedUrls.has(s.url)) continue
-    if (usedSpans.some(([a, b]) => p.c.start < b && p.c.end > a)) continue
-    usedSpans.push([p.c.start, p.c.end])
+    if (usedSpans.some(([a, b]) => p.sentence.start < b && p.sentence.end > a)) continue
+    usedSpans.push([p.sentence.start, p.sentence.end])
     usedUrls.add(s.url)
     placedFacts.add(p.si)
     placed.push(s.url)
-    edits.push({ start: p.c.start, end: p.c.end, url: s.url })
+    edits.push({ start: p.sentence.start, end: p.sentence.end, url: s.url })
   }
   sources.forEach((s, si) => {
     if (!placedFacts.has(si) && !usedUrls.has(s.url)) unplaced.push(s)
@@ -712,6 +783,45 @@ export function anchorFactSources(html: string, sources: FactSource[]): { html: 
     out = out.slice(0, e.start) + `<a href="${e.url}" target="_blank" rel="noopener noreferrer">${body}</a>${punct}` + out.slice(e.end)
   }
   return { html: out, placed, unplaced }
+}
+
+/** Word matching alone: only the pairs that clear the full thresholds. The fallback when no judge is available. */
+export function anchorFactSources(html: string, sources: FactSource[]): { html: string; placed: string[]; unplaced: FactSource[] } {
+  return placeAnchors(html, sources, anchorPairs(html, sources).filter((p) => p.strict))
+}
+
+/** Asked about each proposed pair: does this sentence state this fact? One answer per pair, in order. */
+export type AnchorJudge = (pairs: Array<{ fact: string; sentence: string }>) => Promise<boolean[]>
+
+/** Proposals a fact may put to the judge. */
+const MAX_PROPOSALS_PER_FACT = 2
+
+/**
+ * Word matching proposes, a judge confirms (2026-11-24). Each fact puts its
+ * two best sentences forward; a link is placed only where the judge says the
+ * sentence states that fact. If the judge cannot be reached, the strict word
+ * rule stands in, so an outage costs links but never adds a wrong one.
+ */
+export async function anchorFactSourcesJudged(html: string, sources: FactSource[], judge: AnchorJudge): Promise<{ html: string; placed: string[]; unplaced: FactSource[]; proposed: number; confirmed: number; judged: boolean }> {
+  const all = anchorPairs(html, sources)
+  const perFact = new Map<number, number>()
+  const proposals = all.filter((p) => {
+    const n = perFact.get(p.si) ?? 0
+    if (n >= MAX_PROPOSALS_PER_FACT) return false
+    perFact.set(p.si, n + 1)
+    return true
+  })
+  if (proposals.length === 0) return { ...placeAnchors(html, sources, []), proposed: 0, confirmed: 0, judged: true }
+  let verdicts: boolean[]
+  try {
+    verdicts = await judge(proposals.map((p) => ({ fact: sources[p.si].fact, sentence: p.sentence.text })))
+    if (verdicts.length !== proposals.length) throw new Error(`judge answered ${verdicts.length} of ${proposals.length} pairs`)
+  } catch {
+    const strict = proposals.filter((p) => p.strict)
+    return { ...placeAnchors(html, sources, strict), proposed: proposals.length, confirmed: strict.length, judged: false }
+  }
+  const confirmed = proposals.filter((_, i) => verdicts[i])
+  return { ...placeAnchors(html, sources, confirmed), proposed: proposals.length, confirmed: confirmed.length, judged: true }
 }
 
 // ── B16: verified-source floor ────────────────────────────────────────────────

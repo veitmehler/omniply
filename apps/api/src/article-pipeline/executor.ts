@@ -15,7 +15,8 @@ import { injectClientStory } from './client-stories/select'
 import { sanitizeDashes } from '../lib/text/dash-sanitizer'
 import { gateHedges } from '../lib/text/hedge-gate'
 import { runEditorPass } from '../lib/text/editor-pass'
-import { verifyFactSources, anchorFactSources, pubmedFill, loadFactSources, SOURCE_FLOOR, type FactSource, type GroundingSupportPages } from './source-verify'
+import { verifyFactSources, anchorFactSourcesJudged, pubmedFill, loadFactSources, SOURCE_FLOOR, type FactSource, type GroundingSupportPages } from './source-verify'
+import { liveAnchorJudge } from './anchor-judge'
 import { checkSupport } from './source-support'
 import { resolveChunkUrisIndexed } from './grounding-resolver'
 import { restoreBoundary } from '../lib/text/boundary-restore'
@@ -52,9 +53,8 @@ const SOURCE_VERIFY_STEPS = new Set([7, 8])
 
 /** B21: research mode for steps 7/8. 'retrieval' (DEFAULT since 2026-11-11, Veit's ruling after
  * the B21 series) = our own retrieval: PubMed API + site-restricted search + page extraction with
- * verbatim quotes, verified on provenance. 'grounded' = the Gemini grounded-search path, kept as
- * the automatic fallback when the retrieval feed ends under the floor, and selectable with
- * RESEARCH_MODE=grounded. */
+ * verbatim quotes, verified on provenance. 'grounded' = the Gemini grounded-search path, selectable
+ * only by hand with RESEARCH_MODE=grounded. It is no longer an automatic fallback (2026-11-24). */
 const RESEARCH_MODE = process.env.RESEARCH_MODE === 'grounded' ? 'grounded' : 'retrieval'
 const RETRIEVAL_MIN_FACTS = 8
 
@@ -536,14 +536,27 @@ function htmlHasCitationAnchorsForUrls(html: string, urls: string[]): boolean {
  * Step 12 citations are used as fallback when no research sources exist.
  */
 /**
- * B21: retrieval-first research for steps 7/8. Returns null (→ grounded step) when the
- * retrieval feed is too thin, so the pipeline never regresses below today's path.
+ * B21: retrieval-first research for steps 7/8. It never hands over to the grounded step
+ * (Veit, 2026-11-24): a thin feed is used as it is, and when nothing was found the step
+ * says so and the article is written without sourced facts.
  */
-async function runRetrievalStep(jobId: string, stepNumber: number, ctx: PipelineContext): Promise<StepRunResult | null> {
+const NO_FACTS_NOTE = '(No sourced facts were found for this part of the article. Write it from the practitioner\'s own knowledge and state no statistics, study results or figures.)'
+
+async function emptyRetrievalStep(jobId: string, stepNumber: number, t0: number): Promise<StepRunResult> {
+  const durationMs = Date.now() - t0
+  await prisma.pipelineStep.upsert({
+    where: { jobId_stepNumber: { jobId, stepNumber } },
+    create: { jobId, stepNumber, stepName: stepNumber === 7 ? 'find_faq_facts' : 'find_article_facts', status: 'completed', provider: 'retrieval', model: 'serp+pubmed+flash-lite', output: NO_FACTS_NOTE, startedAt: new Date(t0), completedAt: new Date(), cost: 0, duration: durationMs },
+    update: { status: 'completed', output: NO_FACTS_NOTE, completedAt: new Date(), cost: 0, duration: durationMs, errorMessage: null, provider: 'retrieval', model: 'serp+pubmed+flash-lite' },
+  })
+  return { output: NO_FACTS_NOTE, inputTokens: 0, outputTokens: 0, cost: 0, durationMs, provider: 'retrieval', model: 'serp+pubmed+flash-lite', groundingSources: [], groundingSupports: [], groundingChunkUris: [], retrieved: [] }
+}
+
+async function runRetrievalStep(jobId: string, stepNumber: number, ctx: PipelineContext): Promise<StepRunResult> {
   const units = researchUnitsFor(stepNumber, ctx.completedSteps)
   if (units.length === 0) {
-    logger.warn({ jobId, stepNumber }, '[executor] retrieval research: no units, using grounded step')
-    return null
+    logger.warn({ jobId, stepNumber }, '[executor] retrieval research: no units to research; the article is written without sourced facts for this step')
+    return emptyRetrievalStep(jobId, stepNumber, Date.now())
   }
   const bs = await prisma.brandSettings.findUnique({ where: { userId: ctx.userId }, select: { industry: true } })
   const t0 = Date.now()
@@ -556,8 +569,8 @@ async function runRetrievalStep(jobId: string, stepNumber: number, ctx: Pipeline
   try {
     r = await runRetrievalResearch({ jobId, stepNumber, units, topic: ctx.topicText, industry: bs?.industry ?? '', vertical: await verticalForUser(ctx.userId).catch(() => null) })
   } catch (err) {
-    logger.warn({ jobId, stepNumber, err }, '[executor] retrieval research failed, using grounded step')
-    return null
+    logger.warn({ jobId, stepNumber, err }, '[executor] retrieval research failed; the article is written without sourced facts for this step')
+    return emptyRetrievalStep(jobId, stepNumber, t0)
   }
   await recordLLMUsage(ctx.userId, `article_step_${stepNumber}_retrieval`, {
     content: '',
@@ -567,10 +580,13 @@ async function runRetrievalStep(jobId: string, stepNumber: number, ctx: Pipeline
     provider: 'gemini',
     finishReason: 'stop',
   })
+  // A thin feed stays thin (Veit, 2026-11-24). The grounded step used to take over here; on the hyperbaric
+  // bench article it returned no grounding, was split per unit, and a third of the identifiers it produced
+  // pointed at unrelated papers, at twice the cost. The article is written from the vetted facts there are.
   if (r.facts.length < RETRIEVAL_MIN_FACTS) {
-    logger.warn({ jobId, stepNumber, min: RETRIEVAL_MIN_FACTS, ...r.stats }, '[executor] retrieval feed under floor, using grounded step')
-    return null
+    logger.warn({ jobId, stepNumber, min: RETRIEVAL_MIN_FACTS, ...r.stats }, '[executor] retrieval feed is thin; writing with the vetted facts found')
   }
+  if (r.facts.length === 0) return emptyRetrievalStep(jobId, stepNumber, t0)
   const durationMs = Date.now() - t0
   await prisma.pipelineStep.update({
     where: { jobId_stepNumber: { jobId, stepNumber } },
@@ -674,8 +690,32 @@ async function ensurePhaseAInlineCitations(jobId: string, ctx: PipelineContext):
       const r = await insertInlineCitations(normalized, leftovers, jobId, ctx)
       working = r.linkedHtml
     }
-    const anchored = anchorFactSources(working, anchorable)
-    logger.info({ jobId, factSources: anchorable.length, placed: anchored.placed.length, unplaced: anchored.unplaced.length, leftovers: leftovers.length }, '[executor] step 12.5 — fact sources anchored')
+    // Word matching proposes sentence-and-fact pairs, a small model confirms each one (2026-11-24). If the
+    // model cannot be reached the strict word rule stands in: fewer links, never a wrong one.
+    const judgeSpend = { cost: 0, input: 0, output: 0 }
+    const anchored = await anchorFactSourcesJudged(
+      working,
+      anchorable,
+      liveAnchorJudge((cost, tokens) => {
+        judgeSpend.cost += cost
+        judgeSpend.input += tokens.input
+        judgeSpend.output += tokens.output
+      }),
+    )
+    if (judgeSpend.cost > 0) {
+      await recordLLMUsage(ctx.userId, 'article_citation_anchor', {
+        content: '',
+        tokens: { input: judgeSpend.input, output: judgeSpend.output, total: judgeSpend.input + judgeSpend.output },
+        cost: judgeSpend.cost,
+        model: 'gemini-3.1-flash-lite',
+        provider: 'gemini',
+        finishReason: 'stop',
+      }).catch((err) => logger.warn({ jobId, err }, '[executor] step 12.5 — could not record the anchor judge cost'))
+    }
+    logger.info(
+      { jobId, factSources: anchorable.length, proposed: anchored.proposed, confirmed: anchored.confirmed, judged: anchored.judged, placed: anchored.placed.length, unplaced: anchored.unplaced.length, leftovers: leftovers.length, judgeCost: Number(judgeSpend.cost.toFixed(4)) },
+      '[executor] step 12.5 — fact sources anchored',
+    )
     const linkedHtml = anchored.html
     const insertedCount = (linkedHtml.match(/<a\b[^>]*href="https?:\/\//gi) ?? []).length
     const anchoredUrls = anchored.placed

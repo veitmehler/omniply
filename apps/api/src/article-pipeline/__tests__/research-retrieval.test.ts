@@ -1,8 +1,19 @@
 import { describe, it, expect } from 'vitest'
+import type { FitnessDeps } from '../source-fitness'
 import { buildQueries, buildPubmedQueries, rankCandidates, parseFacts, assembleFeed, runRetrievalResearch, type RetrievalDeps } from '../research-retrieval'
 import { researchUnitsFor, batchUnits } from '../research-units'
 
 const TOPIC = 'Sciatica relief: what actually helps'
+
+/** A source card the judge would return for a sound, on-subject source. */
+function card(over: Record<string, unknown> = {}): string {
+  return JSON.stringify({ about: 'sciatica', doc_type: 'narrative review', population: 'Adults with sciatica', facts_about: 'sciatica recovery', conclusion: 'Most recover.', stance: 'neutral', same_subject: true, reader_match: true, facts: [{ n: 1, own: true, common: false }], ...over })
+}
+const okFitness: FitnessDeps = {
+  paperRecord: async () => ({ pmid: '123', title: 'Sciatica: a review', pubTypes: ['Journal Article', 'Review'], journal: 'Spine', year: 2022 }),
+  abstract: async () => null,
+  judge: async () => ({ text: card(), cost: 0, tokens: { input: 0, output: 0 } }),
+}
 
 describe('research-units', () => {
   it('step 7 units are the quoted questions from step 6', () => {
@@ -19,12 +30,26 @@ describe('research-units', () => {
 })
 
 describe('research-retrieval query building', () => {
-  it('builds a papers query and a bodies query with site restrictions', () => {
-    const [papers, bodies] = buildQueries('How long does sciatica take to heal?', TOPIC)
-    expect(papers).toContain('site:pubmed.ncbi.nlm.nih.gov')
-    expect(papers).toContain('sciatica')
+  it('builds three site-restricted queries: hospital systems first, then health bodies, then papers', () => {
+    const [clinics, bodies, papers] = buildQueries('How long does sciatica take to heal?', TOPIC)
+    expect(clinics).toContain('site:mayoclinic.org')
+    expect(clinics).toContain('site:clevelandclinic.org')
+    expect(clinics).toContain('sciatica')
     expect(bodies).toContain('site:cdc.gov')
+    expect(bodies).toContain('site:medlineplus.gov')
     expect(bodies).not.toContain('site:pubmed')
+    expect(papers).toContain('site:pubmed.ncbi.nlm.nih.gov')
+    // Google reads about 32 words of a query.
+    for (const q of [clinics, bodies, papers]) expect(q.split(/\s+/).length).toBeLessThanOrEqual(32)
+  })
+  it('reads authority pages before papers for a clinic article', () => {
+    const results = [
+      { url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC1/', title: 'Sciatica heal time in a cohort', snippet: 'sciatica heal weeks' },
+      { url: 'https://www.mayoclinic.org/sciatica', title: 'Sciatica: how long it takes to heal', snippet: 'sciatica heal weeks' },
+      { url: 'https://www.ncbi.nlm.nih.gov/books/NBK507908/', title: 'Sciatica - StatPearls', snippet: 'sciatica heal' },
+    ]
+    const ranked = rankCandidates(results, 'How long does sciatica take to heal?', TOPIC, new Set())
+    expect(ranked.map((r) => new URL(r.url).hostname)).toEqual(['www.mayoclinic.org', 'www.ncbi.nlm.nih.gov', 'pmc.ncbi.nlm.nih.gov'])
   })
   it('pubmed query restricts to reviews and the last decade', () => {
     const qs = buildPubmedQueries('How long does sciatica take to heal?', TOPIC)
@@ -73,6 +98,7 @@ describe('research-retrieval extraction + feed', () => {
       pubmedAbstract: async () => 'Most episodes of sciatica resolve within 4-6 weeks without surgery.',
       extractFromText: async () => ({ facts: [{ fact: 'Most episodes of sciatica resolve within four to six weeks without surgery.', quote: 'resolve within 4-6 weeks' }], cost: 0.001, tokens: { input: 100, output: 20 } }),
       extractFromUrl: async () => ({ facts: [{ fact: 'Staying active is recommended over bed rest for sciatica.', quote: 'stay active' }], cost: 0.01, tokens: { input: 5000, output: 30 }, retrieved: true }),
+      fitness: okFitness,
     }
     const r = await runRetrievalResearch({ jobId: 'j', stepNumber: 7, units: ['How long does sciatica take to heal?'], topic: TOPIC, industry: 'chiropractic', deps })
     expect(r.facts).toHaveLength(2)
@@ -81,6 +107,61 @@ describe('research-retrieval extraction + feed', () => {
     expect(r.cost).toBeCloseTo(0.011)
     expect(r.stats.pagesRead).toBe(2)
     expect(r.text).toContain('[Source: Sciatica: a review, pubmed.ncbi.nlm.nih.gov, https://pubmed.ncbi.nlm.nih.gov/123/]')
+  })
+})
+
+describe('source vetting inside retrieval (2026-11-24)', () => {
+  const unit = 'How long does sciatica take to heal?'
+  const base = {
+    pubmedSearch: async () => [],
+    pubmedAbstract: async () => null,
+    extractFromText: async () => ({ facts: [], cost: 0, tokens: { input: 0, output: 0 } }),
+  }
+  it('never reads a paper whose PubMed record is a case report, and reads the next candidate instead', async () => {
+    const read: string[] = []
+    const deps: RetrievalDeps = {
+      ...base,
+      serp: async () => [
+        { url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC4082899/', title: 'Acute sciatic neuritis following lumbar laminectomy', snippet: 'sciatica heal weeks' },
+        { url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC11465477/', title: 'Lumbar disc herniation and sciatica: how long to heal', snippet: 'sciatica heal weeks' },
+      ],
+      extractFromUrl: async (_u, url) => {
+        read.push(url)
+        return { facts: [{ fact: 'Three in four people with sciatica improve within a month.', quote: '75% within one month' }], cost: 0, tokens: { input: 0, output: 0 }, retrieved: true }
+      },
+      fitness: {
+        ...okFitness,
+        paperRecord: async (url) => (url.includes('PMC4082899') ? { pmid: '1', title: 'Acute sciatic neuritis following lumbar laminectomy', pubTypes: ['Case Reports', 'Journal Article'], journal: null, year: 2014 } : { pmid: '2', title: 'Lumbar disc herniation', pubTypes: ['Journal Article', 'Review'], journal: null, year: 2024 }),
+      },
+    }
+    const r = await runRetrievalResearch({ jobId: 'j', stepNumber: 8, units: [unit], topic: TOPIC, industry: 'Chiropractor', deps })
+    expect(read).toEqual(['https://pmc.ncbi.nlm.nih.gov/articles/PMC11465477/'])
+    expect(r.facts.map((f) => f.url)).toEqual(['https://pmc.ncbi.nlm.nih.gov/articles/PMC11465477/'])
+    expect(r.stats.sourcesRejected).toBe(1)
+  })
+  it('drops every fact of a source the card calls critical of the profession', async () => {
+    const deps: RetrievalDeps = {
+      ...base,
+      serp: async () => [{ url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC1905885/', title: 'Adverse effects of spinal manipulation and sciatica: how long to heal', snippet: 'sciatica heal weeks' }],
+      extractFromUrl: async () => ({ facts: [{ fact: 'Mild adverse effects follow 30% to 61% of spinal manipulations.', quote: 'mild adverse effects occur in 30% to 61% of all patients' }], cost: 0, tokens: { input: 0, output: 0 }, retrieved: true }),
+      fitness: { ...okFitness, judge: async () => ({ text: card({ stance: 'critical' }), cost: 0.0005, tokens: { input: 900, output: 80 } }) },
+    }
+    const r = await runRetrievalResearch({ jobId: 'j', stepNumber: 8, units: [unit], topic: TOPIC, industry: 'Chiropractor', deps })
+    expect(r.facts).toHaveLength(0)
+    expect(r.stats.sourcesRejected).toBe(1)
+    expect(r.cost).toBeCloseTo(0.0005)
+  })
+  it('marks a single study with the group it studied and leaves Azavea sources unvetted', async () => {
+    const serp = async () => [{ url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC777/', title: 'Sciatica heal time in runners', snippet: 'sciatica heal weeks' }]
+    const extractFromUrl = async () => ({ facts: [{ fact: 'Runners with sciatica returned to training after six weeks.', quote: 'returned to training after six weeks' }], cost: 0, tokens: { input: 0, output: 0 }, retrieved: true })
+    const study = { ...okFitness, paperRecord: async () => ({ pmid: '7', title: 'Sciatica heal time in runners', pubTypes: ['Journal Article'], journal: null, year: 2023 }), judge: async () => ({ text: card({ population: 'Recreational runners.' }), cost: 0, tokens: { input: 0, output: 0 } }) }
+    const r = await runRetrievalResearch({ jobId: 'j', stepNumber: 8, units: [unit], topic: TOPIC, industry: 'Chiropractor', deps: { ...base, serp, extractFromUrl, fitness: study } })
+    expect(r.facts[0].fact).toBe('Runners with sciatica returned to training after six weeks. (One study, in recreational runners.)')
+    expect(r.supports[0].text).toBe(r.facts[0].fact)
+    let judged = 0
+    const counting = { ...okFitness, judge: async () => (judged++, { text: card({ stance: 'critical' }), cost: 0, tokens: { input: 0, output: 0 } }) }
+    await runRetrievalResearch({ jobId: 'j', stepNumber: 8, units: ['What does a marketing retainer include?'], topic: 'Marketing retainers for practices', industry: 'agency', vertical: 'azavea', deps: { ...base, serp: async () => [{ url: 'https://www.ftc.gov/retainer', title: 'marketing retainer rules practices', snippet: 'retainer' }], extractFromUrl, fitness: counting } })
+    expect(judged).toBe(0)
   })
 })
 
