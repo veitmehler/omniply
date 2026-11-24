@@ -27,6 +27,9 @@ const ENV_VAR_MAP: Record<string, string> = {
   oxylabs_serp_password: 'OXYLABS_SERP_PASSWORD',
   oxylabs_proxy_username: 'OXYLABS_PROXY_USERNAME',
   oxylabs_proxy_password: 'OXYLABS_PROXY_PASSWORD',
+  // System Health (2026-11-23): a READ-ONLY DigitalOcean token (billing read) so
+  // the dashboard can show month-to-date usage. Never used for anything else.
+  digitalocean: 'DIGITALOCEAN_TOKEN',
 }
 
 export async function getSystemApiKey(provider: string): Promise<string | null> {

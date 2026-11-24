@@ -20,6 +20,7 @@ import {
   basicAuthHeader,
   buildProxyUrl,
 } from '../lib/oxylabs-auth'
+import { recordCallOutcome } from '../lib/net/call-stats'
 
 const OXY_ENDPOINT = 'https://realtime.oxylabs.io/v1/queries'
 const QUERY_TIMEOUT_MS = 90_000
@@ -48,6 +49,7 @@ async function oxyQuery(payload: Record<string, unknown>): Promise<OxyResponse> 
   const header = basicAuthHeader(auth)
 
   let lastErr: unknown
+  let lastStatus: number | undefined
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), QUERY_TIMEOUT_MS)
@@ -61,7 +63,9 @@ async function oxyQuery(payload: Record<string, unknown>): Promise<OxyResponse> 
       clearTimeout(timer)
       if (!res.ok) {
         lastErr = new Error(`Oxylabs HTTP ${res.status}`)
+        lastStatus = res.status
       } else {
+        recordCallOutcome('oxylabs', 'success')
         return (await res.json()) as OxyResponse
       }
     } catch (err) {
@@ -72,6 +76,8 @@ async function oxyQuery(payload: Record<string, unknown>): Promise<OxyResponse> 
       await new Promise((r) => setTimeout(r, 2000 * 2 ** (attempt - 1))) // 2s, 4s
     }
   }
+  // One failed query, however many attempts it took (System Health reads these).
+  recordCallOutcome('oxylabs', 'error', { status: lastStatus, message: lastErr instanceof Error ? lastErr.message : String(lastErr) })
   throw lastErr instanceof Error ? lastErr : new Error(String(lastErr))
 }
 
@@ -98,7 +104,11 @@ async function proxyFetch(url: string): Promise<{ status: number; html: string }
       dispatcher,
     } as RequestInit & { dispatcher: ProxyAgent })
     const html = await res.text()
+    recordCallOutcome('oxylabs', 'success') // the proxy carried the request; what the site answered is not Oxylabs' doing
     return { status: res.status, html }
+  } catch (err) {
+    recordCallOutcome('oxylabs', 'error', { message: `residential proxy: ${err instanceof Error ? err.message : String(err)}` })
+    throw err
   } finally {
     clearTimeout(timer)
     dispatcher.close().catch(() => {})

@@ -12,8 +12,19 @@
  * per sort; rotation happens over days. The weekly cron harvests it.
  */
 import { logger } from '../logger'
+import { recordCallOutcome } from '../net/call-stats'
 
 const BASE = 'https://maps.googleapis.com/maps/api/place'
+
+/**
+ * Report one Places call to System Health. Google answers 200 even when it
+ * refuses (REQUEST_DENIED, OVER_QUERY_LIMIT, billing not enabled), so the
+ * status inside the body decides; OK and ZERO_RESULTS are both a working call.
+ */
+function notePlacesCall(httpOk: boolean, httpStatus: number, apiStatus?: string, errorMessage?: string): void {
+  const working = httpOk && (!apiStatus || apiStatus === 'OK' || apiStatus === 'ZERO_RESULTS' || apiStatus === 'NOT_FOUND' || apiStatus === 'INVALID_REQUEST')
+  recordCallOutcome('google-maps', working ? 'success' : 'error', { status: httpOk ? undefined : httpStatus, message: `${apiStatus ?? `HTTP ${httpStatus}`}${errorMessage ? `: ${errorMessage}` : ''}` })
+}
 
 export function placesConfigured(): boolean {
   return Boolean(process.env.GOOGLE_MAPS_API_KEY)
@@ -152,8 +163,12 @@ export async function expandGoogleShortLink(url: string): Promise<string | null>
 async function detailsLookupId(param: 'ftid' | 'cid', value: string): Promise<string | null> {
   try {
     const res = await fetch(`${BASE}/details/json?${param}=${encodeURIComponent(value)}&fields=place_id&key=${key()}`)
-    if (!res.ok) return null
-    const data = (await res.json()) as { status?: string; result?: { place_id?: string } }
+    if (!res.ok) {
+      notePlacesCall(false, res.status)
+      return null
+    }
+    const data = (await res.json()) as { status?: string; error_message?: string; result?: { place_id?: string } }
+    notePlacesCall(true, res.status, data.status, data.error_message)
     return (data.status === 'OK' && data.result?.place_id) || null
   } catch {
     return null
@@ -166,8 +181,12 @@ async function findPlace(input: string, locationBias?: { lat: number; lng: numbe
     const res = await fetch(
       `${BASE}/findplacefromtext/json?input=${encodeURIComponent(input)}&inputtype=textquery&fields=place_id${bias}&key=${key()}`,
     )
-    if (!res.ok) return null
+    if (!res.ok) {
+      notePlacesCall(false, res.status)
+      return null
+    }
     const data = (await res.json()) as { status?: string; error_message?: string; candidates?: { place_id?: string }[] }
+    notePlacesCall(true, res.status, data.status, data.error_message)
     if (data.status && data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
       // e.g. REQUEST_DENIED when the caller's IP is not on the key's
       // allowlist — surfaced loudly; this failed silently once (staging).
@@ -224,9 +243,13 @@ async function details(placeId: string, sort: 'most_relevant' | 'newest'): Promi
   const res = await fetch(
     `${BASE}/details/json?place_id=${placeId}&fields=${fields}&reviews_sort=${sort}&reviews_no_translations=true&key=${key()}`,
   )
-  if (!res.ok) return null
+  if (!res.ok) {
+    notePlacesCall(false, res.status)
+    return null
+  }
   const data = (await res.json()) as {
     status?: string
+    error_message?: string
     result?: {
       name?: string
       rating?: number
@@ -238,6 +261,7 @@ async function details(placeId: string, sort: 'most_relevant' | 'newest'): Promi
       reviews?: { author_name?: string; rating?: number; text?: string; relative_time_description?: string }[]
     }
   }
+  notePlacesCall(true, res.status, data.status, data.error_message)
   if (data.status !== 'OK' || !data.result) {
     if (data.status && data.status !== 'ZERO_RESULTS') {
       logger.warn({ status: data.status, placeId }, '[places] details returned non-OK status')

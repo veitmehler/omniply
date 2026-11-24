@@ -15,6 +15,7 @@
 
 import { logger } from '../lib/logger'
 import { getOxylabsSerpAuth, basicAuthHeader } from '../lib/oxylabs-auth'
+import { recordCallOutcome } from '../lib/net/call-stats'
 
 export interface ValidatedCitation {
   title: string
@@ -97,6 +98,7 @@ async function checkUrl(
         signal: controller.signal,
       })
 
+      recordCallOutcome('oxylabs', res.ok ? 'success' : 'error', { status: res.status, message: `Oxylabs HTTP ${res.status}` })
       if (!res.ok) {
         // OxyLabs API itself failed — treat the citation as uncertain (keep it)
         return { title, url, status: 'uncertain' }

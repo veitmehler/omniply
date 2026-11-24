@@ -200,3 +200,10 @@ describe('domain alerts', () => {
     expect(t.sms).toContain('LAPSED')
   })
 })
+
+describe('billing wording from Google Maps', () => {
+  it('reads "billing not enabled" as an add-money problem', () => {
+    expect(isBillingError(undefined, 'REQUEST_DENIED: You must enable Billing on the Google Cloud Project')).toBe(true)
+    expect(isBillingError(undefined, 'REQUEST_DENIED: This IP is not authorized to use this API key')).toBe(false)
+  })
+})

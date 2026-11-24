@@ -47,6 +47,8 @@ interface ServiceView {
     error: string | null
   } | null
   spend: { last7d: SpendPair; last30d: SpendPair; monthToDate: SpendPair } | null
+  quota: Array<{ account: string; tier: string | null; used: number | null; limit: number | null; resetsAt: string | null; error: string | null }> | null
+  usage: { monthToDate: number | null; balance: number | null; error: string | null } | null
   calls: {
     state: 'unknown' | 'idle' | 'ok' | 'degraded' | 'down' | 'blocked'
     week: { ok: number; failed: number; skipped: number }
@@ -69,8 +71,9 @@ interface SystemHealth {
     shortestRunway: { key: string; label: string; days: number; perDay: number } | null
     failedJobs: number
   }
-  totals: { monthToDate: SpendPair; last30d: SpendPair; fixedMonthly: number; systemMonth: number; activeAccounts: number }
-  failedWork: Array<{ account: string; articles: number; newsletters: number; firstDue: string | null }>
+  totals: { monthToDate: SpendPair; last30d: SpendPair; fixedMonthly: number; liveUsageMonth: number; systemMonth: number; activeAccounts: number }
+  failedWork: Array<{ userId: string; account: string; articles: number; newsletters: number; firstDue: string | null }>
+  rerun: { allowed: boolean; reason: string | null }
   own: { apiUptimeSec: number; workerCheckAt: string | null; dbConnections: number | null; lastArticleOkAt: string | null }
   alerts: { emailTo: string | null; smsTo: string | null; smsFrom: string | null }
 }
@@ -104,6 +107,13 @@ function verdict(s: ServiceView): { tone: Tone; text: string } {
   if (s.credit?.level === 'warn') return { tone: 'amber', text: 'Running low' }
   if (s.calls.state === 'degraded') return { tone: 'amber', text: 'Degraded' }
   if (s.providerStatus && !['none', 'unreachable'].includes(s.providerStatus.indicator)) return { tone: 'amber', text: 'Provider incident' }
+  if (s.quota) {
+    const readable = s.quota.filter((q) => q.limit && q.used !== null)
+    if (readable.some((q) => (q.used as number) / (q.limit as number) > 0.9)) return { tone: 'amber', text: 'A plan is nearly used up' }
+    if (readable.length > 0) return { tone: 'green', text: 'Plans have room' }
+    return { tone: 'grey', text: s.quota.length ? 'No key can be read' : 'No clinic keys' }
+  }
+  if (s.credit?.source === 'live' && s.credit.balance === null) return { tone: 'grey', text: 'Cannot be read yet' }
   if (s.balanceMode === 'tracked' && s.credit?.balance === null) return { tone: 'grey', text: 'No balance recorded' }
   if (s.calls.state === 'ok' || s.credit?.level === 'ok') return { tone: 'green', text: 'Healthy' }
   if (s.domain?.expiresAt) return { tone: 'green', text: 'Registered' }
@@ -246,7 +256,7 @@ export default function SystemHealthPage() {
           <p className="text-xs text-muted-foreground">Services billed after the fact or on a fixed plan. Nothing here can run dry, but it all costs money.</p>
         </div>
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <KpiCard title="Whole system, this month" value={money(data.totals.systemMonth)} sub="Metered AI spend plus the plans entered below" />
+          <KpiCard title="Whole system, this month" value={money(data.totals.systemMonth)} sub={`AI ${money(metered(data.totals.monthToDate))}, usage read live ${money(data.totals.liveUsageMonth)}, plans ${money(data.totals.fixedMonthly)}`} />
           <KpiCard
             title="AI spend, last 30 days"
             value={money(metered(data.totals.last30d))}
@@ -262,7 +272,7 @@ export default function SystemHealthPage() {
                 <th scope="col" className="px-4 py-3 font-medium">Service</th>
                 <th scope="col" className="px-4 py-3 font-medium">Pays for</th>
                 <th scope="col" className="px-4 py-3 font-medium">Billed</th>
-                <th scope="col" className="px-4 py-3 font-medium text-right">Per month</th>
+                <th scope="col" className="px-4 py-3 font-medium text-right">Cost</th>
                 <th scope="col" className="px-4 py-3 font-medium">Renews or expires</th>
                 <th scope="col" className="px-4 py-3 font-medium">Status</th>
                 <th scope="col" className="px-4 py-3 font-medium"><span className="sr-only">Actions</span></th>
@@ -277,7 +287,19 @@ export default function SystemHealthPage() {
                     <th scope="row" className="px-4 py-3 text-left font-semibold text-foreground">{s.label}</th>
                     <td className="px-4 py-3 text-muted-foreground">{s.usedFor}</td>
                     <td className="px-4 py-3 text-muted-foreground">{BILLING_LABEL[s.billing] ?? s.billing}</td>
-                    <td className="px-4 py-3 text-right font-mono">{s.monthlyAmount === null ? <span className="text-muted-foreground">not entered</span> : money(s.monthlyAmount)}</td>
+                    <td className="px-4 py-3 text-right font-mono">
+                      {s.usage && s.usage.monthToDate !== null && Number.isFinite(s.usage.monthToDate) ? (
+                        <>
+                          {money(s.usage.monthToDate)}
+                          <span className="block font-sans text-xs text-primary">so far this month, live</span>
+                        </>
+                      ) : s.monthlyAmount === null ? (
+                        <span className="text-muted-foreground">not entered</span>
+                      ) : (
+                        money(s.monthlyAmount)
+                      )}
+                      {s.usage?.error && <span className="block max-w-[220px] font-sans text-xs text-muted-foreground whitespace-normal">{s.usage.error}</span>}
+                    </td>
                     <td className={cn('px-4 py-3 font-mono text-xs', s.domain && s.domain.daysLeft !== null && s.domain.daysLeft < 30 ? 'text-red-400' : 'text-foreground')}>{renew}</td>
                     <td className="px-4 py-3"><Chip tone={v.tone}>{v.text}</Chip></td>
                     <td className="px-4 py-3 text-right whitespace-nowrap">
@@ -375,26 +397,7 @@ export default function SystemHealthPage() {
           </dl>
         </section>
 
-        <section className="space-y-3 rounded-lg border border-border bg-card p-5">
-          <h2 className="text-base font-semibold text-foreground">Failed work waiting for the fix</h2>
-          {data.failedWork.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Nothing is waiting.</p>
-          ) : (
-            <dl className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-2.5 text-sm">
-              {data.failedWork.map((f) => (
-                <div key={f.account} className="contents">
-                  <dt>
-                    {f.account}
-                    <span className="block text-xs text-muted-foreground">
-                      {f.articles} articles, {f.newsletters} newsletters{f.firstDue ? `, first due ${day(f.firstDue)}` : ''}
-                    </span>
-                  </dt>
-                  <dd className="font-mono">{f.articles + f.newsletters}</dd>
-                </div>
-              ))}
-            </dl>
-          )}
-        </section>
+        <FailedWorkPanel rows={data.failedWork} rerun={data.rerun} onDone={load} />
 
         <AlertsPanel alerts={data.alerts} onSaved={load} />
       </div>
@@ -431,13 +434,34 @@ function CreditCard({ s, onEdit }: { s: ServiceView; onEdit: () => void }) {
         <Chip tone={v.tone}>{v.text}</Chip>
       </div>
       <div>
-        <p className="font-mono text-3xl font-bold text-foreground">{c ? (c.balance === null ? '—' : money(c.balance)) : s.billing === 'quota' ? 'Plan' : '—'}</p>
+        <p className="font-mono text-3xl font-bold text-foreground">
+          {c ? (c.balance === null ? '—' : money(c.balance)) : s.quota ? `${s.quota.length} ${s.quota.length === 1 ? 'clinic' : 'clinics'}` : s.billing === 'quota' ? 'Plan' : '—'}
+        </p>
         <p className="mt-0.5 text-xs text-muted-foreground">
-          {!c && 'Reading this balance from the provider is the next step'}
+          {!c && s.quota && 'Each clinic runs on its own key and plan'}
+          {!c && !s.quota && 'This provider does not report a balance; usage is on its own dashboard'}
           {c?.source === 'live' && (c.error ? c.error : 'Live from the provider')}
           {c?.source === 'tracked' && (c.balance === null ? 'Tell us what the account shows to start tracking' : `Tracked by us since ${stamp(c.since)}`)}
+          {c?.source === 'tracked' && c.error && <span className="block">The provider would not report it: {c.error}</span>}
         </p>
       </div>
+      {s.quota && s.quota.length > 0 && (
+        <ul className="divide-y divide-border rounded-md border border-border text-xs">
+          {s.quota.map((q) => (
+            <li key={q.account} className="flex items-baseline justify-between gap-3 px-3 py-2">
+              <span className="text-foreground">{q.account}</span>
+              {q.error ? (
+                <span className="text-right text-muted-foreground">{q.error}</span>
+              ) : (
+                <span className="text-right font-mono text-foreground">
+                  {(q.used ?? 0).toLocaleString('en-US')} of {(q.limit ?? 0).toLocaleString('en-US')}
+                  <span className="block font-sans text-muted-foreground">characters, resets {day(q.resetsAt)}</span>
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
       <div role="img" aria-label={c?.runwayDays !== null && c?.runwayDays !== undefined ? `${Math.floor(c.runwayDays)} days of runway` : 'No runway figure'} className="h-1.5 rounded-full bg-muted">
         <div className={cn('h-1.5 rounded-full', TONE[v.tone].bar)} style={{ width: `${pct}%` }} />
       </div>
@@ -649,6 +673,73 @@ function ServiceDialog({ s, onClose, onSaved }: { s: ServiceView; onClose: () =>
         </div>
       </div>
     </div>
+  )
+}
+
+function FailedWorkPanel({ rows, rerun, onDone }: { rows: SystemHealth['failedWork']; rerun: SystemHealth['rerun']; onDone: () => void }) {
+  const [busy, setBusy] = useState(false)
+  const [confirm, setConfirm] = useState<{ userId?: string; label: string; articles: number; newsletters: number } | null>(null)
+  const total = rows.reduce((acc, r) => ({ articles: acc.articles + r.articles, newsletters: acc.newsletters + r.newsletters }), { articles: 0, newsletters: 0 })
+
+  async function run() {
+    if (!confirm) return
+    setBusy(true)
+    const res = await fetch('/api/admin/system-health/rerun', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(confirm.userId ? { userId: confirm.userId } : {}) })
+    const j = await res.json().catch(() => ({}))
+    setBusy(false)
+    setConfirm(null)
+    if (!res.ok) return toast.error(j.error ?? 'Could not start the re-run')
+    toast.success(`Started ${j.articles} articles and ${j.newsletters} newsletters`)
+    onDone()
+  }
+
+  return (
+    <section className="space-y-3 rounded-lg border border-border bg-card p-5">
+      <h2 className="text-base font-semibold text-foreground">Failed work waiting for the fix</h2>
+      {rows.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Nothing is waiting.</p>
+      ) : (
+        <ul className="space-y-3 text-sm">
+          {rows.map((f) => (
+            <li key={f.userId} className="flex items-center justify-between gap-3">
+              <span>
+                {f.account}
+                <span className="block text-xs text-muted-foreground">
+                  {f.articles} articles, {f.newsletters} newsletters{f.firstDue ? `, first due ${day(f.firstDue)}` : ''}
+                </span>
+              </span>
+              <Button variant="outline" size="sm" disabled={!rerun.allowed || busy} onClick={() => setConfirm({ userId: f.userId, label: f.account, articles: f.articles, newsletters: f.newsletters })}>
+                Re-run
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {rows.length > 0 && (
+        <div className="space-y-2 border-t border-border pt-3">
+          <Button className="w-full" disabled={!rerun.allowed || busy} onClick={() => setConfirm({ label: 'every account', articles: total.articles, newsletters: total.newsletters })}>
+            Re-run everything
+          </Button>
+          <p className="text-xs text-muted-foreground">
+            {rerun.allowed ? 'Articles start a minute apart. Each one costs about a dollar in AI spend.' : `Locked: ${rerun.reason}.`}
+          </p>
+        </div>
+      )}
+      {confirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" role="dialog" aria-modal="true" aria-label="Confirm re-run">
+          <div className="w-full max-w-md space-y-4 rounded-xl border border-border bg-card p-6">
+            <h3 className="text-lg font-bold text-foreground">Re-run failed work for {confirm.label}?</h3>
+            <p className="text-sm text-muted-foreground">
+              This writes {confirm.articles} articles and {confirm.newsletters} newsletters now. It spends AI credit, and each client is told when their editions are ready to review.
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setConfirm(null)} disabled={busy}>Cancel</Button>
+              <Button onClick={run} disabled={busy}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Yes, write them'}</Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </section>
   )
 }
 

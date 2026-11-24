@@ -6,6 +6,7 @@
  *   DELETE /api/admin/system-health/ledger/:id              undo a mistaken entry
  *   PUT    /api/admin/system-health/alerts                  where alert texts go
  *   POST   /api/admin/system-health/alerts/test-sms         send one test text, report delivery
+ *   POST   /api/admin/system-health/rerun                   re-queue failed articles and newsletters (all, or one account)
  */
 import type { FastifyInstance } from 'fastify'
 import { prisma } from '@omniply/shared'
@@ -15,6 +16,7 @@ import { ensureServiceCatalog } from '../../lib/system-health/catalog'
 import { sendOpsSms } from '../../lib/system-health/notify'
 import { flushCallStats } from '../../lib/net/call-stats'
 import { getTwilioMessageStatus } from '../../lib/twilio'
+import { rerunFailedWork } from '../../lib/system-health/rerun'
 
 interface ServiceBody {
   warnDays?: number
@@ -132,10 +134,30 @@ export async function systemHealthAdminRoutes(app: FastifyInstance) {
     const admin = await requireAdmin(request, reply)
     if (!admin) return
     const sent = await sendOpsSms('Omniply test: this is where alerts arrive when production stops. Nothing is wrong.')
-    if (!sent.ok) return reply.status(400).send({ error: sent.reason })
+    if (!sent.ok) {
+      // Twilio error 21408. The raw text names an account id and helps nobody fix it.
+      const geo = /has not been enabled for the region/i.test(sent.reason)
+      return reply.status(400).send({
+        error: geo
+          ? 'Twilio refuses to text this country. In the Twilio console, with the account "Azavea Inc" selected (not a sub-account), open Messaging, Settings, Geo permissions, tick the country, and press Save at the bottom of the page. It can take a few minutes to apply.'
+          : sent.reason.replace(/AC[0-9a-f]{32}/g, 'the account'),
+      })
+    }
     // Twilio accepts first and delivers after; give it a moment and report what the carrier said.
     await new Promise((r) => setTimeout(r, 6_000))
     const status = await getTwilioMessageStatus(sent.sid).catch(() => null)
     return reply.send({ ok: true, from: sent.from, to: sent.to, status: status?.status ?? sent.status, errorCode: status?.errorCode ?? null, errorMessage: status?.errorMessage ?? null })
+  })
+  app.post<{ Body: { userId?: string } }>('/system-health/rerun', async (request, reply) => {
+    const admin = await requireAdmin(request, reply)
+    if (!admin) return
+    await flushCallStats().catch(() => {})
+    const health = await buildSystemHealth()
+    if (!health.rerun.allowed) return reply.status(409).send({ error: health.rerun.reason ?? 'Nothing to re-run' })
+    const userId = typeof request.body?.userId === 'string' && request.body.userId ? request.body.userId : undefined
+    if (userId && !health.failedWork.some((f) => f.userId === userId)) return reply.status(404).send({ error: 'That account has no failed work waiting' })
+    const result = await rerunFailedWork({ userId })
+    request.log.info({ adminId: admin.id, ...result }, '[system-health] re-run requested')
+    return reply.send({ ok: true, ...result })
   })
 }

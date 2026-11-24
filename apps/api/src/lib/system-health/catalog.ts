@@ -76,7 +76,7 @@ export const SERVICE_CATALOG: CatalogEntry[] = [
     label: 'fal.ai',
     usedFor: 'Images and video clips',
     billing: 'prepaid',
-    balanceMode: 'tracked',
+    balanceMode: 'live',
     meteredProvider: 'fal-ai',
     callProvider: 'fal-ai',
     rechargeUrl: 'https://fal.ai/dashboard/billing',
@@ -96,6 +96,15 @@ export const SERVICE_CATALOG: CatalogEntry[] = [
     sortOrder: 50,
   },
   {
+    key: 'highlevel-wallet',
+    label: 'CRM platform wallet',
+    usedFor: 'Phone calls, texts and email sending for every clinic',
+    billing: 'prepaid',
+    balanceMode: 'live',
+    statusPageUrl: 'https://status.gohighlevel.com',
+    sortOrder: 55,
+  },
+  {
     key: 'elevenlabs',
     label: 'ElevenLabs',
     usedFor: 'Voice agent and narration',
@@ -113,6 +122,7 @@ export const SERVICE_CATALOG: CatalogEntry[] = [
     usedFor: 'Web research and source pages',
     billing: 'quota',
     balanceMode: 'none',
+    callProvider: 'oxylabs',
     rechargeUrl: 'https://dashboard.oxylabs.io',
     statusFeedUrl: 'https://uptime.oxylabs.io/api/v2/status.json',
     statusPageUrl: 'https://uptime.oxylabs.io',
@@ -168,6 +178,7 @@ export const SERVICE_CATALOG: CatalogEntry[] = [
     usedFor: 'Clinic listings, reviews, opening hours',
     billing: 'postpaid',
     balanceMode: 'none',
+    callProvider: 'google-maps',
     rechargeUrl: 'https://console.cloud.google.com/billing',
     sortOrder: 140,
   },
@@ -234,10 +245,16 @@ export const SERVICE_CATALOG: CatalogEntry[] = [
 
 let ensured = false
 
-/** Create the catalog rows that do not exist yet. Existing rows are left alone. */
+/**
+ * Create the catalog rows that do not exist yet, and bring the STRUCTURAL
+ * fields of existing rows in line with this file (how a balance is read, which
+ * provider its calls are logged under, its status feed). What an admin edits on
+ * the page (thresholds, recharge link, monthly amount, renewal, notes) is never
+ * touched.
+ */
 export async function ensureServiceCatalog(force = false): Promise<void> {
   if (ensured && !force) return
-  const existing = new Set((await prisma.serviceAccount.findMany({ select: { key: true } })).map((r) => r.key))
+  const existing = new Map((await prisma.serviceAccount.findMany()).map((r) => [r.key, r]))
   const missing = SERVICE_CATALOG.filter((e) => !existing.has(e.key))
   if (missing.length > 0) {
     await prisma.serviceAccount.createMany({
@@ -256,6 +273,23 @@ export async function ensureServiceCatalog(force = false): Promise<void> {
       })),
       skipDuplicates: true,
     })
+  }
+  for (const e of SERVICE_CATALOG) {
+    const row = existing.get(e.key)
+    if (!row) continue
+    const want = {
+      label: e.label,
+      usedFor: e.usedFor,
+      billing: e.billing,
+      balanceMode: e.balanceMode,
+      meteredProvider: e.meteredProvider ?? null,
+      callProvider: e.callProvider ?? null,
+      statusFeedUrl: e.statusFeedUrl ?? null,
+      statusPageUrl: e.statusPageUrl ?? null,
+      sortOrder: e.sortOrder,
+    }
+    const changed = (Object.keys(want) as Array<keyof typeof want>).some((k) => row[k] !== want[k])
+    if (changed) await prisma.serviceAccount.update({ where: { key: e.key }, data: want })
   }
   ensured = true
 }

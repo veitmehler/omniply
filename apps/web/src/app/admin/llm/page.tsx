@@ -23,6 +23,7 @@ const PROVIDER_LABELS: Record<string, string> = {
   oxylabs_serp_password: 'Oxylabs SERP API — Password',
   oxylabs_proxy_username: 'Oxylabs Residential Proxy — Username',
   oxylabs_proxy_password: 'Oxylabs Residential Proxy — Password',
+  digitalocean: 'DigitalOcean — read-only token (billing read), for System Health',
 }
 
 export default function LLMKeysPage() {

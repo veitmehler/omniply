@@ -5,6 +5,9 @@
  */
 import { withTimeout } from '../net/with-timeout'
 import { twilioConfigured, getTwilioBalance } from '../twilio'
+import { getSystemApiKey } from '../system-keys'
+import { getAgencyToken } from '../ghl/app-oauth'
+import { prisma, decrypt } from '@omniply/shared'
 
 interface Cached<T> {
   at: number
@@ -120,7 +123,41 @@ export interface LiveBalance {
   error: string | null
 }
 
-/** Balances a provider lets us read. Twilio today; fal.ai, the CRM wallet and DigitalOcean are the next ones. */
+async function getJson(url: string, headers: Record<string, string>, label: string): Promise<{ status: number; json: unknown }> {
+  const res = await withTimeout((signal) => fetch(url, { signal, headers: { Accept: 'application/json', ...headers } }), 10_000, label)
+  return { status: res.status, json: await res.json().catch(() => null) }
+}
+
+/**
+ * fal.ai: the documented billing endpoint needs a key with the billing
+ * permission, which an ordinary generation key lacks (403 on ours, 2026-11-23);
+ * the balance endpoint fal's own dashboard uses answers with any key. Try the
+ * documented one first so we move to it the day the key allows.
+ */
+async function falBalance(): Promise<LiveBalance> {
+  const key = await getSystemApiKey('fal-ai')
+  if (!key) return { balance: null, currency: 'USD', error: 'No fal.ai key is stored' }
+  const auth = { Authorization: `Key ${key}` }
+  const doc = await getJson('https://api.fal.ai/v1/account/billing?expand=credits', auth, 'fal billing')
+  const docBal = (doc.json as { credits?: { current_balance?: number } } | null)?.credits?.current_balance
+  if (doc.status === 200 && typeof docBal === 'number') return { balance: docBal, currency: 'USD', error: null }
+  const alt = await getJson('https://rest.alpha.fal.ai/billing/user_balance', auth, 'fal balance')
+  if (alt.status === 200 && typeof alt.json === 'number') return { balance: alt.json, currency: 'USD', error: null }
+  return { balance: null, currency: 'USD', error: `fal.ai would not report the balance (${doc.status}/${alt.status})` }
+}
+
+/** The CRM platform's agency wallet: pays for phone calls, texts and email sending. Needs the wallet.readonly permission on our app. */
+async function crmWalletBalance(): Promise<LiveBalance> {
+  const agency = await getAgencyToken().catch(() => null)
+  if (!agency) return { balance: null, currency: 'USD', error: 'No agency connection is stored for the CRM platform' }
+  const r = await getJson('https://services.leadconnectorhq.com/wallet/balance', { Authorization: `Bearer ${agency.token}`, Version: 'v3' }, 'crm wallet')
+  const bal = (r.json as { balance?: number } | null)?.balance
+  if (r.status === 200 && typeof bal === 'number') return { balance: bal, currency: 'USD', error: null }
+  if (r.status === 401 || r.status === 403) return { balance: null, currency: 'USD', error: 'Our CRM app lacks the wallet.readonly permission. Add it to the app, then reconnect the agency.' }
+  return { balance: null, currency: 'USD', error: `The CRM platform answered ${r.status}` }
+}
+
+/** Balances a provider lets us read. */
 export async function fetchLiveBalance(serviceKey: string): Promise<LiveBalance> {
   return cached(`balance:${serviceKey}`, 5 * 60_000, async () => {
     try {
@@ -129,9 +166,81 @@ export async function fetchLiveBalance(serviceKey: string): Promise<LiveBalance>
         const b = await getTwilioBalance()
         return { balance: b.balance, currency: b.currency, error: null }
       }
+      if (serviceKey === 'fal-ai') return await falBalance()
+      if (serviceKey === 'highlevel-wallet') return await crmWalletBalance()
       return { balance: null, currency: 'USD', error: 'Reading this balance is not built yet' }
     } catch (err) {
       return { balance: null, currency: 'USD', error: err instanceof Error ? err.message.slice(0, 160) : 'Balance lookup failed' }
     }
+  })
+}
+
+export interface LiveUsage {
+  /** Usage billed so far this month. */
+  monthToDate: number | null
+  /** What is owed right now (a negative number is credit on the account). */
+  balance: number | null
+  error: string | null
+}
+
+/** Month-to-date usage for services billed after the fact. DigitalOcean today. */
+export async function fetchLiveUsage(serviceKey: string): Promise<LiveUsage | null> {
+  if (serviceKey !== 'digitalocean') return null
+  return cached(`usage:${serviceKey}`, 30 * 60_000, async () => {
+    try {
+      const token = await getSystemApiKey('digitalocean')
+      if (!token) return { monthToDate: null, balance: null, error: 'Add a read-only DigitalOcean token on the LLM Keys page to read this live' }
+      const r = await getJson('https://api.digitalocean.com/v2/customers/my/balance', { Authorization: `Bearer ${token}` }, 'digitalocean balance')
+      const j = r.json as { month_to_date_usage?: string; month_to_date_balance?: string } | null
+      if (r.status !== 200 || !j) return { monthToDate: null, balance: null, error: r.status === 403 ? 'The DigitalOcean token lacks the billing read permission' : `DigitalOcean answered ${r.status}` }
+      return { monthToDate: Number(j.month_to_date_usage ?? NaN), balance: Number(j.month_to_date_balance ?? NaN), error: null }
+    } catch (err) {
+      return { monthToDate: null, balance: null, error: err instanceof Error ? err.message.slice(0, 160) : 'Lookup failed' }
+    }
+  })
+}
+
+export interface QuotaRow {
+  account: string
+  tier: string | null
+  used: number | null
+  limit: number | null
+  resetsAt: string | null
+  error: string | null
+}
+
+/**
+ * ElevenLabs runs on each clinic's own key, so there is no one balance: one row
+ * per stored key with the plan's character allowance and when it resets.
+ */
+export async function fetchElevenLabsQuotas(): Promise<QuotaRow[]> {
+  return cached('quota:elevenlabs', 15 * 60_000, async () => {
+    const keys = await prisma.apiKey.findMany({ where: { provider: 'elevenlabs' }, select: { userId: true, encryptedKey: true } })
+    const users = keys.length ? await prisma.user.findMany({ where: { id: { in: keys.map((k) => k.userId) } }, select: { id: true, email: true, brandSettings: { select: { organizationName: true } } } }) : []
+    const name = new Map(users.map((u) => [u.id, u.brandSettings?.organizationName || u.email]))
+    return Promise.all(
+      keys.map(async (k): Promise<QuotaRow> => {
+        const account = name.get(k.userId) ?? k.userId
+        try {
+          const r = await getJson('https://api.elevenlabs.io/v1/user/subscription', { 'xi-api-key': decrypt(k.encryptedKey) }, 'elevenlabs subscription')
+          const j = r.json as { tier?: string; character_count?: number; character_limit?: number; next_character_count_reset_unix?: number; detail?: { code?: string } } | null
+          if (r.status !== 200 || !j) {
+            const code = j?.detail?.code
+            const why = code === 'invalid_api_key' ? 'The stored value is not a valid key' : r.status === 401 ? 'The key is not allowed to read its usage' : `ElevenLabs answered ${r.status}`
+            return { account, tier: null, used: null, limit: null, resetsAt: null, error: why }
+          }
+          return {
+            account,
+            tier: j.tier ?? null,
+            used: j.character_count ?? null,
+            limit: j.character_limit ?? null,
+            resetsAt: j.next_character_count_reset_unix ? new Date(j.next_character_count_reset_unix * 1000).toISOString() : null,
+            error: null,
+          }
+        } catch {
+          return { account, tier: null, used: null, limit: null, resetsAt: null, error: 'ElevenLabs did not answer' }
+        }
+      }),
+    )
   })
 }

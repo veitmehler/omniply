@@ -86,7 +86,7 @@ export function creditLevel(balance: number | null, runway: number | null, warnD
  * same sentence, so the text is matched as well as the code.
  */
 const BILLING_ERROR_RE =
-  /prepayment credits are depleted|payment required|credit balance is too low|insufficient (?:credits?|balance|funds|quota)|billing (?:hard )?limit|exceeded your current quota|account (?:is )?(?:suspended|past due)|out of credits?/i
+  /prepayment credits are depleted|payment required|credit balance is too low|insufficient (?:credits?|balance|funds|quota)|billing (?:hard )?limit|enable billing|billing (?:has not been|is not) enabled|exceeded your current quota|account (?:is )?(?:suspended|past due)|out of credits?/i
 
 export function isBillingError(status: number | null | undefined, message: string | null | undefined): boolean {
   return status === 402 || BILLING_ERROR_RE.test(message ?? '')

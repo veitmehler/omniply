@@ -16,7 +16,7 @@ import {
   type ServiceState,
   type AlertLevel,
 } from './rules'
-import { fetchStatusFeed, fetchDomainExpiry, fetchLiveBalance, type ProviderStatus } from './external'
+import { fetchStatusFeed, fetchDomainExpiry, fetchLiveBalance, fetchLiveUsage, fetchElevenLabsQuotas, type ProviderStatus, type QuotaRow, type LiveUsage } from './external'
 import { hourBucket } from '../net/call-stats'
 
 const DAY = 24 * 60 * 60 * 1000
@@ -57,6 +57,10 @@ export interface ServiceView {
     error: string | null
   } | null
   spend: { last7d: SpendPair; last30d: SpendPair; monthToDate: SpendPair } | null
+  /** Plan allowances read per clinic key (ElevenLabs). */
+  quota: QuotaRow[] | null
+  /** Month-to-date usage read from the provider, for services billed after the fact (DigitalOcean). */
+  usage: LiveUsage | null
   calls: {
     state: ServiceState
     week: { ok: number; failed: number; skipped: number }
@@ -84,11 +88,15 @@ export interface SystemHealth {
     monthToDate: SpendPair
     last30d: SpendPair
     fixedMonthly: number
-    /** Metered spend this month plus the fixed plans. */
+    /** Usage this month read live from postpaid providers. */
+    liveUsageMonth: number
+    /** Metered spend this month, live postpaid usage, and the fixed plans. */
     systemMonth: number
     activeAccounts: number
   }
-  failedWork: Array<{ account: string; articles: number; newsletters: number; firstDue: string | null }>
+  failedWork: Array<{ userId: string; account: string; articles: number; newsletters: number; firstDue: string | null }>
+  /** Re-running failed work is refused while a service it needs is still down, so it cannot simply fail again. */
+  rerun: { allowed: boolean; reason: string | null }
   own: { apiUptimeSec: number; workerCheckAt: string | null; dbConnections: number | null; lastArticleOkAt: string | null }
   alerts: { emailTo: string | null; smsTo: string | null; smsFrom: string | null }
 }
@@ -171,7 +179,7 @@ async function failedWork(): Promise<{ rows: SystemHealth['failedWork']; total: 
   const rows = [...perUser.entries()]
     .map(([userId, s]) => {
       const due = [...s.topics.values()].filter((d): d is Date => d !== null).sort((a, b) => a.getTime() - b.getTime())[0] ?? null
-      return { account: name.get(userId) ?? userId, articles: s.topics.size, newsletters: s.newsletters, firstDue: due ? due.toISOString() : null }
+      return { userId, account: name.get(userId) ?? userId, articles: s.topics.size, newsletters: s.newsletters, firstDue: due ? due.toISOString() : null }
     })
     .filter((r) => r.articles + r.newsletters > 0)
     .sort((a, b) => b.articles + b.newsletters - (a.articles + a.newsletters))
@@ -230,12 +238,12 @@ export async function buildSystemHealth(now: Date = new Date()): Promise<SystemH
       let credit: ServiceView['credit'] = null
       const mp = svc.meteredProvider
       const perDay = mp ? dailySpend(metered(s7.get(mp)), metered(s30.get(mp))) : 0
-      if (svc.balanceMode === 'tracked') {
+      const tracked = async (note: string | null): Promise<ServiceView['credit']> => {
         const start = trackedBalanceStart(svc.ledger.map((l) => ({ kind: l.kind, amount: l.amount, at: l.at })))
         const spent = start && mp ? pair((await spendSince(start.since)).get(mp)) : { wire: 0, attributed: 0 }
         const balance = start ? start.base + start.toppedUp - metered(spent) : null
         const runway = runwayDays(balance, perDay)
-        credit = {
+        return {
           balance,
           source: 'tracked',
           since: start ? start.since.toISOString() : null,
@@ -246,31 +254,41 @@ export async function buildSystemHealth(now: Date = new Date()): Promise<SystemH
           runwayDays: runway === null || !Number.isFinite(runway) ? null : runway,
           noSpend: runway !== null && !Number.isFinite(runway),
           level: creditLevel(balance, runway, svc.warnDays, svc.criticalDays),
-          error: null,
+          error: note,
         }
+      }
+      if (svc.balanceMode === 'tracked') {
+        credit = await tracked(null)
       } else if (svc.balanceMode === 'live') {
         const live = await fetchLiveBalance(svc.key)
-        const runway = runwayDays(live.balance, perDay)
-        credit = {
-          balance: live.balance,
-          source: 'live',
-          since: null,
-          base: 0,
-          toppedUp: 0,
-          spent: { wire: 0, attributed: 0 },
-          perDay,
-          runwayDays: runway === null || !Number.isFinite(runway) ? null : runway,
-          noSpend: runway !== null && !Number.isFinite(runway),
-          // A live balance with no metered spend has no runway; it is only ever "ok" or "depleted".
-          level: live.balance === null ? 'unknown' : live.balance <= 0 ? 'depleted' : creditLevel(live.balance, runway, svc.warnDays, svc.criticalDays),
-          error: live.error,
+        if (live.balance === null && svc.ledger.length > 0) {
+          // The provider would not answer: fall back to what the admin recorded rather than show nothing.
+          credit = await tracked(live.error)
+        } else {
+          const runway = runwayDays(live.balance, perDay)
+          credit = {
+            balance: live.balance,
+            source: 'live',
+            since: null,
+            base: 0,
+            toppedUp: 0,
+            spent: { wire: 0, attributed: 0 },
+            perDay,
+            runwayDays: runway === null || !Number.isFinite(runway) ? null : runway,
+            noSpend: runway !== null && !Number.isFinite(runway),
+            // A live balance with no metered spend has no runway; it is only ever "ok" or "depleted".
+            level: live.balance === null ? 'unknown' : live.balance <= 0 ? 'depleted' : creditLevel(live.balance, runway, svc.warnDays, svc.criticalDays),
+            error: live.error,
+          }
         }
       }
 
       const isDomain = svc.billing === 'domain'
-      const [providerStatus, expiry] = await Promise.all([
+      const [providerStatus, expiry, quota, usage] = await Promise.all([
         svc.statusFeedUrl ? fetchStatusFeed(svc.statusFeedUrl) : Promise.resolve(null),
         isDomain ? fetchDomainExpiry(svc.key.replace(/^domain:/, '')) : Promise.resolve(null),
+        svc.key === 'elevenlabs' ? fetchElevenLabsQuotas().catch(() => []) : Promise.resolve(null),
+        fetchLiveUsage(svc.key),
       ])
 
       return {
@@ -289,6 +307,8 @@ export async function buildSystemHealth(now: Date = new Date()): Promise<SystemH
         notes: svc.notes,
         credit,
         spend: mp ? { last7d: pair(s7.get(mp)), last30d: pair(s30.get(mp)), monthToDate: pair(sMonth.get(mp)) } : null,
+        quota,
+        usage,
         calls: {
           state,
           week: { ok: week.ok, failed: week.failed, skipped: week.skipped },
@@ -337,14 +357,23 @@ export async function buildSystemHealth(now: Date = new Date()): Promise<SystemH
     .sort((a, b) => a.days - b.days)
 
   const monthToDate = sumPairs(sMonth)
-  const fixedMonthly = views.reduce((acc, v) => acc + (v.monthlyAmount ?? 0), 0)
+  // A service read live counts by what it has used so far; one that is not counts by the plan amount entered.
+  const liveUsageMonth = views.reduce((acc, v) => acc + (v.usage?.monthToDate && Number.isFinite(v.usage.monthToDate) ? v.usage.monthToDate : 0), 0)
+  const fixedMonthly = views.reduce((acc, v) => acc + (v.usage?.monthToDate && Number.isFinite(v.usage.monthToDate) ? 0 : v.monthlyAmount ?? 0), 0)
+  const stopped = views.filter((v) => v.isCore && !v.domain && (v.calls.state === 'blocked' || v.calls.state === 'down' || v.credit?.level === 'depleted'))
+  const rerun = stopped.length
+    ? { allowed: false, reason: `${stopped.map((v) => v.label).join(' and ')} ${stopped.length === 1 ? 'is' : 'are'} still not working, so the work would fail again` }
+    : work.total === 0
+      ? { allowed: false, reason: 'Nothing is waiting' }
+      : { allowed: true, reason: null }
 
   return {
     generatedAt: now.toISOString(),
     services: views,
     kpis: { needsAction, degraded, shortestRunway: runways[0] ?? null, failedJobs: work.total },
-    totals: { monthToDate, last30d: sumPairs(s30), fixedMonthly, systemMonth: metered(monthToDate) + fixedMonthly, activeAccounts },
+    totals: { monthToDate, last30d: sumPairs(s30), fixedMonthly, liveUsageMonth, systemMonth: metered(monthToDate) + liveUsageMonth + fixedMonthly, activeAccounts },
     failedWork: work.rows,
+    rerun,
     own: {
       apiUptimeSec: Math.round(process.uptime()),
       workerCheckAt: settings?.healthCheckAt ? settings.healthCheckAt.toISOString() : null,
