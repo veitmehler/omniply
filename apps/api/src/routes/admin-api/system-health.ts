@@ -13,7 +13,7 @@ import { prisma } from '@omniply/shared'
 import { requireAdmin } from '../../middleware/admin'
 import { buildSystemHealth } from '../../lib/system-health/service'
 import { ensureServiceCatalog } from '../../lib/system-health/catalog'
-import { sendOpsSms } from '../../lib/system-health/notify'
+import { sendOpsSms, SMS_OPT_IN_MESSAGE, SMS_TEST_MESSAGE } from '../../lib/system-health/notify'
 import { flushCallStats } from '../../lib/net/call-stats'
 import { getTwilioMessageStatus } from '../../lib/twilio'
 import { rerunFailedWork } from '../../lib/system-health/rerun'
@@ -117,7 +117,7 @@ export async function systemHealthAdminRoutes(app: FastifyInstance) {
     return reply.send({ ok: true })
   })
 
-  app.put<{ Body: { smsTo?: string | null; smsFrom?: string | null } }>('/system-health/alerts', async (request, reply) => {
+  app.put<{ Body: { smsTo?: string | null; smsFrom?: string | null; consent?: boolean } }>('/system-health/alerts', async (request, reply) => {
     const admin = await requireAdmin(request, reply)
     if (!admin) return
     const norm = (v: string | null | undefined) => (v === undefined ? undefined : v === null || v.trim() === '' ? null : v.replace(/[\s().-]/g, ''))
@@ -125,15 +125,25 @@ export async function systemHealthAdminRoutes(app: FastifyInstance) {
     const smsFrom = norm(request.body?.smsFrom)
     if (smsTo && !E164.test(smsTo)) return reply.status(400).send({ error: 'Use the international format, for example +18295550100' })
     if (smsFrom && !E164.test(smsFrom)) return reply.status(400).send({ error: 'The sending number must be in international format' })
+    // A mobile number is saved only with the stated consent: this field is the
+    // opt-in for the alert texts (A2P 10DLC campaign, 2026-11-24).
+    const before = await prisma.platformSettings.findUnique({ where: { id: 'singleton' }, select: { opsAlertSmsTo: true } })
+    const isNewNumber = Boolean(smsTo) && smsTo !== before?.opsAlertSmsTo
+    if (isNewNumber && request.body?.consent !== true) return reply.status(400).send({ error: 'Tick the box to agree to receive alert texts on this number' })
     const data = { ...(smsTo !== undefined ? { opsAlertSmsTo: smsTo } : {}), ...(smsFrom !== undefined ? { opsAlertSmsFrom: smsFrom } : {}) }
     await prisma.platformSettings.upsert({ where: { id: 'singleton' }, create: { id: 'singleton', ...data }, update: data })
+    if (isNewNumber) {
+      request.log.info({ adminId: admin.id }, '[system-health] alert-text consent recorded for a new mobile number')
+      const confirmed = await sendOpsSms(SMS_OPT_IN_MESSAGE)
+      return reply.send({ ok: true, confirmation: confirmed.ok ? 'sent' : confirmed.reason })
+    }
     return reply.send({ ok: true })
   })
 
   app.post('/system-health/alerts/test-sms', async (request, reply) => {
     const admin = await requireAdmin(request, reply)
     if (!admin) return
-    const sent = await sendOpsSms('Omniply test: this is where alerts arrive when production stops. Nothing is wrong.')
+    const sent = await sendOpsSms(SMS_TEST_MESSAGE)
     if (!sent.ok) {
       // Twilio error 21408. The raw text names an account id and helps nobody fix it.
       const geo = /has not been enabled for the region/i.test(sent.reason)

@@ -746,13 +746,19 @@ function FailedWorkPanel({ rows, rerun, onDone }: { rows: SystemHealth['failedWo
 function AlertsPanel({ alerts, onSaved }: { alerts: SystemHealth['alerts']; onSaved: () => void }) {
   const [smsTo, setSmsTo] = useState(alerts.smsTo ?? '')
   const [busy, setBusy] = useState(false)
+  const [consent, setConsent] = useState(false)
+  // Saving a NEW number is the opt-in for alert texts, so it needs the box ticked.
+  const normalized = smsTo.replace(/[\s().-]/g, '')
+  const isNewNumber = normalized !== '' && normalized !== (alerts.smsTo ?? '')
 
   async function save() {
     setBusy(true)
-    const res = await fetch('/api/admin/system-health/alerts', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ smsTo: smsTo.trim() || null }) })
+    const res = await fetch('/api/admin/system-health/alerts', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ smsTo: smsTo.trim() || null, consent }) })
+    const j = await res.json().catch(() => ({}))
     setBusy(false)
-    if (!res.ok) return toast.error((await res.json().catch(() => ({}))).error ?? 'Could not save')
-    toast.success('Saved')
+    if (!res.ok) return toast.error(j.error ?? 'Could not save')
+    toast.success(j.confirmation === 'sent' ? 'Saved. A confirmation text is on its way.' : 'Saved')
+    setConsent(false)
     onSaved()
   }
 
@@ -793,8 +799,22 @@ function AlertsPanel({ alerts, onSaved }: { alerts: SystemHealth['alerts']; onSa
         </label>
         <div className="flex gap-2">
           <input id="sh-sms" type="tel" className={inputCls} value={smsTo} onChange={(e) => setSmsTo(e.target.value)} placeholder="+1 829 555 0100" />
-          <Button variant="outline" onClick={save} disabled={busy}>Save</Button>
+          <Button variant="outline" onClick={save} disabled={busy || (isNewNumber && !consent)}>Save</Button>
         </div>
+        <label className="flex items-start gap-2 pt-1 text-xs text-muted-foreground">
+          <input
+            type="checkbox"
+            className="mt-0.5 h-4 w-4 accent-[var(--primary)]"
+            checked={isNewNumber ? consent : Boolean(alerts.smsTo)}
+            disabled={!isNewNumber}
+            onChange={(e) => setConsent(e.target.checked)}
+          />
+          <span>
+            I agree to receive automated system alert text messages from Azavea Inc. at this number. Message frequency varies. Message and data rates may apply. Reply STOP to opt out, HELP for help. See the{' '}
+            <a href="https://azavea.ai/terms" target="_blank" rel="noreferrer" className="text-primary underline">Terms &amp; Conditions</a> and{' '}
+            <a href="https://azavea.ai/privacy" target="_blank" rel="noreferrer" className="text-primary underline">Privacy Policy</a>.
+          </span>
+        </label>
         <button className="text-xs text-primary underline disabled:opacity-50" onClick={test} disabled={busy || !alerts.smsTo}>Send a test text</button>
       </div>
     </section>

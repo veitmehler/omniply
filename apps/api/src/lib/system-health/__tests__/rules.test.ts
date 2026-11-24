@@ -197,7 +197,7 @@ describe('domain alerts', () => {
     )
     expect(t.subject).toBe('The domain socioply.com has lapsed')
     expect(t.body).toContain('ns1.lander.d.parity.domains')
-    expect(t.sms).toContain('LAPSED')
+    expect(t.sms).toBe('Azavea Inc alert: the domain socioply.com has lapsed and must be renewed today. Details: https://chiro.omniply.io/admin/health Reply STOP to opt out, HELP for help.')
   })
 })
 
@@ -205,5 +205,32 @@ describe('billing wording from Google Maps', () => {
   it('reads "billing not enabled" as an add-money problem', () => {
     expect(isBillingError(undefined, 'REQUEST_DENIED: You must enable Billing on the Google Cloud Project')).toBe(true)
     expect(isBillingError(undefined, 'REQUEST_DENIED: This IP is not authorized to use this API key')).toBe(false)
+  })
+})
+
+import { SMS_OPT_IN_MESSAGE, SMS_TEST_MESSAGE } from '../notify'
+
+describe('alert texts match the registered A2P campaign', () => {
+  const svc = (over: Record<string, unknown>) => ({ label: 'Gemini API', usedFor: '', rechargeUrl: 'https://aistudio.google.com/billing', statusPageUrl: null, warnDays: 14, criticalDays: 3, domain: null, providerStatus: null, calls: { lastErrorMessage: 'prepayment credits are depleted', lastSuccessAt: null, lastErrorStatus: 402 }, credit: { balance: 3.4, perDay: 1.1, runwayDays: 3.1 }, ...over }) as never
+  it('names the brand, links only to our own page, and carries the opt-out line', () => {
+    for (const level of ['blocked', 'depleted', 'down', 'critical', 'warn'] as const) {
+      const t = alertText(svc({}), level, false).sms
+      expect(t.startsWith('Azavea Inc alert: '), level).toBe(true)
+      expect(t, level).toContain('https://chiro.omniply.io/admin/health')
+      expect(t, level).not.toContain('aistudio.google.com') // the provider link stays in the email
+      expect(t.endsWith('Reply STOP to opt out, HELP for help.'), level).toBe(true)
+      expect(t.length, level).toBeLessThanOrEqual(320)
+    }
+  })
+  it('reads like the registered samples', () => {
+    expect(alertText(svc({}), 'blocked', false).sms).toBe('Azavea Inc alert: Gemini API is out of credit and content production has stopped. Details: https://chiro.omniply.io/admin/health Reply STOP to opt out, HELP for help.')
+    expect(alertText(svc({ label: 'Twilio' }), 'critical', false).sms).toBe('Azavea Inc alert: your Twilio balance is down to about 3 days of use. Details: https://chiro.omniply.io/admin/health Reply STOP to opt out, HELP for help.')
+  })
+  it('keeps the recharge link in the email, where it is useful', () => {
+    expect(alertText(svc({}), 'blocked', false).body).toContain('https://aistudio.google.com/billing')
+  })
+  it('has an opt-in confirmation and a test text that follow the same rules', () => {
+    expect(SMS_OPT_IN_MESSAGE).toBe('Azavea Inc: you are now subscribed to system alerts for your account. Message frequency varies. Msg & data rates may apply. Reply HELP for help, STOP to opt out.')
+    expect(SMS_TEST_MESSAGE.startsWith('Azavea Inc test: ')).toBe(true)
   })
 })
