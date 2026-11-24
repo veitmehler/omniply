@@ -53,6 +53,19 @@ export function trackedBalance(ledger: LedgerEntry[], spentSince: number): Track
 }
 
 /**
+ * What a provider billed over a window, from our two cost records.
+ *
+ * Wire spend is measured where the call leaves for the provider, under the
+ * provider it went to. Attributed spend (the per-job cost log) misses about
+ * twenty paid paths and files some Anthropic spend under gemini, so it is only
+ * used for the part of the window before wire metering existed. The two parts
+ * do not overlap, so they add.
+ */
+export function billedSpend(wireInWindow: number, attributedBeforeWire: number): number {
+  return wireInWindow + attributedBeforeWire
+}
+
+/**
  * Daily spend used for runway: the higher of the 7-day and the 30-day average.
  * The higher one is the cautious one. After an outage the last 7 days read
  * near zero (Gemini, Nov 14 to 23: $0.16 a day against $2.94 before), and a

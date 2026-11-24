@@ -15,6 +15,7 @@ import {
   type CreditLevel,
   type ServiceState,
   type AlertLevel,
+  billedSpend,
 } from './rules'
 import { fetchStatusFeed, fetchDomainExpiry, fetchLiveBalance, fetchLiveUsage, fetchElevenLabsQuotas, type ProviderStatus, type QuotaRow, type LiveUsage } from './external'
 import { hourBucket } from '../net/call-stats'
@@ -26,6 +27,12 @@ export interface SpendPair {
   wire: number
   /** Attributed to accounts and jobs by call sites (LLMUsage). */
   attributed: number
+  /**
+   * What the provider billed, as far as we can tell: the wire figure from the
+   * day wire metering began, the attributed figure for the time before it.
+   * Balances, runway and totals use this one.
+   */
+  billed: number
 }
 
 export interface ServiceView {
@@ -115,37 +122,56 @@ function addRow(w: CallWindow, r: { ok: number; failed: number; skipped: number;
   }
 }
 
-/** Spend per provider since a moment, from both sources. */
-async function spendSince(since: Date): Promise<Map<string, SpendPair>> {
-  const [wire, attributed] = await Promise.all([
+/** When wire metering began in this database: its first ProviderSpend row. null = it has not started. */
+async function wireStartedAt(): Promise<Date | null> {
+  const first = await prisma.providerSpend.findFirst({ orderBy: { at: 'asc' }, select: { at: true } })
+  return first?.at ?? null
+}
+
+/**
+ * Spend per provider since a moment, from both sources.
+ *
+ * The two are not interchangeable. Wire spend is recorded under the provider
+ * the call actually went to. Attributed spend carries aggregate rows
+ * ("enrichment-aggregate", "quality-gate-aggregate") filed under gemini although
+ * most of that money went to Anthropic, so taking the higher of the two per
+ * provider overstated Gemini (bench of 2026-11-24: $5.08 shown, $4.43 spent).
+ * So: wire alone once wire metering exists, attributed only for the time before.
+ */
+async function spendSince(since: Date, wireStart: Date | null): Promise<Map<string, SpendPair>> {
+  const beforeWire = wireStart === null ? { gt: since } : since < wireStart ? { gt: since, lt: wireStart } : null
+  const [wire, attributed, attributedBeforeWire] = await Promise.all([
     prisma.providerSpend.groupBy({ by: ['provider'], where: { at: { gt: since } }, _sum: { cost: true } }),
     prisma.lLMUsage.groupBy({ by: ['provider'], where: { createdAt: { gt: since } }, _sum: { cost: true } }),
+    beforeWire ? prisma.lLMUsage.groupBy({ by: ['provider'], where: { createdAt: beforeWire }, _sum: { cost: true } }) : Promise.resolve([]),
   ])
   const out = new Map<string, SpendPair>()
   const slot = (p: string) => {
     let s = out.get(p)
     if (!s) {
-      s = { wire: 0, attributed: 0 }
+      s = { wire: 0, attributed: 0, billed: 0 }
       out.set(p, s)
     }
     return s
   }
   for (const r of wire) slot(r.provider).wire = r._sum.cost ?? 0
   for (const r of attributed) slot(r.provider).attributed = r._sum.cost ?? 0
+  for (const r of attributedBeforeWire) slot(r.provider).billed = r._sum.cost ?? 0
+  for (const s of out.values()) s.billed = billedSpend(s.wire, s.billed)
   return out
 }
 
-/** The higher of the two sources: neither can overstate what a provider billed, either can miss some. */
-export const metered = (s: SpendPair | undefined): number => Math.max(s?.wire ?? 0, s?.attributed ?? 0)
-const pair = (s: SpendPair | undefined): SpendPair => ({ wire: s?.wire ?? 0, attributed: s?.attributed ?? 0 })
+export const metered = (s: SpendPair | undefined): number => s?.billed ?? 0
+const NO_SPEND: SpendPair = { wire: 0, attributed: 0, billed: 0 }
+const pair = (s: SpendPair | undefined): SpendPair => ({ ...(s ?? NO_SPEND) })
 const sumPairs = (m: Map<string, SpendPair>): SpendPair => {
-  let wire = 0
-  let attributed = 0
+  const total = { ...NO_SPEND }
   for (const s of m.values()) {
-    wire += s.wire
-    attributed += s.attributed
+    total.wire += s.wire
+    total.attributed += s.attributed
+    total.billed += s.billed
   }
-  return { wire, attributed }
+  return total
 }
 
 async function failedWork(): Promise<{ rows: SystemHealth['failedWork']; total: number }> {
@@ -202,11 +228,12 @@ function maskEmail(e: string | undefined): string | null {
 export async function buildSystemHealth(now: Date = new Date()): Promise<SystemHealth> {
   await ensureServiceCatalog()
   const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1))
+  const wireStart = await wireStartedAt()
   const [services, s7, s30, sMonth, statRows, settings, work, lastOk, activeAccounts, dbConn] = await Promise.all([
     prisma.serviceAccount.findMany({ where: { enabled: true }, orderBy: { sortOrder: 'asc' }, include: { ledger: { orderBy: { at: 'desc' } } } }),
-    spendSince(new Date(now.getTime() - 7 * DAY)),
-    spendSince(new Date(now.getTime() - 30 * DAY)),
-    spendSince(monthStart),
+    spendSince(new Date(now.getTime() - 7 * DAY), wireStart),
+    spendSince(new Date(now.getTime() - 30 * DAY), wireStart),
+    spendSince(monthStart, wireStart),
     prisma.providerCallStat.findMany({ where: { bucket: { gte: new Date(now.getTime() - 7 * DAY) } } }),
     prisma.platformSettings.findUnique({ where: { id: 'singleton' }, select: { opsAlertSmsTo: true, opsAlertSmsFrom: true, healthCheckAt: true } }),
     failedWork(),
@@ -240,7 +267,7 @@ export async function buildSystemHealth(now: Date = new Date()): Promise<SystemH
       const perDay = mp ? dailySpend(metered(s7.get(mp)), metered(s30.get(mp))) : 0
       const tracked = async (note: string | null): Promise<ServiceView['credit']> => {
         const start = trackedBalanceStart(svc.ledger.map((l) => ({ kind: l.kind, amount: l.amount, at: l.at })))
-        const spent = start && mp ? pair((await spendSince(start.since)).get(mp)) : { wire: 0, attributed: 0 }
+        const spent = start && mp ? pair((await spendSince(start.since, wireStart)).get(mp)) : { ...NO_SPEND }
         const balance = start ? start.base + start.toppedUp - metered(spent) : null
         const runway = runwayDays(balance, perDay)
         return {
@@ -272,7 +299,7 @@ export async function buildSystemHealth(now: Date = new Date()): Promise<SystemH
             since: null,
             base: 0,
             toppedUp: 0,
-            spent: { wire: 0, attributed: 0 },
+            spent: { ...NO_SPEND },
             perDay,
             runwayDays: runway === null || !Number.isFinite(runway) ? null : runway,
             noSpend: runway !== null && !Number.isFinite(runway),

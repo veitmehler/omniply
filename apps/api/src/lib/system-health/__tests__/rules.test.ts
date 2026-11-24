@@ -3,6 +3,7 @@ import {
   trackedBalanceStart,
   trackedBalance,
   dailySpend,
+  billedSpend,
   runwayDays,
   creditLevel,
   isBillingError,
@@ -232,5 +233,17 @@ describe('alert texts match the registered A2P campaign', () => {
   it('has an opt-in confirmation and a test text that follow the same rules', () => {
     expect(SMS_OPT_IN_MESSAGE).toBe('Azavea Inc: you are now subscribed to system alerts for your account. Message frequency varies. Msg & data rates may apply. Reply HELP for help, STOP to opt out.')
     expect(SMS_TEST_MESSAGE.startsWith('Azavea Inc test: ')).toBe(true)
+  })
+})
+
+describe('billedSpend', () => {
+  it('is the wire figure alone once wire metering covers the window', () => {
+    // Bench of 2026-11-24: the cost log showed $5.08 for gemini because aggregate
+    // rows filed Anthropic spend there; $4.43 went over the wire.
+    expect(billedSpend(4.43, 0)).toBeCloseTo(4.43)
+  })
+  it('adds the cost log only for the time before wire metering began', () => {
+    expect(billedSpend(4.43, 12.5)).toBeCloseTo(16.93)
+    expect(billedSpend(0, 12.5)).toBeCloseTo(12.5)
   })
 })

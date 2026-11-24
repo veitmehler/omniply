@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils'
 interface SpendPair {
   wire: number
   attributed: number
+  billed?: number
 }
 interface ServiceView {
   key: string
@@ -81,7 +82,8 @@ interface SystemHealth {
 type Tone = 'red' | 'amber' | 'green' | 'grey'
 
 const money = (n: number) => `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-const metered = (s: SpendPair) => Math.max(s.wire, s.attributed)
+/** What the provider billed: wire spend, plus the cost log for the time before wire metering began. */
+const metered = (s: SpendPair) => s.billed ?? Math.max(s.wire, s.attributed)
 const day = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' }) : '—')
 const stamp = (iso: string | null) =>
   iso ? `${new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'UTC' })} UTC` : '—'
@@ -260,7 +262,7 @@ export default function SystemHealthPage() {
           <KpiCard
             title="AI spend, last 30 days"
             value={money(metered(data.totals.last30d))}
-            sub={`Measured ${money(data.totals.last30d.wire)}, attributed ${money(data.totals.last30d.attributed)}`}
+            sub={`Measured at the wire ${money(data.totals.last30d.wire)}, cost log ${money(data.totals.last30d.attributed)}`}
           />
           <KpiCard title="Fixed plans, per month" value={money(data.totals.fixedMonthly)} sub="Entered once per service" />
           <KpiCard title="Cost per active clinic" value={perClinic === null ? '—' : money(perClinic)} sub={`${data.totals.activeAccounts} active accounts`} />
@@ -484,7 +486,7 @@ function CreditCard({ s, onEdit }: { s: ServiceView; onEdit: () => void }) {
             <dd className="text-right font-mono text-xs">
               {money(c.base)}{c.toppedUp ? ` + ${money(c.toppedUp)}` : ''} − {money(metered(c.spent))}
             </dd>
-            <dt className="text-muted-foreground">Measured / attributed</dt>
+            <dt className="text-muted-foreground">At the wire / cost log</dt>
             <dd className="text-right font-mono text-xs">{money(c.spent.wire)} / {money(c.spent.attributed)}</dd>
           </>
         )}
