@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { calculateCost, getCostPerToken } from '../cost-table'
 import { feeForQueries, searchQueryFee, resetSearchQueryCount, FREE_SEARCH_QUERIES_PER_MONTH } from '../search-fee'
-import { MEDIA_COST_USD } from '../../../lib/media-costs'
+import { MEDIA_COST_USD, FAL_IMAGE_MODEL, mediaCostFor } from '../../../lib/media-costs'
 
 /**
  * Google's own report for 2026-11-24 (Cloud console, by SKU), the day of the
@@ -52,5 +52,13 @@ describe('search queries: free up to 5,000 a month, then $14 per 1,000', () => {
   })
   it('a response that searched nothing costs nothing', () => {
     expect(searchQueryFee(0)).toBe(0)
+  })
+})
+
+describe('the fal image model (2026-11-25)', () => {
+  it('is a supported endpoint, not the retired fal-ai/flux-pro, and is priced at fal\'s rate', () => {
+    expect(FAL_IMAGE_MODEL).toBe('fal-ai/flux/dev')
+    expect(mediaCostFor('fal-ai', FAL_IMAGE_MODEL)).toBe(0.025)
+    expect(mediaCostFor('fal-ai', 'fal-ai/flux/schnell')).toBe(0.003)
   })
 })
