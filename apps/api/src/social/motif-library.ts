@@ -70,10 +70,10 @@ function hash(s: string): number {
 }
 
 /**
- * The order one account steps through a set in. Each account starts at its own
- * place and takes a stride that visits every item before any repeats, so two
- * accounts do not show the same sequence and consecutive posts of one account
- * are never the same drawing.
+ * Position `step` of one account's walk through `count` things. Each account
+ * starts at its own place and takes a stride that visits everything before any
+ * repeats, so two accounts do not show the same sequence and neighbours in the
+ * walk are never the same thing.
  */
 export function motifAt(count: number, userId: string, step: number): number {
   if (count <= 1) return 0
@@ -83,6 +83,23 @@ export function motifAt(count: number, userId: string, step: number): number {
   const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b))
   while (gcd(stride, count) !== 1) stride += 2
   return (start + step * stride) % count
+}
+
+/**
+ * The full order one account sees. Files are named `<subject>-<composition>.png`
+ * ("07-a.png", "07-b.png"). The account walks the SUBJECTS in its own order,
+ * first with every subject's first composition, then with the second, so a
+ * subject comes round again only after all the others have been shown.
+ */
+export function motifOrder(files: string[], userId: string): string[] {
+  const subjectOf = (f: string) => f.split('-')[0]
+  const subjects = [...new Set(files.map(subjectOf))].sort()
+  const compositions = [...new Set(files.map((f) => f.slice(subjectOf(f).length)))].sort()
+  const walk = subjects.map((_, step) => subjects[motifAt(subjects.length, userId, step)])
+  const have = new Set(files)
+  const order: string[] = []
+  for (const c of compositions) for (const s of walk) if (have.has(s + c)) order.push(s + c)
+  return order
 }
 
 /** Where each account is in its set, kept in memory: posts built in one batch each take the next item. */
@@ -102,7 +119,8 @@ export function nextMotif(industry: string | null | undefined, userId: string, s
   const key = `${set}:${userId}`
   const step = pointers.has(key) ? pointers.get(key)! + 1 : seed
   pointers.set(key, step)
-  const file = files[motifAt(files.length, userId, step)]
+  const order = motifOrder(files, userId)
+  const file = order[step % order.length]
   return { set, file, path: path.join(motifDir(set), file) }
 }
 
