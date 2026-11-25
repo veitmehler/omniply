@@ -13,6 +13,9 @@ export const MEDIA_COST_USD = {
   // Gemini 3.1 Flash Image, one 1K image. Google's pricing page (read 2026-11-25): "$0.067 per 1K image";
   // its own report for 2026-11-24 billed six images at $0.40. The earlier $0.039 was the retired 2.5 rate.
   'gemini-image': 0.067,
+  // Gemini 3.1 Flash Lite Image: "Equivalent to $0.0336 per 1K resolution image" (Google, read 2026-11-25).
+  // Used for article featured images since that day (Veit); covers and diagrams stay on Flash.
+  'gemini-image-lite': 0.0336,
   // fal.ai models (estimates from fal pricing pages; adjust here).
   'fal-flux-pro': 0.05,
   // FLUX.1 [dev]: "$0.025 per megapixel", rounded up; our 16:9 images are under one megapixel (fal, read 2026-11-25).
@@ -49,9 +52,14 @@ export async function recordMediaCost(
   })
 }
 
+/** Which Gemini image price applies to a model id. */
+export function geminiImageKind(model: string): 'gemini-image' | 'gemini-image-lite' {
+  return /flash-lite-image/i.test(model) ? 'gemini-image-lite' : 'gemini-image'
+}
+
 /** Flat estimate for one generated asset, by provider and model id. */
 export function mediaCostFor(provider: 'gemini' | 'fal-ai', model: string): number {
-  if (provider === 'gemini') return MEDIA_COST_USD['gemini-image']
+  if (provider === 'gemini') return MEDIA_COST_USD[geminiImageKind(model)]
   const m = model.toLowerCase()
   if (m.includes('seedance')) return MEDIA_COST_USD['fal-seedance-video']
   if (m.includes('schnell')) return MEDIA_COST_USD['fal-flux-schnell']
