@@ -54,6 +54,32 @@ function extractImageUrl(result: FalResult): string | null {
   return null
 }
 
+const NO_TEXT_OPENING = 'An image with NO text in it.'
+const NO_TEXT_RULE =
+  'The image contains no text of any kind: no words, letters, numbers, titles, headlines, captions, labels, signs, logos or watermarks. Do not write the article\'s title, or any part of it, into the image.'
+
+/**
+ * The prompt a featured image is generated from (Veit, 2026-11-25: "NO text on
+ * the image. Must be a rule").
+ *
+ * The image prompt written at step 15 names the article ("captures the essence
+ * of the article titled \"...\""), and the image model sometimes took that as
+ * an order to print the title. One came out reading "Why Your lower Back Aching
+ * Aches after Siting all Day?". So the rule is added here, in code, on every
+ * call, whatever the prompt says: the quoted title becomes a plain description
+ * of the subject, and a no-text rule opens and closes the prompt. The body is
+ * cut to fit so the closing rule is never the part that gets truncated.
+ */
+export function featuredImagePrompt(raw: string): string {
+  const body = (raw || '')
+    .replace(/\*\*\s*image generation prompt:?\s*\*\*:?/i, '')
+    .replace(/\b(article|post|blog post|piece|guide)\s+(?:titled|called|entitled|named)\s+["“”']([^"“”]{3,200})["“”']/gi, '$1 on this subject: $2')
+    .replace(/\s+\n/g, '\n')
+    .trim()
+  const room = 2_000 - NO_TEXT_OPENING.length - NO_TEXT_RULE.length - 4
+  return `${NO_TEXT_OPENING}\n${body.slice(0, room)}\n\n${NO_TEXT_RULE}`
+}
+
 /** Generate a featured image and return a remote image URL. Routes by the
  * configured model: gemini* → direct Google API (buffer uploaded to S3);
  * fal-ai/* → Fal. Gemini failures fall back to the fal default model. */
@@ -64,8 +90,7 @@ export async function generateFeaturedImage(
 ): Promise<string> {
   let falModel = await resolveImageModel()
 
-  // Truncate prompt to avoid API limits
-  const prompt = imagePrompt.slice(0, 2_000)
+  const prompt = featuredImagePrompt(imagePrompt)
 
   if (falModel.startsWith('gemini')) {
     const geminiKey = await getSystemApiKey('gemini')
