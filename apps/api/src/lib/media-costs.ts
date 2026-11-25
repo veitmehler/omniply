@@ -15,12 +15,22 @@ export const MEDIA_COST_USD = {
   'gemini-image': 0.067,
   // fal.ai models (estimates from fal pricing pages; adjust here).
   'fal-flux-pro': 0.05,
+  // FLUX.1 [dev]: "$0.025 per megapixel", rounded up; our 16:9 images are under one megapixel (fal, read 2026-11-25).
+  'fal-flux-dev': 0.025,
   'fal-flux-schnell': 0.003,
   'fal-recraft': 0.04,
   'fal-seedance-video': 0.186,
 } as const
 
 export type MediaKind = keyof typeof MEDIA_COST_USD
+
+/**
+ * The fal model used when a Gemini image fails, and for newsletter article images.
+ * It was fal-ai/flux-pro until 2026-11-25, when fal's own page for that endpoint read "This model is no
+ * longer supported". FLUX.1 [dev] is supported, takes the same parameters we already send (28 steps,
+ * guidance 3.5 are its defaults) and costs half; a live call with those parameters returned 1024x576.
+ */
+export const FAL_IMAGE_MODEL = 'fal-ai/flux/dev'
 
 /** One llm_usage row per generated asset; never throws. */
 export async function recordMediaCost(
@@ -46,6 +56,7 @@ export function mediaCostFor(provider: 'gemini' | 'fal-ai', model: string): numb
   if (m.includes('seedance')) return MEDIA_COST_USD['fal-seedance-video']
   if (m.includes('schnell')) return MEDIA_COST_USD['fal-flux-schnell']
   if (m.includes('recraft')) return MEDIA_COST_USD['fal-recraft']
+  if (m.includes('flux/dev')) return MEDIA_COST_USD['fal-flux-dev']
   if (m.includes('birefnet')) return 0.002 // background removal, priced per megapixel; small
   return MEDIA_COST_USD['fal-flux-pro']
 }

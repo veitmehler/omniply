@@ -19,8 +19,9 @@ import { runNewsletterPrompt, runNewsletterWriterJson } from './llm'
 import { loadPlainLanguageConfig, runNewsletterPlainLanguage } from '../article-pipeline/enrichment/plain-language'
 import { sanitizeDashesText } from '../lib/text/dash-sanitizer'
 import { vtoken } from './image-overlay'
+import { FAL_IMAGE_MODEL } from '../lib/media-costs'
 
-const NL_IMAGE_MODEL = 'fal-ai/flux-pro'
+const NL_IMAGE_MODEL = FAL_IMAGE_MODEL
 const NL_IMAGE_SIZE = 'landscape_16_9'
 
 /** Sink for per-call cost/token accounting (implemented by the generator). */

@@ -34,10 +34,11 @@ import {
 import { decodeEntities } from './render'
 import { overlayPlayButton, overlayTitleBanner, vtoken } from './image-overlay'
 import { specializationLabel } from './calendar-routing'
+import { FAL_IMAGE_MODEL } from '../lib/media-costs'
 
 const NL_IMAGE_SIZE = 'landscape_16_9'
 
-const NL_IMAGE_MODEL = 'fal-ai/flux-pro'
+const NL_IMAGE_MODEL = FAL_IMAGE_MODEL
 const SOCIAL_DOMAINS = [
   'youtube.com',
   'youtu.be',

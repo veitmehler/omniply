@@ -12,9 +12,9 @@ import { withTimeout } from '../lib/net/with-timeout'
 import { isRetryableNetworkError } from '../lib/net/retry'
 import { instrumentCall } from '../lib/net/instrument'
 import { generateWithGeminiImage, uploadBufferWithKey } from '@omniply/shared'
-import { recordMediaCost, recordMediaSpend } from '../lib/media-costs'
+import { recordMediaCost, recordMediaSpend, FAL_IMAGE_MODEL } from '../lib/media-costs'
 
-const DEFAULT_FAL_MODEL = 'fal-ai/flux-pro'
+const DEFAULT_FAL_MODEL = FAL_IMAGE_MODEL
 const MAX_RETRIES = 3
 const RETRY_DELAY_MS = 5_000
 /** Bound each attempt — without this, a hung call never reaches the retry loop below. */
@@ -127,7 +127,7 @@ export async function generateFeaturedImage(
       await recordMediaCost(
         userId,
         'article_featured_image',
-        falModel.includes('schnell') ? 'fal-flux-schnell' : falModel.includes('recraft') ? 'fal-recraft' : 'fal-flux-pro',
+        falModel.includes('schnell') ? 'fal-flux-schnell' : falModel.includes('recraft') ? 'fal-recraft' : falModel.includes('flux/dev') ? 'fal-flux-dev' : 'fal-flux-pro',
         falModel,
       )
       return imageUrl

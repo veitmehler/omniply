@@ -40,7 +40,7 @@ Typography: Any text labels must be clean, crisp, all-caps, modern sans-serif fo
 Lighting & Finish: Apply a very subtle, soft luminescent glow (like a faint neon effect) to all lines and text so they pop crisply against the dark background.`
 
 /** Compose the one-shot cover prompt: what to depict + label/dedupe rules + style guide. */
-function buildCoverPrompt(items: CoverItem[], industry: string, who: string, styleGuide: string): string {
+export function buildCoverPrompt(items: CoverItem[], industry: string, who: string, styleGuide: string): string {
   // Drop exact-duplicate headlines; the prompt also tells the model to merge
   // near-duplicate themes so the same concept is never drawn twice.
   const seen = new Set<string>()
