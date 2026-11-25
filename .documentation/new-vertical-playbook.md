@@ -40,6 +40,38 @@ section D), `wellness-snapshot-nurture.md` (nurture copy + keyword),
 6. **Target market framing** — remember the standing rule: US + international,
    never infer AU-centric anything (AU is only the dev clinic).
 
+### A-motifs. The icon library is a launch requirement (added 2026-11-25)
+
+A niche does not launch until it has its own motif library. Carousel and story
+slides carry a faint line-art icon behind the brand colour. It is no longer
+generated per post: each post takes the next drawing from a hand-approved set
+that ships with the API (`apps/api/assets/motifs/<set>/`, code in
+`apps/api/src/social/motif-library.ts`). An account whose niche has no set gets
+plain brand-colour slides, which look unfinished next to our other niches.
+
+What the set needs:
+
+- **At least 30 subjects, none repeated, two compositions of each** (about 60
+  drawings). Subjects belong to the niche: for wellness that meant leaf, ripple,
+  breath, stones, not abstract shapes.
+- **Style: fine line art, stylish, never bold.** If the motif has to show more,
+  raise `MOTIF_STRENGTH`, not the line weight (Veit: "bold is not stylish").
+- **No text, no fills, no colour, on pure white.** The drawing is converted to a
+  colourless shape and drawn in each slide's own text colour, so it never shifts
+  a brand colour.
+
+How to produce it (chiropractic and wellness took about $4 and one review each):
+
+1. Write the subject list (30-plus) and have the owner edit it.
+2. Generate on `gemini-3.1-flash-lite-image` with the prompt recorded in
+   `.documentation/bench-tools/` (the first batch of 30 came back 30 of 30 clean).
+3. Convert white to transparent, publish a review page with tick boxes, and have
+   the owner drop what does not fit. Watch for drawings that read as a symbol of
+   something else (a crescent moon with a star was dropped for that reason) and
+   for realistic bodies.
+4. Save the kept shapes as single-channel 1024px PNGs under
+   `apps/api/assets/motifs/<set>/`, add the niche to `motifSetFor`, and deploy.
+
 ## B. Platform code (ordered; most is now one-row/one-entry work)
 
 1. **Vertical plumbing**: add the key to `KNOWN_VERTICALS`
