@@ -17,6 +17,7 @@ import { gateHedges } from '../lib/text/hedge-gate'
 import { runEditorPass } from '../lib/text/editor-pass'
 import { verifyFactSources, anchorFactSourcesJudged, pubmedFill, loadFactSources, SOURCE_FLOOR, type FactSource, type GroundingSupportPages } from './source-verify'
 import { liveAnchorJudge } from './anchor-judge'
+import { measurementSystemFor } from './units'
 import { checkSupport } from './source-support'
 import { resolveChunkUrisIndexed } from './grounding-resolver'
 import { restoreBoundary } from '../lib/text/boundary-restore'
@@ -558,7 +559,7 @@ async function runRetrievalStep(jobId: string, stepNumber: number, ctx: Pipeline
     logger.warn({ jobId, stepNumber }, '[executor] retrieval research: no units to research; the article is written without sourced facts for this step')
     return emptyRetrievalStep(jobId, stepNumber, Date.now())
   }
-  const bs = await prisma.brandSettings.findUnique({ where: { userId: ctx.userId }, select: { industry: true } })
+  const bs = await prisma.brandSettings.findUnique({ where: { userId: ctx.userId }, select: { industry: true, geolocation: true } })
   const t0 = Date.now()
   await prisma.pipelineStep.upsert({
     where: { jobId_stepNumber: { jobId, stepNumber } },
@@ -567,7 +568,7 @@ async function runRetrievalStep(jobId: string, stepNumber: number, ctx: Pipeline
   })
   let r: Awaited<ReturnType<typeof runRetrievalResearch>>
   try {
-    r = await runRetrievalResearch({ jobId, stepNumber, units, topic: ctx.topicText, industry: bs?.industry ?? '', vertical: await verticalForUser(ctx.userId).catch(() => null) })
+    r = await runRetrievalResearch({ jobId, stepNumber, units, topic: ctx.topicText, industry: bs?.industry ?? '', vertical: await verticalForUser(ctx.userId).catch(() => null), measures: measurementSystemFor(bs?.geolocation) })
   } catch (err) {
     logger.warn({ jobId, stepNumber, err }, '[executor] retrieval research failed; the article is written without sourced facts for this step')
     return emptyRetrievalStep(jobId, stepNumber, t0)

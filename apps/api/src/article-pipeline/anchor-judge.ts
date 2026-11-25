@@ -56,10 +56,10 @@ export function liveAnchorJudge(onCost?: (cost: number, tokens: { input: number;
         signal: AbortSignal.timeout(TIMEOUT_MS),
       })
       if (!res.ok) throw new Error(`Gemini ${res.status}`)
-      const j = (await res.json()) as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>; usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number; thoughtsTokenCount?: number } }
+      const j = (await res.json()) as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>; usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number; thoughtsTokenCount?: number; cachedContentTokenCount?: number } }
       const input = j.usageMetadata?.promptTokenCount ?? 0
       const output = (j.usageMetadata?.candidatesTokenCount ?? 0) + (j.usageMetadata?.thoughtsTokenCount ?? 0)
-      onCost?.(meteredCost('gemini', JUDGE_MODEL, input, output), { input, output })
+      onCost?.(meteredCost('gemini', JUDGE_MODEL, input, output, 0, j.usageMetadata?.cachedContentTokenCount ?? 0), { input, output })
       const text = (j.candidates?.[0]?.content?.parts ?? []).map((p) => p.text ?? '').join('')
       const verdicts = parseAnchorVerdicts(text, batch.length)
       if (!verdicts) throw new Error('anchor judge output unparseable')

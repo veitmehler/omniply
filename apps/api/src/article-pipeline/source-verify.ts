@@ -615,9 +615,12 @@ export const MIN_ANCHOR_SHARE_WITH_FIGURE = 0.25
 /** Below this share a pair is not even proposed to the judge. */
 const MIN_ANCHOR_SHARE_PROPOSAL = 0.2
 
-/** The figures a sentence states ("9.2", "150", "48", "72"); thousands separators removed. */
+/**
+ * The figures a sentence states ("9.2", "150", "48", "72"); thousands separators removed.
+ * A digit that is part of a name is not a figure: "L5", "B12", "COVID-19".
+ */
 export function figuresOf(s: string): Set<string> {
-  return new Set(s.replace(/(\d),(?=\d{3}\b)/g, '$1').match(/\d+(?:\.\d+)?/g) ?? [])
+  return new Set(s.replace(/(\d),(?=\d{3}\b)/g, '$1').match(/(?<![A-Za-z\d])(?<![A-Za-z]-)\d+(?:\.\d+)?/g) ?? [])
 }
 
 /** Crude stem so a paraphrase still matches: "herniated"/"herniation", "resorb"/"resorption". */
@@ -750,29 +753,71 @@ export function anchorPairs(html: string, sources: FactSource[]): AnchorPair[] {
   return pairs.sort((a, b) => Number(b.sameFigure) - Number(a.sameFigure) || b.share * (0.5 + b.coverage) - a.share * (0.5 + a.coverage) || b.shared - a.shared || a.si - b.si)
 }
 
-/** Place links for the given pairs, best first: one link per sentence, one per URL. */
-export function placeAnchors(html: string, sources: FactSource[], pairs: AnchorPair[]): { html: string; placed: string[]; unplaced: FactSource[] } {
-  const placed: string[] = []
-  const unplaced: FactSource[] = []
+/** The most citation links one article carries (Veit, 2026-11-25). A ceiling, not a target. */
+export const MAX_ARTICLE_LINKS = 12
+
+/** Which <h2> section a position in the article falls in (0 = before the first heading). */
+function sectionAt(html: string, pos: number): number {
+  let n = 0
+  const re = /<h2\b/gi
+  let m: RegExpExecArray | null
+  while ((m = re.exec(html)) !== null && m.index < pos) n++
+  return n
+}
+
+/**
+ * When more links are confirmed than the article may carry, keep these:
+ *   1. sentences that state a figure, because a number without a source is
+ *      what a reader notices first;
+ *   2. then one link in every section before any section gets a second;
+ *   3. then the strongest matches (the order the pairs arrive in).
+ */
+export function capAnchors(html: string, chosen: AnchorPair[], slots: number): AnchorPair[] {
+  if (slots <= 0) return []
+  if (chosen.length <= slots) return chosen
+  const perSection = new Map<number, number>()
+  const section = (p: AnchorPair) => sectionAt(html, p.sentence.start)
+  const kept: AnchorPair[] = []
+  // Take from `pool` the pair whose section holds the fewest links so far; ties go to the stronger match.
+  const spread = (pool: AnchorPair[]) => {
+    const rest = [...pool]
+    while (kept.length < slots && rest.length > 0) {
+      let best = 0
+      for (let i = 1; i < rest.length; i++) if ((perSection.get(section(rest[i])) ?? 0) < (perSection.get(section(rest[best])) ?? 0)) best = i
+      const [p] = rest.splice(best, 1)
+      perSection.set(section(p), (perSection.get(section(p)) ?? 0) + 1)
+      kept.push(p)
+    }
+  }
+  spread(chosen.filter((p) => figuresOf(p.sentence.text).size > 0))
+  spread(chosen.filter((p) => figuresOf(p.sentence.text).size === 0))
+  return kept
+}
+
+/**
+ * Place links for the given pairs, best first: one link per sentence, one per
+ * URL, and no more than `cap` external links in the article, counting the
+ * ones it already carries.
+ */
+export function placeAnchors(html: string, sources: FactSource[], pairs: AnchorPair[], cap: number = MAX_ARTICLE_LINKS): { html: string; placed: string[]; unplaced: FactSource[] } {
   const usedUrls = new Set<string>()
   const usedSpans: Array<[number, number]> = []
-  const edits: Array<{ start: number; end: number; url: string }> = []
-  const placedFacts = new Set<number>()
+  const chosen: AnchorPair[] = []
   for (const p of pairs) {
     const s = sources[p.si]
     if (usedUrls.has(s.url)) continue
     if (usedSpans.some(([a, b]) => p.sentence.start < b && p.sentence.end > a)) continue
     usedSpans.push([p.sentence.start, p.sentence.end])
     usedUrls.add(s.url)
-    placedFacts.add(p.si)
-    placed.push(s.url)
-    edits.push({ start: p.sentence.start, end: p.sentence.end, url: s.url })
+    chosen.push(p)
   }
-  sources.forEach((s, si) => {
-    if (!placedFacts.has(si) && !usedUrls.has(s.url)) unplaced.push(s)
-  })
+  const existing = (html.match(/<a\b[^>]*href="https?:\/\//gi) ?? []).length
+  const kept = capAnchors(html, chosen, cap - existing)
 
-  edits.sort((a, b) => b.start - a.start)
+  const placed = kept.map((p) => sources[p.si].url)
+  const placedUrls = new Set(placed)
+  const unplaced = sources.filter((s) => !placedUrls.has(s.url))
+  const edits = kept.map((p) => ({ start: p.sentence.start, end: p.sentence.end, url: sources[p.si].url })).sort((a, b) => b.start - a.start)
   let out = html
   for (const e of edits) {
     const sentence = out.slice(e.start, e.end)

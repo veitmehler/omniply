@@ -27,6 +27,7 @@ import { isCitable, sourceTier } from './citation-policy'
 import { contentTerms, termOverlap, liveResolvers, ncbiQueue, NCBI_BASE, ncbiKey, type GroundingSupportPages } from './source-verify'
 import { googleSerpOrganic, type SerpOrganic } from '../newsletter/oxylabs'
 import { assessSource, classifyPaper, sourceFamily, liveFitnessDeps, type FitnessDeps } from './source-fitness'
+import { withLocalUnits, type MeasurementSystem } from './units'
 
 export interface RetrievedFact {
   fact: string
@@ -180,7 +181,7 @@ async function geminiJson(prompt: string, tools?: unknown[]): Promise<{ text: st
   if (!res.ok) throw new Error(`Gemini ${res.status}`)
   const j = (await res.json()) as {
     candidates?: Array<{ content?: { parts?: Array<{ text?: string }> }; urlContextMetadata?: { urlMetadata?: Array<{ urlRetrievalStatus?: string }> } }>
-    usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number; thoughtsTokenCount?: number; toolUsePromptTokenCount?: number }
+    usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number; thoughtsTokenCount?: number; toolUsePromptTokenCount?: number; cachedContentTokenCount?: number }
   }
   const c = j.candidates?.[0]
   const text = (c?.content?.parts ?? []).map((p) => p.text ?? '').join('')
@@ -188,7 +189,7 @@ async function geminiJson(prompt: string, tools?: unknown[]): Promise<{ text: st
   const input = (um.promptTokenCount ?? 0) + (um.toolUsePromptTokenCount ?? 0)
   const output = (um.candidatesTokenCount ?? 0) + (um.thoughtsTokenCount ?? 0)
   const status = c?.urlContextMetadata?.urlMetadata?.[0]?.urlRetrievalStatus ?? ''
-  return { text, cost: meteredCost('gemini', EXTRACT_MODEL, input, output), tokens: { input, output }, retrieved: tools ? /SUCCESS/i.test(status) : true }
+  return { text, cost: meteredCost('gemini', EXTRACT_MODEL, input, output, 0, um.cachedContentTokenCount ?? 0), tokens: { input, output }, retrieved: tools ? /SUCCESS/i.test(status) : true }
 }
 
 /** Azavea (practice-owner business articles): facts arrive in the practice's own
@@ -309,6 +310,8 @@ export async function runRetrievalResearch(opts: {
   industry: string
   /** 'azavea' switches to business/regulatory sources and skips the PubMed path. */
   vertical?: string | null
+  /** The measurement system the clinic's readers use. When given, a measurement in the other system gets the local figure in brackets. */
+  measures?: MeasurementSystem
   deps?: RetrievalDeps
 }): Promise<RetrievalResult> {
   const deps = opts.deps ?? liveRetrievalDeps
@@ -450,6 +453,8 @@ export async function runRetrievalResearch(opts: {
   await Promise.all(Array.from({ length: Math.min(UNIT_CONCURRENCY, queue.length) }, async () => {
     for (let u = queue.shift(); u !== undefined; u = queue.shift()) await runUnit(u)
   }))
+  // Measurements in the reader's units, added once, here, so the feed, the supports and the stored records carry the same text.
+  if (opts.measures) for (const f of facts) f.fact = withLocalUnits(f.fact, opts.measures)
   // Keep feed order by unit, then by discovery.
   stats.facts = facts.length
 

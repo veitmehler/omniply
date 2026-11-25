@@ -7,6 +7,8 @@
  *     marks "(One study, in <group>.)" is stated as what happened to that
  *     group, never as a rule for everyone (Veit, 2026-11-24: a single trial is
  *     used only where the article describes that specific finding).
+ *     Added 2026-11-25: measurements are written in the units the clinic's
+ *     readers use; research supplies the converted figure in brackets.
  *     Provider, model and maxTokens are left as they are on the target.
  *   - azavea rows are NOT touched (Azavea research is not vetted this way and
  *     never produces the bracket).

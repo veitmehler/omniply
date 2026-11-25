@@ -337,11 +337,11 @@ export const liveFitnessDeps: FitnessDeps = {
       signal: AbortSignal.timeout(TIMEOUT_MS),
     })
     if (!res.ok) throw new Error(`Gemini ${res.status}`)
-    const j = (await res.json()) as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>; usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number; thoughtsTokenCount?: number } }
+    const j = (await res.json()) as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }>; usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number; thoughtsTokenCount?: number; cachedContentTokenCount?: number } }
     const text = (j.candidates?.[0]?.content?.parts ?? []).map((p) => p.text ?? '').join('')
     const input = j.usageMetadata?.promptTokenCount ?? 0
     const output = (j.usageMetadata?.candidatesTokenCount ?? 0) + (j.usageMetadata?.thoughtsTokenCount ?? 0)
-    return { text, cost: meteredCost('gemini', FIT_MODEL, input, output), tokens: { input, output } }
+    return { text, cost: meteredCost('gemini', FIT_MODEL, input, output, 0, j.usageMetadata?.cachedContentTokenCount ?? 0), tokens: { input, output } }
   },
 }
 

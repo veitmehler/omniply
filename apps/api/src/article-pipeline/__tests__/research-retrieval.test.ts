@@ -165,6 +165,29 @@ describe('source vetting inside retrieval (2026-11-24)', () => {
   })
 })
 
+describe('measurements in the reader\'s units (2026-11-25)', () => {
+  const unit = 'What triggers a sciatica flare?'
+  const deps: RetrievalDeps = {
+    serp: async () => [{ url: 'https://www.mayoclinic.org/sciatica-triggers', title: 'Sciatica flare triggers', snippet: 'sciatica flare triggers' }],
+    pubmedSearch: async () => [],
+    pubmedAbstract: async () => null,
+    extractFromText: async () => ({ facts: [], cost: 0, tokens: { input: 0, output: 0 } }),
+    extractFromUrl: async () => ({ facts: [{ fact: 'Each additional hour spent lifting 10 lb or more raises the risk of a flare.', quote: 'lifting 10 lb or more' }], cost: 0, tokens: { input: 0, output: 0 }, retrieved: true }),
+    fitness: okFitness,
+  }
+  it('adds the metric figure for a clinic outside the United States, in the feed and in the supports alike', async () => {
+    const r = await runRetrievalResearch({ jobId: 'j', stepNumber: 8, units: [unit], topic: TOPIC, industry: 'Chiropractor', measures: 'metric', deps })
+    expect(r.facts[0].fact).toBe('Each additional hour spent lifting 10 lb (about 4.5 kg) or more raises the risk of a flare.')
+    expect(r.supports[0].text).toBe(r.facts[0].fact)
+    expect(r.text).toContain('lifting 10 lb (about 4.5 kg) or more')
+    expect(r.facts[0].quote).toBe('lifting 10 lb or more')
+  })
+  it('leaves a US clinic\'s pounds alone', async () => {
+    const r = await runRetrievalResearch({ jobId: 'j', stepNumber: 8, units: [unit], topic: TOPIC, industry: 'Chiropractor', measures: 'imperial', deps })
+    expect(r.facts[0].fact).toBe('Each additional hour spent lifting 10 lb or more raises the risk of a flare.')
+  })
+})
+
 describe('Azavea vertical sources (business, not clinical)', () => {
   it('builds regulator/business queries and admits business hosts only for azavea', async () => {
     const { isCitable, sourceTier } = await import('../citation-policy')

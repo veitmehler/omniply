@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { anchorFactSources, anchorFactSourcesJudged, anchorPairs, figuresOf, type FactSource } from '../source-verify'
+import { anchorFactSources, anchorFactSourcesJudged, anchorPairs, capAnchors, figuresOf, placeAnchors, MAX_ARTICLE_LINKS, type AnchorPair, type FactSource } from '../source-verify'
 import { anchorJudgePrompt, parseAnchorVerdicts } from '../anchor-judge'
 
 /** Sentences from the hyperbaric bench article of 2026-11-24, which stated its sourced facts and got no links at all. */
@@ -22,6 +22,9 @@ const HERNIA = src('A herniated disc is a condition where the inner disc materia
 describe('figuresOf', () => {
   it('reads decimals and thousands as single figures', () => {
     expect([...figuresOf('about 9.2% of 2,334 patients over 12 weeks')]).toEqual(['9.2', '2334', '12'])
+  })
+  it('does not read a digit inside a name as a figure, and keeps both ends of a range', () => {
+    expect([...figuresOf('the L5 nerve root, vitamin B12 and COVID-19 over 6-12 weeks')]).toEqual(['6', '12'])
   })
 })
 
@@ -87,5 +90,39 @@ describe('anchor judge wire format', () => {
     expect(parseAnchorVerdicts('[{"n":2,"same":false},{"n":1,"same":"true"}]', 2)).toEqual([true, false])
     expect(parseAnchorVerdicts('[{"n":1,"same":true}]', 2)).toBeNull()
     expect(parseAnchorVerdicts('no json', 1)).toBeNull()
+  })
+})
+
+describe('the link cap (Veit, 2026-11-25: at most 12 per article)', () => {
+  // Three sections; section 1 holds six plain sentences, sections 2 and 3 two each, one with a figure in each.
+  const sentence = (i: number, withFigure: boolean) => `Topic number ${'abcdefghij'[i]} alpha${i} beta${i} gamma${i} delta${i} matters${withFigure ? ` in ${10 + i}% of people` : ' to most people'}.`
+  const body = (ids: number[], figureAt: number[]) => ids.map((i) => `<p>${sentence(i, figureAt.includes(i))}</p>`).join('')
+  const html = `<h2>One</h2>${body([0, 1, 2, 3, 4, 5], [])}<h2>Two</h2>${body([6, 7], [7])}<h2>Three</h2>${body([8, 9], [9])}`
+  const sources = Array.from({ length: 10 }, (_, i) => src(`Topic number ${'abcdefghij'[i]} alpha${i} beta${i} gamma${i} delta${i} matters.`, 50 + i))
+  const pairs = (): AnchorPair[] => {
+    const all = anchorPairs(html, sources)
+    return sources.map((_, si) => all.find((p) => p.si === si && p.sentence.text.includes(`alpha${si} `))!).filter(Boolean)
+  }
+
+  it('is twelve, and a ceiling: fewer confirmed links all stay', () => {
+    expect(MAX_ARTICLE_LINKS).toBe(12)
+    expect(pairs()).toHaveLength(10)
+    expect(placeAnchors(html, sources, pairs()).placed).toHaveLength(10)
+  })
+  it('keeps figure sentences first, then one link per section before a second', () => {
+    const kept = capAnchors(html, pairs(), 4).map((p) => p.si)
+    // both figure sentences (7 and 9), then the section with none yet (section one, its strongest: 0), then the next least-linked
+    expect(kept.slice(0, 2).sort()).toEqual([7, 9])
+    expect(kept[2]).toBe(0)
+    expect(kept).toHaveLength(4)
+  })
+  it('counts links the article already carries', () => {
+    const withLinks = html.replace('<h2>One</h2>', '<p>See <a href="https://www.mayoclinic.org/x">this</a> and <a href="https://www.nhs.uk/y">that</a>.</p><h2>One</h2>')
+    const r = placeAnchors(withLinks, sources, anchorPairs(withLinks, sources).filter((p) => p.sentence.text.includes(`alpha${p.si} `)), 5)
+    expect(r.placed).toHaveLength(3)
+    expect((r.html.match(/<a\b[^>]*href="https?:/g) ?? []).length).toBe(5)
+  })
+  it('places nothing when the article is already at the cap', () => {
+    expect(capAnchors(html, pairs(), 0)).toEqual([])
   })
 })
