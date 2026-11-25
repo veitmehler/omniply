@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import sharp from 'sharp'
 import path from 'path'
-import { listMotifs, motifAt, motifSetFor, nextMotif, renderMotifCanvas, resetMotifCache, MOTIF_STRENGTH } from '../motif-library'
+import { listMotifs, motifAt, motifOrder, motifSetFor, nextMotif, renderMotifCanvas, resetMotifCache, MOTIF_STRENGTH } from '../motif-library'
 
 beforeEach(() => resetMotifCache())
 
@@ -16,13 +16,14 @@ describe('motifSetFor: two sets, one per niche we sell to', () => {
 })
 
 describe('the bundled library', () => {
-  it('holds the approved shapes of batch one, without the two Veit dropped', () => {
+  it('holds the drawings Veit approved on 2026-11-25, and none he dropped', () => {
     const chiro = listMotifs('chiropractic')
     const wellness = listMotifs('wellness')
-    expect(chiro.length).toBeGreaterThanOrEqual(14)
-    expect(wellness.length).toBeGreaterThanOrEqual(14)
-    expect(chiro).not.toContain('12-a.png') // the adjusting table
-    expect(wellness).not.toContain('09-a.png') // the crescent moon with a star
+    expect(chiro).toHaveLength(56)
+    expect(wellness).toHaveLength(57)
+    for (const f of ['12-a.png', '12-b.png', '28-a.png', '28-b.png', '31-a.png', '31-b.png', '32-a.png', '32-b.png']) expect(chiro).not.toContain(f)
+    for (const f of ['09-a.png', '09-b.png', '22-a.png', '22-b.png', '29-a.png', '29-b.png', '32-a.png']) expect(wellness).not.toContain(f)
+    expect(wellness).toContain('32-b.png')
   })
   it('every file is a colourless single-channel shape', async () => {
     for (const set of ['chiropractic', 'wellness'] as const) {
@@ -46,6 +47,26 @@ describe('motifAt: how an account steps through its set', () => {
     for (let step = 0; step < 120; step++) expect(motifAt(31, 'user-a', step)).not.toBe(motifAt(31, 'user-a', step + 1))
     const starts = new Set(['user-a', 'user-b', 'user-c', 'user-d', 'user-e'].map((u) => motifAt(31, u, 0)))
     expect(starts.size).toBeGreaterThan(1)
+  })
+})
+
+describe('motifOrder: a subject returns only after all the others', () => {
+  it('shows every drawing once, and puts the two compositions of a subject a whole round apart', () => {
+    for (const set of ['chiropractic', 'wellness'] as const) {
+      const files = listMotifs(set)
+      const order = motifOrder(files, 'user-a')
+      expect([...order].sort()).toEqual([...files].sort())
+      const subjects = new Set(files.map((f) => f.split('-')[0])).size
+      for (let i = 0; i < order.length; i++) {
+        const again = order.findIndex((f, k) => k > i && f.split('-')[0] === order[i].split('-')[0])
+        if (again !== -1) expect(again - i).toBeGreaterThanOrEqual(subjects - 1)
+      }
+      for (let i = 1; i < order.length; i++) expect(order[i].split('-')[0]).not.toBe(order[i - 1].split('-')[0])
+    }
+  })
+  it('gives two accounts different orders', () => {
+    const files = listMotifs('wellness')
+    expect(motifOrder(files, 'user-a')).not.toEqual(motifOrder(files, 'user-b'))
   })
 })
 
