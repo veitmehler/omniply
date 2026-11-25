@@ -12,7 +12,7 @@ import { withTimeout } from '../lib/net/with-timeout'
 import { isRetryableNetworkError } from '../lib/net/retry'
 import { instrumentCall } from '../lib/net/instrument'
 import { generateWithGeminiImage, uploadBufferWithKey } from '@omniply/shared'
-import { recordMediaCost, recordMediaSpend, FAL_IMAGE_MODEL } from '../lib/media-costs'
+import { recordMediaCost, recordMediaSpend, geminiImageKind, FAL_IMAGE_MODEL } from '../lib/media-costs'
 
 const DEFAULT_FAL_MODEL = FAL_IMAGE_MODEL
 const MAX_RETRIES = 3
@@ -81,7 +81,7 @@ export async function generateFeaturedImage(
         const key = `tmp/featured/${jobId}-${Date.now()}.png`
         const { url } = await uploadBufferWithKey(key, buf, 'image/png')
         logger.info({ jobId, model: falModel }, '[image-gen] featured image generated (gemini direct)')
-        await recordMediaCost(userId, 'article_featured_image', 'gemini-image', falModel)
+        await recordMediaCost(userId, 'article_featured_image', geminiImageKind(falModel), falModel)
         return url
       } catch (err) {
         logger.warn({ jobId, model: falModel, err }, '[image-gen] gemini featured image failed — falling back to fal')

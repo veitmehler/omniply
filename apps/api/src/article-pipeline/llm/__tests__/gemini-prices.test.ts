@@ -62,3 +62,11 @@ describe('the fal image model (2026-11-25)', () => {
     expect(mediaCostFor('fal-ai', 'fal-ai/flux/schnell')).toBe(0.003)
   })
 })
+
+describe('Gemini image prices by model', () => {
+  it('Flash Lite Image is priced at half of Flash Image', () => {
+    expect(mediaCostFor('gemini', 'gemini-3.1-flash-lite-image')).toBe(0.0336)
+    expect(mediaCostFor('gemini', 'gemini-3.1-flash-image')).toBe(0.067)
+    expect(mediaCostFor('gemini', 'gemini-3-pro-image-preview')).toBe(0.067) // not priced separately here; diagram restyle carries its own Pro price
+  })
+})
