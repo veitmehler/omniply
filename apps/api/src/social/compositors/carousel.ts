@@ -13,8 +13,8 @@ import { withRetry } from '../../lib/net/retry'
 import { generateWithGeminiImage, prisma } from '@omniply/shared'
 import { recordMediaSpend } from '../../lib/media-costs'
 
-/** Per-image cost for Gemini image models (~1290 output tokens), mirrored from diagram-restyle. */
-const GEMINI_IMAGE_COST_USD = 0.039
+/** Per-image cost for Gemini 3.1 Flash Image at 1K, as in lib/media-costs.ts and diagram-restyle. */
+const GEMINI_IMAGE_COST_USD = 0.067
 import { instrumentCall } from '../../lib/net/instrument'
 
 /** Bound Fal image calls so a hang can't wedge a run (see with-timeout.ts). */

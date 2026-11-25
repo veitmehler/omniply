@@ -10,14 +10,14 @@
 import { calculateCost } from './cost-table'
 import { recordProviderSpend } from '../../lib/net/call-stats'
 
-export function meteredCost(provider: string, model: string, inputTokens: number, outputTokens: number, extraUsd = 0): number {
-  const cost = calculateCost(model, inputTokens, outputTokens) + extraUsd
+export function meteredCost(provider: string, model: string, inputTokens: number, outputTokens: number, extraUsd = 0, cachedInputTokens = 0): number {
+  const cost = calculateCost(model, inputTokens, outputTokens, cachedInputTokens) + extraUsd
   recordProviderSpend(provider, model, cost, { input: inputTokens, output: outputTokens })
   return cost
 }
 
 interface GeminiUsage {
-  usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number; thoughtsTokenCount?: number; toolUsePromptTokenCount?: number }
+  usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number; thoughtsTokenCount?: number; toolUsePromptTokenCount?: number; cachedContentTokenCount?: number }
 }
 
 /**
@@ -30,5 +30,5 @@ export function meterGeminiResponse(model: string, json: unknown): number {
   const input = (um.promptTokenCount ?? 0) + (um.toolUsePromptTokenCount ?? 0)
   const output = (um.candidatesTokenCount ?? 0) + (um.thoughtsTokenCount ?? 0)
   if (input + output === 0) return 0
-  return meteredCost('gemini', model, input, output)
+  return meteredCost('gemini', model, input, output, 0, um.cachedContentTokenCount ?? 0)
 }

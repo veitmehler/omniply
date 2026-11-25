@@ -8,7 +8,11 @@ const COST_TABLE: Record<string, { input: number; output: number }> = {
   // without this row it silently hit the $0.50/$1.50 fallback (cost audit
   // 2026-10-09).
   'gemini-3-flash-preview': { input: 0.50, output: 3.00 },
-  'gemini-3.5-flash': { input: 1.50, output: 9.00 },
+  // Google serves and bills this id as Gemini 3.6 Flash (its SKU report of 2026-11-24 names it so, at $3.75
+  // per 1M output tokens). The rate below is the one from 2027-01-01; the introductory rate until then is
+  // in GEMINI_36_FLASH_INTRO.
+  'gemini-3.5-flash': { input: 1.50, output: 7.50 },
+  'gemini-3.6-flash': { input: 1.50, output: 7.50 },
   'gemini-3.1-flash-lite': { input: 0.25, output: 1.50 },
   'gemini-3.1-pro': { input: 2.00, output: 12.00 },
   'gemini-3.1-pro-preview': { input: 2.00, output: 12.00 },
@@ -35,7 +39,14 @@ const COST_TABLE: Record<string, { input: number; output: number }> = {
   'gpt-5.5': { input: 5.00, output: 30.00 },
 }
 
-export function getCostPerToken(model: string, type: 'input' | 'output'): number {
+/** Gemini 3.6 Flash, pricing page read 2026-11-25: "$0.75 through December 31, 2026. $1.50 starting January 1, 2027" (input), "$3.75 ... $7.50" (output). */
+const GEMINI_36_FLASH_INTRO = { input: 0.75, output: 3.75, until: Date.UTC(2027, 0, 1) }
+
+/** Share of the input price Google charges for input tokens it served from its cache (all Gemini 3.x text models: a tenth). */
+export const GEMINI_CACHED_INPUT_SHARE = 0.1
+
+export function getCostPerToken(model: string, type: 'input' | 'output', at: number = Date.now()): number {
+  if ((model === 'gemini-3.5-flash' || model === 'gemini-3.6-flash') && at < GEMINI_36_FLASH_INTRO.until) return GEMINI_36_FLASH_INTRO[type]
   const entry = COST_TABLE[model]
   if (!entry) return type === 'input' ? 0.50 : 1.50  // conservative unknown fallback per 1M
   return entry[type]
@@ -45,22 +56,22 @@ export function getCostPerToken(model: string, type: 'input' | 'output'): number
 // 100K tokens — a per-request tier, invisible to flat per-model rates.
 const HAIKU_55_LONG_PROMPT = { input: 0.50, output: 2.50 }
 
-export function calculateCost(model: string, inputTokens: number, outputTokens: number): number {
+/**
+ * `cachedInputTokens` are the input tokens the provider reports as served from its cache; they are part of
+ * `inputTokens` and, for Gemini, billed at a tenth of the input rate (Google's report of 2026-11-24 showed
+ * Pro input at $0.33 where full-rate tokens came to $0.37).
+ */
+export function calculateCost(model: string, inputTokens: number, outputTokens: number, cachedInputTokens = 0): number {
   if (model.startsWith('claude-haiku-5-5') && inputTokens > 100_000) {
     return Number((
       (inputTokens / 1_000_000) * HAIKU_55_LONG_PROMPT.input +
       (outputTokens / 1_000_000) * HAIKU_55_LONG_PROMPT.output
     ).toFixed(8))
   }
-  const inputCost = (inputTokens / 1_000_000) * getCostPerToken(model, 'input')
+  const cached = model.startsWith('gemini') ? Math.min(Math.max(0, cachedInputTokens), inputTokens) : 0
+  const inputCost = ((inputTokens - cached * (1 - GEMINI_CACHED_INPUT_SHARE)) / 1_000_000) * getCostPerToken(model, 'input')
   const outputCost = (outputTokens / 1_000_000) * getCostPerToken(model, 'output')
   return Number((inputCost + outputCost).toFixed(8))
 }
 
-/**
- * Gemini "Grounding with Google Search" bills a PER-REQUEST fee on top of
- * tokens ($35 per 1,000 grounded requests on the paid tier) — invisible to
- * token math, so every grounded call adds it explicitly (cost audit
- * 2026-10-09: 11 grounded call sites across articles + newsletters).
- */
-export const GROUNDED_SEARCH_FEE_USD = 0.035
+// Gemini's web-search charge is counted per search query in ./search-fee.ts (free up to 5,000 a month).

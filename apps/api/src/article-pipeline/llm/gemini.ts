@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { getSystemApiKey } from '../../lib/system-keys'
-import { GROUNDED_SEARCH_FEE_USD } from './cost-table'
+import { searchQueryFee } from './search-fee'
 import { meteredCost } from './metered-cost'
 import type { LLMAdapter, LLMCallOptions, LLMResponse } from './adapter'
 import { LLMError } from './adapter'
@@ -120,7 +120,7 @@ export class GeminiAdapter implements LLMAdapter {
     // B18: Gemini bills thinking tokens at the output rate and tool-use prompt
     // tokens (URL context pages) at the input rate; neither was counted before
     // (probe 2026-11-10: 4,381 thinking vs 468 visible output tokens on one call).
-    const um = (response.usageMetadata ?? {}) as { promptTokenCount?: number; candidatesTokenCount?: number; thoughtsTokenCount?: number; toolUsePromptTokenCount?: number }
+    const um = (response.usageMetadata ?? {}) as { promptTokenCount?: number; candidatesTokenCount?: number; thoughtsTokenCount?: number; toolUsePromptTokenCount?: number; cachedContentTokenCount?: number }
     const inputTokens = (um.promptTokenCount ?? 0) + (um.toolUsePromptTokenCount ?? 0)
     const outputTokens = (um.candidatesTokenCount ?? 0) + (um.thoughtsTokenCount ?? 0)
 
@@ -133,7 +133,7 @@ export class GeminiAdapter implements LLMAdapter {
     return {
       content: text,
       tokens: { input: inputTokens, output: outputTokens, total: inputTokens + outputTokens },
-      cost: meteredCost('gemini', model, inputTokens, outputTokens),
+      cost: meteredCost('gemini', model, inputTokens, outputTokens, 0, um.cachedContentTokenCount ?? 0),
       model,
       provider: 'gemini',
       finishReason,
@@ -186,7 +186,7 @@ export class GeminiAdapter implements LLMAdapter {
     const text: string = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
     if (!text.trim()) throw new LLMError('Gemini (search) returned empty response')
 
-    const um = (data?.usageMetadata ?? {}) as { promptTokenCount?: number; candidatesTokenCount?: number; thoughtsTokenCount?: number; toolUsePromptTokenCount?: number }
+    const um = (data?.usageMetadata ?? {}) as { promptTokenCount?: number; candidatesTokenCount?: number; thoughtsTokenCount?: number; toolUsePromptTokenCount?: number; cachedContentTokenCount?: number }
     const inputTokens = (um.promptTokenCount ?? 0) + (um.toolUsePromptTokenCount ?? 0)
     const outputTokens = (um.candidatesTokenCount ?? 0) + (um.thoughtsTokenCount ?? 0)
 
@@ -207,6 +207,9 @@ export class GeminiAdapter implements LLMAdapter {
         uri: c.web!.uri!,
         domain: c.web!.domain ?? undefined,
       }))
+    // The searches Google ran for this answer. A grounded answer with no query list still used one.
+    const queryList = (data?.candidates?.[0]?.groundingMetadata?.webSearchQueries ?? []) as unknown[]
+    const searchQueries = Math.max(Array.isArray(queryList) ? queryList.length : 0, chunks.length > 0 ? 1 : 0)
     // B16: which spans of the generated text rest on which chunks. Indices
     // refer to the UNFILTERED chunks array; the resolver keeps that alignment.
     const rawSupports = (data?.candidates?.[0]?.groundingMetadata?.groundingSupports ?? []) as Array<{
@@ -221,9 +224,9 @@ export class GeminiAdapter implements LLMAdapter {
     return {
       content: text,
       tokens: { input: inputTokens, output: outputTokens, total: inputTokens + outputTokens },
-      // Grounded requests carry Google's per-request search fee on top of
-      // tokens — adding it HERE propagates to every recorder automatically.
-      cost: meteredCost('gemini', model, inputTokens, outputTokens, GROUNDED_SEARCH_FEE_USD),
+      // Google charges per search query the model ran, free up to 5,000 a month (search-fee.ts). The fee is
+      // counted there under its own ledger line, so it is added to this call's cost but not metered twice.
+      cost: meteredCost('gemini', model, inputTokens, outputTokens, 0, um.cachedContentTokenCount ?? 0) + searchQueryFee(searchQueries),
       model,
       provider: 'gemini',
       finishReason,
