@@ -10,9 +10,9 @@ import { recordLLMUsage } from './llm-usage'
 import { recordProviderSpend } from './net/call-stats'
 
 export const MEDIA_COST_USD = {
-  // Gemini image (Nano-Banana family) — matches the established constant
-  // in social/compositors/carousel.ts.
-  'gemini-image': 0.039,
+  // Gemini 3.1 Flash Image, one 1K image. Google's pricing page (read 2026-11-25): "$0.067 per 1K image";
+  // its own report for 2026-11-24 billed six images at $0.40. The earlier $0.039 was the retired 2.5 rate.
+  'gemini-image': 0.067,
   // fal.ai models (estimates from fal pricing pages; adjust here).
   'fal-flux-pro': 0.05,
   'fal-flux-schnell': 0.003,
