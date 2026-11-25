@@ -1,5 +1,7 @@
 import sharp from 'sharp'
-import { downloadImageFromUrl } from '@omniply/shared'
+import { downloadImageFromUrl, prisma } from '@omniply/shared'
+import { logger } from '../lib/logger'
+import { nextMotif, renderMotifCanvas } from './motif-library'
 import { loadSocialBrandTheme, loadLogoBuffer, loadTintLogo } from './brand-theme'
 import { tintScheme, forcedTintScheme, type TintScheme } from './compositors/brand-tint'
 import { registerSocialMedia } from './media-register'
@@ -81,6 +83,15 @@ const BACKGROUND_MOTIFS: Record<string, string[]> = {
  *  Admin-configurable model = v2. */
 export const MOTIF_IMAGE_MODEL = 'gemini-3.1-flash-image'
 
+/** How many backgrounds this account already has: where its walk through the motif set resumes after a restart. */
+async function motifSeed(userId: string): Promise<number> {
+  try {
+    return await prisma.media.count({ where: { userId, title: { in: ['Story background', 'Carousel background'] } } })
+  } catch {
+    return 0
+  }
+}
+
 export function themedBackgroundPrompt(industry: string | null | undefined, seed: string): string {
   // Chiro motifs for chiropractic clinics AND the azavea vertical (industry
   // "B2B practice-growth software" — its audience is chiropractors).
@@ -135,35 +146,30 @@ export async function generateStorySlidesAsset(opts: {
   const arrowBuffer = await loadContinuationArrow(tint.logoVariant)
   const logoBuffer = await loadLogoBuffer(brand.logoUrl)
 
-  const rawMotif = opts.reuseBackgroundUrl
-    ? await downloadImageFromUrl(opts.reuseBackgroundUrl)
-    : await generateCarouselBackground(
-        themedBackgroundPrompt(brand.industry, genId),
-        jobId,
-        MOTIF_IMAGE_MODEL,
-        opts.userId,
-      )
-
-  // Soften: flat brand canvas + motif at ~70% alpha (0.45 read too faint —
-  // dialed up 2026-09-03 evening). Under the slide's 0.85 wash the motif
-  // reads at ~10% — present as texture, still behind the text.
-  const hex = (tint.overlayColor ?? '#052234').replace('#', '')
-  const canvasBgColor = {
-    r: parseInt(hex.slice(0, 2), 16),
-    g: parseInt(hex.slice(2, 4), 16),
-    b: parseInt(hex.slice(4, 6), 16),
-    alpha: 1,
+  // The background: the brand colour with a faint motif for depth. The motif comes from the hand-approved
+  // library (2026-11-25), drawn in the slide's own text colour, so nothing is generated per post and the
+  // brand colour is never shifted. Under the slide's 0.85 wash it reads at about 10%.
+  const canvasHex = tint.overlayColor ?? '#052234'
+  let bg: Buffer
+  if (opts.reuseBackgroundUrl) {
+    // Recompose of an existing post: its stored background is reused as it was built.
+    const hex = canvasHex.replace('#', '')
+    const canvasBgColor = { r: parseInt(hex.slice(0, 2), 16), g: parseInt(hex.slice(2, 4), 16), b: parseInt(hex.slice(4, 6), 16), alpha: 1 }
+    const softMotif = await sharp(await downloadImageFromUrl(opts.reuseBackgroundUrl))
+      .resize(1080, 1080, { fit: 'cover', position: 'centre' })
+      .removeAlpha()
+      .ensureAlpha(0.7)
+      .png()
+      .toBuffer()
+    bg = await sharp({ create: { width: 1080, height: 1080, channels: 4, background: canvasBgColor } })
+      .composite([{ input: softMotif }])
+      .png()
+      .toBuffer()
+  } else {
+    const motif = nextMotif(brand.industry, opts.userId, await motifSeed(opts.userId))
+    if (!motif) logger.info({ jobId, industry: brand.industry }, '[social] no motif set for this niche; plain brand-colour background')
+    bg = await renderMotifCanvas({ shapePath: motif?.path ?? null, canvasHex, inkHex: tint.textColor })
   }
-  const softMotif = await sharp(rawMotif)
-    .resize(1080, 1080, { fit: 'cover', position: 'centre' })
-    .removeAlpha()
-    .ensureAlpha(0.7)
-    .png()
-    .toBuffer()
-  const bg = await sharp({ create: { width: 1080, height: 1080, channels: 4, background: canvasBgColor } })
-    .composite([{ input: softMotif }])
-    .png()
-    .toBuffer()
 
   const bgReg = opts.reuseBackgroundUrl
     ? { url: opts.reuseBackgroundUrl }
@@ -376,12 +382,20 @@ export async function generateCarouselAssets(opts: {
   let sharedBgUrl: string | null = null
   const perSlideBg = !!opts.perSlideBackgrounds && !useDiagram
   if (!useDiagram && !perSlideBg) {
-    sharedBg = await generateCarouselBackground(
-      themedBackgroundPrompt(brand.industry, genId),
-      jobId,
-      MOTIF_IMAGE_MODEL,
-      opts.userId,
-    )
+    if (tint) {
+      // Brand-tint design: the same library motif as the story slides, on the brand colour.
+      const motif = nextMotif(brand.industry, opts.userId, await motifSeed(opts.userId))
+      if (!motif) logger.info({ jobId, industry: brand.industry }, '[social] no motif set for this niche; plain brand-colour background')
+      sharedBg = await renderMotifCanvas({ shapePath: motif?.path ?? null, canvasHex: tint.overlayColor ?? '#052234', inkHex: tint.textColor })
+    } else {
+      // Classic design (no colour wash): the picture itself is the background, so it is still generated.
+      sharedBg = await generateCarouselBackground(
+        themedBackgroundPrompt(brand.industry, genId),
+        jobId,
+        MOTIF_IMAGE_MODEL,
+        opts.userId,
+      )
+    }
     const reg = await registerSocialMedia({
       userId: opts.userId,
       buffer: sharedBg,
