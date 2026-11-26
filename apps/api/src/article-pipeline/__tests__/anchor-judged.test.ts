@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { anchorFactSources, anchorFactSourcesJudged, anchorPairs, capAnchors, figuresOf, placeAnchors, MAX_ARTICLE_LINKS, type AnchorPair, type FactSource } from '../source-verify'
+import { anchorFactSources, anchorFactSourcesJudged, anchorPairs, capAnchors, figuresOf, placeAnchors, MAX_ARTICLE_LINKS, MAX_LINKS_PER_SITE, isOwnPracticeSentence, type AnchorPair, type FactSource } from '../source-verify'
 import { anchorJudgePrompt, parseAnchorVerdicts } from '../anchor-judge'
 
 /** Sentences from the hyperbaric bench article of 2026-11-24, which stated its sourced facts and got no links at all. */
@@ -126,3 +126,43 @@ describe('the link cap (Veit, 2026-11-25: at most 12 per article)', () => {
     expect(capAnchors(html, pairs(), 0)).toEqual([])
   })
 })
+
+describe('link variety (Veit, 2026-11-25: at most two links per site)', () => {
+  const sentence = (i: number) => `Topic number ${'abcdefghij'[i]} alpha${i} beta${i} gamma${i} delta${i} matters to most people.`
+  const html = `<h2>One</h2>${[0, 1, 2, 3, 4].map((i) => `<p>${sentence(i)}</p>`).join('')}`
+  const at = (i: number, url: string): FactSource => ({ fact: `Topic number ${'abcdefghij'[i]} alpha${i} beta${i} gamma${i} delta${i} matters.`, url, title: `Page ${i}`, status: 'retrieved' }) as FactSource
+  const own = (sources: FactSource[], h = html) => anchorPairs(h, sources).filter((p) => p.sentence.text.includes(`alpha${p.si} `))
+
+  it('keeps two links to one site, its subdomains counted together, and gives the slot to another site', () => {
+    const sources = [at(0, 'https://my.clevelandclinic.org/a'), at(1, 'https://health.clevelandclinic.org/b'), at(2, 'https://my.clevelandclinic.org/c'), at(3, 'https://www.mayoclinic.org/d'), at(4, 'https://my.clevelandclinic.org/e')]
+    const r = placeAnchors(html, sources, own(sources))
+    expect(r.placed.filter((u) => u.includes('clevelandclinic.org'))).toHaveLength(2)
+    expect(r.placed).toContain('https://www.mayoclinic.org/d')
+    expect(r.placed).toHaveLength(3)
+    expect(MAX_LINKS_PER_SITE).toBe(2)
+  })
+  it('counts a link the article already carries to that site', () => {
+    const sources = [at(0, 'https://www.mayoclinic.org/a'), at(1, 'https://www.mayoclinic.org/b')]
+    const withLink = html.replace('<h2>One</h2>', '<p>See <a href="https://www.mayoclinic.org/x">this</a>.</p><h2>One</h2>')
+    expect(placeAnchors(withLink, sources, own(sources, withLink)).placed).toHaveLength(1)
+  })
+  it('does not pool the papers of an index: each paper is its own source', () => {
+    const sources = [0, 1, 2, 3].map((i) => at(i, `https://pubmed.ncbi.nlm.nih.gov/${100 + i}/`))
+    expect(placeAnchors(html, sources, own(sources)).placed).toHaveLength(4)
+  })
+})
+
+describe('a sentence about the author\'s own work is never linked', () => {
+  it('recognises the author speaking about their own practice', () => {
+    for (const s of ['I check the hips first.', 'We start every visit with a conversation.', 'In my practice this shows up weekly.', 'Our team runs the sessions.', '“I’ve seen it often.”', 'At our centre people rest afterwards.']) expect(isOwnPracticeSentence(s)).toBe(true)
+    for (const s of ['Sitting loads the lumbar discs.', 'Iron levels matter here.', 'Wellness is not a product.', 'Most people I see are surprised by this.']) expect(isOwnPracticeSentence(s)).toBe(false)
+  })
+  it('places no link on such a sentence even when the words match a fact', () => {
+    const html = '<h2>One</h2><p>We find that sitting slouched loads the lumbar discs far more than standing does.</p><p>Sitting slouched loads the lumbar discs far more than standing does over a day.</p>'
+    const sources = [{ fact: 'Sitting slouched loads the lumbar discs far more than standing does.', url: 'https://www.hss.edu/a', title: 'A', status: 'retrieved' } as FactSource]
+    const r = placeAnchors(html, sources, anchorPairs(html, sources))
+    expect(r.html).toContain('<p>We find that sitting slouched loads the lumbar discs far more than standing does.</p>')
+    expect(r.placed).toEqual(['https://www.hss.edu/a'])
+  })
+})
+

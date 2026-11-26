@@ -45,6 +45,7 @@ import { restructureHtmlWithGeo, type GeoSectionData } from './geo-html-restruct
 import { sanitizeGeoQuestion } from './geo-question-sanitizer'
 import { normalizeH2Questions } from '../approval-service'
 import { loadPlainLanguageConfig, runPlainLanguagePass, seededRng } from './plain-language'
+import { voiceForJob, voiceForExplanations } from '../voice/run'
 import { generateKeyTakeaways } from './key-takeaways-generator'
 import { generateDiagramCaption } from './diagram-caption-generator'
 import { selectWordPressCategory } from './wp-category-selector'
@@ -391,12 +392,15 @@ export async function runArticleEnrichment(jobId: string): Promise<void> {
         select: { writingStyle: true },
       })
       const plTheme = themeFromBrand(plBrand ?? undefined)
+      // Author voice: an article written on the voice path gets its added explanations in the author's
+      // own voice (their words, the images they reach for), not from the two-paragraph description.
+      const plVoice = await voiceForJob(jobId, job.userId).catch(() => null)
       const pl = await runPlainLanguagePass({
         jobId,
         sitePageId: sitePage.id,
         html: geoHtml,
         voice: {
-          writingStyle: plSettings?.writingStyle ?? '',
+          writingStyle: plVoice ? voiceForExplanations(plVoice) : (plSettings?.writingStyle ?? ''),
           audience: plBrand?.who ?? '',
           industry: plBrand?.industry ?? '',
         },

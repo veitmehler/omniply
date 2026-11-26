@@ -27,10 +27,15 @@ import { quoteInPage } from './source-support'
 import { researchUnitsFor } from './research-units'
 import { recordLLMUsage } from '../lib/llm-usage'
 import type { StepRunResult } from './step-runner'
+import { resolveVoice, runTake, runCoreFacts, runVoiceCorrection, runBeliefCheck, runHabitTrim, voiceRewriters, VOICE_STEPS } from './voice/run'
+import { jurisdictionFor } from './jurisdiction'
+import { brandSettingsForUser } from '@omniply/shared'
 
 // B16: step 12 (find_citations) retired — every URL it produced was typed by the
 // model; the references list is now built from the sources actually used.
 const PHASE_A_STEPS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+/** Voice path (author-voice plan, stage 2): the author's take and the core facts are worked out before the writer starts. */
+const PHASE_A_STEPS_VOICE = [0, 1, 2, 3, 4, 5, 6, 7, 8, VOICE_STEPS.take, VOICE_STEPS.core, 9, 10, 11]
 const MAX_KEYWORD_RETRIES = 3
 
 /** Prose steps that get em-dash elimination right after completion (title + final
@@ -137,7 +142,16 @@ export async function runPipelinePhaseA(jobId: string): Promise<void> {
     logger.warn({ jobId, topicId, err }, '[executor] outline auto-assignment failed — continuing')
   }
 
-  for (const stepNumber of PHASE_A_STEPS) {
+  // Author voice: an account with an enabled voice profile (or a job forced on with a step-80 row)
+  // runs the voice path. AUTHOR_VOICE=0 switches it off everywhere.
+  const voice = process.env.AUTHOR_VOICE === '0' ? null : await resolveVoice(ctx).catch((err) => {
+    logger.warn({ jobId, err }, '[executor] voice profile could not be loaded; running the standard path')
+    return null
+  })
+  ctx.voice = voice
+  if (voice) logger.info({ jobId, author: voice.profile.author.name }, '[executor] running on the author-voice path')
+
+  for (const stepNumber of voice ? PHASE_A_STEPS_VOICE : PHASE_A_STEPS) {
     // Skip already-completed steps (resume support)
     if (ctx.completedSteps.has(stepNumber)) {
       logger.info({ jobId, stepNumber }, '[executor] skipping already-completed step')
@@ -154,10 +168,21 @@ export async function runPipelinePhaseA(jobId: string): Promise<void> {
 
       if (stepNumber === 2) {
         await executeStep2WithValidation(jobId, stepNumber, ctx)
+      } else if (voice && stepNumber === VOICE_STEPS.take) {
+        await runTake(ctx, voice)
+      } else if (voice && stepNumber === VOICE_STEPS.core) {
+        await runCoreFacts(ctx, voice)
       } else {
         let result: StepRunResult | null = null
         if (RESEARCH_MODE === 'retrieval' && SOURCE_VERIFY_STEPS.has(stepNumber)) {
           result = await runRetrievalStep(jobId, stepNumber, ctx)
+        }
+        // Voice path: the writer and the fact check run on their own prompts; the correction
+        // step changes only the sentences the fact check failed.
+        const voiceRewrite = voice ? voiceRewriters(ctx, voice) : null
+        if (!result && voice && stepNumber === 11) result = await runVoiceCorrection(ctx, voice)
+        if (!result && voice && (stepNumber === 9 || stepNumber === 10)) {
+          result = await new StepRunner(jobId, stepNumber, ctx, { templateKey: stepNumber === 9 ? 'av_writer' : 'av_fact_check' }).execute()
         }
         if (!result) result = await new StepRunner(jobId, stepNumber, ctx).execute()
 
@@ -170,7 +195,7 @@ export async function runPipelinePhaseA(jobId: string): Promise<void> {
 
         if (HEDGE_GATE_STEPS.has(stepNumber) && process.env.HEDGE_GATE !== '0') {
           try {
-            const g = await gateHedges(stepOutput, { jobId, stepNumber })
+            const g = voiceRewrite ? await gateHedges(stepOutput, { jobId, stepNumber }, voiceRewrite.hedge, { keepNoise: voiceRewrite.keepNoise }) : await gateHedges(stepOutput, { jobId, stepNumber })
             if (g.changed) {
               stepOutput = g.text
               await prisma.pipelineStep.updateMany({
@@ -189,7 +214,7 @@ export async function runPipelinePhaseA(jobId: string): Promise<void> {
 
         if (EDITOR_PASS_STEPS.has(stepNumber) && process.env.EDITOR_PASS !== '0') {
           try {
-            const e = await runEditorPass(stepOutput, { jobId, stepNumber })
+            const e = await runEditorPass(stepOutput, { jobId, stepNumber }, voiceRewrite ? { sentence: voiceRewrite.sentence, paragraph: voiceRewrite.paragraph, exempt: voiceRewrite.exempt } : {})
             if (e.changed) {
               stepOutput = e.text
               await prisma.pipelineStep.updateMany({
@@ -221,7 +246,20 @@ export async function runPipelinePhaseA(jobId: string): Promise<void> {
           }
         }
 
-        if (stepNumber === 11 && process.env.BOUNDARY_RESTORE !== '0') {
+        // Voice path, after the standard gates: the regulator's question on the author's convictions,
+        // then the author's habits back to their own rate. Both change single sentences only.
+        if (voice && stepNumber === 11) {
+          const before = stepOutput
+          const bs = await brandSettingsForUser(userId).catch(() => null)
+          stepOutput = await runBeliefCheck(ctx, voice, stepOutput, jurisdictionFor(bs?.geolocation))
+          stepOutput = await runHabitTrim(ctx, voice, stepOutput)
+          if (stepOutput !== before) {
+            await prisma.pipelineStep.updateMany({ where: { jobId, stepNumber, status: 'completed' }, data: { output: stepOutput } })
+          }
+        }
+
+        // The voice path never hands the whole draft to a rewriting model, so there is no lost boundary line to restore.
+        if (!voice && stepNumber === 11 && process.env.BOUNDARY_RESTORE !== '0') {
           try {
             const b = restoreBoundary(ctx.completedSteps.get(9) ?? '', stepOutput)
             if (b.changed) {

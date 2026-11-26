@@ -28,6 +28,9 @@ export async function triggerArticleRewrite(jobId: string): Promise<{ ok: boolea
   }
 
   await prisma.pipelineStep.deleteMany({ where: { jobId, stepNumber: { gte: 7, lte: 12 } } })
+  // Voice path: the take, the core facts and the two checks belong to the article being replaced.
+  // Step 80 (which path the job runs on) stays.
+  await prisma.pipelineStep.deleteMany({ where: { jobId, stepNumber: { in: [81, 82, 83, 84] } } })
   await prisma.articleJob.update({
     where: { id: jobId },
     data: { status: 'pending', currentStep: 6 },

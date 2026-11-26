@@ -369,6 +369,7 @@ model User {
   apiKeys              ApiKey[]
   settings             Settings?
   brandSettings        BrandSettings?
+  voiceProfile         VoiceProfile?
   templates            Template[]
   socialConnections    SocialConnection[]
   twitterApiRequests   TwitterApiRequest[]
@@ -633,6 +634,25 @@ model ApiKey {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("api_keys")
+}
+
+// The author's voice profile (author-voice plan, stage 2, 2026-11-26): who they are,
+// what they believe and how they write, in their OWN words, built from the
+// onboarding answers and the one piece of writing they gave us
+// (apps/api/src/lib/voice/profile.ts). `enabled` switches the article pipeline to
+// the voice path for this account; a single job can be forced either way with a
+// pipeline step row (step 80, see article-pipeline/voice/mode.ts).
+model VoiceProfile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  profile   Json
+  version   Int      @default(1)
+  enabled   Boolean  @default(false)
+  builtAt   DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("voice_profiles")
 }
 
 model Settings {

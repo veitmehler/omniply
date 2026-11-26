@@ -31,7 +31,7 @@ export const ONBOARDING_QUESTIONS: Record<QuestionId, string> = {
 }
 
 export interface AuthorMaterial {
-  author: { name: string; practice: string; industry: string; location: string }
+  author: { name: string; practice: string; industry: string; location: string; /** The job title on the account, when set. */ jobTitle?: string | null }
   brand: { businessDescription?: string | null; who?: string | null; ourExperience?: string | null }
   answers: Partial<Record<QuestionId, string>>
   /** The settings line "What the author does personally" (brand_settings.defaultAuthorOwnWork), when filled in. */

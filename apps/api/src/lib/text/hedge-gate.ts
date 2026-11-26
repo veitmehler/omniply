@@ -144,6 +144,8 @@ export async function gateHedges(
   input: string,
   ctx: Record<string, unknown> = {},
   rewriter: HedgeRewriter = defaultRewriter,
+  /** Author voice (2026-11-26): an author who writes "Hmmmm!" themselves keeps it. */
+  opts: { keepNoise?: boolean } = {},
 ): Promise<HedgeGateResult> {
   const res: HedgeGateResult = {
     text: input,
@@ -160,7 +162,7 @@ export async function gateHedges(
   if (!input) return res
 
   try {
-    const noise = stripThinkingNoise(input)
+    const noise = opts.keepNoise ? { text: input, removed: 0 } : stripThinkingNoise(input)
     res.noiseRemoved = noise.removed
     const { masked, restore } = maskProtected(noise.text)
     let working = masked

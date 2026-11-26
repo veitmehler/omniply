@@ -220,6 +220,9 @@ export function extractionPrompt(unit: string, industry: string, sourceLabel: st
     `A fact is one plain sentence stating what was found, with its figure, rate or duration when the source gives one. ` +
     `Each fact must rest on one sentence of the source, copied exactly as "quote". Never use general knowledge; if the source has nothing relevant, return [].\n` +
     `Take what the source itself establishes: its own findings, measurements and recommendations. Skip a sentence in which the source reports what other work found (it carries a reference marker such as [3], or says "previous studies", "it is believed", "has been reported").\n` +
+    // Author voice (2026-11-26): what the author's own profession does is the author's to say. A linked
+    // "fact" for it reads as an outside site vouching for the practice, or contradicting it.
+    (vertical === 'azavea' ? '' : `Skip a sentence about what a ${industry} practitioner or the ${industry} profession does, offers, recommends or believes. The article's author speaks for their own work; a source is not cited for it.\n`) +
     `Output ONLY a JSON array: [{"fact": "...", "quote": "...", "setting": "<population and setting, under 8 words>", "applies": true|false}] where "applies" is false when the setting does not match the reader.\n\n${sourceLabel}`
   )
 }

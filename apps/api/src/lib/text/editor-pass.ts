@@ -132,6 +132,15 @@ export function hasPresence(plain: string): boolean {
 }
 void PRESENCE_RE
 
+/** The stock phrase found in a sentence, as written there, or null. */
+export function bannedPhraseIn(plain: string): string | null {
+  for (const r of BANNED_PHRASES) {
+    const m = plain.match(r)
+    if (m) return m[0]
+  }
+  return null
+}
+
 export function classifyEditorIssue(plain: string): EditorIssue | null {
   if (BANNED_PHRASES.some((r) => r.test(plain))) return 'phrase'
   if (SOURCE_METADATA.some((r) => r.test(plain))) return 'source'
@@ -331,7 +340,12 @@ async function rewriteSpans(
 export async function runEditorPass(
   input: string,
   ctx: Record<string, unknown> = {},
-  rewriters: { sentence?: SentenceRewriter; paragraph?: ParagraphRewriter } = {},
+  rewriters: {
+    sentence?: SentenceRewriter
+    paragraph?: ParagraphRewriter
+    /** Author voice (2026-11-26): a sentence the caller exempts is left alone, e.g. a stock phrase this author uses themselves. */
+    exempt?: (plain: string, issue: EditorIssue) => boolean
+  } = {},
 ): Promise<EditorPassResult> {
   const sentenceRewriter = rewriters.sentence ?? defaultSentenceRewriter
   const paragraphRewriter = rewriters.paragraph ?? defaultParagraphRewriter
@@ -369,6 +383,7 @@ export async function runEditorPass(
         const to = ends[s]
         const issue = classifyEditorIssue(plainText(working.slice(from, to)))
         if (!issue) continue
+        if (rewriters.exempt?.(plainText(working.slice(from, to)), issue)) continue
         if (issue === 'phrase') res.phraseFlagged++
         else res.sourceFlagged++
         spans.push({ from, to, reason: REASONS[issue] })

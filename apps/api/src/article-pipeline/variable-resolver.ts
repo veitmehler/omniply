@@ -3,6 +3,9 @@ import { fetchPaaCandidates, formatPaaCandidates, type PaaCandidates } from './f
 import { prisma, brandSettingsForUser } from '@omniply/shared'
 import { getGlobalExcludedKeywords } from './keyword-validator'
 import { seededRng } from './enrichment/plain-language'
+import { jurisdictionFor } from './jurisdiction'
+import type { VoiceContext } from './voice/run'
+import { takeBeliefs } from './voice/take'
 
 // B6 (2026-11-04): per-article closing move, drawn deterministically from the
 // jobId. A fixed "allowed closer" rule made the model end EVERY article the
@@ -69,6 +72,8 @@ export interface PipelineContext {
   writingStyleCache?: string | null
   /** B16: People Also Ask candidates fetched once per job (null = fetch failed). */
   paaCache?: PaaCandidates | null
+  /** Author voice (2026-11-26): set when this job runs on the voice path (article-pipeline/voice/run.ts). */
+  voice?: VoiceContext | null
 }
 
 // ── Lazy loaders ────────────────────────────────────────────────────────────
@@ -294,6 +299,25 @@ async function resolveVariable(name: string, ctx: PipelineContext): Promise<stri
 
     case 'writing_style':
       return getWritingStyle(ctx)
+
+    // ── Author voice (article-pipeline/voice/) ────────────────────────────────
+    case 'jurisdiction': {
+      const bs = await getBrandSettings(ctx)
+      return jurisdictionFor(bs?.geolocation)
+    }
+    case 'author_voice':
+      return ctx.voice?.full ?? ''
+    case 'author_take':
+      return ctx.voice?.takeText ?? ''
+    case 'core_facts':
+      return ctx.voice?.coreText ?? ''
+    case 'author_convictions':
+      return ctx.voice?.take ? takeBeliefs(ctx.voice.take, ctx.voice.profile) : '(the author has stated no position on this topic)'
+    // The author's own way of beginning and ending where their material shows one; the drawn house pattern otherwise.
+    case 'voice_opening':
+      return ctx.voice?.take?.opening || drawOpeningDirective(ctx.jobId).replace(/^OPENING MOVE:\s*/i, '')
+    case 'voice_closing':
+      return ctx.voice?.take?.closing || drawCloserDirective(ctx.jobId)
 
     case 'closer_directive':
       return drawCloserDirective(ctx.jobId)

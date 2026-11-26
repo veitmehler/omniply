@@ -28,6 +28,7 @@
  * Everything here is fail-soft: any network or parse failure leaves the fact
  * as it was (minus an unverifiable URL) and never throws.
  */
+import { siteOf } from './voice/facts'
 import { logger } from '../lib/logger'
 import { fetchPageTitle, isCitable, sourceTier } from './citation-policy'
 
@@ -756,6 +757,33 @@ export function anchorPairs(html: string, sources: FactSource[]): AnchorPair[] {
 /** The most citation links one article carries (Veit, 2026-11-25). A ceiling, not a target. */
 export const MAX_ARTICLE_LINKS = 12
 
+/**
+ * At most two links to one site in an article (Veit, 2026-11-25: "we don't need to link to the same
+ * authority site over and over again, we should have variety"). A site's subdomains count together.
+ */
+export const MAX_LINKS_PER_SITE = 2
+
+/** A paper index lists publications from thousands of journals; each paper is its own source, so the limit does not pool them. */
+const PAPER_INDEX_RE = /(^|\.)ncbi\.nlm\.nih\.gov$|^(dx\.)?doi\.org$|(^|\.)europepmc\.org$/i
+
+const siteOfUrl = (url: string): string => {
+  try {
+    const host = new URL(url).hostname
+    return PAPER_INDEX_RE.test(host) ? url : siteOf(host)
+  } catch {
+    return ''
+  }
+}
+
+/**
+ * A sentence in which the author speaks about their own work ("I check...", "We start with...",
+ * "In my practice..."). It is their statement, not a finding, and it never carries a citation link:
+ * a link there reads as if a hospital website vouched for what this practice does.
+ */
+export function isOwnPracticeSentence(text: string): boolean {
+  return /^\s*(?:["“(]\s*)?(?:I|I'm|I’m|I've|I’ve|I'd|I’d|I'll|I’ll|We|We're|We’re|We've|We’ve|We'd|We’d|We'll|We’ll|My|Our|(?:In|At|Here at|Here in) (?:my|our)\b)(?=[\s,'’])/.test(text)
+}
+
 /** Which <h2> section a position in the article falls in (0 = before the first heading). */
 function sectionAt(html: string, pos: number): number {
   let n = 0
@@ -775,6 +803,12 @@ function sectionAt(html: string, pos: number): number {
 export function capAnchors(html: string, chosen: AnchorPair[], slots: number): AnchorPair[] {
   if (slots <= 0) return []
   if (chosen.length <= slots) return chosen
+  return rankAnchors(html, chosen).slice(0, slots)
+}
+
+/** All the pairs in the order the cap would keep them: figures first, spread over the sections, then by strength. */
+export function rankAnchors(html: string, chosen: AnchorPair[]): AnchorPair[] {
+  const slots = chosen.length
   const perSection = new Map<number, number>()
   const section = (p: AnchorPair) => sectionAt(html, p.sentence.start)
   const kept: AnchorPair[] = []
@@ -806,13 +840,26 @@ export function placeAnchors(html: string, sources: FactSource[], pairs: AnchorP
   for (const p of pairs) {
     const s = sources[p.si]
     if (usedUrls.has(s.url)) continue
+    if (isOwnPracticeSentence(p.sentence.text)) continue
     if (usedSpans.some(([a, b]) => p.sentence.start < b && p.sentence.end > a)) continue
     usedSpans.push([p.sentence.start, p.sentence.end])
     usedUrls.add(s.url)
     chosen.push(p)
   }
-  const existing = (html.match(/<a\b[^>]*href="https?:\/\//gi) ?? []).length
-  const kept = capAnchors(html, chosen, cap - existing)
+  const existingLinks = [...html.matchAll(/<a\b[^>]*href="(https?:\/\/[^"]+)"/gi)].map((m) => m[1])
+  // The cap picks which links stay; the site limit is applied to its choice in order, and a link it
+  // refuses frees the slot for the next one.
+  const perSite = new Map<string, number>()
+  for (const u of existingLinks) perSite.set(siteOfUrl(u), (perSite.get(siteOfUrl(u)) ?? 0) + 1)
+  const slots = cap - existingLinks.length
+  const kept: AnchorPair[] = []
+  for (const p of rankAnchors(html, chosen)) {
+    if (kept.length >= slots) break
+    const site = siteOfUrl(sources[p.si].url)
+    if (site && (perSite.get(site) ?? 0) >= MAX_LINKS_PER_SITE) continue
+    if (site) perSite.set(site, (perSite.get(site) ?? 0) + 1)
+    kept.push(p)
+  }
 
   const placed = kept.map((p) => sources[p.si].url)
   const placedUrls = new Set(placed)
