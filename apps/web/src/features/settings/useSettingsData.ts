@@ -51,6 +51,7 @@ export function useSettingsData() {
   const [defaultAuthorLinkedIn, setDefaultAuthorLinkedIn]   = useState('')
   const [defaultAuthorJobTitle, setDefaultAuthorJobTitle]   = useState('')
   const [defaultAuthorAlumniOf, setDefaultAuthorAlumniOf]   = useState('')
+  const [defaultAuthorOwnWork, setDefaultAuthorOwnWork]     = useState('')
   const [schemaArticleType, setSchemaArticleType]           = useState('')
 
   // Article Brand Profile — organization / schema markup fields
@@ -147,6 +148,7 @@ export function useSettingsData() {
           if (brand.defaultAuthorLinkedIn) setDefaultAuthorLinkedIn(brand.defaultAuthorLinkedIn)
           if (brand.defaultAuthorJobTitle) setDefaultAuthorJobTitle(brand.defaultAuthorJobTitle)
           if (brand.defaultAuthorAlumniOf) setDefaultAuthorAlumniOf(brand.defaultAuthorAlumniOf)
+          if (brand.defaultAuthorOwnWork) setDefaultAuthorOwnWork(brand.defaultAuthorOwnWork)
           if (brand.schemaArticleType)    setSchemaArticleType(brand.schemaArticleType)
           // Organization fields
           if (brand.organizationName)     setOrganizationName(brand.organizationName)
@@ -394,6 +396,7 @@ export function useSettingsData() {
           defaultAuthorLinkedIn: defaultAuthorLinkedIn.trim() || null,
           defaultAuthorJobTitle: defaultAuthorJobTitle.trim() || null,
           defaultAuthorAlumniOf: defaultAuthorAlumniOf.trim() || null,
+          defaultAuthorOwnWork: defaultAuthorOwnWork.trim() || null,
           schemaArticleType: schemaArticleType.trim() || null,
           organizationName: organizationName || null,
           organizationWebsite: organizationWebsite || null,
@@ -540,6 +543,7 @@ export function useSettingsData() {
     defaultAuthorLinkedIn, setDefaultAuthorLinkedIn,
     defaultAuthorJobTitle, setDefaultAuthorJobTitle,
     defaultAuthorAlumniOf, setDefaultAuthorAlumniOf,
+    defaultAuthorOwnWork, setDefaultAuthorOwnWork,
     schemaArticleType, setSchemaArticleType,
     // Brand profile — organization / schema markup
     organizationName, setOrganizationName,
