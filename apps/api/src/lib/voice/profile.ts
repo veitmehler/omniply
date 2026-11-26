@@ -136,8 +136,19 @@ export function prepareMaterial(m: AuthorMaterial): AuthorMaterial {
   // direction to the speaker. Neither is the author's wording.
   const tidy = (t: string) =>
     t
-      .replace(/^[ \t]*[•▪◦·■●□○→][ \t]*/gm, '')
-      .replace(/[ \t]+[•▪◦■●□○][ \t]+/g, ' ')
+      // A list mark is never a word, wherever it sits and whatever space surrounds it.
+      .replace(/^[^\S\n]*[•▪◦·■●□○→][^\S\n]*/gm, '')
+      .replace(/[^\S\n]*[•▪◦■●□○][^\S\n]*/g, ' ')
+      // A heading inside the piece ("The Setup — I Had Everything") is layout too: a short line that
+      // ends without punctuation. Left in, it lands in the middle of a story cut from the lines around it.
+      .split('\n')
+      .filter((line) => {
+        const l = line.trim()
+        if (!l) return true
+        const words = l.split(/\s+/).length
+        return !(words <= 9 && !/[.!?…:;,"”’)]$/.test(l) && /^[A-Z0-9“"]/.test(l))
+      })
+      .join('\n')
       .replace(/\[[^\]\n]{0,240}\]/g, ' ')
       .replace(/\((?:[A-Z]{3,}[ .,]*)+\)/g, ' ')
       .replace(/[ \t]{2,}/g, ' ')

@@ -82,6 +82,7 @@ Measurements are written in the units your own readers use: pounds, miles, inche
 - Lists only for things a reader gathers or does, formal requirements, or specifications. Concepts, benefits, and reasons stay in prose.
 - Bold sparingly. No fact stated twice in different sections; refer back instead.
 - No summary paragraph, no "in conclusion" move, and no paragraph anywhere that describes the article itself.
+- A scene, an anecdote or a memory of yours appears only if it is a story given in Your Take. Where a direction below calls for one and none is given, begin from the reader's own everyday experience of the topic instead.
 - The opening: {{voice_opening}}
 - The ending: {{voice_closing}}
 
@@ -167,6 +168,7 @@ Rules:
 - A story is chosen only if it truly bears on the topic. Most topics have none.
 - For each section heading, one sentence on how this person would come at it: where they would agree or part ways with the usual advice, what they would stress. Leave a section out when their material gives no angle on it.
 - "opening" and "closing" each give one sentence of direction for how this person would begin and end THIS article, following how they begin and end things themselves where their material shows it. Describe the move; do not write the sentence. Leave empty when their material shows no habit.
+- The writer may not invent a scene, an anecdote or a memory for this person. If their habit is to begin with a moment from their own life, direct the opening to the chosen story (S<n>) when one bears on the topic; when none does, direct an opening that starts from the READER'S everyday experience of the topic, in this person's manner. Never ask for a personal anecdote that is not one of the listed stories.
 
 Return ONLY a JSON object.`
 

@@ -34,6 +34,15 @@ describe('fixPracticeName', () => {
 })
 
 describe('prepareMaterial', () => {
+  it('takes the headings and list marks of an outline out of the piece, and keeps the fragments that are the author\'s', () => {
+    const piece = 'THE DRUG OF LOVE\nACT 1 — THE QUESTION\nWarm, intimate. Take your time.\nThe Setup — I Had Everything\n\u00a0• I started in consulting. High-flying job.\n■ The apartment. The salary.\n"Just get through this one." • So I stayed.\nAnd yet.'
+    const out = prepareMaterial({ ...material, sample: { text: piece } }).sample!.text
+    expect(out).not.toMatch(/THE DRUG OF LOVE|ACT 1|The Setup|[•■]/)
+    expect(out).toContain('I started in consulting. High-flying job.')
+    expect(out).toContain('The apartment. The salary.')
+    expect(out).toContain('"Just get through this one." So I stayed.')
+    expect(out).toContain('And yet.')
+  })
   it('cleans spoken answers, leaves written ones as written, and takes bullet marks out of the piece', () => {
     const spoken = prepareMaterial({ ...material, answers: { q_line: 'Um, I I refuse.' }, sample: { text: '• First point.\n■ Second point (SHOW) here. • Third. [PAUSE. Move to the easel.]\nShe (my aunt) laughed.' } })
     expect(spoken.answers.q_line).toBe('I refuse.')
