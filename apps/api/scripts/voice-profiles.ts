@@ -58,11 +58,13 @@ async function build(slug: string, given: AuthorMaterial, extra: Record<string, 
 async function main() {
   mkdirSync(OUT, { recursive: true })
 
-  const d = JSON.parse(readFileSync(`${DIR}/dasha-raw.json`, 'utf8')) as { spoken: Partial<Record<QuestionId, string>>; writingSample: string; brand: AuthorMaterial['brand'] }
+  const d = JSON.parse(readFileSync(`${DIR}/dasha-raw.json`, 'utf8')) as { spoken: Partial<Record<QuestionId, string>>; writingSample: string; brand: AuthorMaterial['brand']; ownWork?: string }
   await build('dasha-maximov', {
     author: { name: 'Dasha Maximov', practice: 'Whealth Recovery Center', industry: 'Wellness & Recovery', location: 'Cabarete, Dominican Republic' },
     brand: { businessDescription: d.brand.businessDescription, who: d.brand.who, ourExperience: d.brand.ourExperience },
     answers: d.spoken,
+    // The settings line "What the author does personally", as stored on the account.
+    ownWork: d.ownWork ?? null,
     sample: { text: d.writingSample, title: 'The Drug of Love (talk outline)' },
   })
 

@@ -227,7 +227,7 @@ export function profilePrompt(m: AuthorMaterial): string {
     `You are preparing a record of how one person thinks and writes, so that later writing can be done as them. The record holds THEIR OWN WORDS. You point at passages; you never rephrase them.\n\n` +
     `PERSON: ${m.author.name}, ${m.author.industry}, ${m.author.practice}, ${m.author.location}.\n` +
     (m.brand.ourExperience ? `About the practice (written by others, context only): ${m.brand.ourExperience}\n` : '') +
-    (m.ownWork?.trim() ? `What they do themselves and what their team does (from the account, context only): ${m.ownWork.trim()}\n` : '') +
+    (m.ownWork?.trim() ? `What they do themselves and what their team does (from the account, context only, never to be quoted): ${m.ownWork.trim()}\n` : '') +
     `\nTHEIR ANSWERS${m.derivedAnswers ? ' (taken from their own writing)' : ' (spoken, transcribed)'}:\n${answers}\n\n` +
     (m.sample ? `A PIECE THEY WROTE${m.sample.title ? ` ("${m.sample.title}")` : ''}:\n${m.sample.text.slice(0, 16000)}\n\n` : 'They gave no written piece.\n\n') +
     `Return ONLY this JSON object. Every "quote", "example", "starts" and "ends" must be copied character for character from the material above. If you cannot quote it, leave it out.\n` +
@@ -318,8 +318,11 @@ export function assembleProfile(m: AuthorMaterial, rawJson: string): VoiceProfil
   if (m.sample?.text.trim()) ownWords.push({ source: 'sample', text: m.sample.text.trim() })
   const measured = { answers: measure(Object.values(m.answers).join('\n')), sample: measure(m.sample?.text ?? '') }
 
-  const does = strings(raw.does).filter(keep)
-  const teamDoes = strings(raw.team_does).filter(keep)
+  // The settings line is the account's statement, not something the author said in their material. A builder
+  // that quotes it back is not inventing, so those are skipped quietly instead of being listed as dropped.
+  const fromSettings = (q: string) => !!m.ownWork?.trim() && isVerbatim(q, m.ownWork)
+  const does = strings(raw.does).filter((q) => !fromSettings(q)).filter(keep)
+  const teamDoes = strings(raw.team_does).filter((q) => !fromSettings(q)).filter(keep)
   const opening = edge(raw.opening)
   const closing = edge(raw.closing)
   // A turn of phrase can be two words, so it is checked directly; isVerbatim wants three.

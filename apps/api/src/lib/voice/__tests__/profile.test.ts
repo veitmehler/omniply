@@ -137,6 +137,11 @@ describe('assembleProfile', () => {
     expect(withLine.identity.stated).toBe('I see every new client myself. Joao does the massage.')
     expect(profileToMarkdown(withLine)).toContain('From the account settings: I see every new client myself.')
     expect(profilePrompt({ ...material, ownWork: 'Joao does the massage.' })).toContain('Joao does the massage.')
+    // The builder quoting the settings line back is neither kept as the author's words nor counted as invented.
+    const echoed = assembleProfile({ ...material, ownWork: 'I see every new client myself. Joao does the massage.' }, JSON.stringify({ does: ['I see every new client myself.'], team_does: ['Joao does the massage.'] }))
+    expect(echoed.identity.does).toEqual([])
+    expect(echoed.identity.teamDoes).toEqual([])
+    expect(echoed.basis.quotesDropped).toBe(0)
   })
   it('survives a reply that is not JSON', () => {
     const empty = assembleProfile(material, 'I could not do this.')
