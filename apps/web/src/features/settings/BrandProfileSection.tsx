@@ -38,6 +38,7 @@ export function BrandProfileSection({ settings }: { settings: SettingsData }) {
     defaultAuthorLinkedIn, setDefaultAuthorLinkedIn,
     defaultAuthorJobTitle, setDefaultAuthorJobTitle,
     defaultAuthorAlumniOf, setDefaultAuthorAlumniOf,
+    defaultAuthorOwnWork, setDefaultAuthorOwnWork,
     schemaArticleType, setSchemaArticleType,
     organizationName, setOrganizationName,
     organizationWebsite, setOrganizationWebsite,
@@ -356,6 +357,23 @@ export function BrandProfileSection({ settings }: { settings: SettingsData }) {
             />
             <p className="text-xs text-muted-foreground mt-1">Added to the author&apos;s schema as <code>alumniOf</code>.</p>
           </div>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-card-foreground mb-1">
+            What the author does personally
+          </label>
+          <textarea
+            value={defaultAuthorOwnWork}
+            onChange={(e) => setDefaultAuthorOwnWork(e.target.value)}
+            rows={4}
+            maxLength={1200}
+            placeholder="e.g. I see every new patient myself and do all the adjustments. Our massage therapist, Sam, does the soft-tissue work. The front desk books and follows up."
+            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+          />
+          <p className="text-xs text-muted-foreground mt-1">
+            Articles are written in the author&apos;s own voice, as &ldquo;I&rdquo;. Say which work the author does with patients or clients themselves and which work others on the team do, so an article never has the author describe a colleague&apos;s work as their own.
+          </p>
         </div>
 
         <div>

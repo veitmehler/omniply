@@ -1467,6 +1467,9 @@ model BrandSettings {
   defaultAuthorLinkedIn String? // personal LinkedIn URL for schema + author profile
   defaultAuthorJobTitle String? // e.g. "Chiropractor" — author.jobTitle in JSON-LD
   defaultAuthorAlumniOf String? // institution name — author.alumniOf in JSON-LD
+  // What the author does with patients or clients themselves, and what others on the team do. Articles are
+  // written in the first person as the author; without this they can claim a colleague's work as their own.
+  defaultAuthorOwnWork  String? @db.Text
   schemaArticleType     String? // override auto-derived @type, e.g. "MedicalArticle"
 
   // Organization / schema markup fields (used in Wave 4)
