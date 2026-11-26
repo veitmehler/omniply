@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { coreStats, factsForSelector, hasFigure, outlineH2s, parseResearchFacts, parseSelection, renderCore, selectCore, siteOf } from '../facts'
+import { coreStats, factsForSelector, hasFigure, outlineH2s, parseResearchFacts, parseSelection, renderCore, restatesFact, selectCore, siteOf } from '../facts'
 import { ownStories, parseTake, renderTake, takeBeliefs, takeMaterial } from '../take'
 import { markdownToHtml } from '../markdown'
 import { applyFixes, draftSentences, fixAcceptable, fixRequests, locateClaim, parseFactCheck, parseFixes } from '../fact-fix'
@@ -265,6 +265,20 @@ describe('belief compliance check', () => {
     expect(r.html).toContain('I believe the body heals itself. I have seen many people with headaches do well under chiropractic care.')
     expect(r.open.map((o) => o.why)).toEqual(['the sentence was not found word for word in the article', 'the rewrite adds a figure, a link or a stronger claim, or is much longer'])
     expect(r.changes[0].before).toBe('Chiropractic will cure your headaches for good!')
+  })
+  it('never turns a restated finding into a first-person claim, and still lets an unmarked conviction gain its "I"', () => {
+    const html = '<p>Spinal manipulation improves joint mobility and muscle flexibility in everyone. Chiropractic will fix your posture for life.</p>'
+    const isFinding = (s: string) => restatesFact(s, [{ text: 'Spinal manipulation improves joint mobility, muscle flexibility and coordination.' }])
+    const findings = [
+      { sentence: 'Spinal manipulation improves joint mobility and muscle flexibility in everyone.', problem: 'absolute', rewrite: 'We find spinal manipulation usually improves joint mobility and muscle flexibility.' },
+      { sentence: 'Chiropractic will fix your posture for life.', problem: 'promise', rewrite: 'I have seen posture change for the better under chiropractic care.' },
+    ]
+    const r = applyBeliefFindings(html, findings, { isFinding })
+    expect(r.applied).toBe(1)
+    expect(r.open[0].why).toBe('the rewrite turns a restated finding into a first-person claim')
+    expect(r.html).toContain('Spinal manipulation improves joint mobility and muscle flexibility in everyone. I have seen posture change')
+    const general = applyBeliefFindings(html, [{ ...findings[0], rewrite: 'Spinal manipulation often improves joint mobility and muscle flexibility.' }], { isFinding })
+    expect(general.applied).toBe(1)
   })
   it('reads the article as plain text under its headings', () => {
     expect(articleForCheck(HTML)).toContain('## What Do I Check First?')

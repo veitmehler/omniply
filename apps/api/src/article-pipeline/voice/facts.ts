@@ -109,6 +109,11 @@ function overlap(a: string, b: string): number {
   return n / Math.min(x.size, y.size)
 }
 
+/** Does this sentence restate one of the researched facts? Shared words, measured against the shorter of the two. */
+export function restatesFact(sentence: string, facts: Array<{ text: string }>, threshold = 0.6): boolean {
+  return facts.some((x) => overlap(sentence, x.text) >= threshold)
+}
+
 /** What the selector is shown: every fact with its number, grouped as research gathered it. */
 export function factsForSelector(facts: ResearchFact[]): string {
   const lines: string[] = []

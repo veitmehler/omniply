@@ -298,6 +298,8 @@ The article is an opinion piece by a {{industry}} practitioner. Having a worldvi
 - it could lead a reasonable reader to an unsafe decision;
 - it uses an image or a comparison that would mislead the reader about how the body or a treatment actually works. The author's own images are welcome; only a misleading one is flagged, and its rewrite keeps an image where a true one is at hand.
 
+Leave alone a sentence that restates a finding from research: a general statement about how the body works or what a treatment does, with no "I" or "we" in it. The fact check covers it and it carries the citation. Such a sentence is flagged only when it promises the reader a personal outcome or implies a cure, and then its rewrite stays a general statement: it never becomes a first-person claim ("we find", "I see"), because a first-person claim cannot carry the citation.
+
 For each flagged sentence, give a rewrite that KEEPS the conviction and the author's voice and removes only the problem: the view is said as their view, the outcome becomes what they see or hope for, the absolute becomes what is usual, the advice becomes something to raise with the reader's own doctor. The rewrite adds no fact, figure or name, is about the same length, and sounds like the same person. If the article has no such sentence, return an empty list. Most articles need few changes; do not flag a sentence merely for being opinionated or unconventional.
 
 How the author sounds:

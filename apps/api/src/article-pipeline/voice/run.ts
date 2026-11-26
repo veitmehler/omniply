@@ -28,7 +28,7 @@ import { bannedPhraseIn, type EditorIssue, type ParagraphRewriter, type Sentence
 import type { HedgeRewriter } from '../../lib/text/hedge-gate'
 import type { PipelineContext } from '../variable-resolver'
 import type { StepRunResult } from '../step-runner'
-import { coreStats, factsForSelector, outlineH2s, parseResearchFacts, parseSelection, renderCore, selectCore } from './facts'
+import { coreStats, factsForSelector, outlineH2s, parseResearchFacts, parseSelection, renderCore, restatesFact, selectCore } from './facts'
 import { parseTake, renderTake, takeBeliefs, takeMaterial, type Take } from './take'
 import { applyFixes, fixRequests, parseFactCheck, parseFixes } from './fact-fix'
 import { markdownToHtml } from './markdown'
@@ -283,7 +283,8 @@ export async function runBeliefCheck(ctx: PipelineContext, voice: VoiceContext, 
       },
       { userId: ctx.userId, jsonMode: true },
     )
-    const r = applyBeliefFindings(html, parseBeliefFindings(run.content))
+    const researched = parseResearchFacts(ctx.completedSteps.get(8), ctx.completedSteps.get(7))
+    const r = applyBeliefFindings(html, parseBeliefFindings(run.content), { isFinding: (s) => restatesFact(s, researched) })
     await saveStep(ctx, VOICE_STEPS.beliefs, 'belief_compliance_check', JSON.stringify({ jurisdiction, found: r.found, applied: r.applied, changes: r.changes, open: r.open }), usageOf(run.response, started))
     logger.info({ jobId: ctx.jobId, found: r.found, applied: r.applied, open: r.open.length }, '[voice] belief compliance check')
     return r.html

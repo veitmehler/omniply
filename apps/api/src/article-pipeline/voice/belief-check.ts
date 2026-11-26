@@ -14,6 +14,7 @@
  * sentence it can find word for word and only on a rewrite that adds nothing.
  */
 import { editAcceptable, findQuoted, htmlSentences, replaceSentences, type HtmlSentence } from './sentence-edits'
+import { hasPresence } from '../../lib/text/editor-pass'
 
 export interface BeliefFinding {
   sentence: string
@@ -41,7 +42,7 @@ export interface BeliefCheckResult {
   changes: Array<{ before: string; after: string; problem: string }>
 }
 
-export function applyBeliefFindings(html: string, findings: BeliefFinding[]): BeliefCheckResult {
+export function applyBeliefFindings(html: string, findings: BeliefFinding[], opts: { isFinding?: (sentence: string) => boolean } = {}): BeliefCheckResult {
   const sentences = htmlSentences(html)
   const edits: Array<{ sentence: HtmlSentence; rewrite: string }> = []
   const open: BeliefCheckResult['open'] = []
@@ -54,6 +55,12 @@ export function applyBeliefFindings(html: string, findings: BeliefFinding[]): Be
     }
     if (at.hasLink) {
       open.push({ ...f, why: 'the sentence carries a citation link' })
+      continue
+    }
+    // A restated research finding must stay a general statement: as "We find…" it could no longer carry its
+    // citation. An unmarked conviction is the opposite case, and gaining its "I believe" is the point.
+    if (opts.isFinding?.(at.text) && !hasPresence(at.text) && hasPresence(f.rewrite)) {
+      open.push({ ...f, why: 'the rewrite turns a restated finding into a first-person claim' })
       continue
     }
     if (!editAcceptable(at.text, f.rewrite, 1.6)) {
