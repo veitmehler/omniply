@@ -130,6 +130,14 @@ describe('assembleProfile', () => {
     expect(p.basis.sampleWords).toBeGreaterThan(20)
     expect(p.basis.derivedAnswers).toBe(false)
   })
+  it('carries the statement in the account of what the author does personally', () => {
+    expect(p.identity.stated).toBeNull()
+    expect(profileToMarkdown(p)).toContain('do not say what the author does personally')
+    const withLine = assembleProfile({ ...material, ownWork: ' I see every new client myself. Joao does the massage. ' }, raw)
+    expect(withLine.identity.stated).toBe('I see every new client myself. Joao does the massage.')
+    expect(profileToMarkdown(withLine)).toContain('From the account settings: I see every new client myself.')
+    expect(profilePrompt({ ...material, ownWork: 'Joao does the massage.' })).toContain('Joao does the massage.')
+  })
   it('survives a reply that is not JSON', () => {
     const empty = assembleProfile(material, 'I could not do this.')
     expect(empty.beliefs).toEqual([])

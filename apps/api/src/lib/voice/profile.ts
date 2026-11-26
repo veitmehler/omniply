@@ -34,6 +34,8 @@ export interface AuthorMaterial {
   author: { name: string; practice: string; industry: string; location: string }
   brand: { businessDescription?: string | null; who?: string | null; ourExperience?: string | null }
   answers: Partial<Record<QuestionId, string>>
+  /** The settings line "What the author does personally" (brand_settings.defaultAuthorOwnWork), when filled in. */
+  ownWork?: string | null
   /** The one piece of their own writing, when they gave one. */
   sample: { text: string; title?: string } | null
   /** True when the answers were not spoken by the author but drawn from their writing (a simulated onboarding). */
@@ -57,6 +59,11 @@ export interface VoiceProfile {
   }
   identity: {
     role: string
+    /**
+     * The account's own statement of what the author does with patients or clients and what the team does.
+     * This is the authority on the question; the quotes below only show how the author talks about it.
+     */
+    stated: string | null
     /** What the author says they do themselves, in their words. */
     does: string[]
     /** What they say the team or a colleague does. */
@@ -220,6 +227,7 @@ export function profilePrompt(m: AuthorMaterial): string {
     `You are preparing a record of how one person thinks and writes, so that later writing can be done as them. The record holds THEIR OWN WORDS. You point at passages; you never rephrase them.\n\n` +
     `PERSON: ${m.author.name}, ${m.author.industry}, ${m.author.practice}, ${m.author.location}.\n` +
     (m.brand.ourExperience ? `About the practice (written by others, context only): ${m.brand.ourExperience}\n` : '') +
+    (m.ownWork?.trim() ? `What they do themselves and what their team does (from the account, context only): ${m.ownWork.trim()}\n` : '') +
     `\nTHEIR ANSWERS${m.derivedAnswers ? ' (taken from their own writing)' : ' (spoken, transcribed)'}:\n${answers}\n\n` +
     (m.sample ? `A PIECE THEY WROTE${m.sample.title ? ` ("${m.sample.title}")` : ''}:\n${m.sample.text.slice(0, 16000)}\n\n` : 'They gave no written piece.\n\n') +
     `Return ONLY this JSON object. Every "quote", "example", "starts" and "ends" must be copied character for character from the material above. If you cannot quote it, leave it out.\n` +
@@ -322,7 +330,7 @@ export function assembleProfile(m: AuthorMaterial, rawJson: string): VoiceProfil
     version: 1,
     author: m.author,
     basis: { spokenWords: wordCount(Object.values(m.answers).join('\n')), sampleWords: m.sample ? wordCount(m.sample.text) : 0, derivedAnswers: !!m.derivedAnswers, quotesDropped: droppedList.length, dropped: droppedList },
-    identity: { role: String(raw.role ?? '').trim().slice(0, 120), does, teamDoes },
+    identity: { role: String(raw.role ?? '').trim().slice(0, 120), stated: m.ownWork?.trim() || null, does, teamDoes },
     beliefs,
     stories,
     manner: { habits, phrases, opening, closing, reader: String(raw.reader ?? '').trim().slice(0, 200), measured, ownWords },
@@ -381,7 +389,8 @@ export function profileToMarkdown(p: VoiceProfile): string {
   out.push(`- Passages the builder pointed at that were not found word for word, and were left out: ${p.basis.quotesDropped}`)
   for (const d of p.basis.dropped) out.push(`  - "${d}"`)
   out.push(`\n## Who they are and what they do\n`)
-  out.push(p.identity.does.length ? p.identity.does.map((d) => `- "${d}"`).join('\n') : '- Their material does not say what they personally do.')
+  out.push(p.identity.stated ? `From the account settings: ${p.identity.stated}\n` : 'The account settings do not say what the author does personally. Until they do, "I" is kept for what the author believes, saw and decided, and treatment is written as "we".\n')
+  out.push(p.identity.does.length ? `In their own words:\n` + p.identity.does.map((d) => `- "${d}"`).join('\n') : '- Their material has no sentence about what they personally do.')
   if (p.identity.teamDoes.length) out.push(`\nWhat they say the team does:\n` + p.identity.teamDoes.map((d) => `- "${d}"`).join('\n'))
   out.push(`\n## What they believe\n`)
   for (const k of Object.keys(kinds) as BeliefKind[]) {
