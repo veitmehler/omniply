@@ -3,6 +3,7 @@ import { fetchPaaCandidates, formatPaaCandidates, type PaaCandidates } from './f
 import { prisma, brandSettingsForUser } from '@omniply/shared'
 import { getGlobalExcludedKeywords } from './keyword-validator'
 import { seededRng } from './enrichment/plain-language'
+import { jurisdictionFor } from './jurisdiction'
 
 // B6 (2026-11-04): per-article closing move, drawn deterministically from the
 // jobId. A fixed "allowed closer" rule made the model end EVERY article the
@@ -294,6 +295,13 @@ async function resolveVariable(name: string, ctx: PipelineContext): Promise<stri
 
     case 'writing_style':
       return getWritingStyle(ctx)
+
+    // The writer's claims rules name "the advertising regulator in {{jurisdiction}}". The placeholder was
+    // never filled (found 2026-11-26); it comes from the practice's location.
+    case 'jurisdiction': {
+      const bs = await getBrandSettings(ctx)
+      return jurisdictionFor(bs?.geolocation)
+    }
 
     case 'closer_directive':
       return drawCloserDirective(ctx.jobId)
