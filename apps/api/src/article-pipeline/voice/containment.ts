@@ -14,6 +14,12 @@
  *
  * The take names the home section and the author's own terms. The writer is
  * told the rule; this module makes it hold, one sentence at a time.
+ *
+ * Veit, later on 2026-11-27, after the re-run: the articles read "sanitized",
+ * with the author's own words scrubbed out. Containment to three places is now
+ * OFF unless asked for (`zones`); it stays in the code for a client under a
+ * strict regulator. What always holds: a term of the author's philosophy is
+ * never defined as plain fact, in the article or by the explanation step.
  */
 import { hasPresence } from '../../lib/text/editor-pass'
 import { DELETE_MARK, editAcceptable, htmlSentences, replaceSentences, type HtmlSentence } from './sentence-edits'
@@ -78,7 +84,7 @@ export interface ContainmentPlan {
  * home section is the one the take named when the article kept the outline's
  * sequence; otherwise the section that carries most of the terms.
  */
-export function planContainment(html: string, terms: string[], homeIndex: number | null, outlineSections: number, ordinary: ReadonlySet<string> = new Set()): ContainmentPlan {
+export function planContainment(html: string, terms: string[], homeIndex: number | null, outlineSections: number, ordinary: ReadonlySet<string> = new Set(), zones = false): ContainmentPlan {
   const plan: ContainmentPlan = { home: null, outside: [], defined: [], carrying: 0 }
   if (!terms.length) return plan
   const sentences = htmlSentences(html)
@@ -105,7 +111,7 @@ export function planContainment(html: string, terms: string[], homeIndex: number
   plan.home = home
   for (const c of carriers) {
     const sec = sectionOf(c.s)
-    const allowed = sec < 0 || sec === home || closing.has(c.s.block)
+    const allowed = !zones || sec < 0 || sec === home || closing.has(c.s.block)
     if (!allowed) plan.outside.push({ sentence: c.s, term: c.term })
     else if (definesTerm(c.s.text, terms) && !hasPresence(c.s.text)) plan.defined.push({ sentence: c.s, term: c.term })
   }
@@ -135,8 +141,8 @@ export interface ContainmentResult {
 }
 
 /** Make the rule hold. A rewrite that still carries a term, or adds anything, is not used and the sentence stays. */
-export async function contain(html: string, terms: string[], homeIndex: number | null, outlineSections: number, rewrite: ContainRewriter, ordinary: ReadonlySet<string> = new Set()): Promise<ContainmentResult> {
-  const plan = planContainment(html, terms, homeIndex, outlineSections, ordinary)
+export async function contain(html: string, terms: string[], homeIndex: number | null, outlineSections: number, rewrite: ContainRewriter, ordinary: ReadonlySet<string> = new Set(), zones = false): Promise<ContainmentResult> {
+  const plan = planContainment(html, terms, homeIndex, outlineSections, ordinary, zones)
   const res: ContainmentResult = { html, home: plan.home, carrying: plan.carrying, outside: plan.outside.length, moved: 0, removed: 0, defined: plan.defined.length, restated: 0, llmCalls: 0, cost: 0, changes: [] }
   const all = htmlSentences(html)
   const beforeOf = (s: HtmlSentence) => {

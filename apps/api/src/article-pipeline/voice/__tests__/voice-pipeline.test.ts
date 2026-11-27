@@ -286,6 +286,21 @@ describe('belief compliance check', () => {
   })
 })
 
+describe('advice against a medication', () => {
+  const html = '<h2>What Helps?</h2><p>Rest briefly. Ibuprofen should not be used in the first 48 hours after an initial injury, as it may delay healing. Spinal manipulation improves joint mobility.</p>'
+  const isFinding = () => true
+  it('is softened even where the sentence restates research', () => {
+    const r = applyBeliefFindings(html, [{ sentence: 'Ibuprofen should not be used in the first 48 hours after an initial injury, as it may delay healing.', problem: 'Tells the reader to avoid a medication', rewrite: 'Whether an anti-inflammatory suits you in the first 48 hours is a question I would put to your GP or pharmacist.' }], { isFinding })
+    expect(r.applied).toBe(1)
+    expect(r.html).toContain('a question I would put to your GP or pharmacist')
+  })
+  it('while a restated finding still does not become a first-person claim for any other reason', () => {
+    const r = applyBeliefFindings(html, [{ sentence: 'Spinal manipulation improves joint mobility.', problem: 'States a treatment outcome as an absolute fact', rewrite: 'We find spinal manipulation usually improves joint mobility.' }], { isFinding })
+    expect(r.applied).toBe(0)
+    expect(r.open[0].why).toContain('first-person')
+  })
+})
+
 describe('wording limits relative to the author', () => {
   const rewriter = async (sentence: string) => ({ text: sentence.replace(/\?$/, '.').replace(/!$/, '.'), cost: 0.001 })
   it('counts a habit against the author\'s own rate and leaves the section opener and linked sentences alone', () => {

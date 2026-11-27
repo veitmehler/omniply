@@ -66,6 +66,10 @@ describe('a fact in the source\'s wording', () => {
     ])
     expect(l[0].run).toBe(14)
   })
+  it('leaves the items of a list alone', () => {
+    const md = 'Get help today for any of these:\n\n- numbness in or around your back passage or buttocks\n- Severe pain and weakness that spreads into one or both legs, making it hard to walk or get out of a chair, indicates a need for emergency medical attention.\n'
+    expect(liftedSentences(md, FACTS)).toEqual([])
+  })
   it('accepts a restatement that keeps the fact and refuses one that changes it', () => {
     const o = 'Pain is often worse in a seated position because the pressure on the nerve root rises by approximately 40%.'
     expect(ownWordsAcceptable(o, 'When you sit, the pressure on that nerve root goes up by about 40%, which is why the pain is often sharper in a chair.', FACTS[1])).toBe(true)
@@ -149,14 +153,14 @@ describe('belief language is contained', () => {
     expect(usesTerm('Innate does the rest.', ['Innate'], ordinary)).toBe('Innate')
   })
   it('allows the opening, the close and the home section, and flags the rest', () => {
-    const plan = planContainment(HTML, TERMS, 1, 3)
+    const plan = planContainment(HTML, TERMS, 1, 3, new Set(), true)
     expect(plan.home).toBe(1)
     expect(plan.carrying).toBe(8)
     expect(plan.outside.map((x) => x.sentence.text)).toEqual(['I believe a subluxation is one of the interferences.', 'Your Educated mind gets in the way.', 'Innate does the rest.'])
     expect(plan.defined.map((x) => x.sentence.text)).toEqual(['A subluxation is a spinal segment that has stopped moving the way it should.'])
   })
   it('falls back to the section that carries most of the terms when the article left the outline', () => {
-    expect(planContainment(HTML, TERMS, 0, 5).home).toBe(1)
+    expect(planContainment(HTML, TERMS, 0, 5, new Set(), true).home).toBe(1)
   })
   it('moves a sentence to mainstream words, removes one that has nothing left, and has a definition said as the author\'s usage', async () => {
     const r = await contain(HTML, TERMS, 1, 3, async (s, reason) => {
@@ -164,11 +168,20 @@ describe('belief language is contained', () => {
       if (s.startsWith('I believe a subluxation')) return { text: 'I believe a joint that has stopped moving well is one of the things in the way.', cost: 0.01 }
       if (s.startsWith('Your Educated')) return { text: 'Your Educated mind still gets in the way.', cost: 0.01 } // keeps the term: refused
       return { text: '[DELETE]', cost: 0.01 }
-    })
+    }, new Set(), true)
     expect(r).toMatchObject({ outside: 3, moved: 1, removed: 1, defined: 1, restated: 1, llmCalls: 4 })
     expect(r.html).toContain('I believe a joint that has stopped moving well is one of the things in the way. Your Educated mind gets in the way.')
     expect(r.html).toContain('<p>Move every 30 minutes.</p>')
     expect(r.html).toContain('By a subluxation I mean a spinal segment')
+  })
+  it('by default leaves the author\'s terms where the author put them and only stops a definition as fact', async () => {
+    const plan = planContainment(HTML, TERMS, 1, 3)
+    expect(plan.outside).toEqual([])
+    expect(plan.defined.map((x) => x.sentence.text)).toEqual(['A subluxation is a spinal segment that has stopped moving the way it should.'])
+    const r = await contain(HTML, TERMS, 1, 3, async () => ({ text: 'By a subluxation I mean a spinal segment that has stopped moving the way it should.', cost: 0.01 }))
+    expect(r).toMatchObject({ outside: 0, moved: 0, removed: 0, defined: 1, restated: 1, llmCalls: 1 })
+    expect(r.html).toContain('Your Educated mind gets in the way.')
+    expect(r.html).toContain('Innate does the rest.')
   })
   it('takes out an explanation that states one of the terms as fact, and keeps the others', () => {
     const html = '<p>One.<span class="term"> A subluxation is a spinal segment that has stopped moving.</span> Two.<span class="term"> By subluxations I mean segments that are not moving.</span><span class="term"> A nerve root is the short branch where a nerve leaves the spinal cord.</span></p>'
@@ -208,8 +221,12 @@ describe('rotation', () => {
       { take: null, text: 'In the 1970s I was in Paris and the Seine river was disgusting, he said. Innate is Boss.' },
       { take: null, text: 'I was nursing a beer to last me the night.' }, // a few shared words are not the story
     ])
-    expect([...rest.stories].sort()).toEqual([1, 2])
+    expect([...rest.stories]).toEqual([]) // the article before told no story; older ones no longer count
     expect(rest.phrases).toEqual(['song in your heart'])
+    const after = restingFrom(profile, [{ take: { story: 2 } as never, text: 'x' }, { take: null, text: 'In the 1970s I was in Paris and the Seine river was disgusting, he said.' }])
+    expect([...after.stories]).toEqual([2])
+    const told = restingFrom(profile, [{ take: null, text: 'In the 1970s I was in Paris and the Seine river was disgusting, he said.' }])
+    expect([...told.stories]).toEqual([1]) // read from the article itself when the take named none
   })
   it('does not offer a resting story to the take, refuses it if chosen anyway, and tells the writer what rests', () => {
     const rest = { stories: new Set([1]), phrases: ['Innate is Boss', 'song in your heart'] }
@@ -226,7 +243,9 @@ describe('rotation', () => {
     expect(t.home).toBe(1)
     expect(t.ownTerms).toEqual(['Innate', 'Educated mind', 'subluxation']) // "biomechanics" is not in anything the author said
     const text = renderTake(t, profile, h2s, rest)
-    expect(text).toContain('and in the part "What I believe"')
+    expect(text).toContain('Use them wherever you would')
+    expect(text).not.toContain('Where your philosophy lives')
+    expect(renderTake(t, profile, h2s, rest, { zones: true })).toContain('and in the part "What I believe"')
     expect(text).toContain('"Innate", "Educated mind", "subluxation"')
     expect(text).toContain('Your recent articles already used these')
     expect(text).toContain('- the phrase "song in your heart"')

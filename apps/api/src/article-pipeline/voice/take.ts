@@ -128,7 +128,7 @@ export function parseTake(raw: string, p: VoiceProfile, h2s: string[], rest?: Re
 }
 
 /** The take as the writer reads it, with the author's own sentences attached by code. */
-export function renderTake(t: Take, p: VoiceProfile, h2s: string[] = [], rest?: Resting): string {
+export function renderTake(t: Take, p: VoiceProfile, h2s: string[] = [], rest?: Resting, opts: { zones?: boolean } = {}): string {
   const out: string[] = []
   if (t.hasPosition) {
     out.push(t.position, '', 'It rests on what you have said yourself:')
@@ -141,7 +141,10 @@ export function renderTake(t: Take, p: VoiceProfile, h2s: string[] = [], rest?: 
     }
     const home = t.home !== null && t.home !== undefined ? h2s[t.home] : undefined
     const terms = t.ownTerms ?? []
-    if (home || terms.length) {
+    if (!opts.zones) {
+      // The author's terms go wherever the author would use them. One rule holds everywhere.
+      if (terms.length) out.push('', `Terms of your own philosophy: ${terms.map((x) => `"${x}"`).join(', ')}. Use them wherever you would. None is ever explained as though it were an established fact.`)
+    } else if (home || terms.length) {
       out.push(
         '',
         'Where your philosophy lives in this article:',

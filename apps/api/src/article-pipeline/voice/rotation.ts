@@ -14,8 +14,14 @@ import { ownStories, type Resting, type Take } from './take'
 
 /** How many of the author's latest articles are looked at. */
 export const LOOKBACK = 6
-/** A catchphrase rests for this many articles after one that used it. */
-export const PHRASE_REST = 2
+/**
+ * A story or a catchphrase rests for this many articles after one that used it. Voice bench 2
+ * rested a story for six articles: with three stories on record most articles then had none,
+ * and read as the author with the personality taken out (Veit, 2026-11-27: "stories must be
+ * back"). Now only the article before counts, so nothing is told twice running.
+ */
+export const STORY_REST = 1
+export const PHRASE_REST = 1
 
 const words = (s: string): string[] =>
   s
@@ -59,17 +65,14 @@ export interface PastArticle {
 }
 
 /**
- * What rests, given the author's latest articles, newest first. A story rests
- * for as long as it is within the look-back (at least twice the number of
- * stories the author has, so each is told at most once per round); a phrase
- * rests for the two articles after one that used it.
+ * What rests, given the author's latest articles, newest first: the story the
+ * previous article told and the catchphrases it used.
  */
 export function restingFrom(p: VoiceProfile, past: PastArticle[]): Resting {
   const own = ownStories(p)
   const storyWords = own.map((s) => words(s.text))
-  const span = Math.min(LOOKBACK, Math.max(2, own.length * 2))
   const stories = new Set<number>()
-  past.slice(0, span).forEach((a) => {
+  past.slice(0, STORY_REST).forEach((a) => {
     if (a.take && a.take.story !== null && a.take.story !== undefined && a.take.story < own.length) stories.add(a.take.story)
     const w = a.text ? words(a.text) : []
     if (!w.length) return

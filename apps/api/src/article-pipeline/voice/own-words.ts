@@ -57,6 +57,13 @@ export interface Lifted {
   run: number
 }
 
+/** Is this position on a markdown list line ("- …", "1. …")? */
+export function onListLine(md: string, at: number): boolean {
+  const start = md.lastIndexOf('\n', at - 1) + 1
+  const end = md.indexOf('\n', start)
+  return /^\s*(?:[-*+]|\d+[.)])\s+/.test(md.slice(start, end === -1 ? md.length : end))
+}
+
 /** Draft sentences that repeat a source's wording. The author's own observations are theirs already. */
 export function liftedSentences(md: string, facts: SourceFact[]): Lifted[] {
   const sources = facts.filter((f) => f.tag && !/^\[OBS/i.test(f.tag)).map((f) => ({ f, w: wordsOf(f.text) }))
@@ -64,6 +71,9 @@ export function liftedSentences(md: string, facts: SourceFact[]): Lifted[] {
   for (const s of draftSentences(md)) {
     // A sentence with markup or a link is left to the steps that understand it.
     if (/[*_`\[\]]|https?:\/\//.test(s.text)) continue
+    // An item of a list is one of a set: rewritten on its own it stops matching its neighbours
+    // (voice bench 2: two of four warning signs became full sentences).
+    if (onListLine(md, s.from)) continue
     const w = wordsOf(s.text)
     if (w.length < 6) continue
     let best: { f: SourceFact; run: number } | null = null

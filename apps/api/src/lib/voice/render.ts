@@ -180,7 +180,7 @@ export function renderAuthorVoice(p: VoiceProfile, opts: { maxOwnWords?: number;
   // A story told in a recent article rests: it is not shown, so it cannot be retold.
   const own = p.stories.filter((s) => s.kind === 'own').filter((_, i) => !opts.restStories?.has(i))
   if (own.length) {
-    out.push('', '## Stories of your own', 'Told by you, in your words. A story appears in an article only when Your Take names it for this one; then it is retold at the length the article needs, with nothing added to it.')
+    out.push('', '## Stories of your own', 'Told by you, in your words. One may be used where it bears on the topic, retold at the length the article needs and with nothing added to it. Your Take names the one that fits this article best, when one does.')
     out.push(...own.map((s) => `- "${s.text}"`))
   }
 

@@ -42,6 +42,13 @@ export interface BeliefCheckResult {
   changes: Array<{ before: string; after: string; problem: string }>
 }
 
+/**
+ * A finding that tells the reader to avoid, stop or delay a medication or medical care is a safety matter.
+ * It is corrected even when the sentence restates research (voice bench 2: "Ibuprofen should not be used
+ * in the first 48 hours" stayed in the article because its correction was in the first person).
+ */
+export const SAFETY_PROBLEM_RE = /\b(medicat\w*|medicine|drugs?|tablets?|anti-inflammator\w*|painkillers?|vaccin\w*|prescri\w*|avoid\w*|stop taking|delay\w*|unsafe)\b/i
+
 export function applyBeliefFindings(html: string, findings: BeliefFinding[], opts: { isFinding?: (sentence: string) => boolean } = {}): BeliefCheckResult {
   const sentences = htmlSentences(html)
   const edits: Array<{ sentence: HtmlSentence; rewrite: string }> = []
@@ -59,7 +66,7 @@ export function applyBeliefFindings(html: string, findings: BeliefFinding[], opt
     }
     // A restated research finding must stay a general statement: as "We find…" it could no longer carry its
     // citation. An unmarked conviction is the opposite case, and gaining its "I believe" is the point.
-    if (opts.isFinding?.(at.text) && !hasPresence(at.text) && hasPresence(f.rewrite)) {
+    if (opts.isFinding?.(at.text) && !hasPresence(at.text) && hasPresence(f.rewrite) && !SAFETY_PROBLEM_RE.test(f.problem)) {
       open.push({ ...f, why: 'the rewrite turns a restated finding into a first-person claim' })
       continue
     }

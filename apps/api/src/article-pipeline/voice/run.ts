@@ -40,6 +40,9 @@ import { markdownToHtml } from './markdown'
 import { applyBeliefFindings, articleForCheck, parseBeliefFindings } from './belief-check'
 import { trimHabits } from './habits'
 
+/** Keep the author's own terms to the opening, the close and one section. Off unless a strict regulator calls for it. */
+export const BELIEF_ZONES = process.env.VOICE_BELIEF_ZONES === '1'
+
 export const VOICE_STEPS = { mode: 80, take: 81, core: 82, beliefs: 83, habits: 84, ownWords: 85, containment: 86 } as const
 
 export interface VoiceContext {
@@ -233,7 +236,7 @@ export async function runTake(ctx: PipelineContext, voice: VoiceContext): Promis
     logger.warn({ jobId: ctx.jobId, err }, '[voice] take step failed; the article keeps the author\'s manner without a stated position')
   }
   voice.take = take
-  voice.takeText = renderTake(take, p, h2s, voice.rest)
+  voice.takeText = renderTake(take, p, h2s, voice.rest, { zones: BELIEF_ZONES })
   await saveStep(ctx, VOICE_STEPS.take, 'author_take', JSON.stringify({ take, rendered: voice.takeText, resting: { stories: [...voice.rest.stories], phrases: voice.rest.phrases } }), usageOf(response, started))
   logger.info(
     { jobId: ctx.jobId, hasPosition: take.hasPosition, beliefs: take.beliefs.length, myth: take.myth !== null, story: take.story !== null, sections: take.sections.length, home: take.home ?? null, ownTerms: take.ownTerms?.length ?? 0, restingStories: voice.rest.stories.size, restingPhrases: voice.rest.phrases.length },
@@ -343,7 +346,7 @@ export async function runContainment(ctx: PipelineContext, voice: VoiceContext, 
   try {
     // A capitalised term that research uses as a plain word is the author's only where the capital is a choice.
     const ordinary = ordinaryTerms(terms, `${ctx.completedSteps.get(7) ?? ''} ${ctx.completedSteps.get(8) ?? ''}`)
-    const r = await contain(html, terms, voice.take?.home ?? null, headingsOf(ctx).length, voiceRewriters(ctx, voice).sentence, ordinary)
+    const r = await contain(html, terms, voice.take?.home ?? null, headingsOf(ctx).length, voiceRewriters(ctx, voice).sentence, ordinary, BELIEF_ZONES)
     const { html: out, cost, ...counts } = r
     await saveStep(ctx, VOICE_STEPS.containment, 'belief_containment', JSON.stringify({ terms, ...counts }), { inputTokens: 0, outputTokens: 0, cost, durationMs: Date.now() - started })
     logger.info({ jobId: ctx.jobId, terms: terms.length, home: r.home, carrying: r.carrying, outside: r.outside, moved: r.moved, removed: r.removed, defined: r.defined, restated: r.restated }, '[voice] belief language contained')
