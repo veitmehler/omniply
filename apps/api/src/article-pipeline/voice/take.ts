@@ -45,7 +45,7 @@ export const ownStories = (p: VoiceProfile) => p.stories.filter((s) => s.kind ==
 export const storyLabel = (text: string) => text.replace(/\s+/g, ' ').replace(/^["“”'’\s]+/, '').split(' ').slice(0, 12).join(' ')
 
 /** The numbered material the take step chooses from. A resting story is not listed; the others keep their numbers. */
-export function takeMaterial(p: VoiceProfile, rest?: Resting): { beliefs: string; stories: string; habits: string; resting: string } {
+export function takeMaterial(p: VoiceProfile, rest?: Resting): { beliefs: string; stories: string; habits: string; resting: string; vocabulary: string } {
   const beliefs = p.beliefs.map((b, i) => `B${i + 1} (${b.kind.replace('_', ' ')}): "${b.statement}"`).join('\n') || '(none on record)'
   const own = ownStories(p)
   const stories =
@@ -61,7 +61,17 @@ export function takeMaterial(p: VoiceProfile, rest?: Resting): { beliefs: string
   ]
     .filter(Boolean)
     .join('\n')
-  return { beliefs, stories, habits: habits || '(their material shows no habit for beginning or ending)', resting: restingLines.join('\n') || '(nothing)' }
+  // For naming the terms of their own philosophy: their turns of phrase, their habits with an example each,
+  // and a stretch of their own writing. The beliefs alone do not show the vocabulary they write in.
+  const sample = p.manner.ownWords.find((w) => w.source === 'sample') ?? [...p.manner.ownWords].sort((a, b) => b.text.length - a.text.length)[0]
+  const vocabulary = [
+    p.manner.phrases.length ? `Turns of phrase: ${p.manner.phrases.map((x) => `"${x}"`).join(', ')}` : '',
+    ...p.manner.habits.map((h) => `- ${h.habit}: "${h.example}"`),
+    sample ? `From their own writing: "${sample.text.replace(/\s+/g, ' ').split(' ').slice(0, 700).join(' ')}"` : '',
+  ]
+    .filter(Boolean)
+    .join('\n')
+  return { beliefs, stories, habits: habits || '(their material shows no habit for beginning or ending)', resting: restingLines.join('\n') || '(nothing)', vocabulary: vocabulary || '(nothing on record)' }
 }
 
 const flatLower = (s: string) => s.toLowerCase().replace(/[‘’]/g, "'").replace(/\s+/g, ' ')

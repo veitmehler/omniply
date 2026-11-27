@@ -5,7 +5,7 @@
 import { describe, it, expect } from 'vitest'
 import { contrastShare, hasInterjection, isContrast, joinAfterDelete } from '../../../lib/text/contrast'
 import { echoOpeners, echoesHeading, inOwnWords, liftedSentences, openerAcceptable, ownWordsAcceptable, sectionOpeners } from '../own-words'
-import { contain, definesTerm, dropFactualOwnTermGlosses, planContainment, termPattern, usesTerm } from '../containment'
+import { contain, definesTerm, dropFactualOwnTermGlosses, ordinaryTerms, planContainment, termPattern, usesTerm } from '../containment'
 import { longestSharedRun, restingFrom } from '../rotation'
 import { overLimit, trimHabits } from '../habits'
 import { replaceSentences, htmlSentences } from '../sentence-edits'
@@ -140,6 +140,13 @@ describe('belief language is contained', () => {
     expect(usesTerm('The 3 T’s matter.', TERMS)).toBe("3 T's")
     expect(definesTerm('A subluxation is a spinal segment that has stopped moving.', TERMS)).toBe('subluxation')
     expect(definesTerm('I believe a subluxation is one of the interferences.', TERMS)).toBeNull()
+  })
+  it('reads a capitalised ordinary word as the author\'s term only where the capital is a choice', () => {
+    const ordinary = ordinaryTerms(['Trauma', 'Innate', 'subluxation'], 'Physical trauma to the spine is one cause. No reflex is mentioned here.')
+    expect([...ordinary]).toEqual(['Trauma'])
+    expect(usesTerm('Trauma to the lower back needs a doctor.', ['Trauma'], ordinary)).toBeNull()
+    expect(usesTerm('The three are Toxins, Trauma and Thoughts.', ['Trauma'], ordinary)).toBe('Trauma')
+    expect(usesTerm('Innate does the rest.', ['Innate'], ordinary)).toBe('Innate')
   })
   it('allows the opening, the close and the home section, and flags the rest', () => {
     const plan = planContainment(HTML, TERMS, 1, 3)

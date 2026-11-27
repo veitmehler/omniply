@@ -182,7 +182,7 @@ Rules:
 - A story is chosen only if it truly bears on the topic. Most topics have none.
 - "home_section" is exactly one of the listed headings: the part of the article where this person's conviction belongs and is developed. The opening and the close carry it too. Every other part explains the body and the treatment in the terms any clinician would use.
 - For each section heading, one sentence on what this person would stress there. For the home section that is how their conviction is developed. For every other section it is practical: what they would have the reader notice, do or ask, said in ordinary clinical words and without the vocabulary of their philosophy. Leave a section out when their material gives no angle on it.
-- "own_terms" lists the words and names that belong to this person's own philosophy or method and that a practitioner outside it would not use when explaining the body or a treatment: a school's concepts, capitalised notions, their own labels. Copy each exactly as they write it. Everyday words and ordinary clinical terms are not listed. At most ten; an empty list when they have none.
+- "own_terms" is a separate job from the rest, and it does not depend on the topic or on the beliefs you chose: it is the same list for every article by this person. Read THEIR VOCABULARY and their beliefs from top to bottom and list every word or name that belongs to their own philosophy, school or method: the notions they write with a capital letter, the labels of their school, their own coinages and slogans. The test for each: a colleague trained in mainstream medicine would not use it when explaining the body or a treatment to a patient. In a vitalist chiropractor's writing these are words such as Innate or subluxation; in another author's, the name of their own method or model. Copy each exactly as they write it, in its shortest form (the single word where the word alone carries it). Everyday words, ordinary clinical terms and place names are not listed. At most twelve; an empty list only when their writing truly has none.
 - Whatever is listed under ALREADY USED IN THEIR RECENT ARTICLES rests. Do not choose that story, and do not direct the opening or the close toward it or toward that phrase.
 - "opening" and "closing" each give one sentence of direction for how this person would begin and end THIS article, following how they begin and end things themselves where their material shows it. Describe the move; do not write the sentence. Leave empty when their material shows no habit.
 - The writer may not invent a scene, an anecdote or a memory for this person. If their habit is to begin with a moment from their own life, direct the opening to the chosen story (S<n>) when one bears on the topic; when none does, direct an opening that starts from the READER'S everyday experience of the topic, in this person's manner. Never ask for a personal anecdote that is not one of the listed stories.
@@ -202,6 +202,9 @@ HOW THEY BEGIN AND END:
 
 ALREADY USED IN THEIR RECENT ARTICLES (resting; not for this one):
 {{resting}}
+
+THEIR VOCABULARY (read all of it for "own_terms"; nothing here is a belief to build the position on):
+{{vocabulary}}
 
 THE ARTICLE
 Title: {{title}}

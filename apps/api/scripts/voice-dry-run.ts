@@ -22,6 +22,7 @@ import { authorLimits, authorSays, renderAuthorVoice, renderAuthorVoiceShort } f
 import { wordCount } from '../src/lib/voice/voice-score'
 import { coreStats, factsForSelector, outlineH2s, parseResearchFacts, parseSelection, renderCore, selectCore } from '../src/article-pipeline/voice/facts'
 import { parseTake, renderTake, takeMaterial } from '../src/article-pipeline/voice/take'
+import { recentUse } from '../src/article-pipeline/voice/run'
 import { flushCallStats } from '../src/lib/net/call-stats'
 
 const [JOB, USER, OUT] = process.argv.slice(2)
@@ -50,15 +51,18 @@ async function main() {
   const h2s = outlineH2s(ctx.completedSteps.get(4) ?? '')
   let cost = 0
 
-  const m = takeMaterial(profile)
+  // What this author's latest articles already used rests, exactly as it would in a real run.
+  const rest = await recentUse(USER, JOB, profile)
+  const m = takeMaterial(profile, rest)
   const takeRun = await runNewsletterPrompt(
     'av_take',
-    { author_name: profile.author.name, industry: profile.author.industry, practice: profile.author.practice, location: profile.author.location, beliefs: m.beliefs, stories: m.stories, habits: m.habits, title, topic: job.topic.topic, headings: h2s.map((h) => `- ${h}`).join('\n') },
+    { author_name: profile.author.name, industry: profile.author.industry, practice: profile.author.practice, location: profile.author.location, beliefs: m.beliefs, stories: m.stories, habits: m.habits, resting: m.resting, vocabulary: m.vocabulary, title, topic: job.topic.topic, headings: h2s.map((h) => `- ${h}`).join('\n') },
     { userId: USER, jsonMode: true },
   )
   cost += takeRun.response.cost
-  const take = parseTake(takeRun.content, profile, h2s)
-  const takeText = renderTake(take, profile)
+  const take = parseTake(takeRun.content, profile, h2s, rest)
+  const takeText = renderTake(take, profile, h2s, rest)
+  console.log(`  resting: stories ${JSON.stringify([...rest.stories])}, phrases ${JSON.stringify(rest.phrases)} | story chosen ${take.story} | home section ${take.home ?? null} | own terms ${JSON.stringify(take.ownTerms ?? [])}`)
 
   const facts = parseResearchFacts(ctx.completedSteps.get(8), ctx.completedSteps.get(7))
   const selRun = await runNewsletterPrompt('av_fact_select', { title, headings: h2s.map((h) => `- ${h}`).join('\n'), position: take.hasPosition ? take.position : '(the author has stated no position on this topic)', facts: factsForSelector(facts) }, { userId: USER, jsonMode: true })
@@ -67,7 +71,7 @@ async function main() {
   const core = selectCore(facts, picks, h2s)
   const coreText = renderCore(core)
 
-  ctx.voice = { profile, full: renderAuthorVoice(profile), short: renderAuthorVoiceShort(profile), says: authorSays(profile), limits: authorLimits(profile), take, takeText, coreText }
+  ctx.voice = { profile, rest, full: renderAuthorVoice(profile, { restStories: rest.stories }), short: renderAuthorVoiceShort(profile), says: authorSays(profile), limits: authorLimits(profile), take, takeText, coreText }
   const template = await resolvePromptByKey('av_writer', { userId: USER })
   if (!template) throw new Error('av_writer prompt is not on this database')
   const system = await resolveVariables(template.systemPrompt ?? '', ctx)

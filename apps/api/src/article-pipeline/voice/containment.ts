@@ -28,9 +28,27 @@ export function termPattern(term: string): RegExp {
   return new RegExp(`(?<![A-Za-z])${body}(?:e?s|'s)?(?![A-Za-z])`, /[A-Z]/.test(t) ? '' : 'i')
 }
 
-export function usesTerm(sentence: string, terms: string[]): string | null {
-  const s = tidy(sentence)
-  return terms.find((t) => termPattern(t).test(s)) ?? null
+/**
+ * Which of the author's terms a sentence carries. A term the author capitalises that is also an
+ * ordinary word ("Trauma", "Thoughts" from a list of three T's) counts only where the capital is
+ * a choice, so not as the first word of a sentence.
+ */
+export function usesTerm(sentence: string, terms: string[], ordinary: ReadonlySet<string> = new Set()): string | null {
+  const s = tidy(sentence).trim()
+  return (
+    terms.find((t) => {
+      const m = termPattern(t).exec(s)
+      if (!m) return false
+      if (!ordinary.has(t)) return true
+      return m.index > 0 || new RegExp(termPattern(t).source, 'g').test(s.slice(m.index + m[0].length))
+    }) ?? null
+  )
+}
+
+/** The author's capitalised single words that research uses as plain words: "Trauma" where the sources say "trauma". */
+export function ordinaryTerms(terms: string[], plainText: string): Set<string> {
+  const text = ` ${plainText.replace(/\s+/g, ' ')} `
+  return new Set(terms.filter((t) => /^[A-Z][a-z]+$/.test(t) && new RegExp(`(?<![A-Za-z])${t.toLowerCase()}s?(?![A-Za-z])`).test(text)))
 }
 
 /**
@@ -60,7 +78,7 @@ export interface ContainmentPlan {
  * home section is the one the take named when the article kept the outline's
  * sequence; otherwise the section that carries most of the terms.
  */
-export function planContainment(html: string, terms: string[], homeIndex: number | null, outlineSections: number): ContainmentPlan {
+export function planContainment(html: string, terms: string[], homeIndex: number | null, outlineSections: number, ordinary: ReadonlySet<string> = new Set()): ContainmentPlan {
   const plan: ContainmentPlan = { home: null, outside: [], defined: [], carrying: 0 }
   if (!terms.length) return plan
   const sentences = htmlSentences(html)
@@ -73,7 +91,7 @@ export function planContainment(html: string, terms: string[], homeIndex: number
   // The close: the last three paragraphs or list items of the article.
   const closing = new Set<number>([...new Set(sentences.map((s) => s.block))].filter((b) => b <= lastBlock).slice(-3))
 
-  const carriers = sentences.map((s) => ({ s, term: usesTerm(s.text, terms) })).filter((x): x is { s: HtmlSentence; term: string } => x.term !== null)
+  const carriers = sentences.map((s) => ({ s, term: usesTerm(s.text, terms, ordinary) })).filter((x): x is { s: HtmlSentence; term: string } => x.term !== null)
   plan.carrying = carriers.length
   let home = homeIndex !== null && h2Starts.length === outlineSections && homeIndex < h2Starts.length ? homeIndex : null
   if (home === null) {
@@ -117,8 +135,8 @@ export interface ContainmentResult {
 }
 
 /** Make the rule hold. A rewrite that still carries a term, or adds anything, is not used and the sentence stays. */
-export async function contain(html: string, terms: string[], homeIndex: number | null, outlineSections: number, rewrite: ContainRewriter): Promise<ContainmentResult> {
-  const plan = planContainment(html, terms, homeIndex, outlineSections)
+export async function contain(html: string, terms: string[], homeIndex: number | null, outlineSections: number, rewrite: ContainRewriter, ordinary: ReadonlySet<string> = new Set()): Promise<ContainmentResult> {
+  const plan = planContainment(html, terms, homeIndex, outlineSections, ordinary)
   const res: ContainmentResult = { html, home: plan.home, carrying: plan.carrying, outside: plan.outside.length, moved: 0, removed: 0, defined: plan.defined.length, restated: 0, llmCalls: 0, cost: 0, changes: [] }
   const all = htmlSentences(html)
   const beforeOf = (s: HtmlSentence) => {
@@ -138,7 +156,7 @@ export async function contain(html: string, terms: string[], homeIndex: number |
         edits.push({ sentence: s, rewrite: '' })
         res.removed++
         res.changes.push({ before: s.text, after: '', why: `"${term}" outside its place` })
-      } else if (!usesTerm(text, terms) && editAcceptable(s.text, text, 1.4)) {
+      } else if (!usesTerm(text, terms, ordinary) && editAcceptable(s.text, text, 1.4)) {
         edits.push({ sentence: s, rewrite: text })
         res.moved++
         res.changes.push({ before: s.text, after: text, why: `"${term}" outside its place` })

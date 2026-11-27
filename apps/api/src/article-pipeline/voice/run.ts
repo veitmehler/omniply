@@ -34,7 +34,7 @@ import { coreStats, factsForSelector, outlineH2s, parseResearchFacts, parseSelec
 import { parseTake, renderTake, takeBeliefs, takeMaterial, type Resting, type Take } from './take'
 import { restingFrom, LOOKBACK, type PastArticle } from './rotation'
 import { inOwnWords } from './own-words'
-import { contain, ownTermsForExplanations } from './containment'
+import { contain, ordinaryTerms, ownTermsForExplanations } from './containment'
 import { applyFixes, fixRequests, parseFactCheck, parseFixes } from './fact-fix'
 import { markdownToHtml } from './markdown'
 import { applyBeliefFindings, articleForCheck, parseBeliefFindings } from './belief-check'
@@ -224,7 +224,7 @@ export async function runTake(ctx: PipelineContext, voice: VoiceContext): Promis
     const m = takeMaterial(p, voice.rest)
     const run = await runNewsletterPrompt(
       'av_take',
-      { author_name: p.author.name, industry: p.author.industry, practice: p.author.practice, location: p.author.location, beliefs: m.beliefs, stories: m.stories, habits: m.habits, resting: m.resting, title: titleOf(ctx), topic: ctx.topicText, headings: h2s.map((h) => `- ${h}`).join('\n') || '(no outline headings)' },
+      { author_name: p.author.name, industry: p.author.industry, practice: p.author.practice, location: p.author.location, beliefs: m.beliefs, stories: m.stories, habits: m.habits, resting: m.resting, vocabulary: m.vocabulary, title: titleOf(ctx), topic: ctx.topicText, headings: h2s.map((h) => `- ${h}`).join('\n') || '(no outline headings)' },
       { userId: ctx.userId, jsonMode: true },
     )
     response = run.response
@@ -341,7 +341,9 @@ export async function runContainment(ctx: PipelineContext, voice: VoiceContext, 
   const terms = voice.take?.ownTerms ?? []
   if (!terms.length) return html
   try {
-    const r = await contain(html, terms, voice.take?.home ?? null, headingsOf(ctx).length, voiceRewriters(ctx, voice).sentence)
+    // A capitalised term that research uses as a plain word is the author's only where the capital is a choice.
+    const ordinary = ordinaryTerms(terms, `${ctx.completedSteps.get(7) ?? ''} ${ctx.completedSteps.get(8) ?? ''}`)
+    const r = await contain(html, terms, voice.take?.home ?? null, headingsOf(ctx).length, voiceRewriters(ctx, voice).sentence, ordinary)
     const { html: out, cost, ...counts } = r
     await saveStep(ctx, VOICE_STEPS.containment, 'belief_containment', JSON.stringify({ terms, ...counts }), { inputTokens: 0, outputTokens: 0, cost, durationMs: Date.now() - started })
     logger.info({ jobId: ctx.jobId, terms: terms.length, home: r.home, carrying: r.carrying, outside: r.outside, moved: r.moved, removed: r.removed, defined: r.defined, restated: r.restated }, '[voice] belief language contained')
