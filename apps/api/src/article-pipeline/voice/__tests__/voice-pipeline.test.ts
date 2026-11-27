@@ -289,7 +289,7 @@ describe('belief compliance check', () => {
 describe('wording limits relative to the author', () => {
   const rewriter = async (sentence: string) => ({ text: sentence.replace(/\?$/, '.').replace(/!$/, '.'), cost: 0.001 })
   it('counts a habit against the author\'s own rate and leaves the section opener and linked sentences alone', () => {
-    const counts = overLimit(HTML, { questionShare: 0.04, exclaimShare: 0.004, capsPer100: 0 })
+    const counts = overLimit(HTML, { questionShare: 0.04, exclaimShare: 0.004, capsPer100: 0, contrastShare: 0.5 })
     const q = counts.find((c) => c.habit === 'question')!
     expect(q.found).toBe(5)
     expect(q.allowed).toBe(2)
@@ -298,16 +298,16 @@ describe('wording limits relative to the author', () => {
     expect(q.surplus).toHaveLength(3)
   })
   it('trims the surplus for an author who rarely asks, and nothing for one who asks often', async () => {
-    const rare = await trimHabits(HTML, { questionShare: 0.04, exclaimShare: 0.004, capsPer100: 0 }, rewriter)
+    const rare = await trimHabits(HTML, { questionShare: 0.04, exclaimShare: 0.004, capsPer100: 0, contrastShare: 0.5 }, rewriter)
     expect(rare.html).toContain('Is it the chair? Often it is.')
     expect(rare.html.match(/\?/g)!.length).toBeLessThan(HTML.match(/\?/g)!.length)
     expect(rare.counts.find((c) => c.habit === 'question')).toMatchObject({ found: 5, surplus: 3, fixed: 3 })
-    const asker = await trimHabits(HTML, { questionShare: 0.5, exclaimShare: 0.3, capsPer100: 0 }, rewriter)
+    const asker = await trimHabits(HTML, { questionShare: 0.5, exclaimShare: 0.3, capsPer100: 0, contrastShare: 0.5 }, rewriter)
     expect(asker.html).toBe(HTML)
     expect(asker.llmCalls).toBe(0)
   })
   it('keeps the sentence when the rewrite still shows the habit', async () => {
-    const stubborn = await trimHabits(HTML, { questionShare: 0.04, exclaimShare: 0.004, capsPer100: 0 }, async (s) => ({ text: s, cost: 0 }))
+    const stubborn = await trimHabits(HTML, { questionShare: 0.04, exclaimShare: 0.004, capsPer100: 0, contrastShare: 0.5 }, async (s) => ({ text: s, cost: 0 }))
     expect(stubborn.html).toBe(HTML)
   })
 })

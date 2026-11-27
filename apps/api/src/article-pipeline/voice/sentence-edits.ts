@@ -9,6 +9,8 @@
  * citation can be lost or moved.
  */
 
+import { joinAfterDelete } from '../../lib/text/contrast'
+
 export interface HtmlSentence {
   text: string
   /** Index of the paragraph or list item block it sits in. */
@@ -77,10 +79,14 @@ export function editAcceptable(original: string, rewrite: string, growth = 1.5):
 
 const esc = (s: string) => s.replace(/&(?![a-z]+;|#\d+;)/gi, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
+/** What a sentence fixer returns when nothing is left once the flagged part is gone. */
+export const DELETE_MARK = '[DELETE]'
+
 /**
  * Replace sentences in the HTML. Each edit names a sentence found by
  * htmlSentences; a sentence with a link, or one whose markup is more than plain
  * emphasis, is skipped. Later places first, so earlier offsets stay valid.
+ * A rewrite of '' takes the sentence out; a block left empty goes with it.
  */
 export function replaceSentences(html: string, edits: Array<{ sentence: HtmlSentence; rewrite: string }>): { html: string; applied: number; skipped: number } {
   let out = html
@@ -92,9 +98,14 @@ export function replaceSentences(html: string, edits: Array<{ sentence: HtmlSent
       skipped++
       continue
     }
-    out = out.slice(0, e.sentence.from) + esc(e.rewrite.trim()) + out.slice(e.sentence.to)
+    if (!e.rewrite.trim()) {
+      out = joinAfterDelete(out.slice(0, e.sentence.from).replace(/[ \t]+$/, ''), out.slice(e.sentence.to).replace(/^[ \t]+/, ''))
+    } else {
+      out = out.slice(0, e.sentence.from) + esc(e.rewrite.trim()) + out.slice(e.sentence.to)
+    }
     applied++
   }
+  if (edits.some((e) => !e.rewrite.trim())) out = out.replace(/<(p|li)(?:\s[^>]*)?>\s*<\/\1>\n?/gi, '')
   return { html: out, applied, skipped }
 }
 

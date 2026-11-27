@@ -14,9 +14,13 @@
  * answer AI search quotes) and a sentence with a link is never touched.
  */
 import type { AuthorLimits } from '../../lib/voice/render'
-import { editAcceptable, htmlSentences, replaceSentences, type HtmlSentence } from './sentence-edits'
+import { hasInterjection, isContrast } from '../../lib/text/contrast'
+import { DELETE_MARK, editAcceptable, htmlSentences, replaceSentences, type HtmlSentence } from './sentence-edits'
 
-export type Habit = 'question' | 'exclamation'
+export type Habit = 'question' | 'exclamation' | 'contrast' | 'interjection'
+
+/** A spoken filler ("Hmmmm") is the author's own, once. Twice in one piece it is a tic. */
+const INTERJECTIONS_PER_ARTICLE = 1
 
 const isQuestion = (s: string) => /\?["”’)\]]*$/.test(s.trim())
 const isExclamation = (s: string) => /!["”’)\]]*$/.test(s.trim())
@@ -41,9 +45,11 @@ export function overLimit(html: string, limits: AuthorLimits): HabitCount[] {
   for (const [habit, test, share] of [
     ['question', isQuestion, limits.questionShare],
     ['exclamation', isExclamation, limits.exclaimShare],
+    ['contrast', isContrast, limits.contrastShare ?? 0.02],
+    ['interjection', hasInterjection, 0],
   ] as const) {
     const hits = all.filter((s) => test(s.text))
-    const allowed = Math.ceil(all.length * share) + 1
+    const allowed = habit === 'interjection' ? INTERJECTIONS_PER_ARTICLE : Math.ceil(all.length * share) + 1
     let surplus: HtmlSentence[] = []
     if (hits.length > allowed) {
       const perBlock = new Map<number, number>()
@@ -59,7 +65,12 @@ export function overLimit(html: string, limits: AuthorLimits): HabitCount[] {
 export const HABIT_REASON: Record<Habit, string> = {
   question: 'The article asks the reader more questions than you do when you write. Say this one as a plain statement that carries the same point. Do not answer it with a new fact.',
   exclamation: 'The article uses more exclamation marks than you do when you write. Say this one without it, as flatly as you would say it across a table.',
+  contrast:
+    'The article sets one thing against another ("this, not that", "X rather than Y") far more often than you do when you write. Say this one as a plain statement of what is the case. Keep the point and every figure. Do not bring in another contrast, and do not say what the thing is not.',
+  interjection: 'An interjection like this one is yours, but you use it once in a piece and this article already has one. Say the sentence without it.',
 }
+
+const STILL: Record<Habit, (s: string) => boolean> = { question: isQuestion, exclamation: isExclamation, contrast: isContrast, interjection: hasInterjection }
 
 export type HabitRewriter = (sentence: string, reason: string, before: string) => Promise<{ text: string; cost: number }>
 
@@ -86,8 +97,15 @@ export async function trimHabits(html: string, limits: AuthorLimits, rewrite: Ha
         res.llmCalls++
         res.cost += r.cost
         const text = r.text.trim().replace(/^["“]|["”]$/g, '')
-        const still = c.habit === 'question' ? isQuestion(text) : isExclamation(text)
-        if (!still && editAcceptable(s.text, text, 1.3)) {
+        if (text === DELETE_MARK) {
+          // Nothing was left of it. A filler on its own line can go; anything else stays as written.
+          if (c.habit === 'interjection' && !s.opensSection) {
+            edits.push({ sentence: s, rewrite: '' })
+            fixed++
+          }
+          continue
+        }
+        if (!STILL[c.habit](text) && editAcceptable(s.text, text, 1.3)) {
           edits.push({ sentence: s, rewrite: text })
           fixed++
         }

@@ -27,7 +27,7 @@ import { quoteInPage } from './source-support'
 import { researchUnitsFor } from './research-units'
 import { recordLLMUsage } from '../lib/llm-usage'
 import type { StepRunResult } from './step-runner'
-import { resolveVoice, runTake, runCoreFacts, runVoiceCorrection, runBeliefCheck, runHabitTrim, voiceRewriters, VOICE_STEPS } from './voice/run'
+import { resolveVoice, runTake, runCoreFacts, runVoiceCorrection, runBeliefCheck, runContainment, runHabitTrim, runOwnWords, voiceRewriters, VOICE_STEPS } from './voice/run'
 import { jurisdictionFor } from './jurisdiction'
 import { brandSettingsForUser } from '@omniply/shared'
 
@@ -193,6 +193,16 @@ export async function runPipelinePhaseA(jobId: string): Promise<void> {
         }
 
 
+        // Voice path, straight after the writer and before the fact check: source wording and
+        // heading echoes are restated as the author, so the fact check reads the final wording.
+        if (voice && stepNumber === 9) {
+          const before = stepOutput
+          stepOutput = await runOwnWords(ctx, voice, stepOutput)
+          if (stepOutput !== before) {
+            await prisma.pipelineStep.updateMany({ where: { jobId, stepNumber, status: 'completed' }, data: { output: stepOutput } })
+          }
+        }
+
         if (HEDGE_GATE_STEPS.has(stepNumber) && process.env.HEDGE_GATE !== '0') {
           try {
             const g = voiceRewrite ? await gateHedges(stepOutput, { jobId, stepNumber }, voiceRewrite.hedge, { keepNoise: voiceRewrite.keepNoise }) : await gateHedges(stepOutput, { jobId, stepNumber })
@@ -252,6 +262,7 @@ export async function runPipelinePhaseA(jobId: string): Promise<void> {
           const before = stepOutput
           const bs = await brandSettingsForUser(userId).catch(() => null)
           stepOutput = await runBeliefCheck(ctx, voice, stepOutput, jurisdictionFor(bs?.geolocation))
+          stepOutput = await runContainment(ctx, voice, stepOutput)
           stepOutput = await runHabitTrim(ctx, voice, stepOutput)
           if (stepOutput !== before) {
             await prisma.pipelineStep.updateMany({ where: { jobId, stepNumber, status: 'completed' }, data: { output: stepOutput } })

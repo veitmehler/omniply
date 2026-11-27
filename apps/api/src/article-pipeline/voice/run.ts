@@ -9,7 +9,9 @@
  *    9  write_article        the voice writer (prompt `av_writer`)
  *   10  fact_check_article   judges factual claims, leaves convictions alone
  *   11  adjust_incorrect_facts   only the flagged sentences, then markdown to HTML in code
+ *   85  own_words            after the writer: source wording and heading echoes restated as the author
  *   83  belief_compliance_check  would the regulator accept each conviction as written
+ *   86  belief_containment       the author's own terms kept to the opening, the close and one section
  *   84  author_habit_limits      habits brought back to the author's own rate
  *
  * Step 80 records the decision for the job, so a resumed or rewritten job
@@ -29,13 +31,16 @@ import type { HedgeRewriter } from '../../lib/text/hedge-gate'
 import type { PipelineContext } from '../variable-resolver'
 import type { StepRunResult } from '../step-runner'
 import { coreStats, factsForSelector, outlineH2s, parseResearchFacts, parseSelection, renderCore, restatesFact, selectCore } from './facts'
-import { parseTake, renderTake, takeBeliefs, takeMaterial, type Take } from './take'
+import { parseTake, renderTake, takeBeliefs, takeMaterial, type Resting, type Take } from './take'
+import { restingFrom, LOOKBACK, type PastArticle } from './rotation'
+import { inOwnWords } from './own-words'
+import { contain, ownTermsForExplanations } from './containment'
 import { applyFixes, fixRequests, parseFactCheck, parseFixes } from './fact-fix'
 import { markdownToHtml } from './markdown'
 import { applyBeliefFindings, articleForCheck, parseBeliefFindings } from './belief-check'
 import { trimHabits } from './habits'
 
-export const VOICE_STEPS = { mode: 80, take: 81, core: 82, beliefs: 83, habits: 84 } as const
+export const VOICE_STEPS = { mode: 80, take: 81, core: 82, beliefs: 83, habits: 84, ownWords: 85, containment: 86 } as const
 
 export interface VoiceContext {
   profile: VoiceProfile
@@ -51,6 +56,8 @@ export interface VoiceContext {
   take?: Take
   /** Rendered core facts, set once step 82 has run. */
   coreText?: string
+  /** Stories and phrases the author's recent articles already used. */
+  rest: Resting
 }
 
 interface Usage {
@@ -116,10 +123,40 @@ export async function resolveVoice(ctx: PipelineContext): Promise<VoiceContext |
   if (forced !== 'on' && !row.enabled) return null
   const profile = row.profile as unknown as VoiceProfile
   if (!forced) await saveStep(ctx, VOICE_STEPS.mode, 'voice_mode', 'on', { inputTokens: 0, outputTokens: 0, cost: 0, durationMs: 0 })
-  const voice: VoiceContext = { profile, full: renderAuthorVoice(profile), short: renderAuthorVoiceShort(profile), says: authorSays(profile), limits: authorLimits(profile) }
+  const rest = await recentUse(ctx.userId, ctx.jobId, profile).catch((err) => {
+    logger.warn({ jobId: ctx.jobId, err }, '[voice] recent articles could not be read; nothing rests for this one')
+    return { stories: new Set<number>(), phrases: [] } as Resting
+  })
+  const voice: VoiceContext = { profile, full: renderAuthorVoice(profile, { restStories: rest.stories }), short: renderAuthorVoiceShort(profile), says: authorSays(profile), limits: authorLimits(profile), rest }
   // A resumed job: pick up what the earlier run produced.
   restore(ctx, voice)
   return voice
+}
+
+/**
+ * What the author's latest articles on the voice path used: read from their stored take and
+ * from the article text itself. An article still being written counts as soon as it has a take.
+ */
+export async function recentUse(userId: string, jobId: string, profile: VoiceProfile): Promise<Resting> {
+  const takes = await prisma.pipelineStep.findMany({
+    where: { stepNumber: VOICE_STEPS.take, status: 'completed', jobId: { not: jobId }, job: { userId } },
+    orderBy: { completedAt: 'desc' },
+    take: LOOKBACK,
+    select: { jobId: true, output: true },
+  })
+  if (!takes.length) return { stories: new Set<number>(), phrases: [] }
+  const bodies = await prisma.pipelineStep.findMany({ where: { jobId: { in: takes.map((t) => t.jobId) }, stepNumber: { in: [9, 11] }, status: 'completed' }, select: { jobId: true, stepNumber: true, output: true } })
+  const past: PastArticle[] = takes.map((t) => {
+    let take: Take | null = null
+    try {
+      take = (JSON.parse(t.output ?? '') as { take: Take }).take
+    } catch {
+      /* an unreadable take still leaves the article text */
+    }
+    const mine = bodies.filter((b) => b.jobId === t.jobId)
+    return { take, text: (mine.find((b) => b.stepNumber === 11) ?? mine.find((b) => b.stepNumber === 9))?.output ?? '' }
+  })
+  return restingFrom(profile, past)
 }
 
 function restore(ctx: PipelineContext, voice: VoiceContext): void {
@@ -143,23 +180,31 @@ function restore(ctx: PipelineContext, voice: VoiceContext): void {
  * For a step that runs after Phase A and has no pipeline context (enrichment): the author's voice
  * if this job was written on the voice path, else null.
  */
-export async function voiceForJob(jobId: string, userId: string): Promise<{ profile: VoiceProfile; short: string } | null> {
+export async function voiceForJob(jobId: string, userId: string): Promise<{ profile: VoiceProfile; short: string; ownTerms: string[] } | null> {
   if (process.env.AUTHOR_VOICE === '0') return null
   const mode = await prisma.pipelineStep.findUnique({ where: { jobId_stepNumber: { jobId, stepNumber: VOICE_STEPS.mode } }, select: { output: true } })
   if ((mode?.output ?? '').trim().toLowerCase() !== 'on') return null
   const row = await prisma.voiceProfile.findUnique({ where: { userId } })
   if (!row) return null
   const profile = row.profile as unknown as VoiceProfile
-  return { profile, short: renderAuthorVoiceShort(profile) }
+  let ownTerms: string[] = []
+  try {
+    const t = await prisma.pipelineStep.findUnique({ where: { jobId_stepNumber: { jobId, stepNumber: VOICE_STEPS.take } }, select: { output: true } })
+    ownTerms = (JSON.parse(t?.output ?? '{}') as { take?: Take }).take?.ownTerms ?? []
+  } catch {
+    /* no stored take: no terms to keep out of the explanations */
+  }
+  return { profile, short: renderAuthorVoiceShort(profile), ownTerms }
 }
 
 /** How this author explains things, for the step that adds explanations: their voice, and the images they reach for themselves. */
-export function voiceForExplanations(v: { profile: VoiceProfile; short: string }): string {
+export function voiceForExplanations(v: { profile: VoiceProfile; short: string; ownTerms?: string[] }): string {
   const images = v.profile.manner.habits.filter((h) => /metaphor|image|analog|compar|simile|picture/i.test(h.habit)).map((h) => `"${h.example}"`)
   return [
     'Write this as the author would explain it, in their own voice. The author, in their own words:',
     v.short,
     images.length ? `The kind of image this author reaches for: ${images.join(' ')}` : '',
+    ownTermsForExplanations(v.ownTerms ?? []),
   ]
     .filter(Boolean)
     .join('\n')
@@ -173,24 +218,27 @@ export async function runTake(ctx: PipelineContext, voice: VoiceContext): Promis
   const started = Date.now()
   const p = voice.profile
   const h2s = headingsOf(ctx)
-  let take: Take = parseTake('', p, h2s)
+  let take: Take = parseTake('', p, h2s, voice.rest)
   let response: LLMResponse | undefined
   try {
-    const m = takeMaterial(p)
+    const m = takeMaterial(p, voice.rest)
     const run = await runNewsletterPrompt(
       'av_take',
-      { author_name: p.author.name, industry: p.author.industry, practice: p.author.practice, location: p.author.location, beliefs: m.beliefs, stories: m.stories, habits: m.habits, title: titleOf(ctx), topic: ctx.topicText, headings: h2s.map((h) => `- ${h}`).join('\n') || '(no outline headings)' },
+      { author_name: p.author.name, industry: p.author.industry, practice: p.author.practice, location: p.author.location, beliefs: m.beliefs, stories: m.stories, habits: m.habits, resting: m.resting, title: titleOf(ctx), topic: ctx.topicText, headings: h2s.map((h) => `- ${h}`).join('\n') || '(no outline headings)' },
       { userId: ctx.userId, jsonMode: true },
     )
     response = run.response
-    take = parseTake(run.content, p, h2s)
+    take = parseTake(run.content, p, h2s, voice.rest)
   } catch (err) {
     logger.warn({ jobId: ctx.jobId, err }, '[voice] take step failed; the article keeps the author\'s manner without a stated position')
   }
   voice.take = take
-  voice.takeText = renderTake(take, p)
-  await saveStep(ctx, VOICE_STEPS.take, 'author_take', JSON.stringify({ take, rendered: voice.takeText }), usageOf(response, started))
-  logger.info({ jobId: ctx.jobId, hasPosition: take.hasPosition, beliefs: take.beliefs.length, myth: take.myth !== null, story: take.story !== null, sections: take.sections.length }, '[voice] author take')
+  voice.takeText = renderTake(take, p, h2s, voice.rest)
+  await saveStep(ctx, VOICE_STEPS.take, 'author_take', JSON.stringify({ take, rendered: voice.takeText, resting: { stories: [...voice.rest.stories], phrases: voice.rest.phrases } }), usageOf(response, started))
+  logger.info(
+    { jobId: ctx.jobId, hasPosition: take.hasPosition, beliefs: take.beliefs.length, myth: take.myth !== null, story: take.story !== null, sections: take.sections.length, home: take.home ?? null, ownTerms: take.ownTerms?.length ?? 0, restingStories: voice.rest.stories.size, restingPhrases: voice.rest.phrases.length },
+    '[voice] author take',
+  )
 }
 
 /** Step 82: the core facts. A failed selection falls back to a choice made in code, so the writer always gets a short set. */
@@ -268,6 +316,42 @@ export async function runVoiceCorrection(ctx: PipelineContext, voice: VoiceConte
   return { output: html, inputTokens: u.inputTokens, outputTokens: u.outputTokens, cost: u.cost, durationMs: u.durationMs, provider: u.provider ?? 'code', model: u.model ?? 'code' }
 }
 
+/**
+ * Step 85, straight after the writer: sentences that repeat a source's wording, and section openers
+ * that say their heading back, are restated as the author. It runs before the fact check, so the
+ * fact check reads the wording that will be published. A failure leaves the draft as written.
+ */
+export async function runOwnWords(ctx: PipelineContext, voice: VoiceContext, draft: string): Promise<string> {
+  const started = Date.now()
+  try {
+    const facts = parseResearchFacts(ctx.completedSteps.get(8), ctx.completedSteps.get(7))
+    const r = await inOwnWords(draft, facts, voiceRewriters(ctx, voice).sentence)
+    await saveStep(ctx, VOICE_STEPS.ownWords, 'own_words', JSON.stringify({ openers: r.openers, lifted: r.lifted, llmCalls: r.llmCalls, changes: r.changes.slice(0, 40) }), { inputTokens: 0, outputTokens: 0, cost: r.cost, durationMs: Date.now() - started })
+    logger.info({ jobId: ctx.jobId, openers: r.openers, lifted: r.lifted, llmCalls: r.llmCalls }, '[voice] draft restated in the author\'s own words')
+    return r.text
+  } catch (err) {
+    logger.warn({ jobId: ctx.jobId, err }, '[voice] own-words pass failed; the draft goes on as written')
+    return draft
+  }
+}
+
+/** Step 86: the author's own terms stay in the opening, the close and the home section, and are never defined as fact. */
+export async function runContainment(ctx: PipelineContext, voice: VoiceContext, html: string): Promise<string> {
+  const started = Date.now()
+  const terms = voice.take?.ownTerms ?? []
+  if (!terms.length) return html
+  try {
+    const r = await contain(html, terms, voice.take?.home ?? null, headingsOf(ctx).length, voiceRewriters(ctx, voice).sentence)
+    const { html: out, cost, ...counts } = r
+    await saveStep(ctx, VOICE_STEPS.containment, 'belief_containment', JSON.stringify({ terms, ...counts }), { inputTokens: 0, outputTokens: 0, cost, durationMs: Date.now() - started })
+    logger.info({ jobId: ctx.jobId, terms: terms.length, home: r.home, carrying: r.carrying, outside: r.outside, moved: r.moved, removed: r.removed, defined: r.defined, restated: r.restated }, '[voice] belief language contained')
+    return out
+  } catch (err) {
+    logger.warn({ jobId: ctx.jobId, err }, '[voice] containment failed; the article goes on unchanged')
+    return html
+  }
+}
+
 /** Step 83: the compliance check of the author's convictions. Returns the article, changed where a sentence would not pass. */
 export async function runBeliefCheck(ctx: PipelineContext, voice: VoiceContext, html: string, jurisdiction: string): Promise<string> {
   const started = Date.now()
@@ -284,7 +368,7 @@ export async function runBeliefCheck(ctx: PipelineContext, voice: VoiceContext, 
       { userId: ctx.userId, jsonMode: true },
     )
     const researched = parseResearchFacts(ctx.completedSteps.get(8), ctx.completedSteps.get(7))
-    const r = applyBeliefFindings(html, parseBeliefFindings(run.content), { isFinding: (s) => restatesFact(s, researched) })
+    const r = applyBeliefFindings(html, parseBeliefFindings(run.content), { isFinding: (s) => restatesFact(s, researched, 0.45) })
     await saveStep(ctx, VOICE_STEPS.beliefs, 'belief_compliance_check', JSON.stringify({ jurisdiction, found: r.found, applied: r.applied, changes: r.changes, open: r.open }), usageOf(run.response, started))
     logger.info({ jobId: ctx.jobId, found: r.found, applied: r.applied, open: r.open.length }, '[voice] belief compliance check')
     return r.html

@@ -46,6 +46,7 @@ import { sanitizeGeoQuestion } from './geo-question-sanitizer'
 import { normalizeH2Questions } from '../approval-service'
 import { loadPlainLanguageConfig, runPlainLanguagePass, seededRng } from './plain-language'
 import { voiceForJob, voiceForExplanations } from '../voice/run'
+import { dropFactualOwnTermGlosses } from '../voice/containment'
 import { generateKeyTakeaways } from './key-takeaways-generator'
 import { generateDiagramCaption } from './diagram-caption-generator'
 import { selectWordPressCategory } from './wp-category-selector'
@@ -409,6 +410,14 @@ export async function runArticleEnrichment(jobId: string): Promise<void> {
         title: sitePage.title,
       })
       geoHtml = pl.html
+      // An explanation of one of the author's own terms, stated as plain fact, is taken out again.
+      if (plVoice?.ownTerms.length) {
+        const g = dropFactualOwnTermGlosses(geoHtml, plVoice.ownTerms)
+        if (g.dropped.length) {
+          geoHtml = g.html
+          logger.info({ jobId, dropped: g.dropped.map((d) => d.slice(0, 80)) }, '[enrichment] explanation of an author\'s own term removed')
+        }
+      }
       totalCost += pl.cost
       totalInputTokens += pl.inputTokens
       totalOutputTokens += pl.outputTokens
@@ -425,6 +434,9 @@ export async function runArticleEnrichment(jobId: string): Promise<void> {
 
   await setEnrichmentPhaseStep(jobId, 20)
 
+  // Voice path (Veit, 2026-11-27): the author opens with a story, so Key Takeaways sits above the
+  // opening and the answer is in the first hundred words. The text itself is unchanged.
+  const takeawaysFirst = (await voiceForJob(jobId, job.userId).catch(() => null)) !== null
   const cut = findFirstH2Index(geoHtml)
   let intro = cut >= 0 ? geoHtml.slice(0, cut) : ''
   const bodyOnly = cut >= 0 ? geoHtml.slice(cut) : geoHtml
@@ -523,8 +535,7 @@ export async function runArticleEnrichment(jobId: string): Promise<void> {
 
     await setEnrichmentPhaseStep(jobId, 23)
     const mergedPlain =
-      intro +
-      (keyTakeawaysHtml ?? '') +
+      (takeawaysFirst ? (keyTakeawaysHtml ?? '') + intro : intro + (keyTakeawaysHtml ?? '')) +
       (tocHtml ?? '') +
       bodyWithIds
     await finishEnrichment(jobId, sitePage.id, mergedPlain, keyTakeawaysHtml, tocHtml, totalCost, totalInputTokens, totalOutputTokens)
@@ -796,8 +807,7 @@ export async function runArticleEnrichment(jobId: string): Promise<void> {
 
   const diagrammedBody = buildEnrichedHtml(bodyWithIds, figuresToInsert)
   const merged =
-    intro +
-    (keyTakeawaysHtml ?? '') +
+    (takeawaysFirst ? (keyTakeawaysHtml ?? '') + intro : intro + (keyTakeawaysHtml ?? '')) +
     (tocHtml ?? '') +
     diagrammedBody
 

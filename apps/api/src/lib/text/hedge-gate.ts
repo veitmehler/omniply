@@ -21,6 +21,7 @@
  *     ("that depends on what I find when I examine you"); further ones are
  *     rewritten like any other hedge.
  */
+import { joinAfterDelete } from './contrast'
 import { logger } from '../logger'
 import { runNewsletterPrompt } from '../../newsletter/llm'
 import {
@@ -216,7 +217,7 @@ export async function gateHedges(
           continue
         }
         if (rewrite === '[DELETE]') {
-          working = working.slice(0, from) + lead.replace(/\s+$/, '') + trail.replace(/^\s+/, '') + working.slice(to).replace(/^[ \t]+/, '')
+          working = joinAfterDelete(working.slice(0, from) + lead.replace(/\s+$/, '') + trail.replace(/^\s+/, ''), working.slice(to).replace(/^[ \t]+/, ''))
           res.deleted++
           continue
         }

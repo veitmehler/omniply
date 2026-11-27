@@ -14,6 +14,7 @@
  */
 import { ONBOARDING_QUESTIONS, type BeliefKind, type VoiceProfile } from './profile'
 import { wordCount } from './voice-score'
+import { contrastShare } from '../text/contrast'
 
 const flat = (s: string) => s.replace(/\s+/g, ' ').trim()
 
@@ -69,6 +70,8 @@ export interface AuthorLimits {
   exclaimShare: number
   /** Words in capitals for emphasis, per 100 words. */
   capsPer100: number
+  /** Share of sentences that may set one thing against another ("this, not that"). */
+  contrastShare: number
 }
 
 /** The author's own rate of a habit: the higher of what their answers and their written piece show. */
@@ -78,7 +81,12 @@ export function ownRate(p: VoiceProfile, key: string): number {
 }
 
 /** What any author may do without it reading as a tic. */
-export const DEFAULT_LIMITS: AuthorLimits = { questionShare: 0.04, exclaimShare: 0.004, capsPer100: 0.05 }
+export const DEFAULT_LIMITS: AuthorLimits = { questionShare: 0.04, exclaimShare: 0.004, capsPer100: 0.05, contrastShare: 0.02 }
+
+/** How often the author sets one thing against another in a sentence, counted on everything they said or wrote. */
+export function ownContrastShare(p: VoiceProfile): number {
+  return contrastShare(p.manner.ownWords.map((w) => w.text))
+}
 
 /**
  * Wording limits relative to the author: the default for everyone, raised for an
@@ -92,6 +100,7 @@ export function authorLimits(p: VoiceProfile, headroom = 1.5): AuthorLimits {
     questionShare: Math.max(DEFAULT_LIMITS.questionShare, top('questionShare') * headroom),
     exclaimShare: Math.max(DEFAULT_LIMITS.exclaimShare, top('exclaimShare') * headroom),
     capsPer100: Math.max(DEFAULT_LIMITS.capsPer100, top('capsWords') * headroom),
+    contrastShare: Math.max(DEFAULT_LIMITS.contrastShare, ownContrastShare(p) * headroom),
   }
 }
 
@@ -128,11 +137,13 @@ function habitLines(p: VoiceProfile): string[] {
     out.push(`- A question: ${oneIn(ownRate(p, 'questionShare'))} of your sentences. An exclamation mark: ${oneIn(ownRate(p, 'exclaimShare'))}.`)
     out.push(`- You say "I" about ${m.fpSingular.toFixed(1)} times, "we" about ${m.fpPlural.toFixed(1)} times and "you" about ${ownRate(p, 'secondPerson').toFixed(1)} times in a hundred words.`)
     if (m.conjOpenShare >= 0.04) out.push(`- You start ${oneIn(m.conjOpenShare)} of your sentences with And, But, So or Well.`)
+    out.push(`- Setting one thing against another inside a sentence ("this, not that", "X rather than Y"): ${oneIn(ownContrastShare(p))} of your sentences. A whole article of yours holds three or four at most.`)
   }
   if (p.manner.reader) out.push(`- How you speak to the reader: ${p.manner.reader}`)
   if (p.manner.opening) out.push(`- How you begin: ${p.manner.opening.habit}. For example: "${p.manner.opening.example}"`)
   if (p.manner.closing) out.push(`- How you end: ${p.manner.closing.habit}. For example: "${p.manner.closing.example}"`)
   for (const h of p.manner.habits) out.push(`- ${h.habit}. For example: "${h.example}"`)
+  if (p.manner.habits.length) out.push('- The examples show each habit; they are not lines to reuse. A catchphrase, an interjection or a joke of yours appears once in an article at most.')
   if (p.manner.phrases.length) out.push(`- Turns of phrase that are yours, to use where one fits and never to force: ${p.manner.phrases.map((x) => `"${x}"`).join(', ')}`)
   return out
 }
@@ -153,7 +164,7 @@ export function clip(text: string, words: number): string {
 }
 
 /** The full rendering for the article writer. */
-export function renderAuthorVoice(p: VoiceProfile, opts: { maxOwnWords?: number } = {}): string {
+export function renderAuthorVoice(p: VoiceProfile, opts: { maxOwnWords?: number; restStories?: Set<number> } = {}): string {
   const budget = opts.maxOwnWords ?? 4200
   const out: string[] = []
   out.push('## Who you are', ...identityLines(p))
@@ -166,9 +177,10 @@ export function renderAuthorVoice(p: VoiceProfile, opts: { maxOwnWords?: number 
     }
   }
 
-  const own = p.stories.filter((s) => s.kind === 'own')
+  // A story told in a recent article rests: it is not shown, so it cannot be retold.
+  const own = p.stories.filter((s) => s.kind === 'own').filter((_, i) => !opts.restStories?.has(i))
   if (own.length) {
-    out.push('', '## Stories of your own', 'Told by you, in your words. One may be used where it bears on the topic, retold at the length the article needs and with nothing added to it.')
+    out.push('', '## Stories of your own', 'Told by you, in your words. A story appears in an article only when Your Take names it for this one; then it is retold at the length the article needs, with nothing added to it.')
     out.push(...own.map((s) => `- "${s.text}"`))
   }
 

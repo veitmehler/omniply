@@ -36,6 +36,8 @@ export const H2_SLOT_SECTION_INDEX: Record<string, number> = {
 
 function extractIntro(bodyHtml: string, excerpt?: string | null): string {
   if (excerpt?.trim()) return excerpt.trim()
+  // Key Takeaways can sit above the opening (voice path); the intro is the first paragraph outside it.
+  bodyHtml = bodyHtml.replace(/<section class="key-takeaways"[\s\S]*?<\/section>/i, '')
   const match = bodyHtml.match(/<p[^>]*>([\s\S]*?)<\/p>/i)
   if (match) return stripTags(match[1]).slice(0, 800)
   return stripTags(bodyHtml).slice(0, 800)

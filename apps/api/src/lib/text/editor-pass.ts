@@ -23,6 +23,7 @@
  *
  * Kill switch: EDITOR_PASS=0 (executor.ts). Rewriters are injectable for tests.
  */
+import { joinAfterDelete } from './contrast'
 import { logger } from '../logger'
 import { runNewsletterPrompt } from '../../newsletter/llm'
 import {
@@ -316,7 +317,7 @@ async function rewriteSpans(
         continue
       }
       if (rewrite === '[DELETE]') {
-        working = working.slice(0, from) + lead.replace(/\s+$/, '') + trail.replace(/^\s+/, '') + working.slice(to).replace(/^[ \t]+/, '')
+        working = joinAfterDelete(working.slice(0, from) + lead.replace(/\s+$/, '') + trail.replace(/^\s+/, ''), working.slice(to).replace(/^[ \t]+/, ''))
         res.deleted++
         continue
       }
