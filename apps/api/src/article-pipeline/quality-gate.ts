@@ -14,6 +14,7 @@ import { prisma } from '@omniply/shared'
 import { getLLMAdapter } from './llm/factory'
 import { sanitizeDashes } from '../lib/text/dash-sanitizer'
 import { logger } from '../lib/logger'
+import { voiceForJob } from './voice/run'
 
 // The available "Gemini 3.1 Pro" model id on the generativelanguage API is the
 // preview alias (plain `gemini-3.1-pro` 404s); it's the same model the article
@@ -212,6 +213,30 @@ export function validateSchemaJsonLd(schema: unknown): SchemaValidationResult {
 const REWRITE_SYSTEM = `You are an expert editor. Revise the article to fix the specified issues while preserving its meaning, structure, formatting, and any existing hyperlinks/citations. Return ONLY the full corrected article in the SAME format (HTML if given HTML), with no preamble or commentary.`
 
 /**
+ * The room a full-body rewrite gets. It was 8,000, which the current models spend partly on
+ * thinking: on 2026-11-27 two rewrites came back cut off (one at 218 words of a 2,000-word
+ * article), replaced the complete article, and sent it to human review as "ends mid-sentence".
+ */
+export const REWRITE_MAX_TOKENS = 32768
+
+const wordsOf = (html: string) => html.replace(/<[^>]+>/g, ' ').split(/\s+/).filter(Boolean).length
+
+/**
+ * May a rewrite replace the article? Not when the model ran out of room, when the result ends
+ * mid-sentence or on a stub, or when it lost a large part of the article. A complete article
+ * with an open issue is better than a broken one.
+ */
+export function rewriteUsable(original: string, revised: string, finishReason?: string): { ok: boolean; why?: string } {
+  if (finishReason === 'length') return { ok: false, why: 'the model ran out of room' }
+  const cut = truncationIssue(revised)
+  if (cut && !truncationIssue(original)) return { ok: false, why: cut }
+  const before = wordsOf(original)
+  const after = wordsOf(revised)
+  if (before >= 300 && after < before * 0.7) return { ok: false, why: `the rewrite has ${after} words where the article had ${before}` }
+  return { ok: true }
+}
+
+/**
  * Regenerate the Phase A body addressing the verdict's reasons, overwriting the
  * step-11 (body) output in place. Best-effort improvement before re-gating.
  */
@@ -224,8 +249,11 @@ export async function rewriteArticleBody(jobId: string, reasons: string[]): Prom
     return false
   }
 
-  const provider = bodyStep.provider || 'gemini'
-  const model = bodyStep.model || GEMINI_MODEL
+  // The body step has no model of its own when it made no model call (the voice path corrects
+  // single sentences, and often none). The rewrite then runs on the model that wrote the article.
+  const writer = bodyStep.provider && bodyStep.model ? null : await prisma.pipelineStep.findFirst({ where: { jobId, stepNumber: 9 }, select: { provider: true, model: true } })
+  const provider = bodyStep.provider || writer?.provider || 'gemini'
+  const model = bodyStep.model || writer?.model || GEMINI_MODEL
 
   // The rewrite must not strip the account's voice or editorial rules
   // (observed on the Azavea pilot: a generic rewrite flattened the house
@@ -234,9 +262,14 @@ export async function rewriteArticleBody(jobId: string, reasons: string[]): Prom
   const settings = job?.userId
     ? await prisma.settings.findUnique({ where: { userId: job.userId }, select: { writingStyle: true } })
     : null
-  const voiceBlock = settings?.writingStyle?.trim()
-    ? `\n\nHOUSE WRITING VOICE — the revised article must keep this voice exactly:\n${settings.writingStyle.trim()}`
-    : ''
+  // An article written on the author-voice path is still that author's after a rewrite: the rewriter
+  // is shown the author's own words, not the two-paragraph description of a house style.
+  const author = job?.userId ? await voiceForJob(jobId, job.userId).catch(() => null) : null
+  const voiceBlock = author
+    ? `\n\nTHE AUTHOR — this article is written by one person, in their own name and voice. The revised article is still theirs: their words, their convictions said the way they say them, their stories as told. Change only what the issues require.\n${author.short}`
+    : settings?.writingStyle?.trim()
+      ? `\n\nHOUSE WRITING VOICE — the revised article must keep this voice exactly:\n${settings.writingStyle.trim()}`
+      : ''
 
   const issues = reasons.length ? reasons.map((r) => `- ${r}`).join('\n') : '- Improve overall depth, accuracy, and helpfulness.'
   try {
@@ -245,10 +278,15 @@ export async function rewriteArticleBody(jobId: string, reasons: string[]): Prom
       systemPrompt: REWRITE_SYSTEM,
       userPrompt: `Issues to fix:\n${issues}${voiceBlock}\n\nAdditional rules:\n- Preserve the article's voice, register, and rhetorical style — fix ONLY the listed issues.\n- If the article mentions the publisher's product or company, keep exactly the same mentions (same count, similar placement). Never add promotional content; never remove an existing single product mention.\n- Never use em-dashes; use commas, colons, or separate sentences.\n\nArticle:\n${bodyStep.output}`,
       temperature: 0.4,
-      maxTokens: 8000,
+      maxTokens: REWRITE_MAX_TOKENS,
     })
     let revised = res.content?.trim()
     if (!revised) return false
+    const usable = rewriteUsable(bodyStep.output, revised, res.finishReason)
+    if (!usable.ok) {
+      logger.warn({ jobId, why: usable.why, finishReason: res.finishReason }, '[quality-gate] rewrite not used — the article is kept as it was')
+      return false
+    }
 
     // Same de-AI dash pass the executor applies to prose steps — the rewrite
     // regenerates the body AFTER that pass ran, so it must re-run here.

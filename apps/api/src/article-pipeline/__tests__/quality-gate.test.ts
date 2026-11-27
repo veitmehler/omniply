@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseVerdict, validateSchemaJsonLd } from '../quality-gate'
+import { parseVerdict, rewriteUsable, validateSchemaJsonLd } from '../quality-gate'
 
 describe('parseVerdict', () => {
   it('parses a clean pass verdict', () => {
@@ -165,5 +165,20 @@ describe('truncationIssue (deterministic completeness, 2026-11-12)', () => {
   it('builds a major revise verdict', () => {
     const v = truncationVerdict('Article ends mid-sentence.')
     expect(v).toMatchObject({ verdict: 'revise', severity: 'major', reasons: ['Article ends mid-sentence.'] })
+  })
+})
+
+describe('rewriteUsable', () => {
+  const para = (n: number) => `<p>${Array.from({ length: n }, (_, i) => `Sentence number ${i} says something useful.`).join(' ')}</p>`
+  const article = `<p>Opening.</p><h2>One</h2>${para(40)}<h2>Two</h2>${para(40)}<h2>Three</h2>${para(20)}`
+  it('accepts a complete rewrite of about the same size', () => {
+    expect(rewriteUsable(article, article.replace('Opening.', 'A different opening.'), 'stop')).toEqual({ ok: true })
+  })
+  it('refuses a rewrite the model could not finish', () => {
+    expect(rewriteUsable(article, article, 'length').ok).toBe(false)
+  })
+  it('refuses a rewrite that ends mid-sentence or lost most of the article', () => {
+    expect(rewriteUsable(article, '<p>Opening.</p><h2>One</h2><p>Chiropractic care for a sore lower back uses manual therapy on</p>', 'stop').ok).toBe(false)
+    expect(rewriteUsable(article, `<p>Opening.</p><h2>One</h2>${para(40)}<h2>Two</h2>${para(10)}`, 'stop').ok).toBe(false)
   })
 })
